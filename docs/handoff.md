@@ -83,7 +83,15 @@ game started, or past its window) is the first reason in `unattended_block_reaso
 **Shipped:** waves 95-96 - #1216-#1220. 16 of 17 tests failed or errored on `58dafb6` first, and
 10 of 12. Corpus 270. Highest filed #1222.
 
-**In progress:** nothing claimed.
+**In progress:** waves 97-98 claimed (2026-10-16 evening, uncommitted until their commits) -
+#1223 the overnight stop line (`core/nightly_task.py`, `scripts/ops.py` `cmd_overnight`), #1222
+`ops blocking` reads the shelf (`core/review_booth.py`, `core/publish_blockers.py`), #1224 team
+names stay whole (`apis/topic_variants.py`, `core/title_generator.py`), #1225 hyphenated labels
+and a model's "…" (same files), #1226 insight check + a calm draft's "what to watch" beat
+(`core/authenticity.py`, `core/content_engine.py` `_maybe_inject_insight`). **Cursor - the
+operator added five for you, after your own five:** #1221, #1227, #1228, #1229, #1043 (filed
+with evidence in the backlog when wave 97 commits). Not touching `core/best_bet.py`,
+`core/correction_dossier.py`, `assets/fast_cut.py`, `core/overnight.py`.
 
 ## Slot — Cursor
 

@@ -58,6 +58,14 @@ def last_run_context(channel_id: str | None = None) -> dict[str, Any]:
             logger.debug("publish context record skipped for run %s: %s", run_id, exc)
     if record is not None:
         try:
+            stored = json.loads(getattr(record, "quality_json", "") or "{}")
+        except (TypeError, ValueError):
+            stored = {}
+        if isinstance(stored, dict) and stored:
+            # #1222: the run's record wins - run 155's trace still held the scores from before
+            # the 10-16 re-score, and `ops blocking` said "authenticity review".
+            context["quality"] = {**context["quality"], **stored}
+        try:
             features = json.loads(getattr(record, "features_json", "") or "{}")
         except (TypeError, ValueError):
             features = {}

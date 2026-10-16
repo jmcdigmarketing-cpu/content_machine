@@ -89,8 +89,11 @@ wave left and four small checks that are still open.
 "contender" matches before UFC. **#514** the intro sting overlaps the first caption.
 **#418** a bounded zoom can still soften a 1080x1920 frame, and nothing checks.
 **#463** the benches exist and nothing fails when they regress. **#545** a correction
-note never becomes a "what I got wrong" beat in the next script.
-`roadmap-index` after Claude's waves 95-96: open 300, done 952, numbered open 248; highest filed #1222.
+note never becomes a "what I got wrong" beat in the next script. **Then (the operator,
+2026-10-16):** **#1221** a neutral headline made a gaming best bet (with #1215), **#1227** junk
+correction URLs, **#1228** the fast-cut timeout, **#1229** one draft per child process, **#1043**
+footage tagged by team (run 155 cut four untagged Madden clips).
+`roadmap-index` after Claude's wave 97: open 302, done 954, numbered open 250; highest filed #1229.
 Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
 your own idea's script, the morning screen, game previews, corrections checked against their
 own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),
@@ -102,8 +105,9 @@ public address (§58), a draft's stance counts as a take, the review names the f
 exit code and log (#1216 - Oct 16 crashed after one draft); a run records the facts it was
 written from, so health stopped reading authenticity RED (#1217). Wave 96: a `.env` warning
 names the right lines (#1218), a draft past its window says so first and "n" sets it aside
-(#1219), a signal no longer run is not flagged (#1220). Filed: #1221 (Cursor's), #1222. Claude
-has nothing claimed. The step-by-step: [operator_guide.md](operator_guide.md).
+(#1219), a signal no longer run is not flagged (#1220). Wave 97: the stop line counts only the
+run that stopped (#1223); `ops blocking` reads the shelf and the run's own scores (#1222). Claude
+has #1224-#1226 claimed. The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

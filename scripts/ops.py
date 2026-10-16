@@ -1522,16 +1522,23 @@ def cmd_analyst(args: argparse.Namespace) -> int:
 
 @_register("overnight", "Overnight operator — best-bet drafts + grade + vault dossiers (Pillar 5)")
 def cmd_overnight(args: argparse.Namespace) -> int:
-    from core.nightly_task import enable_crash_traceback
+    from datetime import datetime
+
+    from config.channels import resolve_channel_id
+    from core.nightly_task import enable_crash_traceback, record_overnight
     from core.overnight import render_overnight, run_overnight
 
     enable_crash_traceback()  # #1216: a native crash names its Python line in the task's log
-
+    channel, started = resolve_channel_id(args.channel), datetime.now()
+    record_overnight(channel, started=started)  # #1223: a run that dies leaves no finish
     result = run_overnight(
         args.channel,
         count=args.count or 3,
         file=getattr(args, "file", None),
         facts_file=getattr(args, "facts_file", None),
+    )
+    record_overnight(
+        channel, started=started, finished=datetime.now(), drafts=getattr(result, "drafted", None)
     )
     print(render_overnight(result))
     return 0

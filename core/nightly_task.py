@@ -14,6 +14,7 @@ own - the operator does.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -227,18 +228,81 @@ def overnight_timing_line(*, now: datetime | None = None) -> str:
     return missed_line(times, now=now or datetime.now()) if times else ""
 
 
-def overnight_stop_line(*, root: str | None = None) -> str:
-    """`stopped_line` for the installed task (#1216), the drafts counted since its last start."""
+def overnight_record_path() -> str:
+    """Where `ops overnight` notes its start and finish (#1223). `OVERNIGHT_RECORD_FILE`
+    moves it - the suite points it at a temp folder."""
+    return os.getenv("OVERNIGHT_RECORD_FILE", "").strip() or os.path.join(
+        REPO_ROOT, "data", "overnight_last.json"
+    )
+
+
+def record_overnight(
+    channel_id: str, *, started: datetime, finished: datetime | None = None, drafts: Any = None
+) -> None:
+    """#1223: what `ops overnight` did - written at its start and again at its end, so a run that
+    finished after the task's crash is known. Never raises."""
+    payload = {
+        "channel": channel_id,
+        "started": started.isoformat(timespec="seconds"),
+        "finished": finished.isoformat(timespec="seconds") if finished else "",
+        "drafts": drafts,
+    }
+    try:
+        path = overnight_record_path()
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f)
+    except Exception as exc:
+        logger.debug("overnight record not written: %s", exc)
+
+
+def _recorded(key: str) -> datetime | None:
+    try:
+        with open(overnight_record_path(), encoding="utf-8") as f:
+            return datetime.fromisoformat(str(json.load(f).get(key) or ""))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+
+
+def _recorded_finish() -> datetime | None:
+    return _recorded("finished")
+
+
+def _recorded_start() -> datetime | None:
+    return _recorded("started")
+
+
+def overnight_stop_line(*, root: str | None = None, log_path: str | None = None) -> str:
+    """`stopped_line` for the installed task (#1216). #1223: said only while no later run has
+    finished, and the drafts counted from the task's start to the log's last write - on
+    2026-10-16 the operator ran overnight by hand after the crash, and the line said "stopped
+    after 4 of 3 drafts"."""
     times = _queried_times()
     if not times:
         return ""
-    made = None
     last = times.get("last")
+    finished = _recorded_finish()
+    if last is not None and finished is not None and finished >= last:
+        return ""
+    made = None
     if last is not None and times.get("channel"):
+        until = None
+        try:
+            stamp = datetime.fromtimestamp(
+                os.path.getmtime(log_path or os.path.join(REPO_ROOT, OVERNIGHT_LOG))
+            )
+            # A draft is saved a few seconds after its last log line: run 156 at 16:32:23, the
+            # log's last write at 16:32:13. A minute of grace, and never into a later run.
+            until = stamp + timedelta(minutes=1) if stamp >= last else None
+        except OSError:
+            until = None
+        later = _recorded_start()  # the stopped run's own start is written within seconds
+        if later is not None and later > last + timedelta(minutes=1):
+            until = min(until, later) if until is not None else later
         try:
             from core.batch_review import drafts_made_since
 
-            made = drafts_made_since(str(times["channel"]), last, root=root)
+            made = drafts_made_since(str(times["channel"]), last, until=until, root=root)
         except Exception as exc:
             logger.debug("overnight drafts uncounted: %s", exc)
     return stopped_line(times, drafts_made=made)

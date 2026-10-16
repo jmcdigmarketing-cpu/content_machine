@@ -7755,3 +7755,42 @@ Closed **#1216-#1217**. Filed **#1221** (Cursor) and **#1222**.
 its week. Corpus +4. Suite 5943, forward and reversed.
 
 Closed **#1218-#1220**. Claude has nothing claimed.
+
+## 2026-10-16 — waves 97-98 (Claude Code): five for me, five more for Cursor
+
+**Prompt:** "nextb 5, give cursor another 5 to work on alongside and leave energy to correct its
+work and push in the next prompt". Asked: calm drafts get a "what to watch" beat; Cursor's new
+five come **after** its own five (#1215 #514 #418 #463 #545); re-score the waiting drafts; my
+commits pushed now only if no unreviewed Cursor commit sits under them - Cursor's work is
+reviewed, corrected and pushed in the next prompt.
+
+### What the evening showed
+
+- The operator ran overnight by hand at 5:00 PM: runs 157-159, run 155 rendered and queued. The
+  shelf holds 3, so overnight is paused; run 157 is clean and waits.
+- My #1216 line then said "stopped after 4 of 3 drafts".
+- Run 159: "New York Jets at New England Patriots" became "New York Jets vs England Patriots" -
+  `topic_variants._subject_terms` told the angle prompt "York, Jets, England".
+- Run 158: the angle kept "Long-term outlook:" (the type is `long_term_outlook`; the hyphen
+  stopped the match); its title ends in the model's own "...". Its script has a take the check
+  does not read ("If this sells, every franchise...", "Watch whether...").
+- Run 159 (explainer) and 150 (plan): the engine adds no take to a calm draft, and the check holds
+  them for "no take found".
+- `ops blocking`: run 139 (pulled), then run 155 with the trace's pre-re-score copy.
+- The correction scan fetches "...ttv-boxart/509672-{widt" every run; a fast-cut shot timed out
+  at 120 s. Both filed for Cursor.
+
+### Cursor's five (after its own)
+
+#1221, #1227, #1228, #1229, #1043 - in the roadmap under its five, with the prompt in my slot.
+
+### Wave 97 shipped
+
+1. **#1223** live after: "stopped after 1 of 3 drafts". The record exists from the next run on;
+   tonight's line counts to a minute past the log's last write (16:32:13 -> run 156 at 16:32:23).
+2. **#1222** `ops blocking`: "Nothing is blocking publish: grade, authenticity, quota, and facts
+   look clear." (run 155).
+
+`tests/test_stop_record_and_shelf.py` (9): **8 of 8 failed or errored on `dd9e131`** before the
+grace case was added; all 9 pass. No corpus case: both fixes read files and the database. Suite
+5952, forward and reversed.

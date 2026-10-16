@@ -40,6 +40,19 @@ def last_trace(channel_id: str | None = None) -> dict[str, Any] | None:
     return traces[0] if traces else None
 
 
+def _pulled(run_id: Any, channel_id: str) -> bool:
+    """A finished run taken off the shelf with a reason on record (`stale_renders.gone_reason`)."""
+    if not run_id or not channel_id:
+        return False
+    try:
+        from core.stale_renders import gone_reason
+
+        return bool(gone_reason(int(run_id), channel_id))
+    except Exception as exc:
+        logger.debug("pulled check skipped for run %s: %s", run_id, exc)
+        return False
+
+
 def last_reviewable_trace(channel_id: str | None = None) -> dict[str, Any] | None:
     """Prefer a rendered run. A newer drafted row is not a reviewable file."""
     try:
@@ -53,6 +66,8 @@ def last_reviewable_trace(channel_id: str | None = None) -> dict[str, Any] | Non
     for t in traces:
         status = t.get("status") or ""
         if status == "rendered":
+            if _pulled(t.get("run_id"), channel_id or str(t.get("channel_id") or "")):
+                continue  # #1222: run 139 was pulled on 10-13 and `ops blocking` described it
             return t
         if status == "drafted" and drafted is None:
             drafted = t

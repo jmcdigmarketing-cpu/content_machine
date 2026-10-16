@@ -983,8 +983,15 @@ def _timing_lines() -> list[str]:
     return lines
 
 
-def drafts_made_since(channel_id: str, since: datetime, *, root: str | None = None) -> int:
-    """#1216: drafts written since ``since`` (local time) - how far a stopped run got."""
+def drafts_made_since(
+    channel_id: str,
+    since: datetime,
+    *,
+    until: datetime | None = None,
+    root: str | None = None,
+) -> int:
+    """#1216: drafts written since ``since`` (local time) - how far a stopped run got; #1223:
+    before ``until``, when the run's end is known."""
     if root is None:
         from core.batch_generation import _drafts_dir
 
@@ -1002,7 +1009,7 @@ def drafts_made_since(channel_id: str, since: datetime, *, root: str | None = No
             continue
         if when.tzinfo:
             when = when.astimezone().replace(tzinfo=None)
-        if when >= since:
+        if when >= since and (until is None or when <= until):
             made += 1
     return made
 

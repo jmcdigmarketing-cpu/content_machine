@@ -7699,3 +7699,38 @@ is not held). `tests/test_reactions_and_checks.py` (10): **9 of 10 failed or err
 `batch_generation` (a missing `Any` import, swallowed); fixed before this commit. Suite 5914, forward and reversed.
 
 Closed **#1210-#1214**. Claude has nothing claimed.
+
+## 2026-10-16 — wave 95 (Claude Code): the crash and the facts
+
+**Prompt:** "nextb 5". Cursor's five (#1215 #514 #418 #463 #545) stay Cursor's. Measured
+read-only first; the overnight task was running when I looked (the PC woke at 4:30 PM).
+
+### What the day showed
+
+- Overnight made run 156 (Larissa Pacheco), began draft 2 of 3 at 16:32:23 and died: "Last Result
+  -1073740940" = 0xC0000374, heap corruption in ntdll.dll (the Windows Application log; the only
+  Python crash in 30 days; the WER report needs admin). No traceback. `ops overnight-last` said
+  "Overnight ran at 4:30 PM on Oct 16".
+- Every run recorded `key_facts_count` 0: it is the pasted facts. Health: authenticity RED, mean
+  49/100. The same drafts score 97 with the check as it is.
+- `ops blocking` reads run 139 - rendered, then pulled - and says "thin facts: 0". Filed #1222.
+- Draft 2 was "TikToker Dr Food walks free..." - neutral, made gaming by its feed. Filed #1221
+  for Cursor (`core/best_bet.py`, beside #1215).
+
+### Shipped
+
+1. **#1216** the stopped run is said. Live after: "Overnight started at 4:30 PM on Oct 16 and
+   stopped after 1 of 3 drafts - Python crashed: heap corruption (0xC0000374). Its output:
+   output\logs\overnight-last.log. Run it again: py -m scripts.ops overnight --channel tapin
+   --count 3". `faulthandler` on in `ops overnight` and the worker.
+2. **#1217** `fact_lines` on every run. Back-filled the 14 recent runs with a draft (the operator:
+   "Yes, re-score them"): gate mean 52 -> 95; `ops health` authenticity GREEN, 89 over 15. The
+   dry run found 51 runs with a stored draft count; the 37 older ones were left (outside the
+   approved scope).
+
+### Audit
+
+`tests/test_stops_and_facts.py` (17): **16 of 17 failed or errored on a worktree at `58dafb6`**;
+the one that passed guards that an old run keeps its count. Corpus +4. Suite 5931, forward and reversed.
+
+Closed **#1216-#1217**. Filed **#1221** (Cursor) and **#1222**.

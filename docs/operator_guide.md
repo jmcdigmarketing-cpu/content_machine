@@ -148,7 +148,10 @@ then walks the waiting drafts for a yes or no each. When the YouTube sign-in has
 "Sign in to YouTube now?" first - `y` opens Google's page, and the sync runs once you are back.
 When uploads are queued and the upload task is not installed it asks "Send the N queued uploads
 now?". `ops all` ends with the same morning (decision §56). Run from a scheduled task or a pipe
-it skips the draft review and says so. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
+it skips the draft review and says so. When overnight stopped before it finished, the morning
+and `ops overnight-last` say when it started, how many drafts it made, why it stopped (the exit
+code in words) and where its output is (`output\logs\overnight-last.log`), with the command to
+run it again. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
 Each reason is specific: "authenticity check says review (no take found)", "drafted from the
 arc counter" (a draft written from "week 4"), "its title breaks a name" - and the review screen
 names the failing check beside the verdict.

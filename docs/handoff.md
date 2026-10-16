@@ -83,7 +83,14 @@ audience text. The waiting drafts were re-scored (six went to ok). mypy baseline
 **Shipped:** waves 93-94 - #1210-#1214. 6 of 8 tests failed or errored on `1bf7c72` first, 9 of
 10 on `abd8ecf`. Corpus 262. Highest filed #1215 (yours).
 
-**In progress:** nothing claimed.
+**In progress:** waves 95-96 claimed (2026-10-16, uncommitted until their commits) - #1216
+overnight stopped early is said (`core/nightly_task.py`, faulthandler in `ops overnight`), #1217
+a run records the facts it was written from (`core/content_engine.py`, `core/run_features.py`,
+`core/run_quality.py`, `core/publish_blockers.py`, `core/batch_generation.py`), #1218 dotenv's
+line numbers muted (`config/settings.py`), #1219 a draft past its window says so first
+(`core/batch_review.py`), #1220 a signal streak ends when it stops running
+(`core/data_quality.py`). Filed for you: #1221 (a neutral headline made `gaming` by its feed,
+`core/best_bet._domain_for_feed`) - not touching `core/best_bet.py`.
 
 ## Slot — Cursor
 

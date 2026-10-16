@@ -186,6 +186,9 @@ def build_features(
         features["chapters_timing_source"] = "estimated"
     if isinstance(pkg.get("title_script_check"), dict):
         features["title_script_check"] = dict(pkg["title_script_check"])
+    used = pkg.get("fact_lines")
+    if isinstance(used, int) and not isinstance(used, bool):
+        features["fact_lines"] = used  # #1217; `key_facts_count` stays the pasted facts
     return features
 
 

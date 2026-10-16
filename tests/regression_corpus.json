@@ -4020,6 +4020,66 @@
         "falsy": true
       },
       "why": "most angles carry no audience text either"
+    },
+    {
+      "id": "oct16-overnight-heap-corruption",
+      "item": 1216,
+      "source": "overnight 2026-10-16: Last Result -1073740940 after 1 of 3 drafts",
+      "call": "core.nightly_task:result_words",
+      "args": [
+        -1073740940
+      ],
+      "expect": {
+        "contains": "heap corruption"
+      },
+      "why": "the morning said the run happened and nothing about the crash"
+    },
+    {
+      "id": "run155-recorded-0-facts",
+      "item": 1217,
+      "source": "run 155 (2026-10-15): key_facts_count 0, written from 25 fact lines",
+      "call": "core.run_quality:run_fact_count",
+      "args": [
+        {
+          "fact_lines": 25,
+          "key_facts_count": 0
+        }
+      ],
+      "expect": {
+        "equals": 25
+      },
+      "why": "every run scored 'too few facts'; health read authenticity RED"
+    },
+    {
+      "id": "an-old-run-keeps-its-pasted-count",
+      "item": 1217,
+      "source": "must keep: a run recorded before fact_lines reads key_facts_count",
+      "call": "core.run_quality:run_fact_count",
+      "args": [
+        {
+          "key_facts_count": 4
+        }
+      ],
+      "expect": {
+        "equals": 4
+      },
+      "why": "the archive's grades must not move for rows that never had the field"
+    },
+    {
+      "id": "used-facts-are-lines-plus-pasted",
+      "item": 1217,
+      "source": "the count a draft stores as fact_count",
+      "call": "core.facts.enrichment:used_fact_lines",
+      "args": [
+        "- Colts pass rush: 19 sacks\n- Kickoff Sunday Oct 18\n",
+        [
+          "Ridley is out"
+        ]
+      ],
+      "expect": {
+        "equals": 3
+      },
+      "why": "the run and its draft must count the same facts"
     }
   ]
 }

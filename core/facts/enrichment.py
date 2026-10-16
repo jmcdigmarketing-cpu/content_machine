@@ -55,6 +55,12 @@ def _fact_line_count(facts: str) -> int:
     return count
 
 
+def used_fact_lines(facts: str, key_facts: list[str] | None) -> int:
+    """#1217: the facts a script was written from - the fact lines plus the operator's pasted
+    ones. The count a draft stores as `fact_count`, and the one its run now records."""
+    return _fact_line_count(facts) + len(key_facts or [])
+
+
 def _search_query(topic: str, seed_topic: str = "") -> str:
     anchors = extract_anchors(seed_topic or topic)
     if anchors:

@@ -8,7 +8,7 @@ from typing import Any
 
 from config.seo import build_seo_prompt_block, default_tags_for_channel
 from core.description_extras import apply_description_extras
-from core.facts.enrichment import _fact_line_count, enrich_facts
+from core.facts.enrichment import _fact_line_count, enrich_facts, used_fact_lines
 from core.facts.grounding import find_ungrounded_entities
 from core.facts.store import TIER_BRIEF
 from core.grounding_tiers import CONTEXT_SECTION_HEADERS, build_tiered_corpus
@@ -2662,6 +2662,8 @@ def generate_content_package(
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),
         "script_mode": _mode,  # #339
+        # #1217: the run recorded only the pasted facts, so every run scored "too few facts".
+        "fact_lines": used_fact_lines(signal_facts, clean_key_facts),
         "ungrounded_entities": ungrounded,
         "trade_warnings": trade_warnings,
         "tier_warnings": tier_warnings,

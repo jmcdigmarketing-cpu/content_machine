@@ -1522,7 +1522,10 @@ def cmd_analyst(args: argparse.Namespace) -> int:
 
 @_register("overnight", "Overnight operator — best-bet drafts + grade + vault dossiers (Pillar 5)")
 def cmd_overnight(args: argparse.Namespace) -> int:
+    from core.nightly_task import enable_crash_traceback
     from core.overnight import render_overnight, run_overnight
+
+    enable_crash_traceback()  # #1216: a native crash names its Python line in the task's log
 
     result = run_overnight(
         args.channel,

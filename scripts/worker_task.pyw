@@ -23,6 +23,12 @@ def main() -> None:
     with open(LOG, "a", encoding="utf-8", errors="replace") as log:
         sys.stdout = sys.stderr = log
         print(f"--- {datetime.now().isoformat(timespec='seconds')} worker pass")
+        try:
+            from core.nightly_task import enable_crash_traceback
+
+            enable_crash_traceback(log)  # #1216: a native crash names its Python line here
+        except Exception as exc:
+            print(f"crash traceback not enabled: {exc}")
         sys.argv = ["jobs.worker"]
         try:
             runpy.run_module("jobs.worker", run_name="__main__")

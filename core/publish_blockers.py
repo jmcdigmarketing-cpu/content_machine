@@ -15,17 +15,19 @@ logger = get_logger("core.publish_blockers")
 
 
 def fact_count_from_record(record: Any) -> int | None:
-    """`key_facts_count` persisted in a content run's features, or None."""
+    """The facts a content run was written from (#1217: `fact_lines`, else the older
+    `key_facts_count`), or None."""
     try:
         features = json.loads(getattr(record, "features_json", "") or "{}")
     except (TypeError, ValueError):
         return None
-    if not isinstance(features, dict) or features.get("key_facts_count") is None:
+    if not isinstance(features, dict):
         return None
-    try:
-        return int(features["key_facts_count"])
-    except (TypeError, ValueError):
+    if features.get("fact_lines") is None and features.get("key_facts_count") is None:
         return None
+    from core.run_quality import run_fact_count
+
+    return run_fact_count(features)
 
 
 def last_run_context(channel_id: str | None = None) -> dict[str, Any]:

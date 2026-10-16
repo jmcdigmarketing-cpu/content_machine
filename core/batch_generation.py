@@ -281,14 +281,18 @@ def generate_draft(
     except Exception as exc:
         logger.debug("score_script_hook skipped: %s", exc)
     fact_count = 0
-    try:
-        from core.facts.enrichment import _fact_line_count, enrich_facts
+    used = (result.features or {}).get("fact_lines")
+    if isinstance(used, int) and not isinstance(used, bool):
+        fact_count = used  # #1217: the count the run was written from, not a second fetch
+    else:
+        try:
+            from core.facts.enrichment import _fact_line_count, enrich_facts
 
-        fact_count = _fact_line_count(
-            enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
-        )
-    except Exception as exc:
-        logger.debug("_fact_line_count skipped: %s", exc)
+            fact_count = _fact_line_count(
+                enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
+            )
+        except Exception as exc:
+            logger.debug("_fact_line_count skipped: %s", exc)
     try:
         from core.authenticity import evaluate_authenticity
 

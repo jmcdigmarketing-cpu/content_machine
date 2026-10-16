@@ -90,21 +90,17 @@ wave left and four small checks that are still open.
 **#418** a bounded zoom can still soften a 1080x1920 frame, and nothing checks.
 **#463** the benches exist and nothing fails when they regress. **#545** a correction
 note never becomes a "what I got wrong" beat in the next script.
-`roadmap-index` after Claude's waves 93-94: open 298, done 947, numbered open 246; highest filed #1215.
+`roadmap-index` after Claude's wave 95: open 300, done 949, numbered open 248; highest filed #1222.
 Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
 your own idea's script, the morning screen, game previews, corrections checked against their
 own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),
 the overnight videos in `py main.py`. Offered to Cursor: **#1194** learning per platform
-([initiative_cross_platform.md](initiative_cross_platform.md)). Wave 91: a hand post in Buffer
-is left on that platform (#1200, §57), the worker starts the crosspost round (#1202), the
-morning offers queued uploads (#1203), `ops all` ends with the morning (#1204, §56), Buffer
-reads the bucket's public address (#1207, §58). Wave 92: the arc's counter out of the topic
-(#1205), a broken place name fails the title check (#1181), a game run keyed by its game
-(#1182), a whole phrase on the thumbnail (#1183), old descriptions laid out at upload (#1206).
-Waves 93-94: a draft's stance counts as a take (#1210 - six waiting drafts went from
-"review" to ok), an arc-counter draft or a broken-name title waits (#1211), a "fans react" angle
-needs reactions (#1212), the review names the failing check (#1213), and `ops crosspost
-buffer-check` tries Buffer end to end with a draft it deletes (#1214). Claude has nothing
+([initiative_cross_platform.md](initiative_cross_platform.md)). Waves 91-94 (#1200-#1214):
+hand posts left alone (§57), `ops all` ends with the morning (§56), Buffer reads the bucket's
+public address (§58), a draft's stance counts as a take, the review names the failing check,
+`ops crosspost buffer-check`. Wave 95: an overnight run that stopped early is said, with its
+exit code and log (#1216 - Oct 16 crashed after one draft); a run records the facts it was
+written from, so health stopped reading authenticity RED (#1217). Claude has #1218-#1220
 claimed. The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

@@ -15,6 +15,7 @@ own - the operator does.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timedelta
@@ -98,9 +99,17 @@ def _when(raw: str) -> datetime | None:
 
 
 def task_times(text: str) -> dict[str, Any]:
-    """{last, next, start} from `schtasks /Query /V` - two datetimes and the daily (hour,
-    minute) - each None when it cannot be read."""
-    out: dict[str, Any] = {"last": None, "next": None, "start": None}
+    """{last, next, start, result, count, channel} from `schtasks /Query /V` - two datetimes,
+    the daily (hour, minute), the last run's exit code (#1216) and what the task runs - each
+    None (channel "") when it cannot be read."""
+    out: dict[str, Any] = {
+        "last": None,
+        "next": None,
+        "start": None,
+        "result": None,
+        "count": None,
+        "channel": "",
+    }
     for line in (text or "").splitlines():
         key, _, value = line.partition(":")
         key, value = key.strip().lower(), value.strip()
@@ -108,6 +117,16 @@ def task_times(text: str) -> dict[str, Any]:
             out["last"] = _when(value)
         elif key == "next run time":
             out["next"] = _when(value)
+        elif key == "last result":
+            try:
+                out["result"] = int(value, 0)
+            except ValueError:
+                out["result"] = None
+        elif key == "task to run":
+            count = re.search(r"--count\s+(\d+)", value)
+            channel = re.search(r"--channel\s+([A-Za-z0-9_-]+)", value)
+            out["count"] = int(count.group(1)) if count else None
+            out["channel"] = channel.group(1) if channel else ""
         elif key == "start time" and out["start"] is None:
             for fmt in _CLOCK_FORMATS:
                 try:
@@ -151,14 +170,97 @@ def missed_line(times: dict[str, Any], *, now: datetime) -> str:
     return ""
 
 
-def overnight_timing_line(*, now: datetime | None = None) -> str:
-    """`missed_line` for the installed task. `NIGHTLY_TASK_QUERY=false` (the suite) skips it."""
-    if os.getenv("NIGHTLY_TASK_QUERY", "true").strip().lower() in ("0", "false", "no", "off"):
+# #1216: what "Last Result" says about a run that did not finish. 2026-10-16: the task woke
+# with the PC at 4:30 PM, made one draft of three and died at 4:32 with 0xC0000374 (heap
+# corruption in ntdll.dll, no traceback in its log); the morning said "Overnight ran at 4:30 PM".
+_QUIET_RESULTS = frozenset({0, 0x41301, 0x41303})  # finished, running now, has not run yet
+_RESULT_WORDS = {
+    0xC0000374: "Python crashed: heap corruption",
+    0xC0000005: "Python crashed: access violation",
+    0xC00000FD: "Python crashed: stack overflow",
+    0xC000013A: "it was stopped with Ctrl+C",
+    0x41306: "it was ended - by hand, or at its 2-hour limit",
+}
+OVERNIGHT_LOG = os.path.join("output", "logs", "overnight-last.log")
+
+
+def result_words(code: int) -> str:
+    """A task's exit code in words, with the code."""
+    unsigned = int(code) & 0xFFFFFFFF
+    if unsigned in _RESULT_WORDS:
+        return f"{_RESULT_WORDS[unsigned]} (0x{unsigned:08X})"
+    if unsigned < 0x10000:
+        return f"it stopped on an error (exit {unsigned})"
+    return f"it stopped (0x{unsigned:08X})"
+
+
+def stopped_line(times: dict[str, Any], *, drafts_made: int | None) -> str:
+    """What the operator should know when the last run did not finish, else ""."""
+    code = times.get("result")
+    if code is None or (int(code) & 0xFFFFFFFF) in _QUIET_RESULTS:
         return ""
+    last = times.get("last")
+    count = int(times.get("count") or DEFAULT_COUNT)
+    channel = str(times.get("channel") or "")
+    started = f" at {_clock(last)} on {last:%b %d}" if last else ""
+    made = f" after {drafts_made} of {count} drafts" if drafts_made is not None else ""
+    again = "py -m scripts.ops overnight" + (f" --channel {channel}" if channel else "")
+    return (
+        f"Overnight started{started} and stopped{made} - {result_words(code)}. "
+        f"Its output: {OVERNIGHT_LOG}. Run it again: {again} --count {count}"
+    )
+
+
+def _queried_times() -> dict[str, Any] | None:
+    """`task_times` of the installed task. `NIGHTLY_TASK_QUERY=false` (the suite) skips it."""
+    if os.getenv("NIGHTLY_TASK_QUERY", "true").strip().lower() in ("0", "false", "no", "off"):
+        return None
     code, out = run_schtasks(query_verbose_argv())
     if code != 0 or not out:
+        return None
+    return task_times(out)
+
+
+def overnight_timing_line(*, now: datetime | None = None) -> str:
+    """`missed_line` for the installed task. `NIGHTLY_TASK_QUERY=false` (the suite) skips it."""
+    times = _queried_times()
+    return missed_line(times, now=now or datetime.now()) if times else ""
+
+
+def overnight_stop_line(*, root: str | None = None) -> str:
+    """`stopped_line` for the installed task (#1216), the drafts counted since its last start."""
+    times = _queried_times()
+    if not times:
         return ""
-    return missed_line(task_times(out), now=now or datetime.now())
+    made = None
+    last = times.get("last")
+    if last is not None and times.get("channel"):
+        try:
+            from core.batch_review import drafts_made_since
+
+            made = drafts_made_since(str(times["channel"]), last, root=root)
+        except Exception as exc:
+            logger.debug("overnight drafts uncounted: %s", exc)
+    return stopped_line(times, drafts_made=made)
+
+
+def enable_crash_traceback(stream: Any = None) -> bool:
+    """#1216: Python's own traceback, every thread, when the process dies in native code. The
+    2026-10-16 overnight died with 0xC0000374 and its log ended at a warning. ``stream`` is
+    stderr by default - the task already sends stderr to its log. False when there is nowhere
+    to write (`pythonw` has no stderr)."""
+    import faulthandler
+
+    target = stream if stream is not None else sys.stderr
+    if target is None:
+        return False
+    try:
+        target.fileno()
+        faulthandler.enable(file=target, all_threads=True)
+    except (AttributeError, OSError, ValueError, RuntimeError) as exc:
+        logger.debug("crash traceback not enabled: %s", exc)
+        return False
+    return True
 
 
 def wake_lines() -> list[str]:

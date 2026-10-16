@@ -49,6 +49,17 @@ QUALITY_VERSION = "v4"  # v2: Pillar 3 keys (tier/conflict counts, claim support
 # moved, so GRADE_VERSION stays v4.
 
 
+def run_fact_count(features: dict[str, Any] | None) -> int:
+    """#1217: the facts a run was written from - `fact_lines`, or for a run recorded before
+    it, `key_facts_count` (the pasted facts, all that was stored then)."""
+    row = features or {}
+    for key in ("fact_lines", "key_facts_count"):
+        val = row.get(key)
+        if isinstance(val, int) and not isinstance(val, bool):
+            return val
+    return 0
+
+
 def authenticity_gate_value(quality: dict[str, Any] | None) -> float | None:
     """The binary 40/35/25 authenticity sum, across the v3/v4 boundary.
 
@@ -152,7 +163,7 @@ def build_quality(
         auth = evaluate_authenticity(
             script,
             channel_id,
-            fact_count=int(features.get("key_facts_count") or 0),
+            fact_count=run_fact_count(features),  # #1217
             exclude_run_id=exclude_run_id,
             # #823: the backfill pins an as-of window here so a historical run
             # is never compared against runs that postdate it. None (every live

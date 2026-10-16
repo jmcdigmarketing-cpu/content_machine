@@ -931,15 +931,43 @@ def overnight_rendered_lines(
 
 
 def _timing_lines() -> list[str]:
-    """#1167: the task ran late, or not at all."""
-    try:
-        from core.nightly_task import overnight_timing_line
+    """#1167: the task ran late, or not at all; #1216: it stopped before it finished."""
+    from core import nightly_task
 
-        line = overnight_timing_line()
-    except Exception as exc:
-        logger.debug("overnight timing unreadable: %s", exc)
-        line = ""
-    return [f"  {line}"] if line else []
+    lines: list[str] = []
+    for read in (nightly_task.overnight_timing_line, nightly_task.overnight_stop_line):
+        try:
+            line = read()
+        except Exception as exc:
+            logger.debug("overnight timing unreadable: %s", exc)
+            line = ""
+        if line:
+            lines.append(f"  {line}")
+    return lines
+
+
+def drafts_made_since(channel_id: str, since: datetime, *, root: str | None = None) -> int:
+    """#1216: drafts written since ``since`` (local time) - how far a stopped run got."""
+    if root is None:
+        from core.batch_generation import _drafts_dir
+
+        root = _drafts_dir(channel_id)
+    try:
+        names = os.listdir(root)
+    except OSError:
+        return 0
+    made = 0
+    for name in names:
+        try:
+            with open(os.path.join(root, name, "meta.json"), encoding="utf-8") as f:
+                when = datetime.fromisoformat(str(json.load(f).get("created_at")))
+        except (OSError, ValueError, TypeError, AttributeError):
+            continue
+        if when.tzinfo:
+            when = when.astimezone().replace(tzinfo=None)
+        if when >= since:
+            made += 1
+    return made
 
 
 def unattended_plan_lines(channel_id: str, *, root: str | None = None) -> list[str]:

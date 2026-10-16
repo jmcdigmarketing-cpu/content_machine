@@ -120,7 +120,8 @@ says "1 upload overdue" when one has.
 YouTube it is scheduled on both through Buffer - one a day per platform, the AI label on.
 Setting it up once (the Buffer key, the R2 bucket keys, the channel ids) is in
 [platform_publish_setup.md](platform_publish_setup.md); `py -m scripts.ops crosspost status`
-shows each video on each platform, `crosspost cancel --run-id N` takes one back. A video you
+shows each video on each platform, `crosspost cancel --run-id N` takes one back, and
+`crosspost buffer-check` tries the whole path once with a Buffer draft it deletes. A video you
 posted by hand in Buffer is found and left on that platform; `crosspost done --run-id N` says so
 for both.
 
@@ -148,6 +149,9 @@ then walks the waiting drafts for a yes or no each. When the YouTube sign-in has
 When uploads are queued and the upload task is not installed it asks "Send the N queued uploads
 now?". `ops all` ends with the same morning (decision §56). Run from a scheduled task or a pipe
 it skips the draft review and says so. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
+Each reason is specific: "authenticity check says review (no take found)", "drafted from the
+arc counter" (a draft written from "week 4"), "its title breaks a name" - and the review screen
+names the failing check beside the verdict.
 
 **Where are the overnight videos?** `py main.py`, then **6) Overnight videos and drafts**: each
 video of the last week with the full path of its mp4 (open it from File Explorer), its YouTube

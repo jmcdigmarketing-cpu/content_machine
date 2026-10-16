@@ -3354,20 +3354,21 @@ for _batch_name, (_batch_help, _steps, _stop) in BATCHES.items():
 
 @_register(
     "crosspost",
-    "TikTok + Instagram through Buffer: [channels | send | status | cancel | selftest | list | "
-    "done] (#968, #1188)",
+    "TikTok + Instagram through Buffer: [channels | send | status | cancel | selftest | "
+    "buffer-check | list | done] (#968, #1188, #1214)",
 )
 def cmd_crosspost(args: argparse.Namespace) -> int:
     """`ops crosspost` packs the newest rendered videos for Buffer's app; `channels`,
     `send`, `status`, `cancel --run-id N` and `selftest` go through Buffer's API (#1188);
-    `list`; `done --run-id N` marks a hand-posted one."""
+    `buffer-check` makes and deletes one Buffer draft (#1214); `list`; `done --run-id N` marks
+    a hand-posted one."""
     from config.channels import resolve_channel_id
     from publishing import crosspost
 
     channel = resolve_channel_id(getattr(args, "channel", None))
     action = str(getattr(args, "target", "") or "").strip().lower()
     apply = bool(getattr(args, "apply", False))
-    if action in ("channels", "send", "status", "cancel", "selftest"):
+    if action in ("channels", "send", "status", "cancel", "selftest", "buffer-check"):
         return _crosspost_api(action, channel, args, apply=apply)
     if action == "list":
         print("\n".join(crosspost.waiting_lines(channel)))
@@ -3404,6 +3405,10 @@ def _crosspost_api(action: str, channel: str, args: argparse.Namespace, *, apply
     """The Buffer API verbs of `ops crosspost` (#1187-#1189)."""
     from publishing import buffer_api, crosspost, video_host
 
+    if action == "buffer-check":  # #1214
+        lines = crosspost.buffer_check(channel)
+        print("\n".join(lines))
+        return 0 if any(line.startswith("  ok:") for line in lines) else 1
     if action == "selftest":
         problem = video_host.self_test()
         print(f"R2 self-test - {problem or 'ok: put, link and delete worked'}")

@@ -7655,3 +7655,47 @@ empty. mypy and the suite count go in the slot after they are measured.
 
 Closed **#1184 #1209 #1208 #456 #392**. Next **#1215 #514 #418 #463 #545**.
 
+## 2026-10-15 — waves 93-94 (Claude Code): why clean drafts waited, and the Buffer check
+
+**Prompt:** "nextb 5". Cursor's roadmap five (#1208 #1184 #1209 #456 #392) stay Cursor's; these
+are what today's runs showed. Cursor left #1210-#1214 to me and filed #1215.
+
+### Step 0
+
+Local `main` was 9 commits ahead of origin (Cursor's five, my wave 92, Cursor's initiative and
+its next-five). Committed HEAD in a clean worktree: 5889 tests, forward and reversed, pass.
+Pushed `ecd2327..1bf7c72`.
+
+### Shipped (one commit for both waves - their hunks share `core/batch_review.py`)
+
+1. **#1210** the insight check reads the stance a script takes. Re-scored the waiting drafts
+   (the fact count each stored): 144, 145, 149, 151, 152, 155 went to ok (151 from block); 150,
+   135, 115 stay at review.
+2. **#1211** an arc-counter draft (run 153) and a stored title that breaks a name (run 149)
+   wait for a person.
+3. **#1212** a reaction-shaped angle loses 25 points when no signal carried audience text
+   (run 154's "Fans react to GTA 6 reveal...").
+4. **#1213** a draft stores which authenticity checks failed; the review and the gate say
+   "no take found" / "too few facts" / "too like a recent video".
+5. **#1214** `ops crosspost buffer-check`: one Buffer draft, made from the newest rendered video
+   at the public address, read back and deleted with the copy.
+
+Tonight's plan before: render run 153 (the "week four" script). After: run 155, Titans at Colts,
+a clean preview for Oct 18; 153 and 149 wait with their reasons.
+
+### Not done
+
+The live Buffer check: `R2_PUBLIC_BASE_URL` is not set, so `buffer-check` says "waits on
+R2_PUBLIC_BASE_URL" and makes nothing. That one is the operator's (Cloudflare: the bucket ->
+Settings -> Public Development URL).
+
+### Audit
+
+`tests/test_insight_and_holds.py` (8): **6 of 8 failed or errored on a worktree at `1bf7c72`**;
+the 2 that passed guard what must not change (a recap stays a recap; a week the operator typed
+is not held). `tests/test_reactions_and_checks.py` (10): **9 of 10 failed or errored on
+`abd8ecf`**; the one that passed is the non-reaction angle left alone. Corpus +5. Cursor's
+`test_happy_path_saves_draft_and_meta` failure in its slot was my half-written
+`batch_generation` (a missing `Any` import, swallowed); fixed before this commit. Suite 5914, forward and reversed.
+
+Closed **#1210-#1214**. Claude has nothing claimed.

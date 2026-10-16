@@ -95,6 +95,10 @@ Set up once:
 3. `py -m scripts.ops crosspost selftest` (puts 1 KB in the bucket, reads it back from the
    public address the way Buffer does, deletes it), then `py -m scripts.ops crosspost channels
    --apply` (keeps the TikTok and Instagram channel ids).
+4. `py -m scripts.ops crosspost buffer-check` once (#1214): the newest rendered video goes to the
+   public address, Buffer makes a TikTok **draft** from it (nothing is published), reads it back,
+   and the draft and the copy are deleted. `ok:` means Buffer can read the bucket; a refusal is
+   printed in Buffer's words.
 
 Then: `go-public --apply` schedules it on both, and so does the worker when an upload goes out
 public; `ops morning` (`crosspost-send`) and the overnight run read back what Buffer did and send

@@ -3946,6 +3946,80 @@
         "equals": "nba"
       },
       "why": "the keyword list is unchanged; only a tagged feed overrides it"
+    },
+    {
+      "id": "run151-my-call-is-a-take",
+      "item": 1210,
+      "source": "run 151 (2026-10-14): authenticity 'block' - no opinion beat found",
+      "call": "core.authenticity:has_insight",
+      "args": [
+        "Wembanyama is +200 for MVP - no first-time MVP priced this short has ever won. That's the trap. Here's my call anyway. I'm taking the double."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "clean drafts sat at review and overnight rendered none"
+    },
+    {
+      "id": "run152-what-people-miss-is-a-take",
+      "item": 1210,
+      "source": "run 152 (2026-10-14): 'That's the mechanism people miss'",
+      "call": "core.authenticity:has_insight",
+      "args": [
+        "Cleveland isn't clean either. That's the mechanism people miss: this game isn't decided by who's better on paper."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "an analysis frame read as a neutral recap"
+    },
+    {
+      "id": "a-recap-is-still-a-recap",
+      "item": 1210,
+      "source": "must keep: a plain recap carries no take",
+      "call": "core.authenticity:has_insight",
+      "args": [
+        "The Chiefs beat the Bills 24-20 on Sunday. Patrick Mahomes threw two touchdowns. The defense held on the final drive."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the gate would mean nothing if every script passed"
+    },
+    {
+      "id": "run154-fans-react-with-no-audience",
+      "item": 1212,
+      "source": "run 154 (2026-10-15): 'Fans react to GTA 6 reveal with cautious optimism and hype'",
+      "call": "core.pipeline:reaction_penalty",
+      "args": [
+        "Fans react to GTA 6 reveal with cautious optimism and hype",
+        {
+          "youtube_comments": {
+            "active": false
+          },
+          "rss": {
+            "active": true
+          }
+        }
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the angle was picked with no reaction in its facts; the title was flagged"
+    },
+    {
+      "id": "a-plain-angle-is-not-a-reaction",
+      "item": 1212,
+      "source": "must keep: an angle that is not about reactions is never scored down",
+      "call": "core.pipeline:reaction_penalty",
+      "args": [
+        "GTA 6 trailer: five details in the mission shots",
+        {}
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "most angles carry no audience text either"
     }
   ]
 }

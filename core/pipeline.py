@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -296,6 +297,30 @@ def chosen_variant(
     return evaluated[index]
 
 
+# #1212: an angle about what fans said. Run 154 took "Fans react to GTA 6 reveal with cautious
+# optimism and hype" with no reaction anywhere in its facts; the title was flagged and the draft
+# waits. Such an angle stands only when a signal carried audience text.
+_REACTION_RE = re.compile(
+    r"\b(?:fans?|the internet|viewers|players|people|gamers|reddit|twitter)\s+"
+    r"(?:react(?:s|ed|ing)?|are reacting|are divided|are split|erupt(?:s|ed)?|melt(?:s|ed)? down)\b"
+    r"|\breactions?\s+(?:to|from)\b",
+    re.I,
+)
+_AUDIENCE_SIGNALS = ("youtube_comments", "reddit", "twitter")
+_REACTION_PENALTY = 25.0
+
+
+def reaction_penalty(variant: str, signals: dict[str, Any] | None) -> float:
+    """Points off a reaction-shaped angle when no signal carried audience text, else 0."""
+    if not _REACTION_RE.search(variant or ""):
+        return 0.0
+    for name in _AUDIENCE_SIGNALS:
+        sig = (signals or {}).get(name)
+        if isinstance(sig, dict) and sig.get("active"):
+            return 0.0
+    return _REACTION_PENALTY
+
+
 def _score_variant(
     variant: str,
     channel_id: str,
@@ -309,10 +334,12 @@ def _score_variant(
     score = composite_score(variant_signals, variant, channel_id)
     # Candidate 323: same number without the 0-100 clamp, for tie-breaking only.
     raw = composite_score_raw(variant_signals, variant, channel_id)
+    penalty = reaction_penalty(variant, base_signals)  # #1212
     if seed_topic:
-        penalty = anchor_preservation_penalty(variant, seed_topic) + mcu_drift_penalty(
+        penalty += anchor_preservation_penalty(variant, seed_topic) + mcu_drift_penalty(
             variant, seed_topic
         )
+    if penalty:
         score = max(0.0, score - penalty)
         raw = raw - penalty
     return variant, score, variant_signals, raw
@@ -339,10 +366,12 @@ def _seed_score_variant(
         raw = float(composite_score_raw(base_signals, variant, channel_id))
     except Exception:
         raw = score
+    penalty = reaction_penalty(variant, base_signals)  # #1212
     if seed_topic:
-        penalty = anchor_preservation_penalty(variant, seed_topic) + mcu_drift_penalty(
+        penalty += anchor_preservation_penalty(variant, seed_topic) + mcu_drift_penalty(
             variant, seed_topic
         )
+    if penalty:
         score = max(0.0, score - penalty)
         raw = raw - penalty
     return variant, score, dict(base_signals), raw

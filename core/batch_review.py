@@ -331,6 +331,8 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     print_fn(
         f"    hook {hook if hook is not None else 'n/a'} ({meta.get('hook_verdict') or 'n/a'})"
         f" - authenticity {meta.get('authenticity_verdict') or 'n/a'}"
+        + (f" ({authenticity_reasons(meta)})" if authenticity_reasons(meta) else "")
+        + ""
         f" - {len(draft.script.split())} words"
     )
     voice = _projected_voice(draft)
@@ -633,6 +635,41 @@ def game_block_reason(meta: dict[str, Any], *, now: datetime | None = None) -> s
     return ""
 
 
+_CHECK_WORDS = {
+    "original_insight": "no take found",
+    "substance": "too few facts",
+    "variation": "too like a recent video",
+}
+
+
+def authenticity_reasons(meta: dict[str, Any]) -> str:
+    """#1213: which authenticity checks failed, in words; "" for a draft from before."""
+    failed = meta.get("authenticity_failed") or []
+    return ", ".join(_CHECK_WORDS.get(str(name), str(name)) for name in failed)
+
+
+def arc_counter_reason(meta: dict[str, Any]) -> str:
+    """#1211: a draft written from an arc seed that still carried the arc's counter ("Shavkat
+    Rakhmonov week 4", before #1205) - its script reads the counter as the subject's. "" else."""
+    from core.topic_graph import _WEEK_RE
+
+    topic = str(meta.get("topic") or "")
+    found = _WEEK_RE.search(topic)
+    if not found:
+        return ""
+    try:
+        from core.run_features import load_features
+
+        offered = (load_features(int(meta.get("run_id") or 0)).get("best_bet") or {}).get(
+            "offered"
+        ) or []
+    except Exception:
+        offered = []
+    if any(o.get("source") == "arc" and o.get("topic") == topic for o in offered):
+        return f'drafted from the arc counter "{found.group(0)}" (#1205)'
+    return ""
+
+
 def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None) -> str:
     """Why a draft must wait for a person, or "" when it may render unattended."""
     meta = draft.meta
@@ -642,7 +679,8 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
         return "a claim is not supported"
     verdict = str(meta.get("authenticity_verdict") or "ok").strip().lower()
     if verdict != "ok":
-        return f"authenticity check says {verdict}"
+        why = authenticity_reasons(meta)
+        return f"authenticity check says {verdict}" + (f" ({why})" if why else "")
     if meta.get("fact_conflicts"):
         return "its facts conflict"
     if meta.get("ungrounded_entities"):
@@ -658,7 +696,14 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
     game = game_block_reason(meta, now=now)
     if game:
         return game
-    from core.title_generator import title_label
+    arc = arc_counter_reason(meta)
+    if arc:
+        return arc
+    from core.title_generator import broken_place_name, title_label
+
+    broken = broken_place_name(draft.title)
+    if broken:  # #1211: a title written before #1181's check
+        return f'its title breaks a name ("{broken}")'
 
     label = title_label(draft.title)
     if label:

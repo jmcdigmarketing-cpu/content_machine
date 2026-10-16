@@ -138,6 +138,25 @@ _INSIGHT_MARKERS = (
     "will likely",
     "my bet",
 )
+# #1210: the stance a script takes in its own words. The list above is phrases; the drafts of
+# 2026-10-14/15 made their calls without any of them - "Here's my call anyway. I'm taking the
+# double" (run 151), "Now here's the part that actually matters" (149), "That's the mechanism
+# people miss" (152) - and all sat at "review" as neutral recaps, so overnight rendered none.
+# A first-person call, or a frame that says what others get wrong. None may match a phrase
+# `persona_lint` or the script prompt bans (tests/test_insight_and_holds.py holds that).
+_STANCE_PATTERNS = (
+    re.compile(r"\bi'?m (?:taking|picking|calling|going with|backing|betting on)\b"),
+    re.compile(r"\bmy (?:call|pick|money is on)\b"),
+    re.compile(
+        r"\bi have (?:him|her|them|it) (?:first|second|third|fourth|fifth|top|last|winning|losing)\b"
+    ),
+    re.compile(r"\bi'?ll say it\b"),
+    re.compile(r"\bhere'?s the part (?:that|fans|people|nobody|everyone)\b"),
+    re.compile(r"\b(?:people|fans|everyone|most people) (?:keep )?miss(?:es|ing)?\b"),
+    re.compile(r"\bknow the difference\b"),
+    re.compile(r"\bthe smart (?:bet|money|play)\b"),
+)
+
 # Deliberately absent: "hot take". `title_generator` bans "my hot take" as slop
 # and instructs the model `No "My Hot Take" framing`; the angle prompt bans it
 # too. Rewarding it here paid 35 of 100 for the exact phrasing two other
@@ -409,8 +428,10 @@ def _variation_check(
 
 
 def _insight_check(script: str) -> AuthenticityCheck:
-    norm = _normalise(script)
+    norm = _normalise(script).replace("\u2019", "'")
     found = [m for m in _INSIGHT_MARKERS if m in norm]
+    if not found:  # #1210
+        found = [hit.group(0) for p in _STANCE_PATTERNS if (hit := p.search(norm))]
     ents: list[str] = []
     try:
         from core.facts.grounding import specific_entities

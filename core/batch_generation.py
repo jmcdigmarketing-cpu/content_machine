@@ -28,6 +28,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from core.logging import get_logger
 
@@ -44,6 +45,7 @@ class DraftOutcome:
     hook_score: int | None = None
     hook_verdict: str = ""
     authenticity_verdict: str = ""
+    authenticity_failed: list[str] = field(default_factory=list)  # #1213
     experiment_arm: str = ""
     ungrounded: list[str] = field(default_factory=list)
     unsupported_claims: int = 0
@@ -146,6 +148,16 @@ def _length_choice(channel_id: str, topic: str) -> str:
         return get_recommended_length(channel_id, topic).length_choice
     except Exception:
         return "2"
+
+
+def authenticity_fields(report: Any) -> dict[str, Any]:
+    """#1213: the verdict and the checks that failed it, for the draft record."""
+    return {
+        "authenticity_verdict": str(report.verdict),
+        "authenticity_failed": [
+            c.name for c in (getattr(report, "checks", None) or []) if not c.passed
+        ],
+    }
 
 
 def generate_draft(
@@ -280,9 +292,13 @@ def generate_draft(
     try:
         from core.authenticity import evaluate_authenticity
 
-        out.authenticity_verdict = evaluate_authenticity(
-            result.script, channel_id, fact_count=fact_count, exclude_run_id=result.run_id
-        ).verdict
+        fields = authenticity_fields(
+            evaluate_authenticity(
+                result.script, channel_id, fact_count=fact_count, exclude_run_id=result.run_id
+            )
+        )
+        out.authenticity_verdict = fields["authenticity_verdict"]
+        out.authenticity_failed = fields["authenticity_failed"]
     except Exception as exc:
         logger.debug("evaluate_authenticity skipped: %s", exc)
     out.ungrounded = list(result.features.get("ungrounded_entities") or [])
@@ -324,6 +340,7 @@ def generate_draft(
         "hook_score": out.hook_score,
         "hook_verdict": out.hook_verdict,
         "authenticity_verdict": out.authenticity_verdict,
+        "authenticity_failed": list(out.authenticity_failed),
         "script_clean": result.features.get("script_clean"),  # #1143
         # #1150: run 139's title was flagged and overnight rendered it - the flag stopped here.
         "title_warnings": list(result.features.get("title_warnings") or []),

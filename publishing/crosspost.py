@@ -930,6 +930,65 @@ def run_state_line(channel_id: str, run_id: int) -> str:
     return ("TikTok / Instagram: " + ", ".join(bits)) if bits else ""
 
 
+def buffer_check(channel_id: str) -> list[str]:
+    """#1214: the whole path once, publishing nothing - the newest rendered video put at its
+    public address, a TikTok **draft** made from it (AI label on), read back, then the draft and
+    the copy deleted. The one live attempt (2026-10-15) found Buffer cannot read a presigned
+    link (#1207); this is how the operator sees the fix work before a real post."""
+    from publishing import buffer_api, video_host
+
+    missing = setup_missing(channel_id)
+    if missing:
+        return [f"Buffer check - {channel_id}: waits on " + ", ".join(missing)]
+    run = next(
+        (
+            r
+            for r in _rendered_runs(channel_id)
+            if os.path.isfile(str(getattr(r, "mp4_path", "") or ""))
+        ),
+        None,
+    )
+    if run is None:
+        return [f"Buffer check - {channel_id}: no rendered video on disk to try"]
+    tiktok = buffer_channel_ids(channel_id).get("tiktok") or next(
+        iter(buffer_channel_ids(channel_id).values())
+    )
+    key = video_host.object_key(channel_id, int(run.id), str(run.mp4_path))
+    lines = [f"Buffer check - {channel_id}: run {run.id}, as a draft (nothing is published)"]
+    post_id = ""
+    try:
+        url = video_host.host(str(run.mp4_path), key)
+        lines.append(f"  hosted: {video_host.safe_url(url)}")
+        post = buffer_api.create_video_post(
+            tiktok,
+            text="Content OS check - a draft, deleted right after.",
+            video_url=url,
+            due_at=datetime.now(timezone.utc) + timedelta(days=3),
+            service="tiktok",
+            thumbnail_ms=_thumbnail_ms(channel_id),
+            draft=True,
+        )
+        post_id = str(post.get("id") or "")
+        back = buffer_api.get_post(post_id)
+        lines.append(f"  ok: Buffer made draft {post_id} and reads it back ({back.get('status')})")
+    except buffer_api.BufferError as exc:
+        lines.append(f"  ! Buffer refused it: {exc.message}")
+    except Exception as exc:
+        lines.append(f"  ! the check stopped: {type(exc).__name__}: {str(exc)[:160]}")
+    finally:
+        if post_id:
+            try:
+                buffer_api.delete_post(post_id)
+                lines.append("  draft deleted")
+            except Exception as exc:
+                lines.append(
+                    f"  ! the draft was not deleted ({type(exc).__name__}) - delete it in Buffer"
+                )
+        if video_host.remove(key):
+            lines.append("  hosted copy removed")
+    return lines
+
+
 def step(channel_id: str) -> list[str]:
     """The automatic round (`ops morning`, overnight, go-public): read back, then send. []
     when switched off or Buffer is not set up at all."""

@@ -7,6 +7,35 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-15 (Cursor): the five left from 10-10
+
+A YouTube 500, and a 404 from every competitor channel, was reported as a dead UC id, and the
+sync then spent 3 Data API units per channel (#1121, #1125). The probe now keeps the HTTP
+status. When every channel returns 404 or 5xx, `ops competitor-health` prints one "channel
+feed is down" line and `sync_competitors` records `feed_down` and makes no Data API call. A
+200 with no videos is still a dead id. One 404 beside a 200 is still that id.
+
+Log lines written after `record_content_run` include `run=<id>` and still contain ` [WARNING] `
+(#462). The id does not exist before that, so discovery lines stay unbound. This interpreter's
+pool does not copy context; discovery submits through `submit_in_run`.
+
+`config/brand_safety/tapin.txt` drops a sentence containing "guaranteed profit", "deposit bonus"
+or "risk-free bet" (#409). "fan favorite" and "lock it in" stay. A one-word line is not a phrase.
+A channel with no file is unchanged.
+
+A 429 cooldown is half to one-and-a-half of 900s, so two signals that trip together do not share
+a wake time (#388). `youtube`, `youtube_comments` and `youtube_competitors` share one host cap
+(`DISCOVERY_HOST_CONCURRENCY`, default 2). Trip statuses and the Apify breaker are unchanged.
+
+After the sentence concat, leading and trailing silence are removed and an internal gap longer
+than 0.4s shrinks to 0.15s (#404). Word timings move by the seconds removed. Missing ffmpeg
+leaves the file unchanged and logs nothing at warning.
+
+**Next:** #1195-#1199, one video on three feeds. New tests errored on import before the functions
+existed. Re-run: 5861 passed. Claude's untracked `tests/test_arc_and_titles.py` is wave 92
+and is not in this commit. mypy 96, corpus 250. Live: `ops competitor-health --channel tapin`
+printed Marques Brownlee, 4 recent via rss.
+
 ## Previous — 2026-10-15 (Claude Code): waves 91-92, TikTok/Instagram and the morning
 
 **Wave 91.** A video posted by hand in Buffer is found and left on that platform (#1200, §57 -

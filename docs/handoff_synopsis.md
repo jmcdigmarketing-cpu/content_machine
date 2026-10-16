@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-15: five defects
+# Handoff synopsis — 2026-10-15: why clean drafts waited, and the Buffer check (waves 93-94)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,23 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-15 (Cursor): five defects (#1184, #1209, #1208, #456, #392)
+## Last wave — 2026-10-15 (Claude Code): waves 93-94, why clean drafts waited
+
+**Wave 93.** The authenticity check read clean drafts as neutral recaps - "Here's my call anyway.
+I'm taking the double" did not count as a take - so overnight rendered none of them. A
+first-person call or a "what people miss" frame counts now (#1210); six waiting drafts went to
+ok. A draft from the arc counter (run 153, "week four") and a title that breaks a name (run 149)
+wait for a person (#1211). Tonight renders run 155, the Titans-Colts preview.
+
+**Wave 94.** A "fans react" angle loses points when nothing carried reactions (#1212, run 154).
+The review names the failing check - "no take found", "too few facts" (#1213). `ops crosspost
+buffer-check` tries Buffer end to end with a draft it deletes (#1214); it waits on
+`R2_PUBLIC_BASE_URL`.
+
+**Still the operator's:** `R2_PUBLIC_BASE_URL` (public access on the bucket) and `.env` lines
+34 and 36 (unparsed); the consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5914, forward and reversed.
+
+## Previous — 2026-10-15 (Cursor): five defects (#1184, #1209, #1208, #456, #392)
 
 An open correction was written again the next day. The second scan now leaves the file
 and returns nothing, so the overnight warning does not fire again. A closed note still
@@ -43,35 +59,6 @@ the request count near 250 a day. The count is this process (#1199, #1209).
 **Next:** #1208 #1184 #1209 #456 #392. New tests errored on import before the functions existed.
 Suite 5889 passed (10 skipped). A ufc run titled hello was stored as gaming until the row
 read `run_domain` (`4c54ecf`).
-
-## Previous — 2026-10-15 (Cursor): the five left from 10-10
-
-A YouTube 500, and a 404 from every competitor channel, was reported as a dead UC id, and the
-sync then spent 3 Data API units per channel (#1121, #1125). The probe now keeps the HTTP
-status. When every channel returns 404 or 5xx, `ops competitor-health` prints one "channel
-feed is down" line and `sync_competitors` records `feed_down` and makes no Data API call. A
-200 with no videos is still a dead id. One 404 beside a 200 is still that id.
-
-Log lines written after `record_content_run` include `run=<id>` and still contain ` [WARNING] `
-(#462). The id does not exist before that, so discovery lines stay unbound. This interpreter's
-pool does not copy context; discovery submits through `submit_in_run`.
-
-`config/brand_safety/tapin.txt` drops a sentence containing "guaranteed profit", "deposit bonus"
-or "risk-free bet" (#409). "fan favorite" and "lock it in" stay. A one-word line is not a phrase.
-A channel with no file is unchanged.
-
-A 429 cooldown is half to one-and-a-half of 900s, so two signals that trip together do not share
-a wake time (#388). `youtube`, `youtube_comments` and `youtube_competitors` share one host cap
-(`DISCOVERY_HOST_CONCURRENCY`, default 2). Trip statuses and the Apify breaker are unchanged.
-
-After the sentence concat, leading and trailing silence are removed and an internal gap longer
-than 0.4s shrinks to 0.15s (#404). Word timings move by the seconds removed. Missing ffmpeg
-leaves the file unchanged and logs nothing at warning.
-
-**Next:** #1195-#1199, one video on three feeds. New tests errored on import before the functions
-existed. Re-run: 5861 passed. Claude's untracked `tests/test_arc_and_titles.py` is wave 92
-and is not in this commit. mypy 96, corpus 250. Live: `ops competitor-health --channel tapin`
-printed Marques Brownlee, 4 recent via rss.
 
 ## Pipeline order (operator)
 

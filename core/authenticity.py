@@ -388,11 +388,10 @@ def scripts_within(rows: list[tuple[str, Any]], *, now: datetime, days: int = 7)
         body = str(text or "").strip()
         if not body:
             continue
-        if isinstance(at, datetime):
-            moment = at if at.tzinfo else at.replace(tzinfo=timezone.utc)
-            if moment < cutoff:
-                continue
-        elif at is not None:
+        if not isinstance(at, datetime):
+            continue  # #1261: a run with no timestamp is not "this week"
+        moment = at if at.tzinfo else at.replace(tzinfo=timezone.utc)
+        if moment < cutoff:
             continue
         kept.append(body)
     return kept
@@ -409,7 +408,7 @@ def scripts_this_week(channel_id: str, *, now: datetime | None = None) -> list[s
         logger.debug("opening week unreadable: %s", exc)
         return []
     rows: list[tuple[str, Any]] = []
-    for run in runs[:13]:
+    for run in runs:
         text = (getattr(run, "script_preview", "") or "").strip()
         if text:
             rows.append((text, getattr(run, "created_at", None)))

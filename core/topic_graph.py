@@ -114,6 +114,26 @@ def arc_series_name(last_topic: str, family: str) -> str:
     return base or label
 
 
+def arc_offer(last_topic: str, family: str, ordinal: int = 1) -> str:
+    """The follow-up topic, or "" when it would repeat `last_topic` and no next angle exists.
+
+    #1259: "continue UFC Illia Islam (UFC arc, video 4 → 5)" was the last topic again.
+    """
+    topic = next_arc_topic(last_topic, ordinal, family)
+    if not topic.strip():
+        return ""
+    if topic.strip().lower() != (last_topic or "").strip().lower():
+        return topic
+    from apis.topic_variants import frames_for
+
+    frames = [
+        frame
+        for frame in (frames_for(last_topic, "") or [])
+        if frame.strip().lower() != last_topic.strip().lower()
+    ]
+    return frames[0] if frames else ""
+
+
 def next_arc_topic(last_topic: str, ordinal: int, family: str) -> str:
     """The arc's next topic: what it is about, without the arc's counter (#1205).
 
@@ -216,7 +236,7 @@ def follow_up_seed(channel_id: str):
     except (TypeError, ValueError):
         ordinal = 1
     last_topic = str(row.get("last_topic") or "")
-    topic = next_arc_topic(last_topic, ordinal, family)
+    topic = arc_offer(last_topic, family, ordinal)
     if not topic.strip():
         return None
     return BestBetResult(

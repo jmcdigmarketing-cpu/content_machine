@@ -2201,7 +2201,7 @@ def display_upload_queue(channel_id: str | None = None, *, print_fn=emit) -> Non
 
 def prompt_startup_mode(*, print_fn=emit, input_fn=ask_text) -> str:
     """new_video | queue_manager | intelligence_report | sync_analytics | idea_intake |
-    overnight_review"""
+    overnight_review | watch_publish"""
     from core.intelligence_report import intelligence_mode_enabled
 
     if intelligence_mode_enabled():
@@ -2215,9 +2215,10 @@ def prompt_startup_mode(*, print_fn=emit, input_fn=ask_text) -> str:
     print_fn("  5) Make a video from my own idea (paste idea or a YouTube link)")
     # #1192 (operator, 2026-10-14: "i dont know how to see or access overnight uploads")
     print_fn("  6) Overnight videos and drafts - each file, its YouTube link, then the drafts")
+    print_fn("  7) Watch and publish - each unlisted video, then now / keep / set aside")
     from core.console_input import menu_line
 
-    choice = menu_line("  Select 1-6 [1]: ", input_fn, print_fn=print_fn).strip() or "1"
+    choice = menu_line("  Select 1-7 [1]: ", input_fn, print_fn=print_fn).strip() or "1"
     if choice == "2":
         return "queue_manager"
     if choice == "3":
@@ -2228,6 +2229,8 @@ def prompt_startup_mode(*, print_fn=emit, input_fn=ask_text) -> str:
         return "idea_intake"
     if choice == "6":
         return "overnight_review"
+    if choice == "7":
+        return "watch_publish"
     return "new_video"
 
 

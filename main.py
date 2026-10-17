@@ -217,6 +217,9 @@ def main():
     if startup_mode == "overnight_review":
         _run_overnight_review(channel_id)
         return
+    if startup_mode == "watch_publish":
+        _run_watch_publish(channel_id)
+        return
     if startup_mode == "sync_analytics":
         from analytics.sync_metrics import sync_channel
 
@@ -234,6 +237,16 @@ def main():
         return
 
     _run_new_video_flow(channel_id)
+
+
+def _run_watch_publish(channel_id: str) -> None:
+    """#1248 / #449: one pass over unlisted renders. Nothing publishes without a choice."""
+    from core.ask import ask_text
+    from core.ui import section
+    from publishing.go_public import watch_and_publish
+
+    section("Watch and publish")
+    watch_and_publish(channel_id, ask=ask_text, print_fn=print)
 
 
 def _run_overnight_review(channel_id: str) -> None:

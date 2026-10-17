@@ -73,6 +73,26 @@ class OvernightResult:
     expired: int = 0
     # #1190: what went to TikTok and Instagram through Buffer.
     crosspost_line: str = ""
+    # #1253: how many drafts were already waiting, when that cut tonight's count.
+    draft_line: str = ""
+
+
+_DRAFT_WAIT_CAP = 8
+
+
+def draft_count(waiting: int, requested: int) -> tuple[int, str]:
+    """How many new drafts to write while `waiting` drafts have no decision.
+
+    At the cap of 8, a night that asked for 3 writes fewer. 22 waiting writes
+    none, and the line says so.
+    """
+    want = min(max(0, requested), max(0, _DRAFT_WAIT_CAP - max(0, waiting)))
+    if want < requested:
+        return (
+            want,
+            f"{waiting} drafts are waiting for a decision; drafting {want} not {requested}",
+        )
+    return want, ""
 
 
 def _sign_in_line(channel_id: str) -> str:
@@ -194,36 +214,8 @@ def _run_overnight_body(
     except Exception as exc:
         logger.debug("overnight quota gate skipped: %s", exc)
 
-    picks: dict[str, dict] = {}
-    picked = collect_topics(channel, topics, file, want, picks=picks)
-    result.requested = len(picked)
-    if not picked:
-        logger.warning("overnight: no topics (best bets unavailable) for %s", channel)
-        return result
-
-    key_facts = load_key_facts(facts_file) if facts_file else None
-    batch_kwargs: dict[str, Any] = {}
-    if key_facts:
-        batch_kwargs["key_facts"] = key_facts
-    if picks:
-        batch_kwargs["picks"] = picks  # #913: the best-bet ranks the batch took
-    # #1229: one child per draft. A native crash records its exit and the night goes on.
-    result.outcomes = draft_each(channel, picked, **batch_kwargs)
-    result.drafted = sum(1 for o in result.outcomes if getattr(o, "ok", False))
-
-    # Mirror each drafted run into the vault (Pillar 4). run_batch persists a
-    # content_run per draft, so dossiers can join grade/quality/cost by run_id.
-    try:
-        from core.vault.dossiers import write_run_dossier
-
-        for o in result.outcomes:
-            rid = getattr(o, "run_id", None)
-            if getattr(o, "ok", False) and rid and write_run_dossier(rid):
-                result.dossiers += 1
-    except Exception as exc:
-        logger.debug("overnight dossier step skipped: %s", exc)
-
     # #1168: drafts past twice their window leave the waiting count before anything renders.
+    # Wave 104: and before #1253's cap counts them - set aside tonight, they hold nothing back.
     try:
         from core.batch_review import expire_enabled, expire_old_drafts
 
@@ -231,6 +223,48 @@ def _run_overnight_body(
             result.expired = len(expire_old_drafts(channel))
     except Exception as exc:
         logger.debug("overnight draft expiry skipped: %s", exc)
+
+    try:
+        from core.batch_review import pending_drafts
+
+        want, draft_line = draft_count(len(pending_drafts(channel)), want)
+        result.draft_line = draft_line
+    except Exception as exc:
+        logger.warning("overnight draft queue unread: %s", exc)
+
+    picks: dict[str, dict] = {}
+    picked: list[str] = []
+    if want <= 0:
+        # Draft fewer while some wait (#1253). Expiry and the rest of the night still run.
+        result.requested = 0
+    else:
+        picked = collect_topics(channel, topics, file, want, picks=picks)
+        result.requested = len(picked)
+    if want > 0 and not picked:
+        logger.warning("overnight: no topics (best bets unavailable) for %s", channel)
+        return result
+    if picked:
+        key_facts = load_key_facts(facts_file) if facts_file else None
+        batch_kwargs: dict[str, Any] = {}
+        if key_facts:
+            batch_kwargs["key_facts"] = key_facts
+        if picks:
+            batch_kwargs["picks"] = picks  # #913: the best-bet ranks the batch took
+        # #1229: one child per draft. A native crash records its exit and the night goes on.
+        result.outcomes = draft_each(channel, picked, **batch_kwargs)
+        result.drafted = sum(1 for o in result.outcomes if getattr(o, "ok", False))
+
+        # Mirror each drafted run into the vault (Pillar 4). run_batch persists a
+        # content_run per draft, so dossiers can join grade/quality/cost by run_id.
+        try:
+            from core.vault.dossiers import write_run_dossier
+
+            for o in result.outcomes:
+                rid = getattr(o, "run_id", None)
+                if getattr(o, "ok", False) and rid and write_run_dossier(rid):
+                    result.dossiers += 1
+        except Exception as exc:
+            logger.debug("overnight dossier step skipped: %s", exc)
 
     # #1078 (operator, 2026-10-11): overnight may render. Only when the channel says how
     # many, only drafts nothing is flagged on, and every one is queued unlisted.
@@ -364,8 +398,12 @@ def render_overnight(result: OvernightResult) -> str:
         return "\n".join(lines)
     if result.quota_line:
         lines.append(f"Quota: {result.quota_line}")
+    if result.draft_line:
+        lines.append(result.draft_line)
     if not result.requested:
-        if result.quota_line:
+        if result.draft_line:
+            lines.append("Nothing drafted while those drafts wait for a decision.")
+        elif result.quota_line:
             lines.append("Overnight skipped (quota gate). Nothing drafted.")
         else:
             lines.append("No topics to draft (best bets unavailable). Nothing done.")

@@ -4666,6 +4666,113 @@
       "why": "the reason is the game, not the board"
     },
     {
+      "id": "dubois-weigh-in-is-boxing",
+      "item": 1258,
+      "source": "live list 2026-10-17: Daniel Dubois vs. Fabio Wardley 2 weigh-in, from MMA Fighting",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Daniel Dubois vs. Fabio Wardley 2 weigh-in"
+      ],
+      "expect": {
+        "equals": "boxing"
+      },
+      "why": "a weigh-in that names no league is boxing, not a neutral headline the feed can rename"
+    },
+    {
+      "id": "mma-feed-does-not-rename-boxing",
+      "item": 1258,
+      "source": "sibling: the MMA feed's single domain overwrote a boxing read to ufc",
+      "call": "core.best_bet:_domain_for_feed",
+      "args": [
+        "boxing",
+        [
+          "ufc",
+          "mma"
+        ]
+      ],
+      "expect": {
+        "equals": "boxing"
+      },
+      "why": "an MMA feed covers boxing and UFC; the words decide"
+    },
+    {
+      "id": "ufc-weigh-in-stays-ufc",
+      "item": 1258,
+      "source": "must keep: UFC 320 weigh-ins is the promotion, not a boxing card",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "UFC 320 weigh-ins"
+      ],
+      "expect": {
+        "equals": "ufc"
+      },
+      "why": "a weigh-in that says UFC stays UFC"
+    },
+    {
+      "id": "ballon-dor-says-its-date",
+      "item": 1260,
+      "source": "live list 2026-10-17: Ballon d'Or 2026 said on the board this week",
+      "call": "core.seasonal_calendar:award_line",
+      "args": [
+        "Ballon d'Or 2026"
+      ],
+      "expect": {
+        "equals": "Wed Oct 28"
+      },
+      "why": "an award idea says the date, the way a game says its kickoff"
+    },
+    {
+      "id": "ufc-follow-up-does-not-repeat",
+      "item": 1259,
+      "source": "live list 2026-10-17: continue UFC Illia Islam (UFC arc, video 4 to 5)",
+      "call": "core.topic_graph:arc_offer",
+      "args": [
+        "UFC Illia Islam",
+        "ufc",
+        4
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "the follow-up repeated the last topic; with no next angle it is not offered"
+    },
+    {
+      "id": "a-week-counter-still-moves-the-arc",
+      "item": 1259,
+      "source": "sibling: GTA 6 leak week 1 must still continue as the subject, not disappear",
+      "call": "core.topic_graph:arc_offer",
+      "args": [
+        "GTA 6 leak week 1",
+        "gta",
+        1
+      ],
+      "expect": {
+        "equals": "GTA 6 leak"
+      },
+      "why": "stripping the arc's own counter is still a different topic"
+    },
+    {
+      "id": "explain-word-count-is-not-a-timing",
+      "item": 1250,
+      "source": "a trace timings dict held word_count beside the phase seconds",
+      "call": "core.run_trace:explain_trace",
+      "args": [
+        {
+          "run_id": 158,
+          "status": "drafted",
+          "timings": {
+            "tts": 4.2,
+            "word_count": 160
+          }
+        }
+      ],
+      "expect": {
+        "contains": "Words: 160",
+        "not_contains": "word_count"
+      },
+      "why": "ops explain printed word_count 160 as if it were seconds"
+    },
+    {
       "id": "the-suite-refuses-the-operators-postgres",
       "item": 1247,
       "source": "2026-10-16: a bare unittest run wrote 133 fake rows into the real Postgres",
@@ -4696,6 +4803,70 @@
         "equals": ""
       },
       "why": "the guard is for network databases, not the suite's own files"
+    },
+    {
+      "id": "a-player-only-nba-topic-keeps-sports-signals-on-tapin",
+      "item": 1249,
+      "source": "wave 104 review: Cursor's #1249 gated a neutral topic to TapIn's primary domain, gaming - run 98 again",
+      "call": "apis.register_signals:_gated_signal_names",
+      "args": [
+        "Payton Pritchard signed a two-year extension",
+        "tapin"
+      ],
+      "expect": {
+        "excludes_any": [
+          "odds",
+          "sports",
+          "live_scores",
+          "api_sports"
+        ],
+        "includes_all": [
+          "fred",
+          "lastfm"
+        ]
+      },
+      "why": "a player-only story reads neutral; TapIn covers sports, so its sports signals run"
+    },
+    {
+      "id": "a-sentence-opening-verb-is-not-a-specific",
+      "item": 1266,
+      "source": "overnight 2026-10-17 12:09: 'Script names 1 specific(s) not in the facts: Give'",
+      "call": "core.facts.grounding:find_ungrounded_entities",
+      "args": [
+        "Give Buckley credit, he finishes fights.",
+        "Joaquin Buckley meets Mike Malott in Edmonton."
+      ],
+      "expect": {
+        "equals": []
+      },
+      "why": "an imperative that opens a sentence is not a name to verify"
+    },
+    {
+      "id": "explain-prints-seconds-not-the-angle-list",
+      "item": 1250,
+      "source": "live, run 157: explain printed angle_frames, intent_read and angle_spread as timings",
+      "call": "core.run_trace:explain_trace",
+      "args": [
+        {
+          "run_id": 157,
+          "status": "rendered",
+          "timings": {
+            "angle_frames": [
+              "primary"
+            ],
+            "intent_read": {
+              "intent": "default"
+            },
+            "angle_spread": 0.2255,
+            "research_brief": 11.835618
+          }
+        }
+      ],
+      "expect": {
+        "contains": "Timings: research_brief 11.8s",
+        "not_contains": "angle"
+      },
+      "why": "the timings line is phases in seconds"
     }
   ]
 }

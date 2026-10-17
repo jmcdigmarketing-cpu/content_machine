@@ -288,6 +288,45 @@ _llm_disabled_state: dict[str, str] = {}
 _llm_breaker_lock = threading.Lock()
 
 
+# A 429 is transient. It does not join `_llm_disabled_state` (that skip lasts the
+# session, warns, and toasts). It cools this process for Retry-After, capped, and
+# the next call skips the provider until then (#1252). Nothing is persisted.
+_COOL_CAP = 60.0
+_COOL_DEFAULT = 8.0
+_llm_cool_until: dict[str, float] = {}
+
+
+def _retry_after_seconds(exc: Exception) -> float:
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None) or {}
+    raw = headers.get("Retry-After") or headers.get("retry-after") or ""
+    try:
+        seconds = float(raw)
+    except (TypeError, ValueError):
+        seconds = _COOL_DEFAULT
+    return max(0.0, min(seconds, _COOL_CAP))
+
+
+def _cooling(provider: str) -> bool:
+    with _llm_breaker_lock:
+        until = _llm_cool_until.get(provider)
+        if until is None:
+            return False
+        if time.monotonic() >= until:
+            _llm_cool_until.pop(provider, None)
+            return False
+        return True
+
+
+def cool_provider(provider: str, exc: Exception) -> float:
+    """Skip `provider` until its Retry-After ends. Not a session disable."""
+    seconds = _retry_after_seconds(exc)
+    with _llm_breaker_lock:
+        _llm_cool_until[provider] = time.monotonic() + seconds
+    logger.debug("LLM provider '%s' cooling %.0fs after 429", provider, seconds)
+    return seconds
+
+
 def _llm_disabled(provider: str) -> bool:
     with _llm_breaker_lock:
         return provider in _llm_disabled_state
@@ -400,6 +439,7 @@ def reset_llm_breaker(*, persisted: bool = True) -> None:
     global _dead_models_loaded
     with _llm_breaker_lock:
         _llm_disabled_state.clear()
+        _llm_cool_until.clear()
         _dead_models.clear()
         _dead_models_loaded = not persisted
     if persisted:
@@ -451,6 +491,10 @@ def _resolve_chain(tier: str) -> list[tuple[str, str]]:
         if provider not in order:
             order.append(provider)
 
+    # #1252, wave 104: a provider cooling after a 429 waits at the END of the chain rather
+    # than leaving it - dropped, an empty chain fell back to a paid OpenAI call (or raised in
+    # strict free mode) when the cooling one was all there was.
+    order = [p for p in order if not _cooling(p)] + [p for p in order if _cooling(p)]
     chain: list[tuple[str, str]] = []
     for provider in order:
         if _llm_disabled(provider):
@@ -915,6 +959,8 @@ def complete(
             except Exception as exc:
                 last_exc = exc
                 err_class = _classify_llm_error(exc)
+                if err_class == "rate_limit":
+                    cool_provider(prov, exc)
                 if err_class in _DISABLE_LLM:
                     _disable_llm(prov, f"{err_class} ({type(exc).__name__})")
                 if err_class == "model_unavailable":
@@ -1005,6 +1051,7 @@ def _reset_process_state() -> None:
     _ollama_probe_cache = None
     with _llm_breaker_lock:
         _llm_disabled_state.clear()
+        _llm_cool_until.clear()
         _dead_models.clear()
         _dead_models_loaded = False
     _clients.clear()

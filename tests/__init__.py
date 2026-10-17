@@ -32,6 +32,8 @@ if "config.settings" in _sys.modules:
     )
 # storage/db.py refuses a network database while this is set (#1247).
 os.environ["CONTENT_SUITE"] = "1"
+# #1263: `ops status` asks `gh` for the CI verdict - never from a test.
+os.environ["CI_STATUS_LINE"] = "false"
 
 # #930: the operator's .env held real keys (Apify, balldontlie), so seven tests reached the
 # network on the PC and nowhere else. The suite skips the project .env and blanks any

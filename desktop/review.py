@@ -12,7 +12,9 @@ from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -160,13 +162,22 @@ class ReviewWindow(QMainWindow):
         hint = QLabel("J back · K pause · L forward · ,/. frame · S still")
         layout.addWidget(hint)
 
+        self._claim_host = QWidget()
+        self._claim_layout = QVBoxLayout(self._claim_host)
+        self._claim_layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._claim_host)
+
         row = QHBoxLayout()
         self.approve_btn = QPushButton("Approve")
         self.approve_btn.clicked.connect(self._approve)
         if queued_approve_command(self._ctx) is None:
             self.approve_btn.setEnabled(False)
         row.addWidget(self.approve_btn)
+        self.go_public_btn = QPushButton("Go public")
+        self.go_public_btn.clicked.connect(self._go_public)
+        row.addWidget(self.go_public_btn)
         layout.addLayout(row)
+        self._load_claims()
         self.setCentralWidget(root)
 
     def resizeEvent(self, event) -> None:
@@ -218,6 +229,96 @@ class ReviewWindow(QMainWindow):
             self.empty_label.setText(f"Saved {dest}")
         except Exception as exc:
             self.empty_label.setText(f"Still not saved: {exc}")
+
+    def _video_id(self) -> str:
+        direct = str(self._ctx.get("youtube_video_id") or "").strip()
+        if direct:
+            return direct
+        url = str(self._ctx.get("unlisted_url") or "")
+        if "youtu" not in url:
+            return ""
+        return url.rstrip("/").rsplit("/", 1)[-1]
+
+    def _load_claims(self) -> None:
+        from core.review_bind import claim_rows, go_public_block
+
+        while self._claim_layout.count():
+            item = self._claim_layout.takeAt(0)
+            if item is None:
+                break
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
+        run_id = self._ctx.get("run_id")
+        for claim in claim_rows(run_id):
+            block = QWidget()
+            col = QVBoxLayout(block)
+            source = str(claim.get("source_line") or "")
+            text = f"{claim['number']}. {claim['claim']}"
+            if source:
+                text += f"\nsource: {source}"
+            label = QLabel(text)
+            label.setWordWrap(True)
+            col.addWidget(label)
+            edit = QLineEdit()
+            edit.setPlaceholderText("Source link")
+            col.addWidget(edit)
+            actions = QHBoxLayout()
+            confirm = QPushButton("Confirm")
+            number = int(claim["number"])
+            confirm.clicked.connect(
+                lambda _checked=False, n=number, box=edit: self._confirm(n, box)
+            )
+            cut = QPushButton("Cut")
+            cut.clicked.connect(lambda _checked=False, n=number: self._cut(n))
+            actions.addWidget(confirm)
+            actions.addWidget(cut)
+            col.addLayout(actions)
+            self._claim_layout.addWidget(block)
+        blocked = bool(go_public_block(run_id)) or not self._video_id()
+        self.go_public_btn.setEnabled(not blocked)
+
+    def _confirm(self, number: int, edit: QLineEdit) -> None:
+        from core.review_bind import confirm_from_room
+
+        result = confirm_from_room(self._ctx.get("run_id"), number, edit.text())
+        if result["status"] != "confirmed":
+            self.empty_label.setText(result["detail"] or "Not confirmed.")
+            return
+        self.empty_label.setText(f"Confirmed: {result['claim']}")
+        self._load_claims()
+
+    def _cut(self, number: int) -> None:
+        from core.review_bind import reject_from_room
+
+        result = reject_from_room(self._ctx.get("run_id"), number)
+        lines = "; ".join(result["sentences"]) or result["detail"] or result["claim"]
+        self.empty_label.setText(f"Cut: {lines}")
+        self._load_claims()  # wave 104: the cut claim stayed listed until the window reopened
+
+    def _go_public(self) -> None:
+        from core.review_bind import go_public_from_room
+
+        # Wave 104 (decision 60: a video goes public only when the operator says so): one stray
+        # click made it public. Ask first; No is the default.
+        title = str(self._ctx.get("title") or self._video_id() or "this video")
+        answer = QMessageBox.question(
+            self,
+            "Go public",
+            f"Make {title} public on YouTube now?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            self.empty_label.setText("Kept unlisted.")
+            return
+        result = go_public_from_room(
+            self._ctx.get("run_id"),
+            self._video_id(),
+            channel_id=str(self._ctx.get("channel_id") or "tapin"),
+        )
+        self.empty_label.setText(f"{result['status']}: {result['detail']}")
 
     def _approve(self) -> None:
         cmd = queued_approve_command(self._ctx)

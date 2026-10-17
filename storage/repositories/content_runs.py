@@ -3,6 +3,7 @@ import os
 import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import desc, select
@@ -38,6 +39,19 @@ class ContentRunRecord:
     abort_reason: str = ""
     features_json: str = "{}"
     quality_json: str = "{}"
+    created_at: datetime | None = None
+
+
+def _as_datetime(value: Any) -> datetime | None:
+    """A stored timestamp, or None when the row was written before one was kept."""
+    if isinstance(value, datetime):
+        return value
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 class ContentRunRepository(ABC):
@@ -94,6 +108,7 @@ class JsonContentRunRepository(ContentRunRepository):
             abort_reason=str(row.get("abort_reason", "")),
             features_json=str(row.get("features_json", "{}")),
             quality_json=str(row.get("quality_json", "{}")),
+            created_at=_as_datetime(row.get("created_at")),
         )
 
     def create(self, data: dict[str, Any]) -> ContentRunRecord:
@@ -101,7 +116,10 @@ class JsonContentRunRepository(ContentRunRepository):
         with _lock:
             rows = self._read()
             run_id = max((r.get("id", 0) for r in rows), default=0) + 1
-            row = {"id": run_id, **data}
+            stamped = dict(data)
+            if not stamped.get("created_at"):
+                stamped["created_at"] = datetime.now(timezone.utc).isoformat()
+            row = {"id": run_id, **stamped}
             rows.append(row)
             self._write(rows)
         return self._to_record(row)
@@ -159,6 +177,7 @@ class PostgresContentRunRepository(ContentRunRepository):
             abort_reason=row.abort_reason,
             features_json=getattr(row, "features_json", "{}") or "{}",
             quality_json=getattr(row, "quality_json", "{}") or "{}",
+            created_at=_as_datetime(getattr(row, "created_at", None)),
         )
 
     def create(self, data: dict[str, Any]) -> ContentRunRecord:

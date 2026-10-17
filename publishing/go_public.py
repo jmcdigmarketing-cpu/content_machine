@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from core.logging import get_logger
-from core.run_features import load_features
+from core.run_features import load_features, merge_features
 
 logger = get_logger("publishing.go_public")
 
@@ -81,6 +81,108 @@ def _holds(rows: list) -> list:
         and str(r.privacy_status or "").lower() == "unlisted"
     ]
     return sorted(held, key=lambda r: int(getattr(r, "id", 0) or 0), reverse=True)
+
+
+def _run_for_hold(run_id: int | None):
+    if not run_id:
+        return None
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        return get_content_run_repository().get(int(run_id))
+    except Exception as exc:
+        logger.debug("watch: run %s unreadable: %s", run_id, exc)
+        return None
+
+
+def hold_summary(row, run) -> str:
+    """File, length and grade for one unlisted video (#1248)."""
+    features: dict[str, Any] = {}
+    quality: dict[str, Any] = {}
+    path = "(no file)"
+    title = ""
+    if run is not None:
+        path = str(getattr(run, "mp4_path", "") or "") or "(no file)"
+        title = str(getattr(run, "title", "") or "")
+        try:
+            features = json.loads(getattr(run, "features_json", "") or "{}")
+        except (TypeError, ValueError):
+            features = {}
+        try:
+            quality = json.loads(getattr(run, "quality_json", "") or "{}")
+        except (TypeError, ValueError):
+            quality = {}
+    qc_raw = features.get("technical_qc")
+    qc = qc_raw if isinstance(qc_raw, dict) else {}
+    raw = qc.get("video_duration")
+    length = "length unknown"
+    if isinstance(raw, int | float):
+        length = f"{float(raw):.0f}s"
+    elif isinstance(raw, str) and raw.strip():
+        try:
+            length = f"{float(raw):.0f}s"
+        except ValueError:
+            length = "length unknown"
+    grade = quality.get("grade") or "n/a"
+    video = str(getattr(row, "youtube_video_id", "") or "")
+    return f"{path}  {length}  grade {grade}  {title}  {video}".strip()
+
+
+def listed_holds(channel_id: str) -> list:
+    """Unlisted uploads the operator has not set aside (#449)."""
+    out = []
+    for row in unlisted_holds(channel_id):
+        if load_features(getattr(row, "content_run_id", None)).get("watch_aside"):
+            continue
+        out.append(row)
+    return out
+
+
+def watch_and_publish(channel_id: str, *, ask, print_fn) -> list[str]:
+    """One pass: each unlisted video, then now / keep / set aside.
+
+    Nothing goes public unless the answer is now (#1255 stays the operator's call).
+    A flagged claim is refused here; a grounding hold is refused by `apply_go_public`.
+    """
+    rows = listed_holds(channel_id)
+    if not rows:
+        print_fn("  No unlisted videos waiting.")
+        return []
+    decisions: list[str] = []
+    for index, row in enumerate(rows, 1):
+        run_id = getattr(row, "content_run_id", None)
+        print_fn(f"  [{index}/{len(rows)}] {hold_summary(row, _run_for_hold(run_id))}")
+        answer = (
+            # Wave 104 (the operator): no "at its slot" - it printed "kept for its slot" and
+            # scheduled nothing. Scheduling for the post time is #1270.
+            ask("  n now / k keep / a set aside / q quit [k]: ").strip().lower()
+        )
+        video_id = str(getattr(row, "youtube_video_id", "") or "")
+        if answer in ("q", "quit"):
+            break
+        if answer in ("n", "now"):
+            from core.facts.claim_confirm import run_flagged_claims
+
+            flagged = run_flagged_claims(run_id)
+            if flagged:
+                print_fn(
+                    f"    Refused: {len(flagged)} flagged claim(s) still open. "
+                    f"py -m scripts.ops verify-claim --run-id {run_id}"
+                )
+                decisions.append("refused")
+                continue
+            result = apply_go_public(video_id, channel_id=channel_id, dry_run=False)
+            said = getattr(result, "detail", "") or getattr(result, "label", "")
+            print_fn(f"    {result.status}: {said}")
+            decisions.append("now")
+        elif answer in ("a", "aside"):
+            merge_features(run_id, {"watch_aside": True})
+            print_fn("    Set aside. It will not be offered again.")
+            decisions.append("aside")
+        else:
+            print_fn("    Kept unlisted.")
+            decisions.append("keep")
+    return decisions
 
 
 def unlisted_holds(channel_id: str) -> list:

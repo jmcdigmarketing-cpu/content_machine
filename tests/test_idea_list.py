@@ -215,7 +215,9 @@ class FollowUpTests(unittest.TestCase):
 
     def test_an_unlisted_video_does_not_lead_the_menu(self):
         seed = self._arcs("unlisted")
-        self.assertNotIn("Affleck", seed.topic)
+        # The public arc is "UFC Illia Islam", which #1259 no longer repeats, so the
+        # menu can have no follow-up. It must not be the unlisted Affleck video.
+        self.assertTrue(seed is None or "Affleck" not in seed.topic)
 
     def test_once_it_is_public_it_follows_and_says_what(self):
         seed = self._arcs("public")

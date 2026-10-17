@@ -80,8 +80,12 @@ def open_numbered(lines: list[str]) -> list[tuple[int, str]]:
     return out
 
 
-def render(data: dict[str, object] | None = None) -> str:
-    """Operator-facing report. ASCII only (candidate 250)."""
+def render(data: dict[str, object] | None = None, *, list_open: bool = False) -> str:
+    """Operator-facing report. ASCII only (candidate 250).
+
+    The open numbered lines are behind `list_open` (#1257). The default is the
+    counts; `ops roadmap-index` had grown to 232 lines.
+    """
     data = data or counts()
     per_file: dict[str, dict[str, int]] = data["per_file"]  # type: ignore[assignment]
     by_size: dict[str, int] = data["by_size"]  # type: ignore[assignment]
@@ -104,9 +108,10 @@ def render(data: dict[str, object] | None = None) -> str:
     if data["untagged"]:
         out.append(f"  untagged     : {data['untagged']} open item(s) carry no size")
     out.append(f"  numbered     : {data['numbered_open']} open, highest #{data['highest_number']}")
-    out.append("Open numbered")
-    for number, title in open_numbered(_lines("backlog.md")):
-        shown = title.replace("\u2192", "->").replace("\u2014", "-").replace("\u2013", "-")
-        shown = shown.encode("cp1252", "replace").decode("cp1252")
-        out.append(f"  #{number} {shown}")
+    if list_open:
+        out.append("Open numbered")
+        for number, title in open_numbered(_lines("backlog.md")):
+            shown = title.replace("\u2192", "->").replace("\u2014", "-").replace("\u2013", "-")
+            shown = shown.encode("cp1252", "replace").decode("cp1252")
+            out.append(f"  #{number} {shown}")
     return "\n".join(out)

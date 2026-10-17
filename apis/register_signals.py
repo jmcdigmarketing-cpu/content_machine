@@ -498,8 +498,10 @@ def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
     """
     Names of domain-specific signals to skip for this topic.
 
-    Returns empty when gating is disabled or the topic's domain is unknown/neutral
-    (fail-open: when unsure, run everything). Universal signals are never returned.
+    Returns empty when gating is disabled, when no channel is set, or when both the
+    topic and the channel's primary domain are unknown. A neutral topic on a channel
+    skips only the groups none of the channel's domains (primary + extra_domains) cover
+    (#1249, wave 104). Universal signals are never returned.
     """
     if not _domain_gating_enabled():
         return set()
@@ -513,7 +515,30 @@ def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
     inferred = infer_topic_domain(topic)
     topic_group = _DOMAIN_GROUP.get(inferred)
     if not topic_group:
-        return set()
+        # #1249: a neutral topic on TapIn ran finance, music and odds. The topic stays
+        # neutral; only the groups none of the channel's domains cover are skipped. Wave 104:
+        # the primary domain alone (TapIn: gaming) cut every sports signal from "Payton
+        # Pritchard signed a two-year extension" - run 98 again - so extra_domains count.
+        # No channel, or a channel whose own domain is neutral, still runs everything.
+        if not channel_id:
+            return set()
+        try:
+            from config.channels import get_channel_profile
+
+            profile = get_channel_profile(channel_id)
+            names = [profile.domain, *(getattr(profile, "extra_domains", None) or [])]
+        except Exception as exc:
+            logger.debug("channel domain for gating unreadable: %s", exc)
+            return set()
+        covered = {
+            _DOMAIN_GROUP[key]
+            for key in (str(n or "").strip().lower() for n in names)
+            if key in _DOMAIN_GROUP
+        }
+        primary = str(profile.domain or "").strip().lower()
+        if primary not in _DOMAIN_GROUP:
+            return set()
+        return {name for name, group in _SIGNAL_GROUP.items() if group not in covered}
 
     gated = {name for name, group in _SIGNAL_GROUP.items() if group != topic_group}
     # Within the sports group, team-sport signals don't cover MMA.

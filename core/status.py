@@ -9,6 +9,72 @@ from youtube.check_setup import check_channel_setup
 
 logger = get_logger("core.status")
 
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def ci_red_line(runs: list[dict], failed_jobs: list[str]) -> str:
+    """#1263: one line when the newest finished CI run on main failed, else "".
+
+    The grand audit (2026-10-17): CI had failed on every push for six days and nothing in
+    the operator's or the agents' day said so. ``runs`` is `gh run list` JSON, newest first.
+    """
+    done = [r for r in runs or [] if str(r.get("status") or "") == "completed"]
+    if not done or str(done[0].get("conclusion") or "") == "success":
+        return ""
+    if any(str(r.get("status") or "") != "completed" for r in (runs or [])[:1]):
+        return ""  # a run is going; its verdict is the one that counts
+    streak = []
+    for run in done:
+        if str(run.get("conclusion") or "") == "success":
+            break
+        streak.append(run)
+    since = str(streak[-1].get("createdAt") or "")[:10]
+    try:
+        _year, month, day = (int(x) for x in since.split("-"))
+        when = f"{_MONTHS[month - 1]} {day}"
+    except ValueError:
+        when = since or "?"
+    jobs = ", ".join(failed_jobs[:2]) or "a job"
+    plural = "run" if len(streak) == 1 else "runs"
+    return (
+        f"CI on main: RED since {when} - {len(streak)} {plural}; failing: {jobs} - "
+        f"gh run view {streak[0].get('databaseId')} --log-failed"
+    )
+
+
+def ci_line() -> str:
+    """#1263: `ci_red_line` from `gh`, or "" - no gh, no sign-in, or `CI_STATUS_LINE=false`."""
+    import json
+    import os
+    import subprocess
+
+    if os.getenv("CI_STATUS_LINE", "true").strip().lower() in ("0", "false", "no", "off"):
+        return ""
+    from config.paths import ROOT_DIR
+
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+    def gh(*args: str) -> object:
+        out = subprocess.run(["gh", *args], cwd=ROOT_DIR, capture_output=True, text=True,
+                             timeout=5, check=False, creationflags=flags)  # fmt: skip
+        return json.loads(out.stdout) if out.returncode == 0 and out.stdout.strip() else None
+
+    try:
+        runs = gh("run", "list", "--branch", "main", "--limit", "30", "--json",
+                  "status,conclusion,createdAt,databaseId")  # fmt: skip
+        if not isinstance(runs, list):
+            return ""
+        newest = next((r for r in runs if r.get("status") == "completed"), None)
+        if not newest or newest.get("conclusion") == "success":
+            return ""
+        view = gh("run", "view", str(newest.get("databaseId")), "--json", "jobs")
+        jobs = view.get("jobs", []) if isinstance(view, dict) else []
+        failed = [str(j.get("name") or "") for j in jobs if j.get("conclusion") == "failure"]
+        return ci_red_line(runs, [name.split(" (")[0] for name in failed if name])
+    except Exception as exc:
+        logger.debug("CI line skipped: %s", exc)
+        return ""
+
 
 def build_status_lines(channel_id: str) -> list[str]:
     channel_id = resolve_channel_id(channel_id)
@@ -229,6 +295,9 @@ def build_status_lines(channel_id: str) -> list[str]:
     except Exception as exc:
         logger.debug("auto-research verdict line skipped: %s", exc)
 
+    ci = ci_line()  # #1263
+    if ci:
+        lines.insert(1, ci)
     return lines
 
 

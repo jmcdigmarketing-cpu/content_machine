@@ -146,8 +146,8 @@ class EnterAfterKeyTests(unittest.TestCase):
 
         after = MagicMock()
         quiet = {"print_fn": lambda *_a, **_k: None, "after_key": after}
-        self.assertEqual(menu_line("  Select 1-6 [1]: ", read_char=lambda: "6", **quiet), "6")
-        self.assertEqual(menu_line("  Select 1-6 [1]: ", read_char=lambda: "\r", **quiet), "")
+        self.assertEqual(menu_line("  Select 1-7 [1]: ", read_char=lambda: "6", **quiet), "6")
+        self.assertEqual(menu_line("  Select 1-7 [1]: ", read_char=lambda: "\r", **quiet), "")
         after.assert_called_once_with()
 
 

@@ -22,14 +22,14 @@ class MenuKeyTests(unittest.TestCase):
         from core.console_input import menu_line
 
         got = menu_line(
-            "  Select 1-6 [1]: ",
+            "  Select 1-7 [1]: ",
             input_fn=lambda _prompt: "SHOULD NOT RUN",
             read_char=lambda: "6",
             print_fn=lambda *_a, **_k: None,
         )
         self.assertEqual(got, "6")
         blank = menu_line(
-            "  Select 1-6 [1]: ",
+            "  Select 1-7 [1]: ",
             input_fn=lambda _prompt: "SHOULD NOT RUN",
             read_char=lambda: "\r",
             print_fn=lambda *_a, **_k: None,
@@ -39,7 +39,7 @@ class MenuKeyTests(unittest.TestCase):
     def test_a_scripted_answer_stays_a_whole_line(self):
         from core.console_input import menu_line
 
-        got = menu_line("  Select 1-6 [1]: ", input_fn=lambda _prompt: "2")
+        got = menu_line("  Select 1-7 [1]: ", input_fn=lambda _prompt: "2")
         self.assertEqual(got, "2")
 
     def test_startup_takes_the_key_the_reader_returns(self):
@@ -129,14 +129,14 @@ class GateBellTests(unittest.TestCase):
     def test_a_gate_on_a_tty_rings_once(self):
         from core.ask import gate_bell
 
-        self.assertEqual(gate_bell("  Select 1-6 [1]: ", tty=True, no_color=False), "\a")
+        self.assertEqual(gate_bell("  Select 1-7 [1]: ", tty=True, no_color=False), "\a")
 
     def test_a_fact_prompt_and_a_piped_run_stay_quiet(self):
         from core.ask import gate_bell
 
         self.assertEqual(gate_bell("  Fact 1: ", tty=True, no_color=False), "")
         self.assertEqual(gate_bell("  Proceed? [y = render]: ", tty=False, no_color=False), "")
-        self.assertEqual(gate_bell("  Select 1-6 [1]: ", tty=True, no_color=True), "")
+        self.assertEqual(gate_bell("  Select 1-7 [1]: ", tty=True, no_color=True), "")
 
     def test_the_terminal_backend_writes_the_bell(self):
         from core.ask import TerminalBackend
@@ -158,7 +158,7 @@ class GateBellTests(unittest.TestCase):
             patch("builtins.input", return_value="1"),
             patch.dict(os.environ, {"NO_COLOR": ""}),
         ):
-            self.assertEqual(TerminalBackend().ask_text("  Select 1-6 [1]: "), "1")
+            self.assertEqual(TerminalBackend().ask_text("  Select 1-7 [1]: "), "1")
         self.assertIn("\a", "".join(written))
 
 
@@ -321,7 +321,7 @@ class OpenIndexTests(unittest.TestCase):
     def test_the_index_prints_the_open_numbers(self):
         from core.roadmap_index import render
 
-        text = render()
+        text = render(list_open=True)
         self.assertIn("reprint a past run", text)
 
 

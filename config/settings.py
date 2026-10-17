@@ -42,6 +42,10 @@ def load_env_file(path: str) -> None:
         load_dotenv(path, override=False)
     finally:
         dotenv_log.removeFilter(_not_dotenv_parse_warning)
+    # #1265: once a run - overnight's log said it four times, once per draft child. The marker
+    # is in the environment, so the children the run starts inherit it.
+    if os.environ.get("CONTENT_ENV_LINES_SAID") == "1":
+        return
     try:
         from core.secrets_doctor import env_file_line, env_file_problems
 
@@ -50,6 +54,7 @@ def load_env_file(path: str) -> None:
         line = ""
     if line:
         logging.getLogger("config.settings").warning(line)
+        os.environ["CONTENT_ENV_LINES_SAID"] = "1"
 
 
 _load_dotenv()

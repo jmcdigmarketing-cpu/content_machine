@@ -50,9 +50,9 @@ class ArcTests(unittest.TestCase):
         self.assertNotIn("week", seed.topic.lower())
         self.assertIn("4", seed.rationale)  # the count is kept where the operator reads it
 
-    def test_a_topic_without_a_week_gets_none(self):
+    def test_a_repeat_of_the_last_topic_is_not_offered(self):
         seed = self._seed("UFC Illia Islam", 4)
-        self.assertNotIn("week", seed.topic.lower())
+        self.assertIsNone(seed)
 
     def test_the_count_still_moves_on(self):
         from core import topic_graph

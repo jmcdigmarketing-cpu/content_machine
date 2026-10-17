@@ -737,6 +737,10 @@ def _domain_for_feed(word_domain: str, feed_domains: list[str] | None) -> str:
     # #1221: "Dr Food walks free..." is neutral. A gaming feed made it a gaming bet.
     if not word_domain or word_domain == "neutral":
         return word_domain or "neutral"
+    # #1258: an MMA feed covers boxing and UFC. A weigh-in the words call boxing
+    # stays boxing; one domain on the feed does not rename it.
+    if word_domain == "boxing" and folded <= {"ufc"}:
+        return "boxing"
     if len(folded) == 1:
         return next(iter(folded))
     return word_domain
@@ -1078,7 +1082,9 @@ def suggested_games(
                 continue
             rationale = game_line(detail, note)
         else:
-            rationale = "on the board this week"
+            from core.seasonal_calendar import award_line
+
+            rationale = award_line(topic) or "on the board this week"
         out.append(
             BestBetResult(
                 topic=topic,

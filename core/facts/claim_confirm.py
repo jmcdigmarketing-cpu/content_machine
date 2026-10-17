@@ -106,9 +106,19 @@ def flagged_claims(
     feats = features or {}
     typed = typed_unsupported(feats.get("claim_verification"))
     if not typed:
-        claims = [str(c) for c in feats.get("grounding_override_claims") or [] if str(c).strip()]
+        # #1262: once `unsupported` is empty this list still held the claims just confirmed.
+        settled = {
+            str((row or {}).get("claim") or "").strip()
+            for row in feats.get("claims_confirmed") or []
+            if isinstance(row, dict) and not source_problem(row.get("source"))
+        }
+        claims = [str(c) for c in feats.get("grounding_override_claims") or []]
         types = list(feats.get("grounding_override_types") or [])
-        typed = [(c, str(types[i]) if i < len(types) else "") for i, c in enumerate(claims)]
+        typed = [
+            (c, str(types[i]) if i < len(types) else "")
+            for i, c in enumerate(claims)
+            if c.strip() and c.strip() not in settled
+        ]
     lines = [*_research_lines(feats), *(research or [])]
 
     def _found(claim: str) -> str:

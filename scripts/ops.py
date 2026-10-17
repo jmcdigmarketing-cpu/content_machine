@@ -2742,7 +2742,11 @@ def cmd_grounding_corpus(_args: argparse.Namespace) -> int:
 def cmd_roadmap_index(args: argparse.Namespace) -> int:
     from core.roadmap_index import render
 
-    _emit_text("Roadmap index", render(), args)
+    _emit_text(
+        "Roadmap index",
+        render(list_open=bool(getattr(args, "list_open", False))),
+        args,
+    )
     return 0
 
 
@@ -3821,6 +3825,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     # #944: set to True by the batch runner on each step; review-week reads it.
     parser.set_defaults(_batch=False)
+    parser.add_argument(
+        "--list",
+        dest="list_open",
+        action="store_true",
+        help="roadmap-index: print each open numbered item (the default is the counts)",
+    )
     parser.add_argument("--channel", default="tapin", help="Channel id (default: tapin)")
     parser.add_argument(
         "--domain", default="gaming", help="Domain for compute_weights (default: gaming)"

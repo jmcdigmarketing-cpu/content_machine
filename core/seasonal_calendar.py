@@ -134,6 +134,36 @@ def game_detail(league: str, event: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+_AWARD_DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+_AWARD_MONTHS = (
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
+
+
+def award_line(name: str) -> str:
+    """When an award is given ("Wed Oct 28"), or "" when `name` is not one.
+
+    English abbreviations, not `strftime`, so a non-English locale cannot rename
+    the month (#1260).
+    """
+    wanted = (name or "").strip().lower()
+    for when, title, _domain in AWARD_DATES:
+        if title.lower() == wanted:
+            return f"{_AWARD_DAYS[when.weekday()]} {_AWARD_MONTHS[when.month - 1]} {when.day}"
+    return ""
+
+
 def game_details(name: str) -> dict[str, Any]:
     """`game_detail` for a game read this run, or {} (an award, or a board not read)."""
     return dict(_DETAILS.get(name) or {})

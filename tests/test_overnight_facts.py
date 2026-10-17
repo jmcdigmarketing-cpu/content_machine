@@ -19,6 +19,7 @@ class TestOvernightFactsFile(unittest.TestCase):
                 fh.write("Take-Two filed subpoenas against Microsoft over the GTA 6 leak.\n")
             with (
                 patch("core.batch_generation.collect_topics", return_value=["GTA 6 leak"]),
+                patch("core.batch_review.pending_drafts", return_value=[]),
                 patch("core.overnight.draft_each", return_value=[]) as batch,
                 patch("core.vault.dossiers.write_run_dossier", return_value=None),
                 patch("core.channel_health.build_health", return_value=MagicMock()),
@@ -39,6 +40,7 @@ class TestOvernightFactsFile(unittest.TestCase):
     def test_without_facts_file_behaviour_unchanged(self):
         with (
             patch("core.batch_generation.collect_topics", return_value=["a"]),
+            patch("core.batch_review.pending_drafts", return_value=[]),
             patch("core.overnight.draft_each", return_value=[]) as batch,
             patch("core.vault.dossiers.write_run_dossier", return_value=None),
             patch("core.channel_health.build_health", return_value=MagicMock()),

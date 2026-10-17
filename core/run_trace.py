@@ -311,9 +311,13 @@ def explain_trace(trace: dict[str, Any] | None) -> str:
     """One narrative from fields write_run_trace already stores. Nothing is written."""
     if not trace:
         return "No run with that id."
+    from core.why_slow import phase_seconds
+
     raw_timings = trace.get("timings")
     timings: dict[str, Any] = raw_timings if isinstance(raw_timings, dict) else {}
-    timing_bits = ", ".join(f"{key} {value}" for key, value in timings.items())
+    # Wave 104: seconds only, rounded - run 157 printed its angle list and intent dict here.
+    timing_bits = ", ".join(f"{key} {value:.1f}s" for key, value in phase_seconds(timings))
+    words = timings.get("word_count")
     raw_quality = trace.get("quality")
     quality: dict[str, Any] = raw_quality if isinstance(raw_quality, dict) else {}
     raw_cost = trace.get("cost")
@@ -327,6 +331,8 @@ def explain_trace(trace: dict[str, Any] | None) -> str:
         lines.append(f"Selected: {selected}")
     if timing_bits:
         lines.append(f"Timings: {timing_bits}")
+    if words is not None and str(words).strip() != "":
+        lines.append(f"Words: {words}")
     grade = quality.get("grade")
     if grade:
         lines.append(f"Grade: {grade}")

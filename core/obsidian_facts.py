@@ -37,6 +37,11 @@ from core.vault.index import iter_notes
 
 logger = get_logger("core.obsidian_facts")
 
+# Filtered bullets for one note on one day. A draft calls the loader three times;
+# the stale judgment does not depend on the topic (#1251).
+_STALE_BULLETS: dict[tuple, tuple[str, ...]] = {}
+_STALE_DAY: date | None = None
+
 _STOPWORDS = set(FUNCTION_WORDS) | {
     "the",
     "and",
@@ -415,6 +420,25 @@ def load_facts(
     ]
 
 
+def bullets_without_stale(note, verified_at: str | date | None, today: date) -> list[str]:
+    """Bullets that are still current, judged once per note per day."""
+    global _STALE_DAY
+    if today != _STALE_DAY:
+        _STALE_BULLETS.clear()
+        _STALE_DAY = today
+    key = (
+        str(getattr(note, "rel_path", "") or ""),
+        today.isoformat(),
+        str(verified_at or ""),
+        tuple(note.bullets),
+    )
+    cached = _STALE_BULLETS.get(key)
+    if cached is None:
+        cached = tuple(b for b in note.bullets if not stale_preview(b, verified_at, today))
+        _STALE_BULLETS[key] = cached
+    return list(cached)
+
+
 def load_fact_records(
     topic: str,
     channel_id: str = "default",
@@ -476,7 +500,7 @@ def load_fact_records(
             continue  # stale by declaration — champions/rosters age out
         # #558: a preview line ("... is set for Oct 4") retires once its dates pass.
         # The note stays on disk untouched; `ops vault-decay` lists what stopped.
-        bullets = [b for b in note.bullets if not stale_preview(b, verified_at, today)]
+        bullets = bullets_without_stale(note, verified_at, today)
         stale_previews += len(note.bullets) - len(bullets)
 
         # Relevance: overlap of topic tokens with filename + headings.

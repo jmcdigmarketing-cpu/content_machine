@@ -13,8 +13,10 @@ domain, "gaming". That one word then:
   with "gaming, esports".
 
 The operator decided football is part of TapIn's niche (2026-09-26), so soccer is a
-real domain now. Separately, a typed topic that names no domain at all is neutral
-for gating and for the brief - the channel default no longer stands in for "unsure".
+real domain now. A typed topic that names no domain stays neutral for the brief.
+Gating of that neutral topic skips only what none of the channel's domains cover
+(#1249, wave 104: primary + extra_domains - a gaming-only gate was this run again);
+it does not relabel the topic as the channel's.
 """
 
 from __future__ import annotations
@@ -87,10 +89,15 @@ class TestGating(unittest.TestCase):
         self.assertTrue({"rawg", "twitch", "steam", "igdb"} <= gated, gated)
         self.assertTrue({"ufc_context", "tapology"} <= gated, "MMA-only signals on football")
 
-    def test_an_unclassified_topic_gates_nothing(self) -> None:
+    def test_an_unclassified_topic_on_tapin_skips_other_domains(self) -> None:
         from apis.register_signals import _gated_signal_names
+        from apis.topic_scorer import infer_topic_domain
 
-        self.assertEqual(_gated_signal_names(OFF_NICHE, "tapin"), set())
+        self.assertEqual(infer_topic_domain(OFF_NICHE), "neutral")
+        gated = _gated_signal_names(OFF_NICHE, "tapin")
+        self.assertIn("fred", gated)
+        self.assertNotIn("odds", gated)  # TapIn covers sports - run 98's lesson
+        self.assertNotIn("rawg", gated)
 
     def test_a_gaming_topic_still_gates_sports(self) -> None:
         from apis.register_signals import _gated_signal_names

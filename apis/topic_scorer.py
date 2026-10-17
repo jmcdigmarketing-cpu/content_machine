@@ -456,6 +456,14 @@ def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: 
     ):
         return "nfl"
 
+    # #1258: "Daniel Dubois vs. Fabio Wardley 2 weigh-in" names no league. A
+    # weigh-in that does not say UFC or MMA is boxing. "UFC 320 weigh-ins" still
+    # says UFC and stays below.
+    if _mentions(topic_lower, ["weigh-in", "weigh in", "weigh-ins", "weigh ins"]) and not _mentions(
+        topic_lower, ["ufc", "mma"]
+    ):
+        return "boxing"
+
     if _mentions(topic_lower, ["ufc", "fight", "boxing", "mma"]):
         return "ufc"
 

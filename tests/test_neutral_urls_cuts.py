@@ -277,6 +277,7 @@ class DraftIsolationTests(unittest.TestCase):
                 clear=False,
             ),
             patch("core.batch_generation.collect_topics", return_value=topics),
+            patch("core.batch_review.pending_drafts", return_value=[]),
             patch("core.overnight_quota.adjust_count", return_value=(3, "")),
             patch("core.vault.dossiers.write_run_dossier", return_value=None),
             patch("core.batch_review.expire_enabled", return_value=True),

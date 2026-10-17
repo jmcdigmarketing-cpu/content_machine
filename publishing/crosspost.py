@@ -66,10 +66,12 @@ class Packed:
 
 
 def reel_max_seconds() -> float:
+    """Decision 64 (the operator, 2026-10-17): Instagram takes Reels up to 3 minutes - run 157
+    (90 s) was skipped at the old 90 s cap."""
     try:
-        return float(os.getenv("INSTAGRAM_MAX_SECONDS", "90") or 90)
+        return float(os.getenv("INSTAGRAM_MAX_SECONDS", "180") or 180)
     except ValueError:
-        return 90.0
+        return 180.0
 
 
 def _store_path(channel_id: str) -> str:
@@ -114,10 +116,30 @@ def _duration(path: str) -> float | None:
     return _probe_duration(path)
 
 
-def _suggested_slot(channel_id: str, topic: str) -> datetime:
-    from analytics.post_timing import next_optimal_post_time
+_EVENING_HOUR = 22  # 10 PM in the channel's time zone
 
-    return next_optimal_post_time(channel_id, topic)
+
+def _suggested_slot(channel_id: str, topic: str, *, now: datetime | None = None) -> datetime:
+    """The next 10 PM in the channel's time zone - always within a day.
+
+    Decision 64 (the operator, 2026-10-17): with no history of their own, TikTok and Instagram
+    took YouTube's learned slot for the topic's sport, and run 157 (UFC) got Thursday 3:00 AM,
+    five days after it went public. A platform with its own hours (`hour_choice`) keeps them.
+    """
+    from zoneinfo import ZoneInfo
+
+    del topic
+    try:
+        from analytics.post_timing import _load_static_post_schedule
+
+        zone: Any = ZoneInfo(_load_static_post_schedule(channel_id).timezone)
+    except Exception:
+        zone = timezone.utc
+    local = ((now or datetime.now(timezone.utc)) + timedelta(minutes=15)).astimezone(zone)
+    slot = local.replace(hour=_EVENING_HOUR, minute=0, second=0, microsecond=0)
+    if slot < local:
+        slot += timedelta(days=1)
+    return slot.astimezone(timezone.utc)
 
 
 def _youtube_slot(channel_id: str, run_id: int) -> datetime | None:

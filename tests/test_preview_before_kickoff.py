@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
@@ -74,7 +75,35 @@ class BeforeKickoffTests(CrosspostCase):
         self.assertEqual(first, second)
 
 
-if __name__ == "__main__":
-    import unittest
+class EveningSlotTests(unittest.TestCase):
+    """Decision 64 (the operator, 2026-10-17): with no history of their own, TikTok and
+    Instagram took YouTube's slot for the topic's sport - run 157 (UFC) got Thursday 3:00 AM,
+    five days after it went public. They take the next 10 PM in the channel's time zone."""
 
+    def test_this_evening_when_it_is_still_ahead(self):
+        from publishing.crosspost import _suggested_slot
+
+        now = datetime(2026, 10, 17, 19, 30, tzinfo=timezone.utc)  # 3:30 PM EDT
+        slot = _suggested_slot("tapin", "Bo Nickal moves his own fight up", now=now)
+        self.assertEqual(slot, datetime(2026, 10, 18, 2, 0, tzinfo=timezone.utc))  # 10 PM EDT
+
+    def test_tomorrow_evening_once_it_has_passed(self):
+        from publishing.crosspost import _suggested_slot
+
+        now = datetime(2026, 10, 18, 2, 30, tzinfo=timezone.utc)  # 10:30 PM EDT
+        slot = _suggested_slot("tapin", "any topic", now=now)
+        self.assertEqual(slot, datetime(2026, 10, 19, 2, 0, tzinfo=timezone.utc))
+        self.assertLess(slot - now, timedelta(days=1))
+
+
+class ReelLengthTests(unittest.TestCase):
+    def test_a_ninety_second_video_is_a_reel(self):
+        # Decision 64: run 157 (90 s) was skipped on Instagram at the old 90 s cap.
+        from publishing.crosspost import reel_max_seconds
+
+        with patch.dict(os.environ, {"INSTAGRAM_MAX_SECONDS": ""}):
+            self.assertEqual(reel_max_seconds(), 180.0)
+
+
+if __name__ == "__main__":
     unittest.main()

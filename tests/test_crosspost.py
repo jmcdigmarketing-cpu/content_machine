@@ -95,11 +95,11 @@ class PackTests(PackCase):
     def test_a_long_video_is_not_offered_as_a_reel(self):
         from publishing.crosspost import pack_new
 
-        with patch("publishing.crosspost._duration", return_value=95.0):
+        with patch("publishing.crosspost._duration", return_value=195.0):
             folder = pack_new("tapin")[0].folder
         insta = _read(folder, "instagram.txt")
-        self.assertIn("95", insta)
-        self.assertIn("90", insta)
+        self.assertIn("195", insta)
+        self.assertIn("180", insta)  # decision 64: Reels take up to 3 minutes
 
     def test_marking_posted_takes_it_off_the_list(self):
         from publishing.crosspost import mark_posted, pack_new, waiting_lines

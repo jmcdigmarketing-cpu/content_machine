@@ -247,7 +247,7 @@ class SendTests(CrosspostCase):
         self.assertNotIn("100", self._store()["posts"])
 
     def test_a_long_video_skips_instagram(self):
-        self.duration = 120.0
+        self.duration = 200.0  # decision 64: Reels take up to 180 s
         self._first_then((113, "yt113"))
         self.assertEqual([c.kwargs["service"] for c in self.create.call_args_list], ["tiktok"])
         self.assertEqual(self._store()["posts"]["113"]["instagram"]["state"], "skipped")

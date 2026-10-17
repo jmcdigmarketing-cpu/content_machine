@@ -192,3 +192,30 @@ nothing else. The plan's answers: "NFL + NBA, marquee games only" and "Compete l
 **Consequence:** this reverses §55's mechanism; its reason stands. College, NHL and MLB games are
 still read from the board, so a draft about one keeps its game-day window, but they are not
 suggested. §52 stands: a game drafted is drafted as a preview.
+
+## 60. An overnight render waits for the operator (2026-10-17)
+**Decision:** a video rendered overnight is queued unlisted with no publish time and stays
+unlisted until the operator makes it public - `ops go-public`, "now" in the watch-and-publish
+pass, or the app's Go public button. Nothing goes public by itself, not at its post time
+either. **Why:** the operator - "keep overnight renders waiting for me" (the answer to #1255;
+since Oct 1, 4 videos rendered overnight and 1 went public). **Consequence:**
+`tests/test_grand_audit.py` holds both halves: the overnight queue's privacy and publish time,
+and the list of modules that may call `apply_go_public`. A new caller has to be an operator's
+action and join that list.
+
+## 61. TapIn and MoneyWise keep their colour grade (2026-10-17)
+**Decision:** both channels render with their `color_grade` (TapIn: saturation 1.18, contrast
+1.08, brightness 0.01 - the look of every published video). The `color_lut` setting and
+`lut3d` path stay in the code; a `.cube` file goes in only once it reproduces the look it
+replaces. **Why:** the grand audit found `bef5a56` (#497) had swapped the grades for 2-point
+files that are nearly flat - TapIn's next videos would have come out duller. The operator:
+keep the current look.
+
+## 62. mypy checks the Windows build, on any machine (2026-10-17)
+**Decision:** `[tool.mypy] platform = "win32"`, and `types-beautifulsoup4` is not a dev
+dependency (bs4 4.14 ships its own types). The ratchet's count is then the same on this PC and
+in CI. **Why:** CI had failed the type check on every push since 2026-10-11 (`adbc3c7`):
+checked as Linux, `msvcrt`, `windll` and `CREATE_NO_WINDOW` were errors, and the 4.12 stubs
+overrode bs4's types - CI counted 25 more than this PC, and the baseline had been lowered from
+this PC's count. The product runs on Windows; a Linux-only path is behind a `sys.platform`
+check that mypy reads.

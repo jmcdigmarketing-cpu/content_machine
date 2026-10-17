@@ -18,6 +18,9 @@ from core.logging import get_logger
 
 logger = get_logger("desktop.home")
 
+# #532: what this process already showed and stamped, by launch-state file and channel.
+_LAUNCH_SEEN: dict[str, list[str]] = {}
+
 
 def _money(_channel_id: str) -> str:
     from core.money.ledger import spend_line
@@ -87,12 +90,19 @@ def changelog_since_last_launch(
     state_path: str | Path | None = None,
     now: datetime | None = None,
 ) -> list[str]:
-    """Commit subjects since this channel last opened the app (#532). Stamps last_launch."""
+    """Commit subjects since this channel last opened the app (#532). Stamps last_launch.
+
+    Once per process: Home fills again on Refresh, and a second stamp emptied the card (the
+    grand audit, 2026-10-17).
+    """
     from config.paths import ROOT_DIR
     from desktop.session import launch_state_path
 
     when = now or datetime.now(timezone.utc)
     path = Path(state_path) if state_path is not None else launch_state_path()
+    seen_key = f"{path}|{(channel_id or '').strip().lower()}"
+    if seen_key in _LAUNCH_SEEN:
+        return list(_LAUNCH_SEEN[seen_key])
     repo = str(root or ROOT_DIR)
     data: dict[str, Any] = {}
     if path.is_file():
@@ -113,6 +123,8 @@ def changelog_since_last_launch(
                 capture_output=True,
                 text=True,
                 check=False,
+                # No console window flashes up from the app (pythonw has none to share).
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
             if proc.returncode == 0:
                 lines = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
@@ -124,6 +136,7 @@ def changelog_since_last_launch(
     data[key] = {**(row or {}), "last_launch": when.isoformat()}
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    _LAUNCH_SEEN[seen_key] = list(lines)
     return lines
 
 

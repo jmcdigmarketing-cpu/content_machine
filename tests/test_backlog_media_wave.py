@@ -16,14 +16,17 @@ from PIL import Image
 
 
 class RenderLutTests(unittest.TestCase):
-    def test_shipped_channels_use_real_distinct_lut_files(self):
+    def test_shipped_channels_keep_their_grade_and_a_lut_still_replaces_eq(self):
+        # Decision 61 (the operator, 2026-10-17: keep the current look): the shipped 2-point
+        # files were near-flat and replaced TapIn's saturation 1.18 / contrast 1.08. They stay
+        # on disk, unused, until a file matches the look.
         from video.render_video import _resolve_color_lut, build_render_ffmpeg_command
 
-        tapin = _resolve_color_lut("tapin")
-        moneywise = _resolve_color_lut("moneywise")
-        self.assertTrue(tapin and os.path.isfile(tapin), tapin)
-        self.assertTrue(moneywise and os.path.isfile(moneywise), moneywise)
-        self.assertNotEqual(Path(tapin).read_bytes(), Path(moneywise).read_bytes())
+        self.assertIsNone(_resolve_color_lut("tapin"))
+        self.assertIsNone(_resolve_color_lut("moneywise"))
+        tapin = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "luts",
+                             "tapin.cube")  # fmt: skip
+        self.assertTrue(Path(tapin).is_file())
 
         cmd = build_render_ffmpeg_command(
             background_path="bg.mp4",

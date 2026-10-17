@@ -68,6 +68,9 @@ jobs:
         # the list: 345 lines of window.py were once neither executed nor type-checked.
         # Wave 42: every shipped package is a target (video, publishing, youtube, jobs,
         # sports and scripts joined); the baseline fell to 123.
+        # Decision 62 (2026-10-17): this job failed on every push from 10-11 to 10-17 - Linux
+        # counted msvcrt/windll as errors and old bs4 stubs overrode bs4's own types, 25 more
+        # than the PC the baseline came from. mypy now checks the Windows build everywhere.
         run: python scripts/mypy_ratchet.py
 
   test:

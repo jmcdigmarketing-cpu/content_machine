@@ -179,9 +179,10 @@ class DesktopChangelogTests(unittest.TestCase):
         from config.paths import DATA_DIR
         from desktop.home import home_lines
 
+        # The grand audit (2026-10-17): this test deleted the operator's real file when it
+        # existed. It only reads it now - the operator's copy is never this test's to touch.
         operator = Path(DATA_DIR) / "launch_state.json"
-        if operator.exists():
-            operator.unlink()
+        before = operator.stat().st_mtime_ns if operator.exists() else None
         with tempfile.TemporaryDirectory() as tmp:
             isolated = Path(tmp, "launch_state.json")
             with (
@@ -196,7 +197,8 @@ class DesktopChangelogTests(unittest.TestCase):
             ):
                 home_lines("tapin")
             self.assertTrue(isolated.is_file(), isolated)
-            self.assertFalse(operator.exists(), operator)
+            after = operator.stat().st_mtime_ns if operator.exists() else None
+            self.assertEqual(after, before, operator)
 
 
 if __name__ == "__main__":

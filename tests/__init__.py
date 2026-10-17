@@ -18,6 +18,20 @@ Tests that genuinely exercise vault behaviour set the variable themselves via
 
 import os
 import re as _re
+import sys as _sys
+
+# #1247 (2026-10-16): a bare `python -m unittest` from the repo root imports `publishing` and
+# `storage` before this package; they load `config.settings`, which reads `.env` and freezes
+# `Settings.database_url` - the suite then ran against the operator's Postgres (133 fake upload
+# rows, real job 59 marked failed). Settings loaded first means nothing below can isolate it.
+if "config.settings" in _sys.modules:
+    raise ImportError(
+        "config.settings was imported before the test package, so it holds the real .env "
+        "(DATABASE_URL too). Run `python -m unittest discover -s tests -t .` or name "
+        "`tests.` modules - never a bare `python -m unittest` from the repo root."
+    )
+# storage/db.py refuses a network database while this is set (#1247).
+os.environ["CONTENT_SUITE"] = "1"
 
 # #930: the operator's .env held real keys (Apify, balldontlie), so seven tests reached the
 # network on the PC and nowhere else. The suite skips the project .env and blanks any

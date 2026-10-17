@@ -45,7 +45,8 @@ dev = [
     "pytest==8.3.4",
     "pre-commit==4.0.1",
     "types-requests",
-    "types-beautifulsoup4",
+    # No types-beautifulsoup4: its stubs describe bs4 4.12 and override the types bs4 4.14
+    # ships itself - CI counted errors this PC never saw (the grand audit, 2026-10-17).
     "coverage>=7.6.0",
     "hypothesis>=6.112.0",
     "pip-audit>=2.7.3",
@@ -220,6 +221,9 @@ indent-style = "space"
 # ---------------------------------------------------------------------------
 [tool.mypy]
 python_version = "3.11"
+# The product runs on Windows: CI on Linux checks the Windows build, so msvcrt, windll and
+# CREATE_NO_WINDOW are not errors there and the ratchet counts one number (decision 62).
+platform = "win32"
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = false

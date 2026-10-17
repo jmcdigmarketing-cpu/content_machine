@@ -58,7 +58,6 @@
         "bg": "#0B0F14",
         "fg": "#FFFFFF"
       },
-      "color_lut": "config/luts/tapin.cube",
       "color_grade": {
         "saturation": 1.18,
         "contrast": 1.08,
@@ -183,7 +182,6 @@
         "bg": "#1B2430",
         "fg": "#F7E7A9"
       },
-      "color_lut": "config/luts/moneywise.cube",
       "color_grade": {
         "saturation": 0.9,
         "contrast": 1.04,

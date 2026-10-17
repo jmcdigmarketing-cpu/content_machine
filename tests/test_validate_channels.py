@@ -96,9 +96,15 @@ class TestShippedConfigRatchet(unittest.TestCase):
                 return True
             return value in ({}, (), [])
 
+        # Unset on purpose, each with its reason - nothing else may join without one.
+        parked = {
+            # Decision 61 (the operator, 2026-10-17): TapIn keeps its grade; the field and its
+            # `lut3d` path wait for a .cube file that reproduces the look.
+            "color_lut",
+        }
         dead = []
         for item in fields(ChannelProfile):
-            if item.name == "id":
+            if item.name == "id" or item.name in parked:
                 continue
             if all(_blank(getattr(profile, item.name)) for profile in profiles):
                 dead.append(item.name)

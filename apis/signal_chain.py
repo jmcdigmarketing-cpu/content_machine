@@ -26,6 +26,7 @@ def chain_signal(
     """
     attempts: list[dict[str, str]] = []
     last: dict | None = None
+    answered: tuple[str, dict] | None = None  # #1233: the first provider that connected
 
     for name, fn in providers:
         try:
@@ -48,6 +49,8 @@ def chain_signal(
             }
         )
         last = sig
+        if answered is None and sig.get("connected"):
+            answered = (name, sig)
 
         if (
             sig.get("connected")
@@ -59,6 +62,11 @@ def chain_signal(
     if last and last.get("connected"):
         provider = attempts[-1]["provider"] if attempts else "unknown"
         return _tag_provider(last, provider, attempts, fallback=True)
+    if answered is not None:
+        # #1233: AniList said "no anime match" and Jikan could not be reached; the canary and
+        # the data-quality streak read "All providers in chain failed". A provider that answered
+        # is the answer.
+        return _tag_provider(answered[1], answered[0], attempts, fallback=True)
 
     return make_signal(
         connected=False,

@@ -4331,6 +4331,32 @@
         "contains": "https://"
       },
       "why": "Buffer reads https; a wrong address must never reach .env"
+    },
+    {
+      "id": "run158-beats-the-brand-is-not-a-result",
+      "item": 1234,
+      "source": "run 158 (2026-10-16): High-stakes claim about 'Beats Pill'",
+      "call": "core.grounding_tiers:high_stakes_sentence",
+      "args": [
+        "Pokemon's 30th anniversary is stacking collabs - the Beats Pill speaker, Santa Cruz skateboards, TCG drops."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a brand read as a fight result put a warning in the operator's terminal"
+    },
+    {
+      "id": "beat-the-verb-is-still-a-result",
+      "item": 1234,
+      "source": "must keep: a result claim still needs a trusted source",
+      "call": "core.grounding_tiers:high_stakes_sentence",
+      "args": [
+        "Jiri Prochazka beat Ankalaev in a classic."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the check exists for exactly this"
     }
   ]
 }

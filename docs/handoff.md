@@ -53,47 +53,42 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-16 evening · **HEAD at write:** `80d5141` (wave 97) + the wave 98 commit
-(`git log -1`) · **Tree:** clean of mine after the commit; leave `.agents/` and `.codex/`.
-Pushed (no Cursor commit sat under mine).
+**Written:** 2026-10-16 night · **HEAD at write:** the wave 100 commit (`git log -1`) · **Tree:**
+clean of mine after it; leave `.agents/` and `.codex/`. **Not pushed** - your seven local
+commits sit under mine and are not reviewed yet.
 
-**Cursor - your queue, from the operator (2026-10-16):** first your own five, **#1215 #514
-#418 #463 #545**; then these five, filed with their evidence in `docs/backlog.md`:
-**#1221** a neutral headline made a gaming best bet by its feed (`core/best_bet._domain_for_feed`
-- with #1215), **#1227** the correction scan fetches URL fragments every run
-(`core/correction_dossier.py`, `description_extras.collect_source_urls`), **#1228** a fast-cut
-shot timed out at 120 s (`assets/fast_cut.py`), **#1229** one overnight draft per child process
-(`core/overnight.py`), **#1043** clip index tagged by team. Commit locally, one commit per item
-or pair, each test failing first - **do not push**: Claude reviews, corrects and pushes your
-commits in the operator's next prompt.
+**Cursor, three things:**
+- Your `e4ceb7f` (#1215) left #1208's corpus case `contender-series-without-a-feed-tag-stays-nba`
+  expecting nba, so `tests.test_regression_corpus` failed on every commit from there. I flipped
+  it to ufc (item 1215) in `ab9677f` - nothing else. Run the whole suite before each commit.
+- My wave 99 commit `0e4582c` also carries your doc edits for your five (backlog ticks, your
+  planning-log entry, the roadmap list, your slot) - I added whole files through a private
+  index. The text is yours and unchanged; only the commit is mine. `docs/handoff_synopsis.md`
+  is still yours to commit.
+- Your first #545 commit took my staged files; thanks for resetting it. I now commit through a
+  private index (`GIT_INDEX_FILE`), so `git reset` in the shared index cannot touch mine - please
+  stage only your own paths too.
 
-**Shared files of mine (committed and pushed - read before editing):** `core/nightly_task.py`
-(`record_overnight`, `overnight_stop_line`), `scripts/ops.py` (`cmd_overnight` records its start
-and finish), `core/review_booth.py` (`_pulled`), `core/publish_blockers.py` (the record's quality
-wins), `apis/topic_variants.py` (`_subject_terms` whole names, `_is_label` folds hyphens),
-`core/title_generator.py` (`broken_team_name`, `title_cut_off`), `core/authenticity.py` (stance
-patterns), `core/content_engine.py` (`_maybe_inject_insight`: calm intents get the neutral beat,
-not own ideas or hope), `core/batch_review.py`, `tests/__init__.py` (`OVERNIGHT_RECORD_FILE`).
+**Shared files of mine (committed):** `jobs/worker.py` (`drain_due`, `PASS_CAP`),
+`core/stale_renders.py` (stale rows), `core/batch_review.py` (`shelf_waiting`),
+`publishing/video_host.py` (`check_public_url`), `core/secrets_doctor.py` (`set_env_value`),
+`publishing/crosspost.py` (`waits_line`), `scripts/ops.py` (`crosspost public-url`, a second
+positional `value`), `core/ops_doctor.py`, `apis/signal_chain.py` (the first answer wins over an
+unreachable provider), `core/grounding_tiers.py` (`high_stakes_sentence`).
 
-**Read before editing:** topic words come from `apis/topic_tokens` - `_subject_terms` was a
-private tokenizer and split "New England". `#660`'s "a calm explainer gets no beat" is reversed by
-the operator (#1226); its test now asks for the "what to watch" beat. mypy 96.
+**Read before editing:** one `ops worker` now sends every due upload; a never-uploaded render
+past twice its window does not hold a shelf place; `.env` is written only by `crosspost
+public-url` after its test passes. mypy 96.
 
 **Defects first:**
-- Overnight is paused: the shelf holds 3 (155 and 126 queued, 114 never uploaded) and nothing
-  sends uploads. Run 157 is clean and next in line.
-- The 10-16 crash's cause is unknown; `faulthandler` will name it next time.
+- TikTok and Instagram wait on the bucket's public address - the operator's Cloudflare switch,
+  then `py -m scripts.ops crosspost public-url https://pub-....r2.dev`.
+- Job 59 (run 155) is due; the next `ops worker` sends it. Run 114 waits to be retired.
 
-**Shipped:** waves 97-98 - #1222-#1226. 8 of 8 and 8 of 13 tests failed on `dd9e131` first.
-Corpus 276. Highest filed #1229.
+**Shipped:** waves 99-100 - #1230-#1234, plus `ab9677f`. 11 of 13 and 3 of 6 tests failed on
+HEAD first.
 
-**In progress:** waves 99-100 claimed (2026-10-16 night, uncommitted until their commits;
-Cursor working alongside) - #1230 one `ops worker` sends every upload that is due
-(`jobs/worker.py`), #1231 a render past twice its window stops holding a shelf place
-(`core/batch_review.py` `shelf_waiting`, `core/stale_renders.py`), #1232 `ops crosspost
-public-url` (`publishing/crosspost.py`, `publishing/video_host.py`, `scripts/ops.py`), #1233 a
-provider chain keeps the honest no-match (`apis/signal_chain.py`), #1234 "Beats" the brand is
-not a result (`core/grounding_tiers.py`). Not touching your queue's files.
+**In progress:** nothing claimed.
 
 ## Slot — Cursor
 

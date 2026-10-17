@@ -87,10 +87,20 @@ _CONTINUATION = re.compile(r"^(?:\s{2,}|[-•→]\s|\s+[•→])")
 # Claims that must not ride on low-tier sources: roster moves, results, titles.
 _HIGH_STAKES_RE = re.compile(
     r"\b(?:traded?|dealt|shipped|acquired?|signed|waived|released|drafted|"
-    r"defeated|beat|beats|knocked\s+out|ko'?d|tko'?d|submitted|"
-    r"champion|title|record\s+of|undefeated)\b",
+    r"defeated|knocked\s+out|ko'?d|tko'?d|submitted|"
+    r"record\s+of|undefeated)\b",
     re.I,
 )
+# #1234: these are brands and names when capitalised - run 158's "the Beats Pill speaker" read as
+# a result, and "Title Update 7" as a belt. Lower-case only.
+_HIGH_STAKES_LOWER_RE = re.compile(r"\b(?:beat|beats|champion|title)\b")
+
+
+def high_stakes_sentence(sentence: str) -> bool:
+    """A roster move, a result or a title claim - what must not ride on low-tier sources."""
+    text = sentence or ""
+    return bool(_HIGH_STAKES_RE.search(text) or _HIGH_STAKES_LOWER_RE.search(text))
+
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
@@ -229,7 +239,7 @@ def high_stakes_low_tier(script: str, corpus: TieredCorpus) -> list[str]:
     warnings: list[str] = []
     flagged: set[str] = set()
     for sentence in _SENTENCE_SPLIT.split(script or ""):
-        if not _HIGH_STAKES_RE.search(sentence):
+        if not high_stakes_sentence(sentence):
             continue
         for entity in specific_entities(sentence):
             key = entity.lower()

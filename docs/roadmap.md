@@ -101,8 +101,9 @@ public address (§58), a draft's stance counts as a take, the review names the f
 `ops crosspost buffer-check`. Waves 95-98 (#1216-#1226): a crashed overnight is said, runs
 record their facts, dead drafts say so first, team names stay whole, calm drafts get a beat.
 Wave 99: one `ops worker` sends every due upload (#1230), a render past its window stops holding
-the shelf (#1231), `ops crosspost public-url` (#1232). Claude has #1233-#1234 claimed. The
-step-by-step: [operator_guide.md](operator_guide.md).
+the shelf (#1231), `ops crosspost public-url` (#1232). Wave 100: a chain's honest no-match is
+not a failure (#1233), "Beats" the brand is not a result (#1234). Claude has nothing claimed.
+The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

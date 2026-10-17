@@ -7891,3 +7891,22 @@ mypy 96, equal to the baseline. Suite 5997, skipped 10, green; that run includes
 Claude's uncommitted tests in the tree. `git status --short data/` empty. Claude's
 waves 99-100 are not in these commits.
 
+### Wave 100 shipped (Claude Code)
+
+4. **#1233** the anime probe: "AniList: no anime match - via anilist (fallback)", connected,
+   inactive (was "unavailable - All providers in chain failed").
+5. **#1234** run 158's collab sentence no longer warns; "Jiri Prochazka beat Ankalaev" still does.
+
+`tests/test_chain_and_brands.py` (6): **3 of 6 failed on `35a0a85`**; the 3 that passed guard a
+chain with nothing connected, an active answer, and "beat" the verb. Corpus +2. Suite 5997, forward and reversed.
+
+### Working alongside, what went wrong
+
+- Cursor's first #545 commit took my staged wave 99 files with it; Cursor reset it (its slot
+  says so). From then on I committed through a private index (`GIT_INDEX_FILE`).
+- The private index added whole files, so `0e4582c` (wave 99) also carries Cursor's own doc
+  edits for its five - backlog ticks, its planning-log entry, its roadmap list and slot. The
+  content is Cursor's and correct; the commit message is mine.
+- Cursor's `e4ceb7f` (#1215) left #1208's corpus case expecting nba; the corpus test failed on
+  every commit from there. Corrected in `ab9677f`.
+- Not pushed: Cursor's seven commits sit under mine and are not reviewed.

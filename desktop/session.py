@@ -70,6 +70,16 @@ def facts_from_drop(paths: list[str]) -> str:
     return "\n".join(chunks).strip()
 
 
+def launch_state_path() -> Path:
+    """Isolated last-launch stamps (#532). Not the window geometry file."""
+    override = (os.getenv("CONTENT_LAUNCH_STATE") or "").strip()
+    if override:
+        return Path(override)
+    from config.paths import DATA_DIR
+
+    return Path(DATA_DIR) / "launch_state.json"
+
+
 def window_state_path() -> Path:
     override = (os.getenv("CONTENT_WINDOW_STATE") or "").strip()
     if override:

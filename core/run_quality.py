@@ -226,6 +226,15 @@ def build_quality(
             quality["date_mismatches"] = mismatches[:8]  # #551
     except Exception as exc:
         logger.debug("date arithmetic check skipped: %s", exc)
+    try:
+        from core.facts.unit_sanity import find_unit_mismatches
+
+        facts_text = str(features.get("grounding_text") or features.get("facts") or "")
+        unit_notes = find_unit_mismatches(script, facts_text)
+        if unit_notes:
+            quality["unit_mismatches"] = unit_notes[:8]  # #552
+    except Exception as exc:
+        logger.debug("unit sanity check skipped: %s", exc)
     research = features.get("research")
     if isinstance(research, dict) and research.get("script_mode") == "unconfirmed":
         quality["script_mode"] = "unconfirmed"  # #339

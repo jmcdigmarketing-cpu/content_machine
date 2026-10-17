@@ -129,7 +129,13 @@ def _publish_for_run(run_id: int, channel_id: str) -> dict[str, Any]:
 def footage_card_line(quality: dict[str, Any]) -> str:
     """The dossier line for the background label (#1041). Empty when none was stored."""
     label = str((quality or {}).get("footage") or "").strip()
-    return f"  footage: {label}" if label else ""
+    if not label:
+        return ""
+    clips = (quality or {}).get("footage_clips") or []
+    if isinstance(clips, list) and clips:
+        n = len(clips)
+        label = f"{label} ({n} clip{'s' if n != 1 else ''})"
+    return f"  footage: {label}"
 
 
 def render_dossier(run_id: int) -> str:
@@ -175,6 +181,8 @@ def render_dossier(run_id: int) -> str:
             lines.append(f"  implausible amount: {span}")
         for note in quality.get("date_mismatches") or []:  # #551
             lines.append(f"  date check: {note}")
+        for note in quality.get("unit_mismatches") or []:  # #552
+            lines.append(f"  unit check: {note}")
         opening = quality.get("opening")
         if isinstance(opening, dict):  # #988: what the viewer sees before the hook
             if opening.get("intro"):

@@ -662,6 +662,9 @@ def find_ungrounded_entities(script: str, grounding_text: str) -> list[str]:
     from core.facts.date_math import find_elapsed_mismatches
 
     ungrounded.extend(find_elapsed_mismatches(script, grounding_text))  # #551
+    from core.facts.unit_sanity import find_unit_mismatches
+
+    ungrounded.extend(find_unit_mismatches(script, grounding_text))  # #552
     return ungrounded
 
 

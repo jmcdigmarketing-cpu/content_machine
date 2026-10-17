@@ -666,12 +666,14 @@ def fast_cut_result(output: str, topic: str, shots) -> AssetResult:
     from assets.local_provider import clip_credits
     from assets.types import AssetResult as _AssetResult
 
+    clips = list(dict.fromkeys(clip for clip, _s, _l in shots))
     return _AssetResult(
         path=output,
         provider="fast_cut",
         query=topic,
         attribution=f"Gameplay (local), {len(shots)} shots",
-        credits=clip_credits(dict.fromkeys(clip for clip, _s, _l in shots)),
+        credits=clip_credits(clips),
+        clip_paths=clips,
     )
 
 

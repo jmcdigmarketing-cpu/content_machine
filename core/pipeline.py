@@ -1727,6 +1727,22 @@ def run_media_only(
             except Exception as exc:
                 logger.debug("thumbnail grade lookup skipped: %s", exc)
         if dual_thumbnail_enabled(channel_id) and content_run_id:
+            text_variants = False
+            try:
+                from config.channels import resolve_channel_id as _resolve_channel
+                from core.experiments import active_experiment
+
+                text_exp = active_experiment(_resolve_channel(channel_id), kind="thumbnail_text")
+                text_variants = bool(text_exp and text_exp.get("lever") == "thumbnail_text")
+            except Exception as exc:
+                logger.debug("thumbnail text experiment lookup skipped: %s", exc)
+            if os.getenv("THUMBNAIL_TEXT_VARIANTS", "").strip().lower() in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }:
+                text_variants = True
             thumbnail_candidates = generate_dual_thumbnails(
                 topic,
                 display_title,
@@ -1734,6 +1750,7 @@ def run_media_only(
                 content_run_id=content_run_id,
                 channel_id=channel_id,
                 grade_letter=grade_letter,
+                text_variants=text_variants,
             )
             for candidate in thumbnail_candidates:
                 progress.note(
@@ -1920,7 +1937,7 @@ def run_media_only(
     try:
         from core.win_notify import notify_ffmpeg_done
 
-        notify_ffmpeg_done(mp4_path)
+        notify_ffmpeg_done(mp4_path, channel_id=channel_id)
     except Exception as exc:
         logger.debug("ffmpeg toast skipped: %s", exc)
     return mp3_path, mp4_path, thumb_path

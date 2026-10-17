@@ -1174,6 +1174,45 @@ def cmd_package_audit(_args: argparse.Namespace) -> int:
     return 1 if any(report.hits for report in reports) else 0
 
 
+@_register(
+    "footage-ledger",
+    "License, expiry and runs for each indexed clip (#424)",
+)
+def cmd_footage_ledger(args: argparse.Namespace) -> int:
+    from assets.license_ledger import license_ledger_rows, render_ledger
+    from config.paths import CLIP_INDEX_FILE
+    from storage.repositories.content_runs import get_content_run_repository
+
+    runs = get_content_run_repository().list_for_channel(args.channel)
+    rows = license_ledger_rows(index_path=CLIP_INDEX_FILE, runs=list(runs or []))
+    _emit_text("Footage license ledger", render_ledger(rows), args)
+    return 0
+
+
+@_register("teaser", "Cut a 5s teaser from a finished vertical render (--run-id) (#511)")
+def cmd_teaser(args: argparse.Namespace) -> int:
+    run_id = int(getattr(args, "run_id", 0) or 0)
+    if not run_id:
+        print("teaser needs --run-id N")
+        return 2
+    from storage.repositories.content_runs import get_content_run_repository
+    from video.teaser import create_teaser
+
+    run = get_content_run_repository().get(run_id)
+    if run is None:
+        print("No run with that id.")
+        return 1
+    source = str(getattr(run, "mp4_path", "") or "").strip()
+    if not source or not os.path.isfile(source):
+        print(f"Run {run_id} has no finished mp4 on disk.")
+        return 1
+    stem, ext = os.path.splitext(source)
+    dest = f"{stem}_teaser{ext or '.mp4'}"
+    made = create_teaser(source, dest)
+    print(made)
+    return 0
+
+
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
 def cmd_reliability(args: argparse.Namespace) -> int:
     from core.reliability import gather, render
@@ -3812,7 +3851,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="test: run the suite in this order (#828: proves the verdict is order-free)",
     )
     parser.add_argument("--seed", type=int, default=None, help="test: seed for --order shuffle")
-    parser.add_argument("--arm", default="", help="pick-thumbnail: text_on or face_forward")
+    parser.add_argument(
+        "--arm",
+        default="",
+        help="pick-thumbnail: text_on, face_forward, text_short or text_full",
+    )
     parser.add_argument("--path", default="", help="pick-thumbnail: exact candidate image path")
     parser.add_argument(
         "--restore",

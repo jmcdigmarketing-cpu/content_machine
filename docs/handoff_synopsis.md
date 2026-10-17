@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-16: Cursor's waves reviewed, corrected and pushed; wave 101
+# Handoff synopsis — 2026-10-17: Cursor fifteen (LUT, booth, ledger); Claude wave 102 still dirty
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,23 +10,35 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-16 (Cursor): fifteen from the backlog
+## Last wave — 2026-10-17 (Cursor): fifteen from the backlog
 
-Claude had not queued a fifteen. This wave is the roadmap's five, #1241, and
-the next cheapest open lines that already had an input.
+Claude had not queued a fifteen; wave 102 idea-menu files stayed unstaged.
+This wave is the roadmap five plus ten unblocked backlog items.
 
-Menus take one key. The last topic is recalled per channel. `--quiet` keeps
-gates and the report card. A gate rings once on a TTY. URLs, paths and run ids
-are links on a TTY. Reading grade is measured; TapIn has no target, so nothing
-is blocked for it. Upload language is the channel's. Region is printed on the
-dry run and does not geo-block. A moat backup can be restored into a temp
-directory. `roadmap-index` lists the open numbered titles. Thumbnails wrap and
-take the channel colour when the contrast holds. `ops explain --run-id` reads
-the trace. A repeated opening is dropped once and the earlier count is kept.
-A pin comment waits for the next peak. A feed-wide RSS 404 can fill from yt-dlp.
+TapIn and MoneyWise toasts use distinct sounds. The booth switches burned /
+retext / proportional captions, edits tag chips onto the run and the queued
+package, and fits a phone-width viewport. Home shows `git log` since last
+launch. Copy panel puts the active Qt page on the clipboard. A tall portrait
+thumbnail keeps the upper focal area. Dual thumbs can vary only the headline.
+Shipped `.cube` LUTs replace the eq scalars (finished colour changes).
+`ops teaser` cuts five seconds. `ops footage-ledger` names licence, expiry
+and runs. Unit sanity flags "80 hours" from "80 minutes". `normalize_signal`
+always fills the contract. Golden ffmpeg argv covers LUT/no-LUT paths.
+LLM calls store latency; reliability reports it without tripping a breaker.
 
-`roadmap-index`: open 274, done 1200, numbered open 222, highest open #1136.
-Next: #508 #532 #269 #497 #509.
+`roadmap-index`: open 259, done 1215, numbered open 207, highest open #1136.
+Next: #421 #425 #449 #450 #457.
+
+## Previous — 2026-10-16 (Cursor): fifteen from the backlog
+
+Claude had not queued a fifteen. Menus take one key. The last topic is
+recalled. `--quiet` keeps gates. A gate rings once on a TTY. URLs, paths and
+run ids are links. Reading grade is measured. Upload language is the
+channel's. A moat backup restores into a temp directory. Thumbnails wrap.
+A repeated opening is dropped once. A pin waits for the next peak. A
+feed-wide RSS 404 can fill from yt-dlp.
+
+`roadmap-index` then: open 274, done 1200, numbered open 222, highest #1136.
 
 ## Previous — 2026-10-16 (Claude Code): review of Cursor's eight commits (fifteen items) + wave 101
 

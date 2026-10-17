@@ -275,6 +275,17 @@ def validate_channel(channel_id: str, raw_cfg: dict) -> tuple[list[str], list[st
                 ):
                     errors.append(f"{channel_id}: end_card.{key} must be #RRGGBB")
 
+    color_lut = str(raw_cfg.get("color_lut") or "").strip()
+    if color_lut:
+        if not color_lut.lower().endswith(".cube"):
+            errors.append(f"{channel_id}: color_lut must be a .cube file")
+        else:
+            from config.paths import ROOT_DIR
+
+            lut_path = color_lut if os.path.isabs(color_lut) else os.path.join(ROOT_DIR, color_lut)
+            if not os.path.isfile(lut_path):
+                errors.append(f"{channel_id}: color_lut file missing: {color_lut}")
+
     color_grade = raw_cfg.get("color_grade")
     if color_grade is not None:
         if not isinstance(color_grade, dict):

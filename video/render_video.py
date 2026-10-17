@@ -110,6 +110,26 @@ def _escape_subtitle_path(path: str) -> str:
     return path.replace("\\", "/").replace(":", r"\:")
 
 
+def _resolve_color_lut(channel_id: str | None) -> str | None:
+    """Absolute path to a shipped .cube LUT, or None so the eq identity fallback stays."""
+    try:
+        from config.channels import get_channel_profile
+        from config.paths import ROOT_DIR
+
+        raw = str(get_channel_profile(channel_id).color_lut or "").strip()
+        if not raw:
+            return None
+        path = raw if os.path.isabs(raw) else os.path.join(ROOT_DIR, raw)
+        path = os.path.abspath(path)
+        if os.path.isfile(path) and path.lower().endswith(".cube"):
+            return path
+        logger.warning("Color LUT missing for channel=%s: %s", channel_id, path)
+        return None
+    except Exception as exc:
+        logger.debug("Color LUT skipped for channel=%s: %s", channel_id, exc)
+        return None
+
+
 def _resolve_color_grade(channel_id: str | None) -> dict[str, float] | None:
     try:
         from config.channels import get_channel_profile
@@ -193,6 +213,7 @@ def build_render_ffmpeg_command(
     lower_thirds_path: str | None = None,
     policy_overlays_path: str | None = None,
     color_grade: dict[str, float] | None = None,
+    color_lut: str | None = None,
     hook_motion_filter: str = "",
     channel_id: str | None = None,
     music_volume: float | None = None,
@@ -220,7 +241,11 @@ def build_render_ffmpeg_command(
     policy_escaped = _escape_subtitle_path(policy_overlays_path) if policy_overlays_path else ""
     duration_str = f"{duration:.3f}"
     grade_filter = ""
-    if color_grade and any(
+    lut_path = str(color_lut or "").strip()
+    if lut_path:
+        lut_escaped = _escape_subtitle_path(lut_path)
+        grade_filter = f"lut3d='{lut_escaped}',"
+    elif color_grade and any(
         (
             float(color_grade["saturation"]) != 1.0,
             float(color_grade["contrast"]) != 1.0,
@@ -565,7 +590,8 @@ def render_vertical_video(
         from core.music import music_config
 
         music_volume = music_config(channel_id)["volume"]
-    color_grade = _resolve_color_grade(channel_id)
+    color_lut = _resolve_color_lut(channel_id)
+    color_grade = None if color_lut else _resolve_color_grade(channel_id)
     hook_motion_filter = ""
     try:
         from config.channels import get_channel_profile
@@ -598,6 +624,7 @@ def render_vertical_video(
         lower_thirds_path=lower_thirds_path,
         policy_overlays_path=policy_overlays_path,
         color_grade=color_grade,
+        color_lut=color_lut,
         hook_motion_filter=hook_motion_filter,
         channel_id=channel_id,
         music_volume=music_volume,
@@ -645,6 +672,7 @@ def render_vertical_video(
             lower_thirds_path=lower_thirds_path,
             policy_overlays_path=policy_overlays_path,
             color_grade=color_grade,
+            color_lut=color_lut,
             hook_motion_filter=hook_motion_filter,
             channel_id=channel_id,
         )
@@ -717,6 +745,7 @@ def render_vertical_video(
             music_path=music_path,
             lower_thirds_path=lower_thirds_path,
             color_grade=color_grade,
+            color_lut=color_lut,
             hook_motion_filter=hook_motion_filter,
             channel_id=channel_id,
             policy_overlays_path=policy_overlays_path,
@@ -739,6 +768,7 @@ def _render_extra_formats(
     music_path: str | None = None,
     lower_thirds_path: str | None = None,
     color_grade: dict[str, float] | None = None,
+    color_lut: str | None = None,
     hook_motion_filter: str = "",
     policy_overlays_path: str | None = None,
     channel_id: str | None = None,
@@ -773,6 +803,7 @@ def _render_extra_formats(
                 music_path=music_path,
                 lower_thirds_path=lower_thirds_path,
                 color_grade=color_grade,
+                color_lut=color_lut,
                 hook_motion_filter=hook_motion_filter,
                 channel_id=channel_id,
                 policy_overlays_path=policy_overlays_path,

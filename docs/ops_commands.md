@@ -73,6 +73,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `footage` | Gameplay folder per playlist niche (--apply measures each clip's text bands) |
 | `footage-add` | Import a gameplay file or folder (--path --game --licence [--source url] --apply) |
 | `footage-gaps` | What gameplay to record, and past videos that may show another game (#955) |
+| `footage-ledger` | License, expiry and runs for each indexed clip (#424) |
 | `footage-licence` | Save a recorded Commons, Internet Archive, or NASA (cc0) search (--catalogue --fixture --niche --subject --apply) |
 | `footage-tag` | Tag a clip already in the library (--path --team [--apply]) |
 | `free-cost` | Prove the $0/Piper path billed $0 (or say that it did not) |
@@ -173,6 +174,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `sync-metrics` | Pull YouTube Analytics into performance memory |
 | `tag-report` | Tags and hashtags ranked by lift over the channel (#428) |
 | `tapology-test` | Scrape Tapology fight card for a topic string |
+| `teaser` | Cut a 5s teaser from a finished vertical render (--run-id) (#511) |
 | `technical-qc` | Inspect a finished video for stream, frame and loudness defects |
 | `test` | Run unit tests (--order reverse\|shuffle [--seed N] proves order-independence) |
 | `title-card` | Write a 2-line title-card still (--path dest.png, --topic text) |

@@ -91,7 +91,7 @@ def _ps_single_quote(text: str) -> str:
     return str(text).replace("'", "''")
 
 
-def _toast_script(title: str, body: str, *, launch: str = "") -> str:
+def _toast_script(title: str, body: str, *, launch: str = "", sound: str = "") -> str:
     """Build the PowerShell one-liner. Split out so the quoting is testable."""
     title_x = _ps_single_quote(_xml_escape(title))
     body_x = _ps_single_quote(_xml_escape(body))
@@ -100,13 +100,17 @@ def _toast_script(title: str, body: str, *, launch: str = "") -> str:
     if launch:
         launch_x = _ps_single_quote(_xml_escape(launch))
         attrs = f' activationType="protocol" launch="{launch_x}"'
+    audio = ""
+    if sound:
+        sound_x = _ps_single_quote(_xml_escape(sound))
+        audio = f'<audio src="{sound_x}"/>'
     return (
         "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications,"
         " ContentType = WindowsRuntime] | Out-Null; "
         "[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom,"
         " ContentType = WindowsRuntime] | Out-Null; "
         f'$xml = \'<toast{attrs}><visual><binding template="ToastGeneric">'
-        f"<text>{title_x}</text><text>{body_x}</text></binding></visual></toast>'; "
+        f"<text>{title_x}</text><text>{body_x}</text></binding></visual>{audio}</toast>'; "
         "$doc = New-Object Windows.Data.Xml.Dom.XmlDocument; $doc.LoadXml($xml); "
         "$t = [Windows.UI.Notifications.ToastNotification]::new($doc); "
         f"[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("
@@ -114,9 +118,9 @@ def _toast_script(title: str, body: str, *, launch: str = "") -> str:
     )
 
 
-def _toast_powershell(title: str, body: str, *, launch: str = "") -> bool:
+def _toast_powershell(title: str, body: str, *, launch: str = "", sound: str = "") -> bool:
     """WinRT toast via PowerShell (no extra pip). Fire-and-forget; never blocks discovery."""
-    script = _toast_script(title, body, launch=launch)
+    script = _toast_script(title, body, launch=launch, sound=sound)
     creation = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     subprocess.Popen(
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
@@ -134,6 +138,7 @@ def toast(
     *,
     key: str | None = None,
     launch: str = "",
+    sound: str = "",
     urgent: bool = False,
 ) -> bool:
     """Show a Windows toast. Dedupes on `key` within the process. Never raises.
@@ -155,7 +160,7 @@ def toast(
         except Exception as exc:
             logger.debug("AppUserModelID skipped: %s", exc)
         try:
-            ok = _toast_powershell(title, body, launch=launch)
+            ok = _toast_powershell(title, body, launch=launch, sound=sound)
         except Exception as exc:
             logger.debug("toast powershell skipped: %s", exc)
             return False
@@ -239,7 +244,20 @@ def _file_launch_uri(path: str) -> str:
         return ""
 
 
-def notify_ffmpeg_done(path: str) -> None:
+def _channel_sound(channel_id: str | None) -> str:
+    if not channel_id:
+        return ""
+    try:
+        from config.channels import get_channel_profile
+
+        sound = str(get_channel_profile(channel_id).notification_sound or "").strip()
+        return sound if sound.startswith("ms-winsoundevent:Notification.") else ""
+    except Exception as exc:
+        logger.debug("channel notification sound skipped: %s", exc)
+        return ""
+
+
+def notify_ffmpeg_done(path: str, *, channel_id: str | None = None) -> None:
     try:
         name = os.path.basename(path) if path else "render"
         launch = _file_launch_uri(path) if _toast_open_mp4_enabled() else ""
@@ -248,6 +266,7 @@ def notify_ffmpeg_done(path: str) -> None:
             name or "render complete",
             key=f"ffmpeg:{path}",
             launch=launch,
+            sound=_channel_sound(channel_id),
         )
     except Exception as exc:
         logger.debug("notify_ffmpeg_done skipped: %s", exc)

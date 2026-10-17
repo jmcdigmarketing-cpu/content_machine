@@ -14,6 +14,7 @@ from collections.abc import Callable
 from PySide6.QtCore import QByteArray, Qt
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
+    QApplication,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -147,7 +148,7 @@ class MainShell(QMainWindow):
         grid.setHorizontalSpacing(14)
         grid.setVerticalSpacing(14)
         self._home_labels = []
-        wide = {"Last videos", "Research"}
+        wide = {"Last videos", "Research", "Changelog"}
         col = row = 0
         for label, text in home_lines(self.channel_id):
             card = QFrame()
@@ -173,10 +174,25 @@ class MainShell(QMainWindow):
                 col = (col + 1) % 2
                 row += 0 if col else 1
         layout.addLayout(grid)
+        actions = QHBoxLayout()
         refresh = QPushButton("Refresh")
         refresh.clicked.connect(self._fill_home)
-        layout.addWidget(refresh, 0, Qt.AlignmentFlag.AlignLeft)
+        copy_panel = QPushButton("Copy panel")
+        copy_panel.clicked.connect(self.copy_active_panel_screenshot)
+        actions.addWidget(refresh, 0, Qt.AlignmentFlag.AlignLeft)
+        actions.addWidget(copy_panel, 0, Qt.AlignmentFlag.AlignLeft)
+        actions.addStretch(1)
+        layout.addLayout(actions)
         layout.addStretch(1)
+
+    def copy_active_panel_screenshot(self) -> bool:
+        """Copy the visible page to the Qt clipboard (#529)."""
+        widget = self.stack.currentWidget() or self
+        pix = widget.grab()
+        if pix.isNull():
+            return False
+        QApplication.clipboard().setPixmap(pix)
+        return True
 
     def home_text(self) -> str:
         return "\n".join(label.text() for label in self._home_labels)

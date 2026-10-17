@@ -47,6 +47,7 @@ dev = [
     "types-requests",
     "types-beautifulsoup4",
     "coverage>=7.6.0",
+    "hypothesis>=6.112.0",
     "pip-audit>=2.7.3",
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
@@ -142,7 +143,7 @@ packages = [
 [tool.setuptools.package-data]
 # #737: runtime files the code opens through config/paths.py. Single-level globs only:
 # nothing here can reach config/secrets/, which holds real OAuth files on disk.
-config = ["*.json", "competitors/*.json", "seo/*.json"]
+config = ["*.json", "competitors/*.json", "seo/*.json", "luts/*.cube"]
 core = ["data/*"]
 analytics = ["*.json"]
 # #832: channel logos, banners and the wordmark are opened at runtime (core/brand_kit.py).

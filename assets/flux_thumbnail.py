@@ -469,6 +469,7 @@ def _pillow_thumbnail(
     channel_id: str | None = None,
     variant: str = "text_on",
     subject_path: str | None = None,
+    overlay_title: str | None = None,
 ) -> ThumbnailResult:
     os.makedirs(output_dir, exist_ok=True)
     width, height = 1280, 720
@@ -484,7 +485,7 @@ def _pillow_thumbnail(
     draw.rectangle([(0, 0), (width, 12)], fill=accent)
     draw.rectangle([(0, height - 12), (width, height)], fill=accent)
 
-    display = (title or topic).strip()[:80]
+    display = (overlay_title if overlay_title is not None else (title or topic)).strip()[:80]
     if variant == "face_forward" and not subject_path:
         # No cutout was passed. Keep a drawn figure so this arm stays distinct
         # from the text plate; a real face replaces it when the caller has one.
@@ -535,12 +536,61 @@ def generate_dual_thumbnails(
     content_run_id: int | None,
     channel_id: str | None,
     grade_letter: str | None = None,
+    text_variants: bool = False,
 ) -> list[dict]:
-    """Generate text_on + face_forward independently, each fail-open to Pillow."""
+    """Generate text_on + face_forward independently, each fail-open to Pillow.
+
+    ``text_variants`` holds layout constant and varies only the headline (#509).
+    """
     from core.cost_meter import thumbnail_cost
 
     os.makedirs(output_dir, exist_ok=True)
     run_tag = f"run{content_run_id}" if content_run_id else "thumb"
+    if text_variants:
+        from assets.thumbnail_compose import headline_words
+
+        words = headline_words(title) or [part for part in (title or topic).split() if part]
+        short = " ".join(words[:3] or words)
+        full = (title or topic).strip() or short
+        if short == full and len(words) > 2:
+            short = " ".join(words[:2])
+        rows: list[dict] = []
+        for arm, headline in (("text_short", short), ("text_full", full)):
+            filename = _thumbnail_basename(title, topic, suffix=f"{arm}_pillow_{run_tag}")
+            result = _pillow_thumbnail(
+                topic,
+                title,
+                output_dir,
+                filename=filename,
+                channel_id=channel_id,
+                variant="text_on",
+                overlay_title=headline,
+            )
+            rows.append(
+                {
+                    "path": result.path,
+                    "arm": arm,
+                    "provider": result.provider,
+                    "features": {
+                        "layout": "text_on",
+                        "headline": True,
+                        "headline_text": headline,
+                        "subject_led": False,
+                    },
+                    "provider_evidence": {
+                        "pre_provider": "pillow",
+                        "post_provider": result.provider,
+                        "failed_paid_attempt": False,
+                    },
+                    "cost": {
+                        "pre_fallback_usd": thumbnail_cost("pillow"),
+                        "post_fallback_usd": thumbnail_cost(result.provider),
+                        "known_incurred_usd": thumbnail_cost(result.provider),
+                        "failed_attempt_billing": "none",
+                    },
+                }
+            )
+        return rows
     candidates: list[dict] = []
     for arm in ("text_on", "face_forward"):
         if paid_thumbnail_blocked(grade_letter):
@@ -580,9 +630,7 @@ def generate_dual_thumbnails(
             )
         failed_paid = preferred != "pillow" and not result.path
         if not result.path:
-            fallback_name = _thumbnail_basename(
-                title, topic, suffix=f"{arm}_pillow_{run_tag}"
-            )
+            fallback_name = _thumbnail_basename(title, topic, suffix=f"{arm}_pillow_{run_tag}")
             result = _pillow_thumbnail(
                 topic,
                 title,

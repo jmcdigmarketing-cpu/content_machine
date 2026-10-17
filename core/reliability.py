@@ -319,11 +319,65 @@ def _music_lines() -> list[str]:
         return []
 
 
+def provider_latency_rows(
+    traces: list[dict[str, Any]] | None = None,
+    *,
+    budget_seconds: float | None = None,
+) -> list[dict[str, Any]]:
+    """Trailing per-provider LLM latency vs the report-only budget (#582).
+
+    Does not trip breakers. Missing elapsed_seconds (older traces) are skipped.
+    """
+    if budget_seconds is None:
+        raw = os.getenv("LLM_PROVIDER_LATENCY_BUDGET_SECONDS", "").strip()
+        try:
+            budget_seconds = float(raw) if raw else 10.0
+        except ValueError:
+            budget_seconds = 10.0
+    if traces is None:
+        try:
+            from core.run_trace import list_traces
+
+            traces = list_traces(limit=20)
+        except Exception as exc:
+            logger.debug("llm latency traces skipped: %s", exc)
+            traces = []
+    buckets: dict[str, list[float]] = {}
+    for trace in traces or []:
+        for call in (trace or {}).get("llm_calls") or []:
+            if not isinstance(call, dict):
+                continue
+            provider = str(call.get("provider") or "").strip()
+            elapsed = call.get("elapsed_seconds")
+            if not provider or elapsed is None:
+                continue
+            try:
+                buckets.setdefault(provider, []).append(float(elapsed))
+            except (TypeError, ValueError):
+                continue
+    rows: list[dict[str, Any]] = []
+    for provider, samples in buckets.items():
+        latest = samples[-1]
+        trailing = samples[-5:]
+        mean = sum(trailing) / len(trailing)
+        rows.append(
+            {
+                "provider": provider,
+                "budget_seconds": float(budget_seconds),
+                "latest_seconds": latest,
+                "trailing_mean_seconds": round(mean, 3),
+                "over_budget": latest > float(budget_seconds),
+            }
+        )
+    return rows
+
+
 def gather() -> dict[str, Any]:
     """Assemble the full reliability snapshot (read-only, fail-open)."""
     return {
         "apify": _apify_section(),
         "llm": _llm_section(),
+        "llm_latency": provider_latency_rows(),
         "signals": _signals_section(),
         "music": _music_lines(),
         "cache": _cache_section(),
@@ -554,6 +608,18 @@ def render(data: dict[str, Any] | None = None) -> str:
     lines.append(f"  spend   : {_budget_line(llm.get('spend_today'), llm.get('daily_budget'))}")
     if llm.get("escaped_free_first"):
         lines.append("  escaped : this process used a paid LLM after a free-first miss")
+    for row in data.get("llm_latency") or []:
+        if not isinstance(row, dict):
+            continue
+        flag = " over budget" if row.get("over_budget") else ""
+        try:
+            latest = float(row.get("latest_seconds") or 0)
+            budget = float(row.get("budget_seconds") or 0)
+        except (TypeError, ValueError):
+            continue
+        lines.append(
+            f"  latency : {row.get('provider')} {latest:.1f}s (budget {budget:.0f}s){flag}"
+        )
     dead = llm.get("dead_models") or {}
     if dead:
         # Retired slugs (e.g. an OpenRouter ':free' variant that was withdrawn).

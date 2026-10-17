@@ -187,6 +187,11 @@ def compose_thumbnail(
 
     if subject is not None:
         cut = subject.convert("RGB")
+        sw, sh = cut.size
+        # #508: a tall portrait keeps its upper focal area (face), not the lower half.
+        if sh > sw * 1.15:
+            crop_h = min(sh, max(sw, round(sh * 0.42)))
+            cut = cut.crop((0, 0, sw, max(1, crop_h)))
         cut.thumbnail((max(1, width // 3), max(1, height - 2 * MARGIN)))
         x = width - MARGIN - cut.width
         y = max(MARGIN, (height - cut.height) // 2)

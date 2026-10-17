@@ -17,8 +17,13 @@ def dual_thumbnail_enabled(channel_id: str | None = None) -> bool:
     try:
         from core.experiments import active_experiment
 
-        active = active_experiment(resolve_channel_id(channel_id), kind="thumbnail")  # #919
-        return bool(active and active.get("lever") == "thumbnail_format")
+        cid = resolve_channel_id(channel_id)
+        active = active_experiment(cid, kind="thumbnail")  # #919
+        text_exp = active_experiment(cid, kind="thumbnail_text")
+        return bool(
+            (active and active.get("lever") == "thumbnail_format")
+            or (text_exp and text_exp.get("lever") == "thumbnail_text")
+        )
     except Exception:
         return False
 
@@ -51,7 +56,7 @@ def ensure_thumbnail_ready(content_run_id: int | None) -> str | None:
         raise RuntimeError(
             f"Run {content_run_id} has dual thumbnails but no pick; run "
             f"`py -m scripts.ops pick-thumbnail --run-id {content_run_id} --arm "
-            "text_on|face_forward` before publishing."
+            "text_on|face_forward|text_short|text_full` before publishing."
         )
     return selected
 

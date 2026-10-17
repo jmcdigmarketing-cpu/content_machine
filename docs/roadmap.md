@@ -83,22 +83,16 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five (non-app)
 
-**2026-10-16 (Cursor).** #429, #438, #441, #422, #423, #466, #479, #489, #492,
-#493, #495, #496, #539, #544 and #1241 are done. Next, from the open numbered
-lines `roadmap-index` still prints: **#508** thumbnail face-crop with the Pillow
-stack already in the plate, **#532** a changelog from `git log` since the last
-launch, **#269** burned captions against a sidecar, **#497** a per-channel LUT
-in place of the three `eq` scalars, **#509** thumbnail text variants.
-Finished output changed: thumbnail type size, and plate colours from the channel.
-A script whose opening matches another from the last seven days may lose that
-first sentence once; the count from before the drop is kept. An upload's language
-comes from the channel. A pin comment is posted only when the existing flag is
-on, and then at the channel's next peak. When every competitor RSS feed is down,
-the pulse can fill from yt-dlp. The terminal takes one key on the numbered
-prompts, recalls the last topic, can hide narration with `--quiet`, rings once
-at a gate, and links URLs, paths and run ids. A non-TTY run does not bell or
-emit OSC sequences.
-`roadmap-index`: open 274, done 1200, numbered open 222, highest open #1136.
+**2026-10-17 (Cursor).** #508 #532 #269 #497 #509 #233 #300 #424 #451 #453
+#454 #511 #529 #552 #582 are done. Next, from the open numbered lines
+`roadmap-index` still prints: **#421** a render time budget that degrades the
+preset, **#425** vertical-crop scoring for 16:9 sources, **#449** a batch
+approve queue, **#450** voice-note fact intake, **#457** a lockfile so the
+environment cannot silently disagree with `pyproject.toml`.
+Finished output changed: TapIn and MoneyWise encodes apply a per-channel
+`.cube` LUT instead of the three `eq` scalars; a supplied portrait thumbnail
+keeps its upper focal area.
+`roadmap-index`: open 259, done 1215, numbered open 207, highest open #1136.
 Claude reviewed Cursor's commits before the push and corrected five (`7c03f1a` + the
 docs commit: footage for team topics, a draft child's output, the shot timeout, the correction
 beat, the hook card's marks). Wave 101: the competitor pulse only on the topic (#1236), stale

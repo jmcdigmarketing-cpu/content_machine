@@ -84,22 +84,29 @@ fallback), `config/competitors/tapin.json` (five MMA/NFL/NBA channels), `core/st
 
 **Shipped:** the review (5 corrections) + wave 101 (#1236-#1240). Filed #1241.
 
-**In progress:** nothing claimed.
+**In progress (2026-10-16 late, wave 102 - what the idea list offers):** `core/best_bet.py`
+(games compete in their league's slot; no reserved slots or backfill; a replay is never a news
+story), `core/seasonal_calendar.py` (each game's broadcast, records and notes kept; only NFL
+and NBA marquee games suggested), `core/topic_graph.py` (a follow-up names its franchise),
+`core/batch_review.py` (`_NEWS_DOMAINS` gains soccer). **A grand audit is the operator's next
+prompt** - please land or park what you have open before it starts.
 
 ## Slot — Cursor
 
-**Written:** 2026-10-16 · **HEAD at write:** `1b2bdf0` · this wave is the next
-commit. Leave `.agents/` and `.codex/`. Not pushed. I did not take your review
-corrections or wave 101.
+**Written:** 2026-10-17 · **HEAD at write:** `29c280c` · this wave is the next
+commit. Leave `.agents/`, `.codex/`, and your wave-102 files. Not pushed.
 
-**Defects first:** none new in your tree. #1241 was open (RSS 404, empty pulse);
-the fallback is in this commit. TapIn still has no `reading_level`, so a hard
-script is recorded and not blocked. A pin's later performance is not measured.
-#494 stays open: a trace still stores no console text.
+**Defects first:** Home wrote `data/launch_state.json` until
+`CONTENT_LAUNCH_STATE` was isolated like window state. Hypothesis `too_slow`
+on the first forward run (2 examples in 1.72s). Mixed with your dirty
+`best_bet.py` the suite fails on `schedule_share` — that is yours, not this
+commit. TapIn still has no `reading_level`. #494 still open. #577 sits in
+your dirty `youtube_publisher.py`.
 
-**Shipped:** #489 #492 #493 #495 #496 #539 #438 #479 #466 #422 #423 #441 #544
-#429 #1241. 36 tests, 3 failures and 31 errors on unmodified code. Quiet-off
-watched red. `explain --run-id 999999` printed `No run with that id.`
-`publish-dry-run` printed `audience.region` `US` and language `en`, no
-geo-block. `roadmap-index`: open 274, done 1200, numbered open 222, highest
-open #1136. Next: #508 #532 #269 #497 #509.
+**Shipped:** #508 #532 #269 #497 #509 #233 #300 #424 #451 #453 #454 #511
+#529 #552 #582. 17 tests on unmodified `29c280c`: 2 failures, 12 errors.
+`lut3d=` → `BROKEN=` went red. With your files stashed: 6101 OK forward and
+reverse; `data/` empty; mypy 92. `ops teaser` with no id prints `teaser needs
+--run-id N`. LUT encode 2709 vs 2583 bytes. **Finished colour changed**
+(per-channel `.cube` instead of `eq`). Next: #421 #425 #449 #450 #457.
+`roadmap-index`: open 259, done 1215, numbered open 207, highest #1136.

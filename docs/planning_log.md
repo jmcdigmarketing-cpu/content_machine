@@ -17,6 +17,39 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-17 (Cursor) - next fifteen backlog wave
+
+**Prompt:** next 15 that claude sent, if not take from backlog. Then: implement the attached plan.
+
+Claude's mailbox still held wave 102 idea-menu work (#1242-#1246), not a new fifteen. Those dirty files were left untouched (`.env.example`, `core/best_bet.py`, `core/seasonal_calendar.py`, `core/topic_graph.py`, `core/batch_review.py`, `publishing/youtube_publisher.py`, related tests, `.agents/`, `.codex/`). The wave is the roadmap five plus ten unblocked backlog items: #508 #532 #269 #497 #509 #233 #300 #424 #451 #453 #454 #511 #529 #552 #582.
+
+**Fail first:** 17 tests in `tests/test_backlog_ui_wave.py`, `tests/test_backlog_media_wave.py`, `tests/test_backlog_evidence_wave.py`. On unmodified `29c280c`: 2 failures and 12 errors. Already green (not the fix): #233 toast XML already carried distinct shipped sounds; #451 already had the 520px phone CSS. Failures: a 100x300 portrait pasted more blue than red; `normalize_signal({'connected': False, 'status': 'unavailable'})` was missing contract keys. The golden argv file was filled after LUT wiring; replacing `lut3d=` with `BROKEN=` went red, then restored.
+
+**Shipped:**
+1. #233 TapIn toast uses `Notification.IM`, MoneyWise `Notification.Mail`.
+2. #269 booth `setCaptionMode` burned / retext / proportional; proportional VTT from `build_srt`.
+3. #300 `apply_booth_tags` writes `tags_json` and the queued upload payload. `" UFC ", "news", "ufc"` -> `["UFC", "news"]`.
+4. #451 phone booth already fitted; CSS kept.
+5. #529 `MainShell.copy_active_panel_screenshot` copies the active Qt page. Offscreen pixmap is not null.
+6. #532 `changelog_since_last_launch` reads `git log --since` from `data/launch_state.json`. After-launch commits show; the first-launch subject does not.
+7. #508 tall portrait keeps the upper focal area. Red > blue in the right plate. No-subject thumbs unchanged.
+8. #509 `text_variants=True` yields `text_short` / `text_full` on layout `text_on`. `thumbnail_text` is its own kind. Pipeline reads that lever or `THUMBNAIL_TEXT_VARIANTS`.
+9. #497 shipped `config/luts/tapin.cube` and `moneywise.cube`. Graph uses `lut3d=` and drops `eq=`. Missing file keeps the eq identity fallback. A 1s smptebars encode: 2709 bytes vs 2583-byte source. **Changes finished video colour** for TapIn and MoneyWise.
+10. #511 `ops teaser --run-id N` writes `_teaser.mp4`. 6s source stays byte-identical; cut is 4.8-5.2s. No id prints `teaser needs --run-id N`.
+11. #424 `ops footage-ledger` links sidecar licence, expiry, and `quality.footage_clips` run ids. Expired `2026-01-01` on run 124 is `EXPIRED`.
+12. #552 `find_unit_mismatches` flags "80 hours" vs "80 minutes", accepts "1.33 hours", leaves an unrelated battery. `quality.unit_mismatches` prints on the dossier.
+13. #453 Hypothesis over partial signal dicts. `normalize_signal` always returns the full contract. Runtime `hypothesis==6.170.1`.
+14. #454 golden argv for publish/draft, SRT/ASS, music/overlays, landscape, LUT.
+15. #582 successful LLM calls store `elapsed_seconds`. Reliability flags latest 12s against a 10s budget. Report-only; no breaker.
+
+**Finished output:** TapIn and MoneyWise renders now run a `.cube` LUT instead of the three `eq` scalars. A supplied portrait thumbnail is cropped toward the upper focal area.
+
+**Audit:** mixed-tree suite (Claude's dirty `best_bet.py`) failed on schedule_share. With those files stashed: booth track HTML had to start with `kind='captions'` for the existing public-surface test; `CONTENT_LAUNCH_STATE`, `LLM_PROVIDER_LATENCY_BUDGET_SECONDS`, and `THUMBNAIL_TEXT_VARIANTS` went into `env_lint_baseline.json` (Claude owns the dirty `.env.example`). First forward run: Hypothesis `too_slow` after 2 examples in 1.72s; Home wrote `data/launch_state.json`. Isolated launch state the same way as window state; property test uses ASCII strategies. Then 6101 tests OK forward (72.1s) and reverse (72.5s); `data/` empty; ruff clean; mypy 92 == baseline 92.
+
+**Not done:** Claude's wave 102. #577 (dirty `youtube_publisher.py`). #494. TapIn still has no `reading_level`.
+
+**Next:** #421 #425 #449 #450 #457.
+
 ## 2026-10-16 (Cursor) - next fifteen, Claude had not queued one
 
 **Prompt:** next 15 that claude sent, if not take from backlog

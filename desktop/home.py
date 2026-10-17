@@ -8,7 +8,10 @@ is due (#863). A reader that breaks says "unavailable", never takes Home down.
 from __future__ import annotations
 
 import json
+import subprocess
 from collections.abc import Callable
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from core.logging import get_logger
@@ -77,6 +80,57 @@ def _research(_channel_id: str) -> str:
     return verdict_line(_channel_id)
 
 
+def changelog_since_last_launch(
+    channel_id: str,
+    *,
+    root: str | None = None,
+    state_path: str | Path | None = None,
+    now: datetime | None = None,
+) -> list[str]:
+    """Commit subjects since this channel last opened the app (#532). Stamps last_launch."""
+    from config.paths import ROOT_DIR
+    from desktop.session import launch_state_path
+
+    when = now or datetime.now(timezone.utc)
+    path = Path(state_path) if state_path is not None else launch_state_path()
+    repo = str(root or ROOT_DIR)
+    data: dict[str, Any] = {}
+    if path.is_file():
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                data = loaded
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.debug("launch state unreadable: %s", exc)
+    key = (channel_id or "").strip().lower()
+    row = data.get(key) if isinstance(data.get(key), dict) else {}
+    last = str((row or {}).get("last_launch") or "").strip()
+    lines: list[str] = []
+    if last:
+        try:
+            proc = subprocess.run(
+                ["git", "-C", repo, "log", f"--since={last}", "--pretty=format:%s"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode == 0:
+                lines = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+            else:
+                lines = ["unavailable"]
+        except OSError as exc:
+            logger.debug("git changelog skipped: %s", exc)
+            lines = ["unavailable"]
+    data[key] = {**(row or {}), "last_launch": when.isoformat()}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    return lines
+
+
+def _changelog(channel_id: str) -> str:
+    return "\n".join(changelog_since_last_launch(channel_id))
+
+
 # Readers by name, looked up at call time.
 SECTIONS: list[tuple[str, str]] = [
     ("Money", "_money"),
@@ -85,6 +139,7 @@ SECTIONS: list[tuple[str, str]] = [
     ("Queue", "_queue_line"),
     ("Last videos", "_last_videos"),
     ("Research", "_research"),
+    ("Changelog", "_changelog"),
 ]
 
 

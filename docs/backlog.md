@@ -496,7 +496,7 @@ Small — hours / a PR
 - [x] 230. Taskbar **overlay badge** (queue depth) *(2026-09-08)* — integer from `list_active_jobs`; tray prints `queue N`. Not a second store `[S]`
 - [x] 231. Start-menu shortcut via **pyw** *(2026-08-21)* — `ops shortcut` + `content_os.pyw` `[S]` — *new-app.*
 - [x] **232. Desktop `.lnk` to the review booth** *(2026-08-25)* — `ops booth-shortcut` targets a persistent `pythonw` launcher because the localhost port is ephemeral and a literal URL would be dead `[S]` — *new-app.*
-- [ ] 233. Per-channel **notification sound** `[S]` — *aesthetics.* TapIn vs MoneyWise should not share one ding.
+- [x] 233. Per-channel **notification sound** `[S]` *(2026-10-17)* — TapIn toast XML carries `Notification.IM`, MoneyWise `Notification.Mail`. `pipeline` passes `channel_id` into `notify_ffmpeg_done`.
 - [x] **234. High-contrast CSS for HTML reports** *(2026-08-21)* — `prefers-contrast: more` `[S]`
 - [x] 235. TapIn **swatch strip** in HTML headers `[S]` — *aesthetics.* Channel color without a full language pack.
   *(2026-08-26: shipped `end_card` bg/fg; **2026-08-27:** `booth_html` / `ops --html` now pass `channel_id`, so the swatch actually appears on the booth)*
@@ -535,7 +535,7 @@ Small — hours / a PR
 - [x] 266. **Save current frame** as a still *(2026-09-08)* — `S` writes `html_dir()/stills`. PNG copy or ffmpeg frame. Not a thumbnail API `[S]`
 - [x] 267. **9:16 letterbox** in a landscape window `[S]` *(2026-08-27)* — `.stage` with `aspect-ratio: 9 / 16` and `object-fit: contain`
 - [x] 268. **Safe-area overlay toggle** (YouTube UI chrome) `[S]` *(2026-08-27)* — default off; `toggleSafeArea` adds `.safe-on`; not the #22 PIL test
-- [ ] 269. **Burned vs sidecar** caption toggle `[S]` — *UI.* Compare retext vs proportional without re-encoding.
+- [x] 269. **Burned vs sidecar** caption toggle `[S]` *(2026-10-17)* — booth `setCaptionMode` switches burned / retext / proportional VTT tracks. `build_srt` writes the proportional sidecar without re-encoding.
 - [x] 270. **Waveform under the player** *(2026-09-08)* — `under_player_waveform` from existing wav/mp3 (ffmpeg to wav when needed). No new TTS spend `[S]`
 - [x] 271. Spoken vs **estimated duration** readout *(2026-08-25)* — booth compares ffprobe duration of the persisted spoken-audio MP3 (not the intro-bearing MP4) with the persisted word count / measured 3.3 wps estimate `[S]`
 - [x] **272. Cost subtitle under the player** *(2026-08-21)* — `tts $0.31 · 91%` on the booth `[S]` — *cost.*
@@ -567,7 +567,7 @@ Small — hours / a PR
 - [x] 297. Caption fill **contrast ratio number** vs sampled frame *(2026-09-06)* — same helper as #185 returns `ratio` + pass/fail. Not persisted on quality_json (no `QUALITY_VERSION` bump) `[S]`
 - [x] 298. YouTube-title **100-char meter** *(2026-08-25)* — the real booth reads the stored public title and flags overflow `[S]`
 - [x] 299. Description **first-line preview card** *(2026-08-25)* — the real booth reads the stored public description and shows only its first non-empty line `[S]`
-- [ ] 300. Local **tag chips** (edit in booth, apply writes the package) `[S]` — *UI.*
+- [x] 300. Local **tag chips** (edit in booth, apply writes the package) `[S]` *(2026-10-17)* — `apply_booth_tags` writes `tags_json` and the queued job payload. `" UFC ", "news", "ufc"` becomes `["UFC", "news"]`.
 - [x] 301. **Phone-bezel CSS** around the 9:16 player *(2026-09-08)* — `.phone-bezel` wraps the 9:16 stage `[S]`
 - [x] 302. **YouTube chrome mock** (like/comment/subscribe) as an overlay *(2026-09-08)* — `.yt-mock` Like/Comment, distinct from #186/#268 boxes `[S]`
 - [x] 303. Booth **theme toggle** *(2026-09-07)* — `themed_page(..., channel_id="moneywise")` header border is the MoneyWise token, not hardcoded TapIn `#c62828` `[S]`
@@ -726,7 +726,7 @@ Render & visual craft
 - [ ] 421. **Render time budget with progressive fallback** — degrade the preset rather than run long when the queue is deep `[M]`
 - [x] 422. **Thumbnail text auto-fit with hierarchy rules** — Pillow thumbs currently pick a size and hope `[M]` **Done (2026-10-16):** a 280px plate wraps "Los Angeles Chargers Super Bowl"; the first line's size is larger than the second, and the box stays inside the margin. A 1280px plate still fits on one line.
 - [x] 423. **Generate contrast-safe palettes from channel tokens** — makes #185's auditor largely unnecessary by construction `[M]` **Done (2026-10-16):** MoneyWise's caption fill `#F7E7A9` is used on dark navy (contrast at least 4.5 against the sampled pixel). The same gold on a gold plate is not used. TapIn stays white.
-- [ ] 424. **B-roll license ledger with expiry** — which clip, which license, which videos it appears in. A licensing question has no answer today `[M]`
+- [x] 424. **B-roll license ledger with expiry** `[M]` *(2026-10-17)* — `ops footage-ledger` reads each indexed clip's sidecar and `quality.footage_clips`. An expired `2026-01-01` licence on the clip used by run 124 is `EXPIRED` with `run_ids [124]`.
 - [ ] 425. **Vertical-crop scoring for 16:9 sources** — the scoring half of Phase R, shippable long before clip-from-source `[M]`
 - [x] 426. **Render artifact manifest (input hashes) on the run row** *(2026-08-28)* — mp4 + script hashed at the same finalize site as #340 `[S]`
 
@@ -759,13 +759,13 @@ Operator surface
 - [x] 448. **`ops why-slow`** *(2026-09-07)* — ranks last-trace `timings`; a 32s `signals_and_variants` phase is named first. *(2026-09-08)* `word_count` / length keys are not ranked as phases `[S]`
 - [ ] 449. **Batch approve queue** — review five drafts in one pass instead of five interactive runs `[M]`
 - [ ] 450. **Voice-note fact intake** — record a memo on a phone, transcribe to key facts; whisper is already installed `[M]`
-- [ ] 451. **Phone-sized booth layout** — review a 9:16 Short on the device it will be watched on `[S]`
+- [x] 451. **Phone-sized booth layout** `[S]` *(2026-10-17)* — `@media (max-width: 520px)` sets `.phone-bezel` to `calc(100vw - 1rem)`.
 - [x] 452. **Weekly operator digest** *(2026-09-09)* — `operator_digest` caps `next_actions` at 3; `ops digest` + weekly_report `main()` write `{date}_digest.md`. Six actions keep 0–2, drop 5. Not-ready writes nothing `[S]`
 
 Engineering hygiene
 
-- [ ] 453. **Property-based tests for the signal contract** — `make_signal()`'s shape is load-bearing for every signal and is tested by example `[M]`
-- [ ] 454. **Golden-file tests for ffmpeg argv on every path** — #24 and #330 were both argv-arithmetic bugs that a golden file catches instantly `[M]`
+- [x] 453. **Property-based tests for the signal contract** `[M]` *(2026-10-17)* — Hypothesis over partial dicts. `normalize_signal({'connected': False, 'status': 'unavailable'})` now fills the whole contract. Runtime `hypothesis==6.170.1`.
+- [x] 454. **Golden-file tests for ffmpeg argv on every path** `[M]` *(2026-10-17)* — `tests/golden/render_argv.json` pins publish/draft, SRT/ASS, music/overlays, landscape, LUT. Replacing `lut3d=` with `BROKEN=` went red.
 - [x] 455. **Shared test fixture isolating `data/quota_state.json`** *(2026-09-07)* — `tests.isolation.IsolatedQuotaStore`. `GovernorCase` subclasses it. Writes land in the temp file; path is not repo `data/quota_state.json` `[S]`
 - [x] 456. **Import-time side-effect audit + import-cost budget** — CLI startup is slow and nobody knows which module does work at import `[S]` **Done (2026-10-15):** ceilings are double the 2026-10-10 measurement: `main` 2.56s, `core.pipeline` 1.66s. A fresh interpreter is timed. Watched fail first: `main` took 0.94s against a 0.01s budget. `ops doctor` names both ceilings. The ceilings were not raised.
 - [ ] 457. **Lockfile + reproducible install** — #326 was the environment silently disagreeing with `pyproject.toml`; a lockfile makes that class impossible, not just detectable `[M]`
@@ -830,7 +830,7 @@ Terminal & TUI craft
 
 Video & render craft — permanent, survives every toolkit change
 
-- [ ] 497. **Per-channel LUT files** instead of #25's three `eq` scalars — a real grade, not brightness/contrast/saturation `[M]`
+- [x] 497. **Per-channel LUT files** `[M]` *(2026-10-17)* — shipped `config/luts/tapin.cube` and `moneywise.cube` are distinct bytes. The filter uses `lut3d=` and drops `eq=`. A missing file keeps the eq identity fallback. A 1s smptebars encode wrote 2709 bytes against a 2583-byte source. Changes finished video colour.
 - [x] 498. **Loudness *range* check**, not only integrated LUFS *(2026-09-09)* - measured `input_lra` vs `LUFS_RANGE_MIN`. A real sine fixture with the floor raised to 20 LU files `loudness range ... is below` and `passed=False`. Unavailable analysis is not a pass `[S]`
 - [x] 499. **Silence-trim the VO head and tail** before the render rather than after `[S]` **Done (2026-10-16):** the sentence join already trimmed (#404). A one-shot file written by `synthesize_to_path` kept a 0.4s head, and the first word still started at 0.4s. `trim_dead_air` now runs after the words exist and before the cache store. The first word starts at 0. A cache hit is not trimmed again. Watched fail first: the word stayed at 0.4s.
 - [ ] 500. **Beat-matched cut points** when a music bed is present `[L]`
@@ -841,10 +841,10 @@ Video & render craft — permanent, survives every toolkit change
 - [x] 505. **Two-line caption balancing** *(2026-09-06)* — `two_line_split_index` in both `split_script_into_lines` and `group_into_lines`. Eight words at max 5: 4+4, not greedy 5+3. `#419` orphan + `test_sentence_boundaries_not_crossed` stay on three-line / two-sentence cases `[S]`
 - [x] 506. **Speaker-adaptive caption colour** when a line is an attributed quote `[M]` **Done (wave 44):** in a two-voice render (debate, quotes) the second voice's words light up in `caption_skin.second_voice_color` (tapin `#4FC3F7`, moneywise `#9FD3C7`). `core/tts._write_concat_word_sidecar` tags each word with its segment's role when a render has more than one voice; `build_ass_karaoke` never puts two voices on one line and styles the second `Voice2`. A single-voice render's ASS is byte-identical (sha pinned in the test). Retexting never touches multi-voice audio (it only runs without a sidecar), so no role re-mapping was needed.
 - [ ] 507. **Do not burn captions over on-screen text** in the background clip `[L]`
-- [ ] 508. **Thumbnail face-crop bias** using the existing Pillow stack — no new image API (§26) `[M]`
-- [ ] 509. **Thumbnail A/B on text variants**, not only #27's image variants `[M]`
+- [x] 508. **Thumbnail face-crop bias** `[M]` *(2026-10-17)* — a 100x300 subject with a red upper block pastes more red than blue into the right plate. No-subject thumbs are unchanged.
+- [x] 509. **Thumbnail A/B on text variants** `[M]` *(2026-10-17)* — `generate_dual_thumbnails(..., text_variants=True)` returns `text_short`/`text_full` on the same `text_on` layout. `thumbnail_text` is its own experiment kind. Pipeline reads that lever or `THUMBNAIL_TEXT_VARIANTS`.
 - [ ] 510. **Chapter thumbnails** for the 16:9 sibling `[M]`
-- [ ] 511. **Five-second vertical teaser** cut from the finished video, for community posts `[M]`
+- [x] 511. **Five-second vertical teaser** `[M]` *(2026-10-17)* — `ops teaser --run-id N` writes `_teaser.mp4`. A 6s source stays byte-identical; the cut is 4.8–5.2s. `ops teaser` with no id prints `teaser needs --run-id N`.
 - [x] 512. **Grain and vignette as real ffmpeg filters** *(2026-09-07)* — `look_filter_fragment("tapin")` emits `noise=alls=8` + `vignette=` from tokens; moneywise grain 4. Absent `channel_id` keeps the old graph. Not visually graded on a live encode (#672) `[M]`
 - [x] 513. **Reject a black or frozen first frame** *(2026-09-06)* — Pillow luma/frozen check on the finished mp4 after intro offset (output-seek). Pre-upload / pipeline advisory (`ADVISORY` / `not a publish block`); does not skip upload. Synthetic images in tests `[S]`
 - [x] 514. **Duck the intro sting** where it overlaps the first caption `[S]` **Done (2026-10-16):** an intro with audio now fades out over its last 0.25s (`afade=t=out:st=1.900:d=0.250` on a 2.15s intro). The body track is not faded. A silent intro stays without `afade`. Watched fail first: the graph had no fade. The silent-intro guard went red when the fade was added to it. Finished audio changes when the intro file has a soundtrack.
@@ -865,10 +865,10 @@ Desktop application — Qt specifics
 - [ ] 526. **"What changed since I last looked"** panel driven by the run ledger `[M]`
 - [x] 527. **High-contrast and reduced-motion Qt themes** *(2026-09-07)* — `build_qss(..., high_contrast=True)` stamps `/* high-contrast */`; reduced_motion sets `animation-duration: 0ms`. `CONTENT_UI_HIGH_CONTRAST` / `CONTENT_UI_REDUCED_MOTION` `[M]`
 - [ ] 528. **Live log tail with level filtering**, replacing terminal scrollback `[M]`
-- [ ] 529. **Screenshot any panel to the clipboard** for the planning log `[S]`
+- [x] 529. **Screenshot any panel to the clipboard** `[S]` *(2026-10-17)* — `MainShell.copy_active_panel_screenshot` grabs the active Qt page. Offscreen, the clipboard pixmap is not null.
 - [ ] 530. **Panel-level error boundary** — one broken panel must not take the window down `[M]`
 - [ ] 531. **First-run wizard** that writes `.env` and validates keys before the first run `[M]`
-- [ ] 532. **In-app changelog** fed by `git log` since the last launch `[S]`
+- [x] 532. **In-app changelog** `[S]` *(2026-10-17)* — `changelog_since_last_launch` reads `git log --since` from `data/launch_state.json` (not window geometry). After-launch commits show; the first-launch subject does not.
 
 Content engine & angles
 
@@ -894,7 +894,7 @@ Grounding & truth
 - [x] 549. **Script-vs-title contradiction check** *(2026-09-09)* - `check_title_script_consistency` was already called from `content_engine.py` and persisted; `display_fact_engine_report` had no reader (rule 21). A `failed` check now prints and returns needs-review; `unavailable` is printed and is not a pass. Fail-first: report returned `needs_review=False` with no "title vs script" line `[M]`
 - [x] 550. **Refuse superlatives without a source** *(2026-09-07)* — `first ever` flags when facts omit it; passes when facts name it. `not only` does not fire `[S]`
 - [x] 551. **Date arithmetic check** — "18 months since" must match the actual dates in the facts `[M]` **Done (wave 61):** `core/facts/date_math.find_elapsed_mismatches` reads "N days/weeks/months/years since/ago/after/later/before" and "for N years": against a date in the same sentence ("since 2019", "since March 2025"), and against fact lines holding a date (written out, ISO or a bare year) that share a topic word. Tolerance one unit or a quarter of the span. Mismatches join the ungrounded specifics (the reground pass sees them) and `quality.date_mismatches` (the dossier prints them). Live: "6 months since" the Feb 2025 Doncic trade -> flagged (20 months); "three weeks ago" for a game out 3 days -> flagged; "seven years since 2019" -> passes
-- [ ] 552. **Number-unit sanity** — "80 hours" against a source that said minutes `[M]`
+- [x] 552. **Number-unit sanity** `[M]` *(2026-10-17)* — `find_unit_mismatches` flags "80 hours" against "80 minutes" on the same subject, accepts "1.33 hours", and leaves "The battery lasted 80 hours." `quality.unit_mismatches` is printed on the dossier.
 - [ ] 553. **Entity-role check** — developer vs parent company in the sentence that names them; run 71 shipped exactly this error `[L]`
 - [x] 554. **Flag a fact only one source carries** *(2026-09-07)* — `singleton_source_claims` flags the ESPN-only Topuria line and leaves the two-host PPV line; `_build_prompts` appends `SINGLE-SOURCE` to context (no sixth `input()` gate) `[S]`
 - [ ] 555. **Vault deduplication** — the same fact from three ingests should be one fact `[M]`
@@ -932,7 +932,7 @@ Cost & efficiency
 - [x] 579. **Warn when a run costs more than the channel's measured RPM returns** `[M]` *(fixed wave 51)* **Done:** `rpm_cost_gate.expected_return` = trailing RPM x median views per video; the pipeline stores it beside `projected_cost` and the Proceed? report prints `! this video would return ~$X at the channel's RPM ... - less than its $C cost` (or one quiet line when it earns more; nothing without revenue data). `ops economics` adds `N of M video(s) with revenue cost more than they returned`. Warn only; `RPM_COST_GATE` is unchanged.
 - [x] 580. **Free-mode cost report** *(2026-09-09)* — `free_mode_cost_proof` prints `billed $0.0000` or `not $0`. `ops free-cost` reads last-run persisted `cost`, not a fresh estimate (fail-first: last-run $0 re-estimated `$0.1725`). `[S]`
 - [x] 581. **Track Edge TTS availability** *(2026-09-07)* — `_try_alt_tts_provider` calls `mark_tts_paid_fallback`; `display_summary` prints `edge failed — fell back to ElevenLabs` `[S]`
-- [ ] 582. **Per-provider latency budget** — a slow provider is a cost too `[M]`
+- [x] 582. **Per-provider latency budget** `[M]` *(2026-10-17)* — a 2.5s DeepSeek call stores `elapsed_seconds`. Reliability flags latest 12s against a 10s budget. Report-only; no breaker and no WARNING on a healthy path.
 
 Signals & reliability
 

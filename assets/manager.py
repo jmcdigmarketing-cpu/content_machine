@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from assets.ai_video_provider import AIVideoProvider
 from assets.base import AssetProvider
@@ -28,9 +29,21 @@ VALID_BACKGROUND_MODES = ("hybrid", "stock", "local", "local_first")
 _STOCK_PROVIDERS = frozenset({"pexels", "pixabay", "coverr"})
 
 
-def footage_quality(asset: AssetResult) -> dict[str, str]:
+def footage_quality(asset: AssetResult) -> dict[str, Any]:
     """What the run card stores about the background (#1041)."""
-    return {"footage": footage_label(asset)}
+    out: dict[str, Any] = {"footage": footage_label(asset)}
+    paths = [str(p) for p in (getattr(asset, "clip_paths", None) or []) if str(p).strip()]
+    if not paths:
+        path = str(getattr(asset, "path", "") or "").strip()
+        if path and str(getattr(asset, "provider", "") or "") in {
+            "fast_cut",
+            "local",
+            "owned",
+        }:
+            paths = [path]
+    if paths:
+        out["footage_clips"] = paths
+    return out
 
 
 def footage_label(asset: AssetResult) -> str:

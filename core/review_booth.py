@@ -434,9 +434,70 @@ def parse_thumbnail_pick_post(body: bytes, *, expected_run_id: int) -> tuple[int
         raise ValueError(f"Invalid thumbnail pick form: {exc}") from exc
     if run_id != int(expected_run_id):
         raise ValueError(f"Thumbnail pick must target displayed run {expected_run_id}")
-    if arm not in {"text_on", "face_forward"}:
-        raise ValueError("Thumbnail arm must be text_on or face_forward")
+    if arm not in {"text_on", "face_forward", "text_short", "text_full"}:
+        raise ValueError("Thumbnail arm must be text_on, face_forward, text_short or text_full")
     return run_id, arm
+
+
+def apply_booth_tags(run_id: int, tags: list[str]) -> list[str]:
+    """Write cleaned tag chips onto the run and every queued upload for that run (#300)."""
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for raw in tags:
+        tag = str(raw or "").strip()
+        if not tag:
+            continue
+        key = tag.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(tag)
+    from storage.repositories.content_runs import get_content_run_repository
+
+    run_repo = get_content_run_repository()
+    run = run_repo.get(int(run_id))
+    if run is None:
+        raise ValueError(f"No content run #{run_id}")
+    run_repo.update(int(run_id), {"tags_json": json.dumps(cleaned)})
+    from storage.repositories.jobs import get_job_repository
+
+    job_repo = get_job_repository()
+    for job in job_repo.list_active_jobs() or []:
+        if int(getattr(job, "content_run_id", 0) or 0) != int(run_id):
+            continue
+        try:
+            payload = json.loads(getattr(job, "payload_json", "") or "{}")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        payload["tags"] = cleaned
+        job_repo.update(int(job.id), {"payload_json": json.dumps(payload)})
+    return cleaned
+
+
+def parse_booth_tags_post(body: bytes, *, expected_run_id: int) -> tuple[int, list[str]]:
+    from urllib.parse import parse_qs
+
+    if len(body) > 2048:
+        raise ValueError("Tag form is too large")
+    try:
+        fields = parse_qs(
+            body.decode("utf-8", errors="strict"),
+            keep_blank_values=True,
+            strict_parsing=True,
+        )
+        run_values = fields.get("run_id") or []
+        if len(run_values) != 1:
+            raise ValueError("Tag save requires exactly one run_id")
+        run_id = int(run_values[0])
+        raw = ",".join(fields.get("tags") or [])
+        tags = [part.strip() for part in raw.split(",")]
+    except (UnicodeDecodeError, TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid tag form: {exc}") from exc
+    if run_id != int(expected_run_id):
+        raise ValueError(f"Tag save must target displayed run {expected_run_id}")
+    return run_id, tags
 
 
 def signal_dots_html(signals: dict[str, Any] | None) -> str:
@@ -559,6 +620,8 @@ def booth_html(
     description: str = "",
     duration_readout: str = "",
     captions_href: str = "",
+    proportional_captions_href: str = "",
+    tags: list[str] | None = None,
     thumbnail_safe_area: str = "",
     thumbnail_picker: str = "",
     expert_panel_html: str = "",
@@ -589,21 +652,44 @@ def booth_html(
         "if(p && p.playbackRate !== undefined){p.playbackRate=r;}};"
         "window.toggleSafeArea=function(){var s=document.getElementById('stage');"
         "if(s){s.classList.toggle('safe-on');}};"
+        "window.setCaptionMode=function(mode){"
+        "var retext=document.getElementById('captions-retext');"
+        "var prop=document.getElementById('captions-proportional');"
+        "var show=function(el,on){if(el&&el.track){el.track.mode=on?'showing':'disabled';}};"
+        "if(mode==='burned'){show(retext,false);show(prop,false);}"
+        "else if(mode==='proportional'){show(retext,false);show(prop,true);}"
+        "else{show(prop,false);show(retext,true);}};"
         "})();"
         "</script>"
     )
+    if captions_href or proportional_captions_href:
+        rate_controls += (
+            "<p>"
+            "<button type='button' class='rate' onclick=\"setCaptionMode('burned')\">Burned</button>"
+            "<button type='button' class='rate' "
+            "onclick=\"setCaptionMode('retext')\">Retext</button>"
+            "<button type='button' class='rate' "
+            "onclick=\"setCaptionMode('proportional')\">Proportional</button>"
+            "</p>"
+        )
     safe_boxes = (
         "<div class='safe-area' aria-hidden='true'>"
         "<span class='yt-top'></span><span class='yt-bottom'></span></div>"
     )
     if mp4_path and os.path.isfile(mp4_path):
         src = mp4_href or _file_uri(mp4_path)
-        track = (
-            f"<track kind='captions' src='{escape(captions_href)}' srclang='en' "
-            "label='English' default>"
-            if captions_href
-            else ""
-        )
+        tracks = []
+        if captions_href:
+            tracks.append(
+                f"<track kind='captions' id='captions-retext' src='{escape(captions_href)}' "
+                "srclang='en' label='Retext' default>"
+            )
+        if proportional_captions_href:
+            tracks.append(
+                f"<track kind='captions' id='captions-proportional' "
+                f"src='{escape(proportional_captions_href)}' srclang='en' label='Proportional'>"
+            )
+        track = "".join(tracks)
         vid = (
             f"<div class='phone-bezel'><div class='stage' id='stage'>{poster_chrome}"
             f"<video id='player' class='player' controls src='{escape(src)}'"
@@ -664,7 +750,23 @@ def booth_html(
         f"{gate_banner_html(render_gate)}{gate_banner_html(rpm_deferred)}"
         f"{gate_banner_html(yesterday_unsynced)}"
     )
-    extras = f"{numeric_chips}{semantic_bar}{grade_breakdown}{tts_cache_pill}{signal_dots}"
+    tag_values = [str(tag).strip() for tag in (tags or []) if str(tag).strip()]
+    tag_chips = "".join(f"<span class='tag-chip'>{escape(tag)}</span>" for tag in tag_values)
+    tag_field = escape(",".join(tag_values))
+    tag_editor = ""
+    if run_id_int is not None:
+        tag_editor = (
+            "<form method='post' action='/save-tags' class='tag-editor'>"
+            f"<input type='hidden' name='run_id' value='{run_id_int}'>"
+            f"<p><strong>Tags</strong> {tag_chips}</p>"
+            "<p><label for='tags'>Edit tags</label> "
+            f"<input id='tags' name='tags' value='{tag_field}'></p>"
+            "<p><button type='submit'>Save tags</button></p>"
+            "</form>"
+        )
+    extras = (
+        f"{numeric_chips}{semantic_bar}{grade_breakdown}{tts_cache_pill}{signal_dots}{tag_editor}"
+    )
     public_metadata = (
         title_meter_html(title)
         + description_preview_html(description)
@@ -792,6 +894,14 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
             logger.debug("booth content metadata skipped: %s", exc)
     title = str(getattr(record, "title", "") or "")
     description = str(getattr(record, "description", "") or "")
+    script_preview = str(getattr(record, "script_preview", "") or "")
+    tags: list[str] = []
+    try:
+        loaded_tags = json.loads(getattr(record, "tags_json", "") or "[]") if record else []
+        if isinstance(loaded_tags, list):
+            tags = [str(tag).strip() for tag in loaded_tags if str(tag).strip()]
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        logger.debug("booth tags unreadable: %s", exc)
     run_status = str(getattr(record, "status", "") or (trace or {}).get("status") or "")
     run_mp4 = str(getattr(record, "mp4_path", "") or "")
     from core.review_bind import bind_review_media
@@ -1110,6 +1220,9 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         "description": description,
         "duration_readout": duration_line,
         "captions_path": captions_path,
+        "tags": tags,
+        "script_preview": script_preview,
+        "spoken_duration": actual_duration,
         "thumbnail_safe_area": thumbnail_safe_area,
         "thumbnail_picker": thumbnail_picker,
         "thumbnail_candidates": thumbnail_candidates,
@@ -1118,10 +1231,23 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     }
 
 
+def _write_proportional_vtt(script: str, duration: float | None, dest: str) -> str:
+    from video.subtitles import build_srt
+
+    if not script.strip() or not duration:
+        return ""
+    srt_path = dest[:-4] + ".srt" if dest.lower().endswith(".vtt") else dest + ".srt"
+    with open(srt_path, "w", encoding="utf-8") as handle:
+        handle.write(build_srt(script, float(duration)))
+    return _srt_to_vtt(srt_path, dest)
+
+
 def write_booth(channel_id: str | None = None, *, open_browser: bool = True) -> str:
     ctx = gather_booth_context(channel_id)
     ctx.pop("thumbnail_candidates", None)
     ctx.pop("mp3_path", None)
+    script_preview = str(ctx.pop("script_preview", "") or "")
+    spoken_duration = ctx.pop("spoken_duration", None)
     captions_path = str(ctx.pop("captions_path", "") or "")
     if captions_path:
         try:
@@ -1130,6 +1256,13 @@ def write_booth(channel_id: str | None = None, *, open_browser: bool = True) -> 
             ctx["captions_href"] = _file_uri(vtt_path)
         except Exception as exc:
             logger.warning("Booth captions unavailable: %s", exc)
+    try:
+        prop_path = os.path.join(html_dir(), "booth_proportional.vtt")
+        written = _write_proportional_vtt(script_preview, spoken_duration, prop_path)
+        if written:
+            ctx["proportional_captions_href"] = _file_uri(written)
+    except Exception as exc:
+        logger.warning("Booth proportional captions unavailable: %s", exc)
     path = write_html(booth_html(**ctx), filename="booth.html")
     if open_browser:
         open_local(path)
@@ -1150,6 +1283,8 @@ def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
         )
     mp4 = ctx.get("mp4_path")
     thumb = ctx.get("thumb_path")
+    script_preview = str(ctx.pop("script_preview", "") or "")
+    spoken_duration = ctx.pop("spoken_duration", None)
     captions_path = str(ctx.pop("captions_path", "") or "")
     if mp4 and os.path.isfile(str(mp4)):
         ctx["mp4_href"] = "booth.mp4"
@@ -1166,6 +1301,16 @@ def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
             ctx["captions_href"] = "booth.vtt"
         except Exception as exc:
             logger.warning("Booth captions unavailable: %s", exc)
+    try:
+        written = _write_proportional_vtt(
+            script_preview,
+            spoken_duration,
+            os.path.join(html_dir(), "booth_proportional.vtt"),
+        )
+        if written:
+            ctx["proportional_captions_href"] = "booth_proportional.vtt"
+    except Exception as exc:
+        logger.warning("Booth proportional captions unavailable: %s", exc)
     html_path = write_html(booth_html(**ctx), filename="booth.html")
     directory = os.path.dirname(html_path)
     displayed_run_id = int(ctx.get("run_id") or 0)
@@ -1205,7 +1350,26 @@ def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
         def do_POST(self) -> None:
             from urllib.parse import urlparse
 
-            if urlparse(self.path).path != "/pick-thumbnail":
+            path = urlparse(self.path).path
+            if path == "/save-tags":
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    if length < 1 or length > 2048:
+                        raise ValueError("Tag form length must be 1-2048 bytes")
+                    tagged_run, tags = parse_booth_tags_post(
+                        self.rfile.read(length),
+                        expected_run_id=displayed_run_id,
+                    )
+                    apply_booth_tags(tagged_run, tags)
+                except Exception as exc:
+                    logger.warning("Booth tag save failed: %s", exc)
+                    self.send_error(400, str(exc))
+                    return
+                self.send_response(303)
+                self.send_header("Location", "/booth.html")
+                self.end_headers()
+                return
+            if path != "/pick-thumbnail":
                 self.send_error(404)
                 return
             try:

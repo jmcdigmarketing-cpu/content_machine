@@ -89,6 +89,16 @@ a { color: var(--link); }
 .swatch { display: flex; height: 6px; margin: 0.35rem 0 0; gap: 0; }
 .swatch span { flex: 1; display: block; min-height: 6px; }
 button.rate { margin: 0.35rem 0.35rem 0 0; }
+.tag-chip { display: inline-block; border: 1px solid var(--accent-line, var(--border));
+  padding: 0.1rem 0.45rem; margin: 0.15rem; font-size: 16px; }
+.tag-editor input { width: min(100%, 28rem); }
+@media (max-width: 520px) {
+  main { padding: 0.5rem; }
+  .card { padding: 0.55rem; margin: 0.5rem 0; }
+  .phone-bezel { box-sizing: border-box; width: calc(100vw - 1rem); max-width: calc(100vw - 1rem);
+    padding: 6px; border-width: 4px; border-radius: 18px; }
+  .stage { max-width: 100%; }
+}
 @media (prefers-contrast: more) {
   html, body { background: #000; color: #fff; }  /* palette-exempt: forced-contrast mode must not be themeable */
   header { background: #000; border-bottom-color: #fff; }  /* palette-exempt: forced-contrast mode must not be themeable */

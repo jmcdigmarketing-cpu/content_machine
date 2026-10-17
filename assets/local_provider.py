@@ -600,4 +600,5 @@ class LocalAssetProvider(AssetProvider):
             query=topic,
             attribution=_license_attribution(path),
             credits=clip_credits([path]),
+            clip_paths=[path],
         )

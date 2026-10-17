@@ -580,6 +580,7 @@ def _record_usage(
     *,
     escaped_free_first: bool = False,
     stage: str | None = None,
+    elapsed_seconds: float | None = None,
 ) -> None:
     with _usage_lock:
         rec: dict[str, Any] = {
@@ -592,6 +593,8 @@ def _record_usage(
         }
         if escaped_free_first:
             rec["escaped_free_first"] = True
+        if elapsed_seconds is not None:
+            rec["elapsed_seconds"] = round(float(elapsed_seconds), 4)
         _usage.calls.append(rec)
 
 
@@ -872,6 +875,7 @@ def complete(
         while True:
             try:
                 kind = _PROVIDERS.get(prov, {}).get("kind", "openai")
+                started = time.perf_counter()
                 if kind == "anthropic":
                     text, in_tok, out_tok = _anthropic_complete(
                         mdl, msgs, temperature=temperature, max_tokens=max_tokens
@@ -885,6 +889,7 @@ def complete(
                         max_tokens=max_tokens,
                         json_mode=json_mode,
                     )
+                elapsed = time.perf_counter() - started
                 escaped = False
                 if provider is None and not _is_free_llm(prov, mdl):
                     # Paid winner after a free candidate earlier in the chain (404'd this
@@ -902,6 +907,7 @@ def complete(
                     out_tok,
                     escaped_free_first=escaped,
                     stage=stage,
+                    elapsed_seconds=elapsed,
                 )
                 if _llm_daily_budget() is not None:
                     _add_llm_spend(_price_call(prov, mdl, in_tok, out_tok))

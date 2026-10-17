@@ -115,19 +115,36 @@ def classify_exception(exc: BaseException):
     return STATUS_ERROR, str(exc)[:120]
 
 
-def normalize_signal(signal: dict) -> dict:
-    """Fill status on older results; infer quota/rate hints from detail text."""
-    if not signal:
+def normalize_signal(signal: dict | None) -> dict:
+    """Fill status on older results; infer quota/rate hints from detail text.
+
+    Always returns the complete ``make_signal()`` contract. Valid payload fields
+    (including extra keys) are preserved; missing required keys are filled (#453).
+    """
+    if not isinstance(signal, dict) or not signal:
         return make_signal(connected=False, active=False, status=STATUS_UNAVAILABLE)
 
-    signal = dict(signal)
-    detail = signal.get("status_detail") or ""
-    detail_lower = detail.lower()
+    out = dict(signal)
+    if "connected" not in out:
+        out["connected"] = False
+    if "active" not in out:
+        out["active"] = False
+    if "score" not in out:
+        out["score"] = 0
+    if "confidence" not in out:
+        out["confidence"] = 0
+    if "data" not in out:
+        out["data"] = None
+    if "status_detail" not in out:
+        out["status_detail"] = None
 
-    if signal.get("status"):
-        return signal
+    detail = out.get("status_detail") or ""
+    detail_lower = str(detail).lower()
 
-    if not signal.get("connected"):
+    if out.get("status"):
+        return out
+
+    if not out.get("connected"):
         status = STATUS_UNAVAILABLE
         if "quota" in detail_lower:
             status = STATUS_QUOTA
@@ -135,20 +152,21 @@ def normalize_signal(signal: dict) -> dict:
             status = STATUS_RATE_LIMIT
         elif "401" in detail_lower or "403" in detail_lower or "auth" in detail_lower:
             status = STATUS_AUTH
-        signal["status"] = status
-        return signal
+        out["status"] = status
+        return out
 
-    if signal.get("active"):
-        signal["status"] = STATUS_OK
+    if out.get("active"):
+        out["status"] = STATUS_OK
     else:
-        signal["status"] = STATUS_INACTIVE
+        out["status"] = STATUS_INACTIVE
 
-    return signal
+    return out
 
 
 def format_health_line(name: str, signal: dict) -> str:
     signal = normalize_signal(signal)
-    label = HEALTH_LABELS.get(signal.get("status"), signal.get("status", "?").upper())
+    status = str(signal.get("status") or "")
+    label = HEALTH_LABELS.get(status, status.upper() or "?")
     detail = signal.get("status_detail")
 
     line = f"{name.capitalize()}: {label}"

@@ -90,6 +90,14 @@ _LEVERS: dict[str, dict] = {
             ),
         },
     },
+    "thumbnail_text": {
+        "description": "Short vs full headline on the same thumbnail layout (#509)",
+        "kind": "thumbnail_text",
+        "arms": {
+            "text_short": "keep the painted headline to the first three title words",
+            "text_full": "paint the full title as the thumbnail headline",
+        },
+    },
     "voice_delivery": {
         "description": "ElevenLabs stability, style, and similarity",
         "kind": "voice",

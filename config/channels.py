@@ -78,12 +78,16 @@ class ChannelProfile:
     # forward compatibility while config.validate_channels enforces shipped values.
     end_card: dict[str, Any] = field(default_factory=dict)
     color_grade: dict[str, Any] = field(default_factory=dict)
+    # #497: a .cube LUT path relative to the repo root. Empty keeps the eq identity fallback.
+    color_lut: str = ""
     hook_motion: dict[str, Any] = field(default_factory=dict)
     # #411: a bed from the operator's own tracks - {enabled, folder, volume}.
     music: dict[str, Any] = field(default_factory=dict)
     # #438: snippet language and the region named on a dry run. Never a geo-block.
     audience_language: str = ""
     audience_region: str = ""
+    # #233: WinRT toast audio URI; callers still stay silent when toasts are disabled.
+    notification_sound: str = "ms-winsoundevent:Notification.Default"
 
 
 def channel_reading_target(channel_id: str) -> float | None:
@@ -201,10 +205,14 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
             caption_skin=dict(cfg.get("caption_skin") or {}),
             end_card=dict(cfg.get("end_card") or {}),
             color_grade=dict(cfg.get("color_grade") or {}),
+            color_lut=str(cfg.get("color_lut") or "").strip(),
             hook_motion=dict(cfg.get("hook_motion") or {}),
             music=dict(cfg.get("music") or {}),
             audience_language=str(cfg.get("audience_language") or "").strip(),
             audience_region=str(cfg.get("audience_region") or "").strip(),
+            notification_sound=str(
+                cfg.get("notification_sound") or "ms-winsoundevent:Notification.Default"
+            ).strip(),
         )
 
     profiles.setdefault(

@@ -50,5 +50,7 @@ class ScheduleTopicTests(unittest.TestCase):
             patch("core.seasonal_calendar._board_today", return_value=_TODAY),
         ):
             topics = [bet.topic for bet in get_best_bets("tapin", 5)]
-        self.assertIn("Bruins at Canadiens", topics)
+        # #1242 (the operator, 2026-10-16): only marquee NFL and NBA games become ideas - the
+        # NHL game is still dated by the board, and no longer suggested.
+        self.assertNotIn("Bruins at Canadiens", topics)
         self.assertNotIn("Bruins at Maple Leafs", topics)

@@ -864,7 +864,7 @@ class YouTubePublisher(Publisher):
                     run = get_content_run_repository().get(content_run_id)
                     if run is not None:
                         seed = run.input_topic or run.selected_topic or request.title
-                record_published_topic(channel_id, seed)
+                record_published_topic(channel_id, seed, video_id=str(video_id or ""))
             except Exception as exc:
                 logger.debug("topic graph record skipped: %s", exc)
             return PublishResult(

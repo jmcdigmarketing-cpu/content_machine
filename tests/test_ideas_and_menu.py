@@ -14,7 +14,6 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from types import SimpleNamespace
-from typing import ClassVar
 from unittest.mock import patch
 
 # ---- #1191: at most 2 of 5 best bets are games ----------------------------------------------------
@@ -28,35 +27,8 @@ def _bet(topic, source="trending"):
 
 
 class GameShareTests(unittest.TestCase):
-    GAMES: ClassVar[list] = [_bet(f"Team {i} at Team {i + 10}", "schedule") for i in range(7)]
-
-    def test_two_of_five(self):
-        from core.best_bet import with_games
-
-        others = [_bet(f"headline {i}") for i in range(5)]
-        out = with_games(others, self.GAMES, 5)
-        self.assertEqual(len(out), 5)
-        self.assertEqual([b.source for b in out].count("schedule"), 2)
-        self.assertEqual(out[0].source, "trending")
-
-    def test_one_of_three_for_the_overnight_batch(self):
-        from core.best_bet import with_games
-
-        out = with_games([_bet(f"h{i}") for i in range(5)], self.GAMES, 3)
-        self.assertEqual([b.source for b in out].count("schedule"), 1)
-
-    def test_games_fill_only_what_nothing_else_can(self):
-        from core.best_bet import with_games
-
-        out = with_games([_bet("only headline")], self.GAMES, 5)
-        self.assertEqual([b.source for b in out], ["trending", *["schedule"] * 4])
-
-    def test_the_share_can_be_zero(self):
-        from core.best_bet import with_games
-
-        with patch.dict(os.environ, {"BEST_BET_SCHEDULE_MAX": "0"}):
-            out = with_games([_bet(f"h{i}") for i in range(5)], self.GAMES, 5)
-        self.assertNotIn("schedule", [b.source for b in out])
+    """#1191 capped games at 2 of 5; #1244 (2026-10-16) made them compete in their league's
+    slot instead - the reserved-slot tests went with `with_games`."""
 
     def test_the_live_list_of_2026_10_14(self):
         from core.best_bet import get_best_bets

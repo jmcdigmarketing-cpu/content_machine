@@ -92,12 +92,14 @@ environment cannot silently disagree with `pyproject.toml`.
 Finished output changed: TapIn and MoneyWise encodes apply a per-channel
 `.cube` LUT instead of the three `eq` scalars; a supplied portrait thumbnail
 keeps its upper focal area.
-`roadmap-index`: open 259, done 1215, numbered open 207, highest open #1136.
-Claude reviewed Cursor's commits before the push and corrected five (`7c03f1a` + the
-docs commit: footage for team topics, a draft child's output, the shot timeout, the correction
-beat, the hook card's marks). Wave 101: the competitor pulse only on the topic (#1236), stale
-renders in `ops status` (#1237), health leaves out near-empty videos (#1238), one question for
-old drafts (#1239), missing playlists said (#1240). Filed #1241. Claude has nothing claimed.
+`roadmap-index` after Claude's wave 102: open 273, done 1220, numbered open 221, highest #1260.
+Claude reviewed Cursor's `29c280c` and corrected one item (#489: the Enter typed after a
+menu key answered the next prompt). Wave 102, the idea list (decision §59): only marquee NFL
+and NBA games (#1242), each with its kickoff, network and records (#1243), competing in their
+league's slot (#1244); a follow-up once its video is public (#1245); no news replays (#1246).
+Filed #1247-#1260. #1247 (a bare unittest from the repo root reaches the real database) is
+Claude's, in the grand audit; Cursor's order of fifteen is in the mailbox. `bef5a56` waits for
+that audit before the push.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

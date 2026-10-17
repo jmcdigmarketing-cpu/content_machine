@@ -175,3 +175,20 @@ be read from its URL": the link downloads but answers HEAD with 403, and Buffer 
 when the post goes out. Buffer's hosting guide says the same. This corrects §54's mechanism, not
 its rule. **Consequence:** the operator turns on public access for the bucket; the copy is still
 removed once Buffer reports the post sent.
+
+## 59. Games compete like any idea, and only marquee NFL and NBA games are ideas (2026-10-16)
+**Decision:** a game on this week's board is an idea only when it is an NFL or NBA game on
+national TV, carries a headline note (a London game), or is a game of a team the channel made a
+video of its own about - a bare game name the old board drafted does not count. It says when,
+where and the records ("Sun Oct 18 3:25 PM · Chargers, a team you made videos about · Chargers
+0-5 at Chiefs 4-0"), and a game that has started is not offered. It takes its league's slot like
+a headline or a past winner - after that league's fresh headline, one per league in the first
+pass - with no reserved slot and no backfill: a thin day shows fewer ideas, not more games.
+`BEST_BET_SCHEDULE_MAX` is retired. **Why:** the operator - "why do we get video ideas that are
+just the names of sporting events, and then have those be the only ideas that show up?". ESPN's
+board put 40 unplayed games in that night (16 college football, 13 NFL), two of five slots were
+held for them and they filled every slot the other sources left; Oct 11 drafted three games and
+nothing else. The plan's answers: "NFL + NBA, marquee games only" and "Compete like any idea".
+**Consequence:** this reverses §55's mechanism; its reason stands. College, NHL and MLB games are
+still read from the board, so a draft about one keeps its game-day window, but they are not
+suggested. §52 stands: a game drafted is drafted as a preview.

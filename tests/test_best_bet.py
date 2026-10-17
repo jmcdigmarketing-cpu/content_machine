@@ -163,15 +163,22 @@ class TestConfidenceAndDiversity(unittest.TestCase):
             {"topic": "UFC story two", "domain": "ufc", "source": "ESPN MMA"},
             {"topic": "UFC story three", "domain": "ufc", "source": "ESPN MMA"},
         ]
+        # #1246 (2026-10-16): a news story is not replayed, so the diversifying history is
+        # evergreen - the NBA history of this test used to fill the slot.
+        entries = _ENTRIES_MIX[:1] + [
+            {"topic": f"Minecraft build guide {i}", "engaged_rate": 0.11, "composite_score": 50,
+             "domain": "gaming"}
+            for i in range(6)
+        ]  # fmt: skip
         with (
-            patch("core.best_bet._build_entries", return_value=_ENTRIES_MIX),
+            patch("core.best_bet._build_entries", return_value=entries),
             patch("core.best_bet.recent_input_topics", return_value=[]),
             patch("core.best_bet._fresh_candidates", return_value=fresh),
         ):
             bets = get_best_bets("tapin", 3)
-        # Not all three are the thin UFC domain — historical NBA fills a slot.
+        # Not all three are the thin UFC domain — evergreen history fills a slot.
         self.assertLess(sum(1 for b in bets if b.domain == "ufc"), 3)
-        self.assertTrue(any(b.domain == "nba" for b in bets))
+        self.assertTrue(any(b.domain == "gaming" for b in bets))
 
 
 class TestCommerceFilter(unittest.TestCase):

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-17: Cursor fifteen (LUT, booth, ledger); Claude wave 102 still dirty
+# Handoff synopsis — 2026-10-17: wave 102, the idea list; 29c280c reviewed; the grand audit is next
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-17 (Cursor): fifteen from the backlog
+## Last wave — 2026-10-16/17 (Claude Code): wave 102 + the review of 29c280c
+
+**Wave 102.** Ideas stopped being bare game names: only marquee NFL and NBA games, each with its
+kickoff, network and records, competing for their league's place with no reserved slots
+(decision §59); a follow-up waits until its video is public; a news story is never replayed.
+
+**Review.** One correction to Cursor's `29c280c`: the Enter typed after a one-key menu answered
+the next prompt. `bef5a56` is unreviewed and holds the push until the grand audit.
+
+**Filed #1247-#1260**, among them #1247 (a bare unittest from the repo root reached the real
+database - cleaned), menu option 7 "watch and publish" (#1248), the operator's auto-public call
+(#1255). Cursor has an order of fifteen in the mailbox. Suite green forward and reversed on the committed tree.
+
+## Previous — 2026-10-17 (Cursor): fifteen from the backlog
 
 Claude had not queued a fifteen; wave 102 idea-menu files stayed unstaged.
 This wave is the roadmap five plus ten unblocked backlog items.
@@ -127,24 +140,6 @@ beat now (#1226).
 **Still the operator's:** `R2_PUBLIC_BASE_URL`; `.env` lines 35, 36, 39; the worker (runs 155,
 126 queued - the shelf is full, so overnight is paused); the consent screen; `schedule-drafts
 --wake`. Suite 5965, forward and reversed.
-
-## Previous — 2026-10-16 (Claude Code): waves 95-96, what the morning said that was not so
-
-**Wave 95.** Overnight woke with the PC at 4:30 PM, made run 156 and crashed at 4:32 (0xC0000374,
-heap corruption in ntdll, no traceback); the morning said it ran. It now says when it stopped,
-after how many drafts, why, and the command to run it again; `faulthandler` is on in overnight
-and the worker (#1216). Every run had recorded 0 facts - the pasted ones - so health read
-authenticity RED at 49; runs record `fact_lines` now, and the 14 recent ones were re-scored:
-GREEN, 89 (#1217).
-
-**Wave 96.** Every command printed dotenv's warning for line 34, which is blank; it names lines
-35, 36 and 39 now (#1218). The morning counted 1 draft past its window when 8 were; a dead draft
-says so first, and **n** sets it aside (#1219). Health no longer flags the anime signal from four
-old game runs (#1220).
-
-**Still the operator's:** `R2_PUBLIC_BASE_URL`; `.env` lines 35, 36, 39; run 126 waits for the
-worker; the consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Overnight's
-other two drafts were not made today. Suite 5943, forward and reversed.
 
 ## Pipeline order (operator)
 

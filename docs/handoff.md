@@ -53,43 +53,47 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-16 night · **HEAD at write:** the docs commit after `2d26bcb` (`git log -1`)
-· **Tree:** clean of mine; leave `.agents/` and `.codex/`. **Pushed** - your eight commits (fifteen items) with
-my corrections, at the operator's word.
+**Written:** 2026-10-17 early · **HEAD at write:** my wave 102 commit on `bef5a56` (`git log -1`)
+· **Tree:** clean of mine; leave `.agents/` and `.codex/`. **Not pushed** - `bef5a56` is not
+reviewed yet; the grand audit (the operator's next prompt) reviews it, then pushes everything.
 
-**Cursor - what the review changed in your work (read before your next edit there):**
-- `assets/clip_tags.clips_for_topic` (#1043): untagged clips were left out for any team topic, so
-  Titans-Colts kept 0 of 13 Madden clips and Cavs-Magic 0 of 72 2K. Now: clips tagged with the
-  subject when any exist, else the untagged ones, never another team's (`7c03f1a`). Your corpus
-  case that pinned the old answer was flipped. Your `footage-tag` command on top is unchanged.
-- `core/overnight._draft_one` (#1229): no `capture_output` - the child writes to the parent's
-  streams, so a crash's faulthandler traceback reaches `overnight-last.log`.
-- `assets/fast_cut.shot_timeout` (#1228): at most 120 s a try; your test now asks for 120.
-- `core/negative_facts.with_correction_beat` (#545): before the closing line, once (`said_at`).
-- `video/subtitles.py` + `core/title_generator._hook_line` (#1056/#1039): the hook card showed
-  "*Pokemon's*"; `core/voice/delivery.display_text` strips the marks for what is seen.
-Checked and left as you wrote them: the test edits, the zoom pre-scale, the intro fade, #1221,
-#1227, the karaoke colour, the voice trim.
+**Cursor - your next fifteen, in this order (the operator asked me to write it):**
+1. **#1248** menu option 7 "Watch and publish" (since Oct 1: 38 drafts, 4 rendered overnight, 0
+   decisions, 1 public) - `core/ui.prompt_startup_mode` + `main.py`, through `go-public`.
+2. **#1064** confirm a claim and go public from the app. 3. **#1253** overnight drafts fewer,
+   and says so, while 22 wait. 4. **#449** batch approve queue (yours; it goes with #1248).
+5. **#1249** a neutral topic gates to the channel's domains (run 158 ran every signal, ~30 s;
+   CLAUDE.md's `make_signal()` rules). 6. **#1252** OpenRouter 429s (36 this week) cool that
+   provider - read how the router's breaker trips first. 7. **#1251** the vault's stale lines
+   read once per run. 8. **#1250** `timings` holds `word_count`. 9. **#1256** your #544's week
+   (`ContentRunRecord` has no `created_at`). 10. **#1257** your #466: `roadmap-index` prints 232
+   lines - the list behind `--list`. 11. **#1258** boxing tagged ufc. 12. **#1260** an award's
+   date. 13. **#1259** the UFC follow-up repeats its topic. 14. **#1254** `desktop_app.md`
+   (reviewed 10-09). 15. **#1068** the review room confirms claims. Then your #421 #425 #450
+   #457. **#1247 is mine** (grand audit).
 
-**Shared files of mine (committed):** `analytics/competitor_context.py` (no off-topic
-fallback), `config/competitors/tapin.json` (five MMA/NFL/NBA channels), `core/stale_renders.py`
-(`past_window`), `core/engagement_predictor.py` (`min_views`), `core/channel_health.py`,
-`core/batch_review.py` (one set-aside question), `core/playlists.py` (`missing_line`),
-`core/status.py`.
+**Cursor - what the review of `29c280c` changed:** `core/console_input.menu_line` (#489) - the
+Enter typed after the key stayed buffered and answered the next prompt (the next menu took its
+default, the next key landed a prompt late, an empty topic became the last topic). Now
+`swallow_enter` takes an Enter within 0.75 s and puts any other key back (`msvcrt.ungetwch`);
+`after_key=` is the test seam; your tests pass unchanged. Filed against yours, code unchanged:
+#1256, #1257. Left as written: topic recall, the BEL, `--quiet`, pins at the peak, the yt-dlp
+fallback, the two-line thumbnail, `explain`, `moat-backup --restore`. Of `bef5a56` only
+`apis/signal_contract.py` is read (shape kept); it also carried my slot claim - please stage
+only your own paths.
 
-**Defects first:**
-- YouTube RSS answered 404 for every competitor channel at 22:16 (#1241, open) - the pulse is
-  empty until a sync succeeds.
-- Run 155 waits for the worker, run 126 for go-public; TikTok/Instagram wait on the R2 address.
+**Shared files of mine (committed):** `core/best_bet.py` (marquee games, `game_line`, league
+slots, no news replays), `core/seasonal_calendar.py` (`game_detail`), `core/topic_graph.py` (an
+arc waits for a public video), `core/batch_review.py` (soccer is news),
+`publishing/youtube_publisher.py` (`video_id`), `core/console_input.py`, `.env.example`.
 
-**Shipped:** the review (5 corrections) + wave 101 (#1236-#1240). Filed #1241.
+**Defects first:** **#1247 - a bare `python -m unittest` from the repo root reaches the real
+Postgres.** Use `discover -s tests -t .` or named `tests.` modules, never a list that can come
+out empty (it happened to me on 10-16; cleaned with the operator's yes, job 59 pending again).
+Run 126 is unlisted; run 155 (job 59) waits for the worker; the R2 address is unset.
 
-**In progress (2026-10-16 late, wave 102 - what the idea list offers):** `core/best_bet.py`
-(games compete in their league's slot; no reserved slots or backfill; a replay is never a news
-story), `core/seasonal_calendar.py` (each game's broadcast, records and notes kept; only NFL
-and NBA marquee games suggested), `core/topic_graph.py` (a follow-up names its franchise),
-`core/batch_review.py` (`_NEWS_DOMAINS` gains soccer). **A grand audit is the operator's next
-prompt** - please land or park what you have open before it starts.
+**Shipped:** wave 102 (#1242-#1246, decision §59), the #489 correction; filed #1247-#1260.
+Suite green forward and reversed on the committed tree. **Next - the grand audit:** scope in `planning_log.md` (2026-10-16/17).
 
 ## Slot — Cursor
 

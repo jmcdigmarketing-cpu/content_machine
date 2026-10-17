@@ -268,7 +268,7 @@ def normalize_rejection_reason(raw: str) -> str:
 
 _NEWS_WINDOW_DAYS = 2.0
 _EVERGREEN_WINDOW_DAYS = 7.0
-_NEWS_DOMAINS = frozenset({"ufc", "mma", "nba", "nfl", "mlb", "nhl", "sports"})
+_NEWS_DOMAINS = frozenset({"ufc", "mma", "nba", "nfl", "mlb", "nhl", "sports", "soccer"})
 _NEWS_WORDS_RE = re.compile(
     r"\b(trailer|leak(?:s|ed)?|announce[sd]?|announcement|tonight|this week|results?|"
     r"card|fight night|breaking|reveal(?:s|ed)?|release date|patch notes|trade[sd]?|"

@@ -165,18 +165,29 @@ def pooled_drop_reason(topic: str, views: int | None, *, today: date | None = No
     if numbered:
         return numbered
     match = _SLASH_DATE.search(topic or "")
-    if not match:
-        return ""
-    month, dom = int(match.group(1)), int(match.group(2))
-    year = int(match.group(3)) if match.group(3) else day.year
-    if year < 100:
-        year += 2000
+    if match:
+        month, dom = int(match.group(1)), int(match.group(2))
+        year = int(match.group(3)) if match.group(3) else day.year
+        if year < 100:
+            year += 2000
+        try:
+            when = date(year, month, dom)
+        except ValueError:
+            when = None
+        if when is not None and when < day:
+            return f"event date {when.isoformat()} has passed"
     try:
-        when = date(year, month, dom)
-    except ValueError:
-        return ""
-    if when < day:
-        return f"event date {when.isoformat()} has passed"
+        from core.batch_review import freshness_window_days
+        from core.facts.event_dates import _SUPER_BOWL_ARABIC, _UFC_EVENT, _WRESTLEMANIA
+
+        names_event = any(p.search(topic or "") for p in (_UFC_EVENT, _WRESTLEMANIA,
+                                                          _SUPER_BOWL_ARABIC))  # fmt: skip
+        if not names_event and freshness_window_days({"topic": topic, "title": topic}) < 7:
+            # #1246: the menu replayed "Messi World Cup Hat Trick" months after the final. A
+            # numbered event still ahead ("UFC 325 main event") is dated above, not here.
+            return "a news story is not replayed"
+    except Exception as exc:
+        logger.debug("replay window unread: %s", exc)
     return ""
 
 
@@ -581,7 +592,6 @@ def _effective_allowed(channel_id: str, entries: list[dict]) -> set[str]:
 
 def best_bet_option_count() -> int:
     """How many best-bet options to surface at startup (BEST_BET_OPTIONS, default 5)."""
-    import os
 
     try:
         return max(1, min(8, int(os.getenv("BEST_BET_OPTIONS", "5"))))
@@ -596,20 +606,17 @@ def _best_bet_signal_sources() -> set[str]:
     They add current Reddit-hot / YouTube-velocity titles at the cost of startup latency,
     so they stay off by default.
     """
-    import os
 
     raw = os.getenv("BEST_BET_SIGNALS", "rss")
     return {s.strip().lower() for s in raw.split(",") if s.strip()} or {"rss"}
 
 
 def _fresh_enabled() -> bool:
-    import os
 
     return os.getenv("BEST_BET_FRESH", "true").lower() in ("1", "true", "yes")
 
 
 def _fresh_days() -> int:
-    import os
 
     try:
         return max(1, int(os.getenv("BEST_BET_FRESH_DAYS", "5")))
@@ -702,7 +709,6 @@ _PRICE_RE = re.compile(r"\$\s?\d")
 
 
 def _commerce_filter_enabled() -> bool:
-    import os
 
     return os.getenv("BEST_BET_FILTER_COMMERCE", "true").lower() not in ("0", "false", "no")
 
@@ -972,33 +978,118 @@ def pick_record(options: list[Any], picked: int | None, *, by: str = "operator")
     }
 
 
-def schedule_share() -> int:
-    """Games per five best bets (`BEST_BET_SCHEDULE_MAX`, default 2; 0 = none)."""
+# #1242 (the operator, 2026-10-16: "NFL + NBA, marquee games only"). A game becomes an idea
+# when the league's national window carries it, the league marks it (London, a holiday game),
+# or it is a team the channel has made videos about.
+_NATIONAL_TV = {
+    "nfl": frozenset({"NBC", "ESPN", "ABC", "ESPN2", "Prime Video", "Netflix", "NFL Net",
+                      "NFL Network"}),
+    "nba": frozenset({"ESPN", "ABC", "TNT", "NBC", "Prime Video", "Peacock", "NBA TV"}),
+}  # fmt: skip
+
+
+def _covered_teams(topics: list[str]) -> set[str]:
+    from apis.nba_teams import team_names_in as nba_teams
+    from apis.nfl_entities import team_names_in as nfl_teams
+
+    out: set[str] = set()
+    for topic in topics:
+        teams = set(nfl_teams(topic)) | set(nba_teams(topic))
+        if len(teams) >= 2 and " at " in f" {topic.lower()} ":
+            # A bare game name was the old board's draft, not a team the operator chose.
+            continue
+        out.update(teams)
+    return out
+
+
+def marquee_note(topic: str, detail: dict[str, Any], covered: set[str] | list[str]) -> str:
+    """Why this game is worth a video ("NBC", "NFL London Games", "Chargers, a team you made
+    videos about"), or "" - then it is not offered."""
+    from apis.nba_teams import team_names_in as nba_teams
+    from apis.nfl_entities import team_names_in as nfl_teams
+
+    league = str(detail.get("league") or "")
+    national = _NATIONAL_TV.get(league)
+    if not national:
+        return ""
+    on_tv = [name for name in detail.get("broadcasts") or [] if name in national]
+    if on_tv:
+        return on_tv[0]
+    notes = detail.get("notes") or []
+    if notes:
+        return str(notes[0])
+    mine = sorted((set(nfl_teams(topic)) | set(nba_teams(topic))) & set(covered))
+    if mine:
+        return f"{mine[0].split()[-1]}, a team you made videos about"
+    return ""
+
+
+def _kickoff(raw: str) -> str:
     try:
-        return max(0, int(os.getenv("BEST_BET_SCHEDULE_MAX", "2") or 2))
+        when = datetime.fromisoformat(str(raw).replace("Z", "+00:00")).astimezone()
     except ValueError:
-        return 2
+        return ""
+    hour = when.strftime("%I").lstrip("0") or "12"
+    return f"{when:%a %b} {when.day} {hour}:{when:%M %p}"
 
 
-def with_games(
-    others: list[BestBetResult], games: list[BestBetResult], n: int
+def game_line(detail: dict[str, Any], note: str) -> str:
+    """#1243: "Sun Oct 18 7:20 PM · NBC · Cowboys 3-3 at Packers 4-1" - not "on the board"."""
+    parts = [part for part in (_kickoff(str(detail.get("date") or "")), note) if part]
+    away, home = detail.get("away") or {}, detail.get("home") or {}
+    if away.get("name") and home.get("name"):
+        left = f"{away['name']} {away.get('record') or ''}".strip()
+        right = f"{home['name']} {home.get('record') or ''}".strip()
+        parts.append(f"{left} at {right}")
+    return " · ".join(parts) or "on the board this week"
+
+
+def _started(raw: str, now: datetime) -> bool:
+    try:
+        when = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if when.tzinfo is None:
+        return False
+    return when <= now
+
+
+def suggested_games(
+    scheduled: list[tuple[str, str]],
+    *,
+    covered_topics: list[str],
+    now: datetime | None = None,
 ) -> list[BestBetResult]:
-    """`n` best bets: the headline and channel-history picks first, then this week's games -
-    at most `schedule_share()` in five (#1191) - then more of either only to fill.
+    """The week's games worth an idea, each with its reason (#1242, #1243). An award date
+    carries no game detail and stays as it was; a game that has started is not an idea."""
+    from core.seasonal_calendar import game_details
 
-    Operator, 2026-10-14: "ideas are only game previews". #1023 put the week's games first, and
-    with five NFL games on the board they filled every slot - and the overnight batch, which
-    drafts the top three, drafted only games (9 of 9 since 10-11).
-    """
-    share = schedule_share()
-    cap = 0 if not share or not games else max(1, n * share // 5)
-    cap = min(cap, len(games), n)
-    out = list(others[: n - cap]) + list(games[:cap])
-    if len(out) < n:
-        out += list(others[n - cap :])[: n - len(out)]
-    if len(out) < n and share:
-        out += list(games[cap:])[: n - len(out)]
-    return out[:n]
+    covered = _covered_teams(covered_topics)
+    moment = now or datetime.now(timezone.utc)
+    out: list[BestBetResult] = []
+    for topic, domain in scheduled:
+        detail = game_details(topic)
+        if detail and _started(str(detail.get("date") or ""), moment):
+            # The board is dated in UTC and cached: a 9:30 PM CDT tip-off is still "Oct 17".
+            continue
+        if detail:
+            note = marquee_note(topic, detail, covered)
+            if not note:
+                continue
+            rationale = game_line(detail, note)
+        else:
+            rationale = "on the board this week"
+        out.append(
+            BestBetResult(
+                topic=topic,
+                domain=domain,
+                avg_engaged_rate=0.0,
+                source="schedule",
+                supporting_runs=0,
+                rationale=rationale,
+            )
+        )
+    return out
 
 
 def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
@@ -1018,19 +1109,16 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
         scheduled = fetch_week_topics()
     except Exception as exc:
         logger.debug("week topics skipped: %s", exc)
+    try:
+        recent_topics = list(recent_input_topics(channel_id, limit=60))
+    except Exception:
+        recent_topics = []
+    marquee = suggested_games(
+        scheduled, covered_topics=recent_topics + [str(e.get("topic") or "") for e in entries]
+    )
     if not entries:
-        if scheduled:
-            return [
-                BestBetResult(
-                    topic=topic,
-                    domain=domain,
-                    avg_engaged_rate=0.0,
-                    source="schedule",
-                    supporting_runs=0,
-                    rationale="on the board this week",
-                )
-                for topic, domain in scheduled[:n]
-            ]
+        if marquee:
+            return marquee[:n]
         single = get_best_bet(channel_id)
         return [single] if single else []
 
@@ -1050,22 +1138,13 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
 
     options: list[BestBetResult] = []
     seen: set[str] = set(recent)
-    games: list[BestBetResult] = []  # #1023; placed by `with_games` (#1191)
-    for topic, domain in scheduled:
-        key = normalize_seed_topic(topic).lower()
-        if not key or key in seen or len(games) >= n:
-            continue
-        games.append(
-            BestBetResult(
-                topic=topic,
-                domain=domain,
-                avg_engaged_rate=0.0,
-                source="schedule",
-                supporting_runs=0,
-                rationale="on the board this week",
-            )
-        )
-        seen.add(key)
+    # #1244 (the operator, 2026-10-16: "compete like any idea"): a game is a candidate in its
+    # league's slot - after a fresh headline there, before a replay - never a reserved place.
+    games_by_domain: dict[str, list[BestBetResult]] = {}
+    for game in marquee:
+        key = normalize_seed_topic(game.topic).lower()
+        if key and key not in seen:
+            games_by_domain.setdefault(game.domain, []).append(game)
     used_domains: set[str] = set()
     used_anchors: set[str] = set()  # per-franchise cap so gaming isn't all one game (e.g. GTA)
 
@@ -1109,7 +1188,7 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
             if anchor:
                 used_anchors.add(anchor)
             if len(options) >= n:
-                return with_games(options, games, n)
+                return options[:n]
     except Exception as exc:
         logger.debug("seasonal calendar skipped: %s", exc)
 
@@ -1188,6 +1267,15 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
         reverse=True,
     )
 
+    def _emit_game(game: BestBetResult) -> bool:
+        key = normalize_seed_topic(game.topic).lower()
+        if not key or key in seen:
+            return False
+        seen.add(key)
+        used_domains.add(game.domain)
+        options.append(game)
+        return True
+
     def _emit_hist(e: dict) -> bool:
         key = normalize_seed_topic(e["topic"]).lower()
         if not key or key in seen:
@@ -1231,17 +1319,22 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
         if e["domain"] not in hist_domains:
             hist_domains.append(e["domain"])
     all_domains = sorted(
-        set(ordered_fresh_domains) | set(hist_domains), key=_domain_key, reverse=True
+        set(ordered_fresh_domains) | set(hist_domains) | set(games_by_domain),
+        key=_domain_key,
+        reverse=True,
     )
     for d in all_domains:
         if len(options) >= n:
             break
         if d in used_domains:
             continue
-        if not any(_emit_fresh(c) for c in by_domain.get(d, [])):
-            for e in ranked:
-                if e["domain"] == d and _emit_hist(e):
-                    break
+        if any(_emit_fresh(c) for c in by_domain.get(d, [])):
+            continue
+        if any(_emit_game(game) for game in games_by_domain.get(d, [])[:1]):
+            continue  # one game a league, and only where no headline answered
+        for e in ranked:
+            if e["domain"] == d and _emit_hist(e):
+                break
 
     # Phase 2 — fill remaining slots: more fresh (priority order), then historical.
     if len(options) < n:
@@ -1274,7 +1367,7 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
         if cont and normalize_seed_topic(cont.topic).lower() not in seen:
             options.append(cont)
 
-    return with_games(options, games, n)
+    return options[:n]  # #1244: a thin day shows fewer ideas, never more games
 
 
 def display_best_bet(result: BestBetResult) -> None:

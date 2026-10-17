@@ -35,6 +35,12 @@ anything:
 py -m scripts.ops intent-check "can the chargers still make the super bowl"
 ```
 
+The idea list mixes the day's headlines, your past winners and a follow-up of your last
+public video. A game is offered only when it is an NFL or NBA game on national TV, a London-type
+game, or one of a team you made your own video about, and its line says when, where and the
+records; it takes its league's place, never more (decision §59). A follow-up waits until the
+video it follows is public.
+
 Why ideas and angles come out the way they do: [idea_quality_diagnosis.md](idea_quality_diagnosis.md).
 
 ## 2. The angle screen

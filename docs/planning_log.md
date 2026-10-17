@@ -8066,3 +8066,54 @@ answer now.
 `tests/test_review_corrections.py` 6 of 7, `tests/test_pulse_shelf_health.py` 7 of 9,
 `tests/test_marks_off_screen.py` 2 of 3 failed first; the rest are guards. Corpus +3. Suite 6047, forward and reversed.
 
+## 2026-10-16/17 — wave 102 (the idea list), the review of `29c280c`, the grand audit's scope (Claude Code)
+
+**Prompt:** "yes next 5, any inefficiencies or bugs seen in recent runs? how can we move forward
+on overnight run useage, another menu option, and how are we with the desktop application? add
+anything you find or come up with to the list, then prepare to do a grand audit next prompt" -
+and, mid-turn, "give cursor a specialized next 15 order in mailbox".
+
+### Wave 102 - why games were the only ideas
+
+The board put every unplayed game of the week in by name (40 that night), with two reserved
+slots and the backfill; the other sources were thin - the follow-up was the unlisted "Ben
+Affleck" and the replay a months-old World Cup story. Answers: NFL + NBA marquee games only;
+games compete like any idea (§59). Live after the wave: three headlines, the Chargers game
+("Chargers 0-5 at Chiefs 4-0"), the Ballon d'Or. Two defects the live list exposed on the way
+were fixed in the wave: an old "Eagles at Jaguars" board draft made the Eagles "yours", and a
+9:30 PM tip-off was still offered at 11:44 PM.
+
+### The review of `29c280c` (Cursor, fifteen items)
+
+One correction: one-key menus left the habitual Enter in the console buffer, where it answered
+the next prompt (#489, `swallow_enter`). Found and filed: #544's seven days never apply (#1256),
+`roadmap-index` grew to 232 lines (#1257). Checked and fine: topic recall, the BEL, the quiet
+flag, pin comments at the peak, the yt-dlp fallback for a feed-wide 404, the two-line thumbnail,
+`explain`, `moat-backup --restore`. `bef5a56` (fifteen more, committed while this ran) is the
+grand audit's first review; its `signal_contract` change keeps the `make_signal()` shape.
+
+### What recent runs showed
+
+Run 158 read as neutral and ran all 25 signals (#1249); `timings` carries `word_count` (#1250);
+the vault re-reads 30 stale lines three times a draft (#1251); OpenRouter 429'd 36 times (#1252).
+And one of mine: a lint failure left a module list empty and a bare `python -m unittest` ran
+against the real Postgres (#1247) - cleaned with the operator's yes, written down as a memory.
+
+### Overnight and the desktop app
+
+The funnel since Oct 1: 38 drafts, 12 expired, 22 waiting, 4 rendered overnight, 0 decisions, 1
+public. The bottleneck is the decision, not the drafting: menu option 7 "watch and publish"
+(#1248), fewer drafts while many wait (#1253), and the operator's call on auto-public (#1255).
+The app: stages 0, 1, 2 and 4 shipped, 3 partial, 5-7 not started, no desktop commit 10-10 to
+10-16 until Cursor's `bef5a56` Home work; #1064 (go public from the app) is the same bottleneck.
+
+### The grand audit (next prompt) - scope
+
+1. #1247 first: prove no way of starting the suite reaches DATABASE_URL.
+2. Review `bef5a56` line by line, then push everything reviewed.
+3. Every gate in CI on the final tree; mypy (93), corpus, docs cards and dates.
+4. Live: `ops all-checks`, `status`, `reliability`, `health`, the worker queue, the shelf.
+5. The funnel and the cost per public video; the inefficiencies above, measured not guessed.
+6. The desktop app against `desktop_app.md`; the docs that say something no longer true.
+
+Suite: 6115 tests forward and reversed, green on the committed tree (the two `git ls-files` checks pass in the repo).

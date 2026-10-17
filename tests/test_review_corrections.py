@@ -106,5 +106,50 @@ class CorrectionBeatTests(unittest.TestCase):
         self.assertEqual(second, "Two. Tap in.")
 
 
+# ---- #489 (29c280c, reviewed 2026-10-17): the Enter typed after a menu key ----------------------
+# Every menu took Enter for years. On a console `menu_line` now returns on the key alone, so the
+# Enter the operator still types after it stays in the console buffer and answers the next prompt:
+# the next menu takes its default, the next key lands one prompt late, and an empty topic is now
+# "the last topic" (#492) - a run could start on the wrong idea.
+
+
+class EnterAfterKeyTests(unittest.TestCase):
+    def test_the_enter_after_a_key_is_taken_with_it(self):
+        from core.console_input import swallow_enter
+
+        buffer = ["\r"]
+        swallow_enter(ready=lambda: bool(buffer), read=lambda: buffer.pop(0),
+                      unread=lambda ch: buffer.insert(0, ch), window=0.05)  # fmt: skip
+        self.assertEqual(buffer, [])
+
+    def test_a_next_key_is_put_back_for_the_next_prompt(self):
+        from core.console_input import swallow_enter
+
+        buffer = ["2"]
+        swallow_enter(ready=lambda: bool(buffer), read=lambda: buffer.pop(0),
+                      unread=lambda ch: buffer.insert(0, ch), window=0.05)  # fmt: skip
+        self.assertEqual(buffer, ["2"])
+
+    def test_nothing_typed_waits_no_longer_than_the_window(self):
+        import time
+
+        from core.console_input import swallow_enter
+
+        start = time.monotonic()
+        swallow_enter(ready=lambda: False, read=lambda: "", unread=lambda _c: None, window=0.05)
+        self.assertLess(time.monotonic() - start, 0.5)
+
+    def test_the_menu_takes_it_after_a_key_not_after_enter(self):
+        from unittest.mock import MagicMock
+
+        from core.console_input import menu_line
+
+        after = MagicMock()
+        quiet = {"print_fn": lambda *_a, **_k: None, "after_key": after}
+        self.assertEqual(menu_line("  Select 1-6 [1]: ", read_char=lambda: "6", **quiet), "6")
+        self.assertEqual(menu_line("  Select 1-6 [1]: ", read_char=lambda: "\r", **quiet), "")
+        after.assert_called_once_with()
+
+
 if __name__ == "__main__":
     unittest.main()

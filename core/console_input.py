@@ -133,6 +133,37 @@ def _read_one_key() -> str:
         return ""
 
 
+_ENTER_WINDOW = 0.75
+
+
+def swallow_enter(*, ready, read, unread, window: float = _ENTER_WINDOW) -> None:
+    """Take the Enter typed straight after a menu key, so it does not answer the next prompt.
+
+    Waits at most ``window`` seconds. Any other key is put back for the next prompt.
+    """
+    import time
+
+    deadline = time.monotonic() + window
+    while time.monotonic() < deadline:
+        if ready():
+            ch = read()
+            if ch not in ("\r", "\n"):
+                unread(ch)
+            return
+        time.sleep(0.02)
+
+
+def _swallow_console_enter() -> None:
+    try:
+        import msvcrt
+
+        swallow_enter(ready=msvcrt.kbhit, read=msvcrt.getwch, unread=msvcrt.ungetwch)
+    except ImportError:
+        return
+    except Exception as exc:
+        logger.debug("trailing Enter not read: %s", exc)
+
+
 def menu_line(
     prompt: str,
     input_fn=None,
@@ -140,11 +171,13 @@ def menu_line(
     tty: bool | None = None,
     read_char=None,
     print_fn=None,
+    after_key=None,
 ) -> str:
     """A numbered menu. On a TTY, one key is enough and Enter is the empty default.
 
     A scripted ``input_fn`` (tests, the desktop bridge) still returns the whole
-    line. ``read_char`` is how a test supplies the key without a console.
+    line. ``read_char`` is how a test supplies the key without a console. The Enter
+    typed out of habit after the key is taken with it (``after_key``).
     """
     from core.ask import ask_text
 
@@ -177,6 +210,12 @@ def menu_line(
     if ch == "\x03":
         raise KeyboardInterrupt
     shown = "" if ch in ("\r", "\n") else ch
+    if shown:
+        # Review of 29c280c: the Enter after "6" stayed buffered and answered the next prompt.
+        if after_key is not None:
+            after_key()
+        elif read_char is None:
+            _swallow_console_enter()
     if print_fn is not None:
         print_fn(shown)
     else:

@@ -3712,17 +3712,25 @@
       "why": "a shared name is a setup, not a repeat"
     },
     {
-      "id": "two-of-five-best-bets-are-games-by-default",
-      "item": 1191,
-      "source": "start menu 2026-10-14: five NFL fixtures as the five best bets",
-      "call": "core.best_bet:schedule_share",
-      "env": {
-        "BEST_BET_SCHEDULE_MAX": ""
-      },
+      "id": "a-regional-game-is-not-an-idea",
+      "item": 1242,
+      "source": "start menu 2026-10-14: five NFL fixtures as the five best bets; 2026-10-16: all 40 of the week's games (decision 59 replaces #1191's two-of-five)",
+      "call": "core.best_bet:marquee_note",
+      "args": [
+        "New Orleans Saints at New York Giants",
+        {
+          "league": "nfl",
+          "broadcasts": [
+            "Fox"
+          ],
+          "notes": []
+        },
+        []
+      ],
       "expect": {
-        "equals": 2
+        "equals": ""
       },
-      "why": "games came first and filled every slot, and overnight drafted only games"
+      "why": "games filled the idea list by name; only a national, noted or covered game is offered"
     },
     {
       "id": "env-lines-named-by-number-not-content",
@@ -4565,6 +4573,97 @@
         "equals": "yt-dlp"
       },
       "why": "YouTube RSS answered 404 for every competitor and the snapshot came back empty"
+    },
+    {
+      "id": "a-world-cup-hat-trick-is-not-replayed",
+      "item": 1246,
+      "source": "live list 2026-10-16: 'Messi World Cup Hat Trick' replayed months later",
+      "call": "core.best_bet:pooled_drop_reason",
+      "args": [
+        "Messi World Cup Hat Trick",
+        120
+      ],
+      "expect": {
+        "equals": "a news story is not replayed"
+      },
+      "why": "a past winner from the news is old news"
+    },
+    {
+      "id": "an-evergreen-guide-still-replays",
+      "item": 1246,
+      "source": "must keep: evergreen history still fills a slot",
+      "call": "core.best_bet:pooled_drop_reason",
+      "args": [
+        "GTA 6 map breakdown",
+        400
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "the replay rule is for news, not for every past winner"
+    },
+    {
+      "id": "soccer-has-the-news-window",
+      "item": 1246,
+      "source": "sibling: freshness_window_days gave soccer the evergreen 7 days",
+      "call": "core.batch_review:freshness_window_days",
+      "args": [
+        {
+          "topic": "Messi World Cup Hat Trick",
+          "title": "Messi World Cup Hat Trick",
+          "domain": "soccer"
+        }
+      ],
+      "expect": {
+        "equals": 2.0
+      },
+      "why": "a match is news like an NFL or UFC result"
+    },
+    {
+      "id": "a-board-draft-does-not-make-a-team-yours",
+      "item": 1242,
+      "source": "live list 2026-10-16: 'Eagles, a team you made videos about' from a board draft",
+      "call": "core.best_bet:_covered_teams",
+      "args": [
+        [
+          "Philadelphia Eagles at Jacksonville Jaguars",
+          "Chargers Hopeium going into week 5"
+        ]
+      ],
+      "expect": {
+        "includes_all": [
+          "Los Angeles Chargers"
+        ],
+        "excludes_any": [
+          "Philadelphia Eagles",
+          "Jacksonville Jaguars"
+        ]
+      },
+      "why": "only a topic the operator chose names a team they cover"
+    },
+    {
+      "id": "a-game-line-says-who-and-the-records",
+      "item": 1243,
+      "source": "live list 2026-10-16: every game's reason was 'on the board this week'",
+      "call": "core.best_bet:game_line",
+      "args": [
+        {
+          "date": "",
+          "away": {
+            "name": "Chargers",
+            "record": "0-5"
+          },
+          "home": {
+            "name": "Chiefs",
+            "record": "4-0"
+          }
+        },
+        "Chargers, a team you made videos about"
+      ],
+      "expect": {
+        "equals": "Chargers, a team you made videos about · Chargers 0-5 at Chiefs 4-0"
+      },
+      "why": "the reason is the game, not the board"
     }
   ]
 }

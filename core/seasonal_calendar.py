@@ -97,6 +97,9 @@ def _board_today() -> date:
 # #1151: each coming game's start, as its board wrote it. The week fetch fills it; a draft
 # written from a schedule pick reads it, so the draft knows when its game is.
 _STARTS: dict[str, str] = {}
+# #1242/#1243: each kept game's broadcast, records and notes, by name - what makes a game worth a
+# video, and what its idea says about it.
+_DETAILS: dict[str, dict[str, Any]] = {}
 
 
 def event_start(topic: str) -> str:
@@ -104,12 +107,50 @@ def event_start(topic: str) -> str:
     return _STARTS.get(str(topic or "").strip(), "")
 
 
+def game_detail(league: str, event: dict[str, Any]) -> dict[str, Any]:
+    """The league, kickoff, broadcasts, notes and each side's short name and record."""
+    competitions = event.get("competitions") or [{}]
+    comp = competitions[0] if isinstance(competitions, list) and competitions else {}
+    comp = comp if isinstance(comp, dict) else {}
+    sides: dict[str, dict[str, str]] = {}
+    for side in comp.get("competitors") or []:
+        if not isinstance(side, dict):
+            continue
+        team = side.get("team") or {}
+        record = next(
+            (str(r.get("summary")) for r in side.get("records") or [] if r.get("summary")), ""
+        )
+        name = str(team.get("shortDisplayName") or team.get("displayName") or "")
+        sides[str(side.get("homeAway") or "")] = {"name": name, "record": record}
+    return {
+        "league": league,
+        "date": str(event.get("date") or ""),
+        "broadcasts": [
+            str(n) for b in comp.get("broadcasts") or [] for n in (b.get("names") or []) if n
+        ],
+        "notes": [str(n.get("headline")) for n in comp.get("notes") or [] if n.get("headline")],
+        "home": sides.get("home", {}),
+        "away": sides.get("away", {}),
+    }
+
+
+def game_details(name: str) -> dict[str, Any]:
+    """`game_detail` for a game read this run, or {} (an award, or a board not read)."""
+    return dict(_DETAILS.get(name) or {})
+
+
 def topics_from_board(
-    league: str, board: dict[str, Any], *, today: date, starts: dict[str, str] | None = None
+    league: str,
+    board: dict[str, Any],
+    *,
+    today: date,
+    starts: dict[str, str] | None = None,
+    details: dict[str, dict[str, Any]] | None = None,
 ) -> list[tuple[str, str]]:
     """Games on this board that have not been played and fall inside the next week.
 
-    `starts` (#1151) collects each kept game's start time by name.
+    `starts` (#1151) collects each kept game's start time by name; `details` (#1242) its
+    broadcasts, records and notes.
     """
     horizon = today + _WEEK
     topics: list[tuple[str, str]] = []
@@ -130,17 +171,25 @@ def topics_from_board(
         topics.append((name, league))
         if starts is not None:
             starts[name] = str(event.get("date") or "")
+        if details is not None:
+            details[name] = game_detail(league, event)
     return topics
 
 
 def week_topics(
-    boards: dict[str, Any], *, today: date, starts: dict[str, str] | None = None
+    boards: dict[str, Any],
+    *,
+    today: date,
+    starts: dict[str, str] | None = None,
+    details: dict[str, dict[str, Any]] | None = None,
 ) -> list[tuple[str, str]]:
     """Coming games plus award dates still inside the window."""
     topics: list[tuple[str, str]] = []
     for league, board in (boards or {}).items():
         if isinstance(board, dict):
-            topics.extend(topics_from_board(str(league), board, today=today, starts=starts))
+            topics.extend(
+                topics_from_board(str(league), board, today=today, starts=starts, details=details)
+            )
     for when, name, domain in AWARD_DATES:
         if today <= when <= today + _AWARD_WINDOW:
             topics.append((name, domain))
@@ -167,4 +216,4 @@ def fetch_week_topics() -> list[tuple[str, str]]:
             boards[league] = get_scoreboard(league)
         except Exception as exc:
             logger.debug("scoreboard skipped for %s: %s", league, exc)
-    return week_topics(boards, today=today, starts=_STARTS)
+    return week_topics(boards, today=today, starts=_STARTS, details=_DETAILS)

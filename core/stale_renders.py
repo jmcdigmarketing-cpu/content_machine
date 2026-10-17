@@ -57,7 +57,7 @@ def shelf(channel_id: str, *, days: int = STALE_DAYS) -> dict[str, int]:
 
     renders = list_recyclable(channel_id)
     waiting = _queued_runs(channel_id)
-    stale = queued = 0
+    stale = queued = past = 0
     for run in renders:
         if int(run.id) in waiting:  # #1131: queued is waiting on the worker, not on a decision
             queued += 1
@@ -65,15 +65,20 @@ def shelf(channel_id: str, *, days: int = STALE_DAYS) -> dict[str, int]:
         age = render_age_days(run)
         if age is not None and age >= days:
             stale += 1
+        elif age is not None and age > 2 * _news_window(run, channel_id):
+            past += 1  # #1237: run 114 was "recent - requeue_upload" at 12 days of a 2-day story
     held = unlisted_holds(channel_id)
     claim = sum(1 for row in held if override_held(getattr(row, "content_run_id", None)))
-    return {
+    counts = {
         "renders": len(renders),
         "stale": stale,
         "queued": queued,
         "unlisted": len(held),
         "claim": claim,
     }
+    if past:
+        counts["past_window"] = past
+    return counts
 
 
 def _queued_runs(channel_id: str) -> dict[int, Any]:
@@ -283,6 +288,7 @@ def shelf_lines(channel_id: str, counts: dict[str, int], *, days: int = STALE_DA
         out.append(f"Unlisted, not public: {unlisted} video(s) ({'; '.join(parts)})")
     renders, stale = int(counts.get("renders") or 0), int(counts.get("stale") or 0)
     queued = int(counts.get("queued") or 0)
+    past = int(counts.get("past_window") or 0)
     if renders:
         parts = []
         if queued and _signed_out(channel_id):
@@ -292,10 +298,14 @@ def shelf_lines(channel_id: str, counts: dict[str, int], *, days: int = STALE_DA
             )
         elif queued:
             parts.append(f"{queued} queued, waiting for the worker - py -m scripts.ops worker")
-        if renders - stale - queued:
+        if renders - stale - queued - past:
             parts.append(
-                f"{renders - stale - queued} recent - "
+                f"{renders - stale - queued - past} recent - "
                 f"py -m scripts.requeue_upload --channel {channel_id}"
+            )
+        if past:
+            parts.append(
+                f"{past} past their window - py -m scripts.ops shelf --channel {channel_id}"
             )
         if stale:
             parts.append(

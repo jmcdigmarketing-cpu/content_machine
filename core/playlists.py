@@ -67,6 +67,23 @@ def playlists_for(
     return []
 
 
+def missing_line(channel_id: str) -> str:
+    """#1240: the playlists the map names that do not exist on YouTube, or "". None of TapIn's
+    11 had been made; each upload only logged "no playlist yet"."""
+    rows = playlist_map(channel_id)
+    if not rows:
+        return ""
+    ids = _load(store_path_for(channel_id)).get("ids") or {}
+    missing = [row["name"] for row in rows if not ids.get(row["name"])]
+    if not missing:
+        return ""
+    return (
+        f"Playlists: {len(missing)} of {len(rows)} not made on YouTube - "
+        f"py -m scripts.ops playlists --apply --channel {channel_id} "
+        f"({len(missing) * 50} quota units)"
+    )
+
+
 def store_path_for(channel_id: str) -> str:
     from config.paths import DATA_DIR
 

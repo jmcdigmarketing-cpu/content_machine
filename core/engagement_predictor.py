@@ -41,10 +41,11 @@ class Prediction:
     note: str
 
 
-def run_engagement_map(channel_id: str) -> dict[int, float]:
-    """run_id -> realized engaged_rate (same join the experiment harness uses)."""
+def run_engagement_map(channel_id: str, *, min_views: int = 0) -> dict[int, float]:
+    """run_id -> realized engaged_rate (same join the experiment harness uses). ``min_views``
+    (#1238, health only) leaves out a video with fewer known views."""
     try:
-        from core.engagement import engaged_rate
+        from core.engagement import engaged_rate, under_view_floor
         from storage.repositories.publish_log import get_publish_log_repository
 
         logs = get_publish_log_repository().list_timed_outcomes(channel_id)
@@ -53,6 +54,13 @@ def run_engagement_map(channel_id: str) -> dict[int, float]:
         return {}
     out: dict[int, float] = {}
     for log in logs:
+        if min_views:
+            try:
+                metrics = json.loads(log.metrics_json or "{}")
+            except (TypeError, ValueError):
+                metrics = {}
+            if under_view_floor(metrics, min_views):
+                continue
         rate = engaged_rate(log.metrics_json)
         if rate is not None and log.content_run_id:
             out[int(log.content_run_id)] = float(rate)

@@ -94,6 +94,15 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("shelf skipped: %s", exc)
 
     try:
+        from core.playlists import missing_line
+
+        line = missing_line(channel_id)  # #1240
+        if line:
+            lines.append(line)
+    except Exception as exc:
+        logger.debug("playlist line skipped: %s", exc)
+
+    try:
         from core.cadence import cadence_status, target_line
 
         week = target_line(cadence_status(channel_id))

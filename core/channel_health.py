@@ -50,10 +50,15 @@ def _worst(statuses: list[str]) -> str:
     return max(statuses, key=lambda s: _RANK.get(s, 1)) if statuses else YELLOW
 
 
+# #1238: run 119 - 3 views, 0% engaged - turned engagement RED on its own.
+HEALTH_MIN_VIEWS = 20
+
+
 def _engagement_sub(channel_id: str) -> HealthSub:
     from core.engagement_predictor import run_engagement_map
 
-    rates = run_engagement_map(channel_id)  # {run_id: engaged_rate}
+    rates = run_engagement_map(channel_id, min_views=HEALTH_MIN_VIEWS)  # {run_id: engaged_rate}
+    left = len(run_engagement_map(channel_id)) - len(rates)
     if len(rates) < 3:
         return HealthSub("engagement", YELLOW, f"collecting ({len(rates)} measured)")
     ordered = [rates[rid] for rid in sorted(rates)]
@@ -64,6 +69,9 @@ def _engagement_sub(channel_id: str) -> HealthSub:
     detail = (
         f"recent {recent_mean * 100:.1f}% vs baseline {baseline * 100:.1f}% ({delta * 100:+.1f}pp)"
     )
+    if left > 0:
+        plural = "video" if left == 1 else "videos"
+        detail += f"; {left} {plural} under {HEALTH_MIN_VIEWS} views left out"
     if delta < -0.05:
         return HealthSub("engagement", RED, "declining - " + detail)
     if delta < -0.01:

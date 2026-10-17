@@ -388,6 +388,23 @@ def review_drafts(
             "  No drafts waiting. Make some: py -m scripts.ops batch-drafts --channel", channel_id
         )
         return summary
+    dead = [draft for draft in drafts if draft.decision != "accepted" and dead_reason(draft.meta)]
+    if len(dead) > 1:
+        # #1239: 16 of 22 waiting drafts were past their window, one "still current?" each.
+        answer = ask(f"  Set aside the {len(dead)} drafts past their window? [Y/n]: ")
+        if answer.strip().lower() in ("", "y", "yes"):
+            for draft in dead:
+                _write_review(
+                    draft, decision="expired", by="operator", reason=dead_reason(draft.meta)
+                )
+                summary.expired.append(draft.run_id)
+            print_fn(
+                f"    Set aside {len(dead)} - nothing is deleted (batch-review --expired lists "
+                "them)."
+            )
+            drafts = [draft for draft in drafts if draft not in dead]
+            if not drafts:
+                return summary
 
     accepted: list[tuple[PendingDraft, bool]] = []
     for index, draft in enumerate(drafts, 1):

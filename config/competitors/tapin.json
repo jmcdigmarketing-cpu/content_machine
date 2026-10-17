@@ -2,8 +2,24 @@
   "channel_id": "tapin",
   "youtube_channels": [
     {
-      "id": "UCBJycsmduvYEL83R_U4JriQ",
-      "label": "Marques Brownlee (tech/gaming adjacent)"
+      "id": "UCRXsUJyZKyByJixT_7mZ1Xg",
+      "label": "Full Mount MMA"
+    },
+    {
+      "id": "UCIhQvpinmS8Eq6PrQ021DKQ",
+      "label": "THE MMA GURU"
+    },
+    {
+      "id": "UCiio0ydw439X13KyZgMIcHw",
+      "label": "NFL on ESPN"
+    },
+    {
+      "id": "UCdGdhYRjSX1TYLRvm87-jTA",
+      "label": "NFL Daily with Gregg Rosenthal"
+    },
+    {
+      "id": "UCFvV4xHrpAdNdwp_KhYitRg",
+      "label": "The Basketball Bulletin"
     }
   ],
   "comment": "Add niche Shorts competitors you track; run py -m analytics.competitor_sync --channel tapin. The Pat McAfee UC id UCq-Fj5jknLsUf-MWSik4vhQ 404'd (T-Series typo) and was removed 2026-09-09 (#584)."

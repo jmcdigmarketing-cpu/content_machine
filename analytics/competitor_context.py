@@ -180,7 +180,9 @@ def get_competitor_prompt_block(channel_id: str, topic: str = "") -> str:
 
     titles = list_recent_competitor_titles(channel_id, topic=topic, limit=10)
     if not titles:
-        titles = list_recent_competitor_titles(channel_id, topic="", limit=8)
+        # #1236: the fallback here was the 8 newest titles on any subject - an NFL angle prompt
+        # got Marques Brownlee's "Xiaomi 18 Fold" as "what is working in-niche now".
+        return ""
 
     if topic:
         covered = topic_saturation(channel_id, topic, snapshot=snap)

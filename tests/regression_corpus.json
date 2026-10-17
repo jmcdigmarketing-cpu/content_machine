@@ -4292,6 +4292,32 @@
         "truthy": true
       },
       "why": "a prediction and a what-to-watch line read as a recap"
+    },
+    {
+      "id": "contender-series-without-a-feed-is-ufc",
+      "item": 1215,
+      "source": "best bets 2026-10-15, untagged: Season 10 of Contender Series ranked nba",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "The next Sean O'Malley: Ranking the best prospects from Season 10 of Contender Series"
+      ],
+      "expect": {
+        "equals": "ufc"
+      },
+      "why": "the whole word contender is on the NBA list and is checked before UFC"
+    },
+    {
+      "id": "a-lakers-contender-stays-nba",
+      "item": 1215,
+      "source": "must keep: bare contender is still NBA",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Why the Lakers are not a contender yet"
+      ],
+      "expect": {
+        "equals": "nba"
+      },
+      "why": "contender series is UFC; a title contender is not"
     }
   ]
 }

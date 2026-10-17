@@ -416,6 +416,11 @@ def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: 
     if _mentions(topic_lower, _SOCCER_KEYS) and not _FOOTBALL_GAME_RE.search(topic_lower):
         return "soccer"
 
+    # #1215: "Contender Series" is the UFC show. The bare word "contender" is on the
+    # NBA list below and is checked first, so the same title with no feed tag was nba.
+    if _mentions(topic_lower, ["contender series"]):
+        return "ufc"
+
     if _mentions(
         topic_lower,
         [

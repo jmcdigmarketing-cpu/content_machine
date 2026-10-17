@@ -47,7 +47,8 @@ class FeedHeadlineDomainTests(unittest.TestCase):
         self.assertNotIn("nba averages", bet.rationale)
         self.assertEqual(bet.domain, "ufc")
 
-    def test_the_same_title_with_no_feed_tag_stays_nba(self):
+    def test_the_same_title_with_no_feed_tag_is_ufc(self):
+        """#1215: the live title, with no feed tag, was nba on the word "contender"."""
         from core.best_bet import _consider_candidate
 
         cand = _consider_candidate(
@@ -58,4 +59,14 @@ class FeedHeadlineDomainTests(unittest.TestCase):
             seen_local=set(),
         )
         self.assertIsNotNone(cand)
-        self.assertEqual(cand["domain"], "nba")
+        self.assertEqual(cand["domain"], "ufc")
+
+    def test_a_lakers_contender_stays_nba(self):
+        """Bare "contender" is still NBA. Only "contender series" is the UFC show."""
+        from apis.topic_scorer import infer_topic_domain
+
+        self.assertEqual(
+            infer_topic_domain("Why the Lakers are not a contender yet"),
+            "nba",
+        )
+        self.assertEqual(infer_topic_domain("NBA title contenders this spring"), "nba")

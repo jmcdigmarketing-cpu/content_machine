@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-17: the grand audit; CI checks what the PC checks; the suite cannot reach the real database
+# Handoff synopsis — 2026-10-17: wave 104; Cursor's wave 103 committed with six corrections; CI green
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-17 (Claude Code): the grand audit
+## Last wave — 2026-10-17 (Claude Code): wave 104, Cursor's wave 103 finished
+
+**Cursor is out of usage for the month.** Its wave 103 (my order of fifteen) was done and
+uncommitted. Claude re-audited every diff, corrected six - a neutral topic on TapIn lost its
+sports signals (run 98 again), a cooling LLM provider could fall back to a paid model, the
+draft cap counted drafts the night sets aside, "at its slot" did nothing, Go public was one
+click, explain printed lists as timings - and committed it.
+
+**Wave 104.** `ops status` says when CI on `main` is red (#1263); a confirmed claim is not
+listed again (#1262); an undated run is not "this week" (#1261); the `.env` warning once a run
+(#1265); "Give" is not a name (#1266). Filed #1270-#1272. CI on `da4a4ed` was green on every
+job, the first time since 10-10. Suite 6175 forward and reversed on the committed tree.
+
+## Previous — 2026-10-17 (Claude Code): the grand audit
 
 **Found and fixed.** CI on `main` had failed the type check on every push since 10-11 (Linux
 plus old bs4 stubs counted 25 errors this PC never saw) - mypy now checks the Windows build
@@ -23,6 +36,22 @@ grade, which Cursor's `bef5a56` had swapped for a near-flat file (§61).
 **Reviewed.** `29c280c` and `bef5a56` in full: the menu Enter, the colour, the Home changelog,
 and a test that deleted `data/launch_state.json`. Filed #1263-#1269. Record:
 `docs/audit_2026-10-17.md`. Suite 6128 forward and reversed; CI's type check green (90 < 92).
+
+## Previous — 2026-10-17 (Cursor): wave 103, the fifteen from the mailbox
+
+`ops roadmap-index` prints counts unless `--list`. `ops explain` prints `Words: N`
+on its own line. The seven-day opening window sees `created_at` (an undated row
+still counts, #1261). Ballon d'Or says Wed Oct 28. The Dubois weigh-in is boxing
+and an MMA feed does not rename it to ufc. A follow-up that would repeat the last
+topic is not offered. A neutral topic on tapin runs gaming signals only. A 429
+cools that provider in-process. Stale vault lines are judged once per day.
+Overnight drafts `min(requested, 8 - waiting)` and says when it drafted fewer.
+Menu option 7 is one pass over unlisted videos; nothing goes public without a
+choice. The review room lists each flagged claim, confirms with a source, cuts,
+and keeps Go public off until the claim is settled. #1255 and #1247 stayed open.
+
+`roadmap-index`: open 260, done 1235, numbered open 208, highest #1262.
+Next: #421 #425 #450 #457 #257.
 
 ## Previous — 2026-10-16/17 (Claude Code): wave 102 + the review of 29c280c
 
@@ -135,26 +164,6 @@ Next: #1221 #1227 #1228 #1229 #1043. #1215 left the old corpus case expecting nb
 Claude retargeted it to ufc in `ab9677f`. Claude's wave 99 is `0e4582c`. #1233 and
 #1234 were still uncommitted when this was written.
 
-## Previous — 2026-10-16 (Claude Code): waves 97-98, five for Claude, five more for Cursor
-
-**Wave 97.** After the operator ran overnight by hand, the stop line said "stopped after 4 of 3
-drafts"; `ops overnight` now records its start and finish, the line is quiet once a later run
-finished and counts only the run that stopped (#1223). `ops blocking` read a pulled run, then a
-trace's stale scores; it reads the shelf and the run's record (#1222).
-
-**Wave 98.** Run 159 came back "New York Jets vs England Patriots" - the angle prompt was told
-"York, Jets, England"; whole names now, and a broken team name fails the title check (#1224).
-Run 158 kept "Long-term outlook:" and ended its title in "..." (#1225). The check read neither of
-run 158's takes, and calm drafts were held for one they never got; they get a "what to watch"
-beat now (#1226).
-
-**Cursor:** after its five (#1215 #514 #418 #463 #545), the operator added #1221 #1227 #1228
-#1229 #1043. Claude reviews, corrects and pushes Cursor's work in the next prompt.
-
-**Still the operator's:** `R2_PUBLIC_BASE_URL`; `.env` lines 35, 36, 39; the worker (runs 155,
-126 queued - the shelf is full, so overnight is paused); the consent screen; `schedule-drafts
---wake`. Suite 5965, forward and reversed.
-
 ## Pipeline order (operator)
 
 ```
@@ -229,7 +238,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #508 #532 #269 #497 #509 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #421 #425 #450 #457 #257 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

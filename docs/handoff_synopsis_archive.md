@@ -7,6 +7,26 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-16 (Claude Code): waves 97-98, five for Claude, five more for Cursor
+
+**Wave 97.** After the operator ran overnight by hand, the stop line said "stopped after 4 of 3
+drafts"; `ops overnight` now records its start and finish, the line is quiet once a later run
+finished and counts only the run that stopped (#1223). `ops blocking` read a pulled run, then a
+trace's stale scores; it reads the shelf and the run's record (#1222).
+
+**Wave 98.** Run 159 came back "New York Jets vs England Patriots" - the angle prompt was told
+"York, Jets, England"; whole names now, and a broken team name fails the title check (#1224).
+Run 158 kept "Long-term outlook:" and ended its title in "..." (#1225). The check read neither of
+run 158's takes, and calm drafts were held for one they never got; they get a "what to watch"
+beat now (#1226).
+
+**Cursor:** after its five (#1215 #514 #418 #463 #545), the operator added #1221 #1227 #1228
+#1229 #1043. Claude reviews, corrects and pushes Cursor's work in the next prompt.
+
+**Still the operator's:** `R2_PUBLIC_BASE_URL`; `.env` lines 35, 36, 39; the worker (runs 155,
+126 queued - the shelf is full, so overnight is paused); the consent screen; `schedule-drafts
+--wake`. Suite 5965, forward and reversed.
+
 ## Previous — 2026-10-16 (Claude Code): waves 95-96, what the morning said that was not so
 
 **Wave 95.** Overnight woke with the PC at 4:30 PM, made run 156 and crashed at 4:32 (0xC0000374,

@@ -1,6 +1,6 @@
 # Content OS — roadmap
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-13
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-17
 
 **What to do now.** The full inventory, the desktop programme, and the history live
 in their own files — this one stays short enough to read at the start of every
@@ -81,25 +81,17 @@ Operator calls open: runs 92 and 119 are public with a flagged claim never confi
 the competitor shortlist (`ops competitors suggest`, then `add --name`); the ad campaign
 YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --kind ads`.
 
-### Recommended next five (non-app)
+### Recommended next five
 
-**2026-10-17 (Cursor).** #508 #532 #269 #497 #509 #233 #300 #424 #451 #453
-#454 #511 #529 #552 #582 are done. Next, from the open numbered lines
-`roadmap-index` still prints: **#421** a render time budget that degrades the
-preset, **#425** vertical-crop scoring for 16:9 sources, **#449** a batch
-approve queue, **#450** voice-note fact intake, **#457** a lockfile so the
-environment cannot silently disagree with `pyproject.toml`.
-Finished output changed: TapIn and MoneyWise encodes apply a per-channel
-`.cube` LUT instead of the three `eq` scalars; a supplied portrait thumbnail
-keeps its upper focal area.
-`roadmap-index` after Claude's wave 102: open 273, done 1220, numbered open 221, highest #1260.
-Claude reviewed Cursor's `29c280c` and corrected one item (#489: the Enter typed after a
-menu key answered the next prompt). Wave 102, the idea list (decision §59): only marquee NFL
-and NBA games (#1242), each with its kickoff, network and records (#1243), competing in their
-league's slot (#1244); a follow-up once its video is public (#1245); no news replays (#1246).
-Filed #1247-#1260. #1247 (a bare unittest from the repo root reaches the real database) is
-Claude's, in the grand audit; Cursor's order of fifteen is in the mailbox. `bef5a56` waits for
-that audit before the push.
+**2026-10-17 (Claude, wave 104).** Cursor is out of usage for the month; Claude
+committed its wave 103 (my order of fifteen, #449 with menu option 7) after a re-audit with
+six corrections, and shipped #1261 #1262 #1263 #1265 #1266. Filed #1270-#1272. Cursor's
+queue is Claude's now. Next: **#421** a render time budget that degrades the preset,
+**#425** vertical-crop scoring for 16:9 sources, **#450** voice-note fact intake,
+**#457** a lockfile so the environment cannot silently disagree with
+`pyproject.toml`, **#257** drag-drop a facts file onto the booth (the
+lowest-numbered open `[S]` that is not waiting on a run, a clip, or a decision).
+`roadmap-index` after wave 104: open 263, done 1242, numbered open 211, highest #1272.
 **2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
 push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
 the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
@@ -110,7 +102,7 @@ The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),
-#1015 (waits on PySide), #975 (waiting on a boosted video), desktop B2 (#1068, #1064).
+#1015 (waits on PySide), #975 (waiting on a boosted video). Next app item is #161. #1067, #1064 and #1068 are done.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
@@ -179,7 +171,8 @@ Stage 7; `ops doctor` reports `cuda` FAIL by design and it gates nothing.
 7. `YOUTUBE_UPLOAD_ENABLED=true` + `py -m jobs.worker --loop 30`
 
 **`py main.py` menu:** 1) new video · 2) queue manager · 3) intelligence report ·
-4) sync analytics · 5) make a video from your own idea / a YouTube link
+4) sync analytics · 5) make a video from your own idea / a YouTube link ·
+6) overnight videos and drafts · 7) watch and publish
 
 **Recommendation helpers:** `py -m scripts.ops recommend-time --channel tapin` ·
 `recommend-length` · best-bet shown at startup

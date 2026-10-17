@@ -8118,6 +8118,40 @@ The app: stages 0, 1, 2 and 4 shipped, 3 partial, 5-7 not started, no desktop co
 
 Suite: 6115 tests forward and reversed, green on the committed tree (the two `git ls-files` checks pass in the repo).
 
+## 2026-10-17 — wave 103 (Cursor): the fifteen from the mailbox
+
+**Prompt:** "Next fifteen. Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself."
+
+**Picked.** Claude's mailbox order, cheapest first. Not the roadmap five. #449 was already on that five and shipped here with #1248. #1255 and #1247 were left open on purpose.
+
+**Shipped**
+
+1. **#1257** `ops roadmap-index` default is the counts. `--list` prints `Open numbered` and each `#N` line. Measured: default output has no `Open numbered`; `--list` starts `#32`.
+2. **#1250** `explain_trace` prints phase seconds, then `Words: 160`. `word_count` is not on the timings line. The skip set is `why_slow._NOT_PHASES`.
+3. **#1256** Both content-run mappers copy `created_at`. JSON create stamps it. An 8-day-old script drops, a 2-day-old stays, 14 from this week all count. A row with no timestamp still counts (#1261).
+4. **#1260** Ballon d'Or 2026's reason is `Wed Oct 28`, not "on the board this week".
+5. **#1258** Measured before the edit: `infer_topic_domain("Daniel Dubois vs. Fabio Wardley 2 weigh-in")` was `neutral`, and `_domain_for_feed(neutral, ["ufc", "mma"])` stayed `neutral`. A weigh-in without ufc/mma is `boxing`. An MMA-only feed does not rename boxing to ufc. "UFC 320 weigh-ins" stays ufc. The word "boxing" still maps to ufc.
+6. **#1259** `arc_offer("UFC Illia Islam", "ufc", 4)` is `""`. `arc_offer("GTA 6 leak week 1", "gta", 1)` is `GTA 6 leak`.
+7. **#1249** "Pokemon at 5 PM" stays neutral. On tapin the gate includes fred, coingecko, lastfm, sec_edgar and odds, and not rawg. No channel, and channel `default`, gate nothing. Run 98 still runs odds. `infer_topic_domain` was not changed.
+8. **#1252** Retry-After 30 skips that provider until the cooldown ends and does not session-disable it. Retry-After 99999 cools at most 60 seconds. First skip is debug. Not written to `quota_governor`.
+9. **#1251** Three loads on one day called `stale_preview` once for that line; the next day called it again.
+10. **#1253** 22 waiting drafts 0, does not call `collect_topics`, and the report says 22 rather than "best bets unavailable". 0 waiting still drafts the request. Cap 8.
+11. **#1248 and #449** Option 7 is one pass. The printed line had the mp4 path, `42s`, and `grade B`. "Now" called `apply_go_public(..., dry_run=False)` for that video only. "At its slot" did not. Set aside is absent from the next pass. A grounding hold printed `refused` and wrote nothing. A flagged claim did not call `apply_go_public`.
+12. **#1064 and #1068** The review window lists the claim and the ESPN source line. An empty source returns `invalid` and does not write. Cut names the sentence. A real source removes the row and enables Go public. Breaking the settled-claim filter left Go public disabled (the guard went red).
+13. **#1254** `desktop_app.md` reviewed 2026-10-17. Stages 0, 1, 2, 4 shipped; 3 partial; 5-7 not started. Next app item is #161.
+
+**Fail-first.** The first `tests.test_wave103` run was 8 failures and 1 error. The gating, cooldown, stale-line and overnight tests failed before their fixes (a neutral topic gated nothing, the stale line was judged 3 times, 22 waiting still drafted, the cooldown helpers were missing). Watch-and-publish was 1 failure and 3 errors. The review helper was 4 import errors. The window did not list the claim. The undated-row case was already green (it asserts the gap). The UFC weigh-in guard was broken on purpose and went red (`boxing != ufc`), then restored.
+
+**Found, filed.** #1261 undated runs still count as this week. #1262 `flagged_claims` lists a confirmed claim again from `grounding_override_claims` (`core/facts/claim_confirm.py` fallback when `unsupported` is empty). The room hides a claim that has a real source; `ops verify-claim` does not.
+
+**Operator output.** `ops roadmap-index`: open 260, done 1235, numbered open 208, highest #1262. `--list` adds `Open numbered` and starts at `#32`. Menu option 7: `7) Watch and publish - each unlisted video, then now / slot / keep / set aside` and `Select 1-7 [1]:`. The menu import also printed the existing warning that `.env` lines 35, 36 and 39 are not NAME=value.
+
+**Deliberately not done.** #1255. #1247.
+
+**Audit.** Callers: `award_line` from `suggested_games`; `arc_offer` from `follow_up_seed`; `cool_provider` from `complete` and `_cooling` from `_resolve_chain`; `bullets_without_stale` from `load_fact_records`; `draft_count` from `_run_overnight_body`; `watch_and_publish` from `main._run_watch_publish`; `claim_rows` / `confirm_from_room` / `reject_from_room` / `go_public_from_room` from `desktop/review.py`. `watch_aside` is written by the aside choice and read by `listed_holds`. `created_at` is stamped on JSON create and read by `scripts_this_week`. `video_duration` is the technical-qc field the hold line reads. `git status --short data/` empty. Suite count filled after the run below.
+
+**Next.** #421 #425 #450 #457 #257.
+
 ## 2026-10-17 — the grand audit (Claude Code)
 
 **Prompt:** "grand audit, keep overnight renders waiting for me". The second half answers #1255
@@ -8142,3 +8176,41 @@ What the audit found, in the order it matters (the full record:
 The operator asked for the long checks (mypy twice, status, health, reliability, shelf) as
 one block to paste; CI's run on the push answered the mypy question first, and the live
 checks were read through their functions, without stamping the operator's presence. Suite 6128 forward and reversed on the committed trees.
+
+## 2026-10-17 — wave 104: Cursor's wave 103 finished and corrected; five items (Claude Code)
+
+**Prompt:** "cursor has run out of useage for the month, continue where they left off and do a
+re audit of new material, plan new improvements and ideas, debug, and commit". Answers: wave
+103 + 5 new items; remove the no-op "at its slot"; commit and push.
+
+**Where Cursor left off.** Wave 103 (my order of fifteen) was complete in the working tree and
+uncommitted; its mailbox slot was never rewritten, and the shared index held its older staged
+copies of six docs - committing that index would have dropped the audit's lines.
+
+**Re-audit, corrections.**
+1. #1249 gated a neutral topic to TapIn's primary domain, gaming: "Payton Pritchard signed a
+   two-year extension" and "Shedeur Sanders first start" read neutral and lost every sports
+   signal - run 98's failure, which `test_run98_domain` exists for. Now only the groups none of
+   the channel's domains cover are skipped (`extra_domains` count): run 158 still drops FRED,
+   CoinGecko, Last.fm.
+2. #1252 dropped a cooling provider from the chain; an empty chain falls back to a paid OpenAI
+   call. It waits at the end. The test's 30 s cooldown outlived the test.
+3. #1253 counted drafts before the night set the old ones aside.
+4. #1248 "at its slot" did nothing - removed (the operator).
+5. #1064 Go public was one click - the app asks first.
+6. #1250 (found live on run 157): explain still printed the angle list, the intent dict and
+   the angle spread as timings. `why_slow.phase_seconds` serves both.
+And one brittle test: #1257's pinned #1255 as an open item.
+
+**Five items.** #1263 CI red in `ops status`; #1262 a confirmed claim listed again; #1261 an
+undated run counted as this week; #1265 the `.env` warning once a run; #1266 "Give" as a name.
+
+**Ideas filed.** #1270 schedule a watched video for its post time (the operator's choice per
+video); #1271 say why engagement fell (25.8% vs 32.2%); #1272 the morning says how many drafts
+to review before overnight drafts again - with 21 waiting and the cap at 8, tonight drafts none.
+
+**Measured.** On unmodified HEAD, `test_wave103` 27 of 29 and `test_wave104` 16 of 18 fail; on
+Cursor's tree before the corrections, 14 of the first 17 of mine failed. 3,568 related tests
+OK; corpus +3 (311). Live: the gating of four real topics, `roadmap-index` 9 lines, explain run
+157, the cap against 21 waiting drafts, watch-and-publish listing run 126, the CI line quiet on
+a green `main` (CI on `da4a4ed`: every job green, the first time since 10-10). Suite 6175 forward and reversed on the committed tree.

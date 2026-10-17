@@ -53,55 +53,35 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-17 · **HEAD at write:** my audit commit on `444e2e7` (`git log -1`) ·
-**Tree:** your wave 103 files are yours; I added my lines to the shared docs and the corpus in
-the working tree too, so your commit keeps them. **Pushed** `54f641b` (your
-`29c280c` and `bef5a56`, reviewed, with my corrections): CI's type check passed - 90 errors,
-baseline 92.
+**Written:** 2026-10-17 · **HEAD at write:** the wave 104 docs commit (`git log -1`) ·
+**Tree:** clean of mine; leave `.agents/` and `.codex/`. **Pushed** at the operator's word ("commit and push"); CI read once after.
 
-**Cursor - the audit changed in your work:**
-- `config/channels.json` (#497): `color_lut` is out of TapIn and MoneyWise - the 2-point files
-  were nearly flat and replaced TapIn's saturation 1.18 / contrast 1.08 (the operator: keep the
-  current look, decision §61). Your `RenderLutTests` now asks that the shipped channels keep
-  their grade; the golden `grade.cube` case still proves the path. The field is parked in
-  `test_no_profile_field_is_unset_on_every_shipped_channel` with its reason.
-- `desktop/home.py` (#532): the changelog stamps once per process (Refresh emptied it), and
-  `git` runs with `CREATE_NO_WINDOW`. Your `test_home_writes_isolated_launch_state...` deleted
-  the operator's `data/launch_state.json` when it existed - it compares it now.
-- `tests/__init__.py` refuses to load when `config.settings` came first, and sets
-  `CONTENT_SUITE=1`; `storage/db.py` then opens only SQLite or `CONTENT_TEST_DATABASE_URL`.
-- **mypy checks the Windows build** (`platform = "win32"`, no `types-beautifulsoup4`;
-  decision §62). CI had failed on every push since 10-11. Lower `mypy_baseline.txt` only from
-  a count taken with this config.
-- Read and left as written in `bef5a56`: `signal_contract`, unit sanity, the booth's tags and
-  captions, the licence ledger, text-variant thumbnails, latency rows, the toast sound.
+**Cursor is out of usage for the month** (the operator, 2026-10-17). Claude committed its wave
+103 with wave 104 and owns the queue until it is back: next #421 #425 #450 #457 #257 (roadmap).
 
-**The operator, 2026-10-17:** "keep overnight renders waiting for me" (§60). Your
-`watch_and_publish` keeps to it; `tests/test_grand_audit.py` holds who may call
-`apply_go_public` (yours in `core/review_bind.py` is on the list). **Your wave 103 is not
-reviewed yet** - I review it when it is committed; `draft_count`'s cap of 8 would stop
-overnight drafting while 22 drafts wait.
+**Cursor - when you are back, what wave 104 changed in your wave 103:**
+- `apis/register_signals._gated_signal_names` (#1249): a neutral topic skips only the groups
+  none of the channel's domains cover - `extra_domains` included. Primary-only cut every
+  sports signal from "Payton Pritchard signed a two-year extension" on TapIn (run 98 again).
+- `core/llm_router._resolve_chain` (#1252): a cooling provider waits at the end of the chain;
+  dropped, an empty chain fell back to a paid OpenAI call. Your test now clears its cooldown.
+- `core/overnight` (#1253): expiry runs before the cap counts.
+- `publishing/go_public.watch_and_publish` (#1248): no "at its slot" (the operator) - #1270.
+- `desktop/review._go_public` (#1064): asks first, No the default; Cut reloads the claims.
+- `core/run_trace.explain_trace` (#1250): seconds only via `why_slow.phase_seconds`; run 157
+  printed `angle_frames` and `intent_read` as timings.
+- `tests/test_wave103.py`: the roadmap test no longer pins one open number (#1255 closed);
+  the undated-row test asks the #1261 behaviour.
 
-**Numbers:** the audit filed #1263-#1269; please number yours from #1276.
+**Defects first:** none open of mine. Overnight drafts none while 21 drafts wait (the cap of
+8; #1272 files the morning line). Runs 155 and 157 wait for the worker; run 126 for go-public.
 
-**Defects first:** none open of mine. Suite 6128 forward and reversed.
+**Shipped:** wave 103 (Cursor) + wave 104 (#1261 #1262 #1263 #1265 #1266). Filed #1270-#1272.
+Suite 6175 forward and reversed on the committed tree.
 
 ## Slot — Cursor
 
-**Written:** 2026-10-17 · **HEAD at write:** `29c280c` · this wave is the next
-commit. Leave `.agents/`, `.codex/`, and your wave-102 files. Not pushed.
-
-**Defects first:** Home wrote `data/launch_state.json` until
-`CONTENT_LAUNCH_STATE` was isolated like window state. Hypothesis `too_slow`
-on the first forward run (2 examples in 1.72s). Mixed with your dirty
-`best_bet.py` the suite fails on `schedule_share` — that is yours, not this
-commit. TapIn still has no `reading_level`. #494 still open. #577 sits in
-your dirty `youtube_publisher.py`.
-
-**Shipped:** #508 #532 #269 #497 #509 #233 #300 #424 #451 #453 #454 #511
-#529 #552 #582. 17 tests on unmodified `29c280c`: 2 failures, 12 errors.
-`lut3d=` → `BROKEN=` went red. With your files stashed: 6101 OK forward and
-reverse; `data/` empty; mypy 92. `ops teaser` with no id prints `teaser needs
---run-id N`. LUT encode 2709 vs 2583 bytes. **Finished colour changed**
-(per-channel `.cube` instead of `eq`). Next: #421 #425 #449 #450 #457.
-`roadmap-index`: open 259, done 1215, numbered open 207, highest #1136.
+**Written:** 2026-10-17 by Claude, for Cursor · **Out of usage for the month** (the operator).
+Your wave 103 was complete and uncommitted; Claude re-audited it, corrected six things (the
+list is in Claude's slot) and committed it with wave 104. Nothing of yours is left in the
+tree. When you are back: read Claude's slot first; the queue is the roadmap's next five.

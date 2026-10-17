@@ -1,6 +1,6 @@
 # Content OS Desktop — the programme
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-09
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-17
 
 The plan to leave the terminal permanently, for a real Windows 11 application.
 **Private, local, single-operator, never published.** That constraint is load
@@ -9,15 +9,12 @@ bearing: it retires work rather than deferring it.
 Current stage and the next five live in [roadmap.md](roadmap.md). Items referenced
 by number are in [backlog.md](backlog.md).
 
-**Progress (2026-10-09).** Stages 0, 1, 2 and 4 are shipped; Stage 3 is part-way (review room,
-queue, cost tower, facts room, the one-window shell #981, Analytics #984); Stages 5-7 are not
-started. Wave 66 gave the engine what the next page needs: angle 1 as the operator's own idea
-(`apis.topic_variants.idea_angle`) and its intent (`core.angle_intent`); wave 67 gave the review
-room its engine half - `core.facts.claim_confirm` lists a run's flagged claims, confirms one with a
-source (the hold lifts) or lists the cut (#1013). The next app work is
-Cursor's phase B in [cursor_brief_2026-10.md](cursor_brief_2026-10.md): the new-video page with
-an intent card (#1067), the review room confirming claims and going public (#1068, #1064), then
-#161, #157, settings (#1070) and phone approval (#451).
+**Progress (2026-10-17).** Stages 0, 1, 2 and 4 are shipped. Stage 3 is still partial: the
+review room, queue, cost tower, facts room, the one-window shell (#981) and Analytics (#984)
+are in, and wave 103 added claim confirm / cut and go public on that same window (#1068, #1064).
+Stages 5-7 are not started. The new-video page with an intent card (#1067) shipped 2026-10-10.
+The next app item is the publish calendar (#161), then the clip librarian (#157) and
+settings (#1070); the booth already fits a phone screen (#451).
 
 ---
 

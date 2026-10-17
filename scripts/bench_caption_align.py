@@ -20,8 +20,9 @@ retexted output is 1:1 token-aligned with ground truth — so that row measures 
 script word, not just the ones whisper happened to transcribe cleanly, and the trailing
 count says how many misheard words it corrected.
 
-A dev script, deliberately outside the test suite — it downloads models and reads real
-audio (tests/CLAUDE.md: no network in tests).
+The model run downloads weights and reads real audio, so it stays out of CI. The
+150ms line-start verdict does not: no measured model inside that line exits 1, and
+that is what the suite calls. No sidecar is not a regression, so that path exits 0.
 """
 
 from __future__ import annotations
@@ -174,6 +175,28 @@ def bench_model(audio_path: str, truth: list[dict], model: str, max_words: int) 
     }
 
 
+LINE_START_LIMIT_S = 0.150
+
+
+def _met_line(row: dict[str, Any], *, limit: float) -> bool:
+    if not row.get("ok"):
+        return False
+    raw = row.get("line_p90")
+    try:
+        line_p90 = float(raw) if raw is not None else 1.0
+    except (TypeError, ValueError):
+        return False
+    return line_p90 <= limit
+
+
+def caption_verdict(rows: list[dict[str, Any]], *, limit: float = LINE_START_LIMIT_S) -> int:
+    """1 when no measured model keeps line-start p90 within `limit` seconds, else 0.
+
+    A model that failed to run does not count. 150ms is the line the report already prints.
+    """
+    return 0 if any(_met_line(row, limit=limit) for row in rows) else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Whisper caption timing vs ElevenLabs truth")
     parser.add_argument("--audio", default=None, help="mp3 with a .words.json sidecar")
@@ -185,12 +208,12 @@ def main(argv: list[str] | None = None) -> int:
     audio_path = args.audio or find_ground_truth_audio()
     if not audio_path or not os.path.exists(audio_path):
         print("No audio with an ElevenLabs .words.json sidecar found under output/.")
-        return 1
+        return 0
 
     truth = load_truth(audio_path)
     if not truth:
         print(f"Sidecar for {audio_path} has no usable words.")
-        return 1
+        return 0
 
     os.environ["CAPTION_ALIGN_BACKEND"] = args.backend
     from core.caption_align import align_compute_type, align_device
@@ -236,18 +259,24 @@ def main(argv: list[str] | None = None) -> int:
         elif retext:
             print(f"  {'+retext':8} {retext.get('detail')}")
 
-    good = [r for r in rows if r.get("ok") and r["line_p90"] <= 0.150]
+    code = caption_verdict(rows)
     print()
-    if good:
-        best = min(good, key=lambda r: r["seconds"])
+    if code == 0:
+        best = min(
+            (r for r in rows if _met_line(r, limit=LINE_START_LIMIT_S)),
+            key=lambda r: r["seconds"],
+        )
         print(
             f"  Recommended: CAPTION_ALIGN_MODEL={best['model']} "
             f"(line p90 {best['line_p90'] * 1000:.0f}ms, {best['seconds']:.1f}s for {duration:.0f}s audio)"
         )
     else:
-        print("  No model met the 150ms line-start target — captions would visibly drift.")
+        limit_ms = LINE_START_LIMIT_S * 1000
+        print(
+            f"  No model met the {limit_ms:.0f}ms line-start target — captions would visibly drift."
+        )
     print()
-    return 0
+    return code
 
 
 if __name__ == "__main__":

@@ -479,11 +479,9 @@ def _draft_one(
     }
     try:
         Path(job).write_text(json.dumps(payload), encoding="utf-8")
-        proc = subprocess.run(
-            [sys.executable, "-m", "core.overnight", "--draft-job", job],
-            capture_output=True,
-            text=True,
-        )
+        # Not captured: the child's lines - and a crash's faulthandler traceback (#1216) - go to
+        # the parent's stdout and stderr, which the task sends to overnight-last.log.
+        proc = subprocess.run([sys.executable, "-m", "core.overnight", "--draft-job", job])
     except (OSError, TypeError, ValueError) as exc:
         logger.warning("overnight draft was not started for %s: %s", topic, exc)
         return DraftOutcome(topic=topic, error=str(exc))

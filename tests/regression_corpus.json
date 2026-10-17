@@ -4405,9 +4405,9 @@
       "why": "ffmpeg sat on stdin until the fixed timeout, then the render kept the old background"
     },
     {
-      "id": "chargers-topic-skips-an-untagged-madden-clip",
+      "id": "chargers-topic-keeps-an-untagged-madden-clip-when-none-is-tagged",
       "item": 1043,
-      "source": "run 155 cut four untagged Madden clips",
+      "source": "review 2026-10-16: leaving untagged clips out left Titans-Colts 0 of 13 Madden clips",
       "call": "assets.clip_tags:clips_for_topic",
       "args": [
         [
@@ -4416,9 +4416,11 @@
         "How the 0-4 chargers can turn it around this year"
       ],
       "expect": {
-        "equals": []
+        "equals": [
+          "/lib/madden/clip0.mp4"
+        ]
       },
-      "why": "the Madden folder was the pool, and no clip was tagged Chargers"
+      "why": "the operator's clips carry no team; a clip tagged with another team is still left out"
     },
     {
       "id": "nfl-draft-keeps-an-untagged-clip",

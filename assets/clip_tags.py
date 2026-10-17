@@ -113,10 +113,12 @@ def _tag_set(path: str, meta: dict[str, Any]) -> set[str]:
 
 
 def clips_for_topic(paths: list[str], topic: str, index: dict[str, Any] | None = None) -> list[str]:
-    """`paths` limited to the topic's team or player. No subject: the list unchanged.
+    """`paths` for the topic's team or player. No subject: the list unchanged.
 
-    Untagged clips are left out when the topic names a team. Run 155's four
-    Madden files named no team, so a Chargers video does not cut them.
+    Clips tagged with the subject when there are any; else the untagged ones - never a clip
+    tagged with another team or player. Review of 2026-10-16: leaving untagged clips out made
+    "Tennessee Titans at Indianapolis Colts" keep 0 of 13 Madden clips and "Cleveland
+    Cavaliers at Orlando Magic" 0 of 72 2K clips, because the operator's files carry no team.
     """
     wanted = subjects_in(topic)
     if not wanted:
@@ -124,4 +126,12 @@ def clips_for_topic(paths: list[str], topic: str, index: dict[str, Any] | None =
     clips = ((index if index is not None else load_index()) or {}).get("clips") or {}
     if not isinstance(clips, dict):
         clips = {}
-    return [path for path in paths if _tag_set(path, _meta_for(path, clips)) & wanted]
+    matched: list[str] = []
+    untagged: list[str] = []
+    for path in paths:
+        tags = _tag_set(path, _meta_for(path, clips))
+        if tags & wanted:
+            matched.append(path)
+        elif not tags:
+            untagged.append(path)
+    return matched or untagged

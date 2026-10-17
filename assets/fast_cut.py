@@ -353,7 +353,9 @@ def shot_timeout(length: float) -> int:
     Run 155: a 6.8s cut of a 29s 1080p60 clip did not finish in the fixed 120s.
     """
     seconds = max(0.0, float(length))
-    return max(45, round(seconds * 30))
+    # Review of 2026-10-16: 30x the shot made 204 s a try, twice. `-nostdin` cures the hang;
+    # each try keeps the old 120 s ceiling, and the ultrafast retry follows.
+    return min(120, max(45, round(seconds * 30)))
 
 
 def build_shot_command(

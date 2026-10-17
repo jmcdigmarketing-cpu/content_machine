@@ -97,11 +97,13 @@ class ShotTimeoutTests(unittest.TestCase):
         self.assertIn("-nostdin", argv)
         self.assertLess(argv.index("-nostdin"), argv.index("-i"))
 
-    def test_a_6_8s_shot_is_allowed_longer_than_120s(self):
+    def test_a_6_8s_shot_gets_the_full_120s_and_a_retry(self):
+        """Review of 2026-10-16: each try is held to the old 120 s; the ultrafast retry is the
+        second chance (`test_a_timeout_retries_once_at_ultrafast_and_names_the_shot`)."""
         from assets.fast_cut import shot_timeout
 
-        self.assertGreater(shot_timeout(6.8), 120)
-        self.assertLess(shot_timeout(2.0), shot_timeout(6.8))
+        self.assertEqual(shot_timeout(6.8), 120)
+        self.assertLessEqual(shot_timeout(2.0), shot_timeout(6.8))
 
     def test_a_timeout_retries_once_at_ultrafast_and_names_the_shot(self):
         from assets.fast_cut import _render_shot

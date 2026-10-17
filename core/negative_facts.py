@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -99,7 +100,7 @@ def correction_beat(topic: str, channel_id: str | None = None) -> str:
     rows = [
         row
         for row in (_load().get(key) or [])
-        if isinstance(row, dict) and str(row.get("claim") or "").strip()
+        if isinstance(row, dict) and str(row.get("claim") or "").strip() and not row.get("said_at")
     ]
     if not rows:
         return ""
@@ -109,16 +110,39 @@ def correction_beat(topic: str, channel_id: str | None = None) -> str:
 
 
 def with_correction_beat(script: str, topic: str, channel_id: str | None = None) -> str:
-    """Append the beat. No correction, or the beat already present, returns `script`."""
+    """The beat before the script's closing line, once per correction. No correction, or the
+    beat already present, returns `script`.
+
+    Review of 2026-10-16: appended, it followed "Tap in for more." and came back on every later
+    script of the franchise; #545 asks for the next script.
+    """
     beat = correction_beat(topic, channel_id)
     if not beat or BEAT_PREFIX in (script or ""):
         return script
     text = (script or "").rstrip()
     if not text:
-        return beat
-    if text[-1] not in ".!?":
-        text += "."
-    return f"{text} {beat}"
+        out = beat
+    else:
+        if text[-1] not in ".!?":
+            text += "."
+        pieces = re.split(r"(?<=[.!?])\s+", text)
+        out = " ".join([*pieces[:-1], beat, pieces[-1]]) if len(pieces) > 1 else f"{beat} {text}"
+    _mark_said(franchise_for(topic, channel_id), beat[len(BEAT_PREFIX) :].strip().rstrip("."))
+    return out
+
+
+def _mark_said(franchise: str, claim: str) -> None:
+    """The correction has had its sentence; the next script of the franchise goes without."""
+    data = _load()
+    rows = data.get(franchise) or []
+    for row in rows:
+        if isinstance(row, dict) and str(row.get("claim") or "").strip().rstrip(".") == claim:
+            row["said_at"] = datetime.now().isoformat(timespec="seconds")
+            break
+    else:
+        return
+    STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    STORE_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 def matching_negatives(script: str, *, franchise: str) -> list[str]:

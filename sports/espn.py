@@ -15,6 +15,8 @@ LEAGUES = {
     "mlb": "baseball/mlb",
     "college-football": "football/college-football",
     "soccer": "soccer/eng.1",
+    # Decision 66: the UFC board - its `calendar` lists the year's cards with their starts.
+    "ufc": "mma/ufc",
 }
 
 # Kept for callers that imported the old constant.

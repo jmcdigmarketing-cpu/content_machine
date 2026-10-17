@@ -246,3 +246,14 @@ and no slot skipped for volume. Setting it brings the cap back as it was. **Why:
 operator - "Remove it"; "volume is a struggle right now". **Consequence:** the cap was the
 volume half of the 2026 "mass-produced" guardrail; the variation half (the authenticity check)
 is unchanged and still holds each script. The per-video Shorts spacing (#1055) stays.
+
+## 66. Ten ideas: five ideas and five previews/predictions (2026-10-17)
+**Decision:** the start menu shows five ideas (headlines, past winners, the follow-up, the
+mailbag) and five previews/predictions (marquee NFL/NBA games, UFC cards of the next two weeks
+from ESPN's UFC calendar, awards, then the other NFL and NBA games; one of each kind in turn;
+nothing started, nothing already covered, nothing an idea on the menu already names).
+Overnight drafts from both, an idea then a preview. `BEST_BET_OPTIONS` (5) and
+`BEST_BET_PREVIEWS` (5) set the two sizes. **Why:** the operator - "need to work on idea
+generation, maybe expand it to 10? 5 ideas 5 previews/predictions?"; the plan's answer: "10 = 5
+ideas + 5 previews". **Consequence:** this reverses §59's "games compete like any idea" - games
+have their own five places again - and keeps its marquee rule (§59) for which games lead.

@@ -590,6 +590,14 @@ def _effective_allowed(channel_id: str, entries: list[dict]) -> set[str]:
     return allowed
 
 
+def best_bet_preview_count() -> int:
+    """How many previews/predictions the menu shows beside the ideas (decision 66)."""
+    try:
+        return max(0, min(8, int(os.getenv("BEST_BET_PREVIEWS", "5"))))
+    except ValueError:
+        return 5
+
+
 def best_bet_option_count() -> int:
     """How many best-bet options to surface at startup (BEST_BET_OPTIONS, default 5)."""
 
@@ -1098,7 +1106,13 @@ def suggested_games(
     return out
 
 
-def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
+def get_best_bets(
+    channel_id: str,
+    n: int = 5,
+    *,
+    games: bool = True,
+    scheduled: list[tuple[str, str]] | None = None,
+) -> list[BestBetResult]:
     """
     Up to `n` DISTINCT topic options, best first.
 
@@ -1106,15 +1120,21 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
     while live RSS headlines supply the *current* topic (what's relevant now), so the
     suggestions are fresh and stop repeating the same historical seeds. Falls back to
     the historical engagement ranking when no fresh headlines are available.
+
+    ``games=False`` (decision 66): the ideas half of the menu - the coming games, cards and
+    awards are `preview_options`'s.
     """
     entries = _build_entries(channel_id)
-    scheduled: list[tuple[str, str]] = []
-    try:
-        from core.seasonal_calendar import fetch_week_topics
+    if scheduled is None:
+        scheduled = []
+        try:
+            from core.seasonal_calendar import fetch_week_topics
 
-        scheduled = fetch_week_topics()
-    except Exception as exc:
-        logger.debug("week topics skipped: %s", exc)
+            scheduled = fetch_week_topics()
+        except Exception as exc:
+            logger.debug("week topics skipped: %s", exc)
+    if not games:
+        scheduled = []
     try:
         recent_topics = list(recent_input_topics(channel_id, limit=60))
     except Exception:
@@ -1374,6 +1394,160 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
             options.append(cont)
 
     return options[:n]  # #1244: a thin day shows fewer ideas, never more games
+
+
+_OTHER_LEAGUES = ("nfl", "nba")
+
+
+def _event_when(topic: str) -> str:
+    """ "Sat Oct 24 9:00 PM" for a card or game read this run, else ""."""
+    try:
+        from core.seasonal_calendar import event_start
+
+        return _kickoff(str(event_start(topic) or ""))
+    except Exception:
+        return ""
+
+
+def same_story(preview: str, ideas: list[str]) -> bool:
+    """An idea already covers this event: it names two of the preview's subjects, or its only
+    one (2026-10-17: "LIVE! UFC Edmonton Results: Buckley vs. Malott" beside the preview "UFC
+    Fight Night: Buckley vs. Malott"). One shared team is another story ("Packers sign a new
+    kicker" is not the Cowboys-Packers game)."""
+    from apis.topic_tokens import names_any, subject_markers, subject_terms
+
+    terms = subject_terms(preview, limit=6)
+    if not terms:
+        return False
+    need = min(2, len(terms))
+    for idea in ideas:
+        named = sum(1 for term in terms if names_any(idea, subject_markers([term])))
+        if named >= need:
+            return True
+    return False
+
+
+def preview_options(
+    scheduled: list[tuple[str, str]],
+    *,
+    covered_topics: list[str],
+    exclude: list[str] | tuple[str, ...] = (),
+    ideas: list[str] | tuple[str, ...] = (),
+    n: int = 5,
+    now: datetime | None = None,
+) -> list[BestBetResult]:
+    """The coming events worth a preview or a prediction (decision 66): marquee NFL/NBA games,
+    UFC cards, awards, then the other NFL and NBA games - one of each kind in turn, each kind
+    soonest first. Nothing started, nothing already covered."""
+    from dataclasses import replace
+
+    from core.seasonal_calendar import game_details
+
+    moment = now or datetime.now(timezone.utc)
+    skip = {normalize_seed_topic(t).lower() for t in exclude if t}
+    kinds: dict[str, list[tuple[str, BestBetResult]]] = {
+        "marquee": [], "ufc": [], "award": [], "other": [],
+    }  # fmt: skip
+    offered: set[str] = set()
+    shown = list(ideas)
+    for bet in suggested_games(scheduled, covered_topics=covered_topics, now=moment):
+        key = normalize_seed_topic(bet.topic).lower()
+        if not key or key in skip or same_story(bet.topic, shown):
+            continue
+        detail = game_details(bet.topic)
+        offered.add(bet.topic)
+        if detail:
+            kinds["marquee"].append((str(detail.get("date") or ""), bet))
+        elif bet.domain == "ufc":
+            when = _event_when(bet.topic)
+            card = replace(bet, rationale=f"{when} · UFC card" if when else "UFC card")
+            kinds["ufc"].append((str(when), card))
+        else:
+            kinds["award"].append(("", bet))
+    for topic, domain in scheduled:
+        key = normalize_seed_topic(topic).lower()
+        if topic in offered or not key or key in skip or same_story(topic, shown):
+            continue
+        detail = game_details(topic)
+        if not detail or str(detail.get("league") or "") not in _OTHER_LEAGUES:
+            continue
+        if _started(str(detail.get("date") or ""), moment):
+            continue
+        offered.add(topic)
+        kinds["other"].append(
+            (
+                str(detail.get("date") or ""),
+                BestBetResult(
+                    topic=topic,
+                    domain=domain,
+                    avg_engaged_rate=0.0,
+                    source="schedule",
+                    supporting_runs=0,
+                    rationale=game_line(detail, ""),
+                ),
+            )
+        )
+    queues = [[bet for _when, bet in sorted(rows, key=lambda r: r[0])] for rows in kinds.values()]
+    out: list[BestBetResult] = []
+    while len(out) < n and any(queues):
+        for queue in queues:
+            if queue and len(out) < n:
+                out.append(queue.pop(0))
+    return out
+
+
+def get_idea_menu(
+    channel_id: str,
+    *,
+    ideas: int | None = None,
+    previews: int | None = None,
+    now: datetime | None = None,
+) -> tuple[list[BestBetResult], list[BestBetResult]]:
+    """(ideas, previews): five of each by default (the operator, 2026-10-17, decision 66 -
+    "5 ideas 5 previews/predictions")."""
+    scheduled: list[tuple[str, str]] = []
+    try:
+        from core.seasonal_calendar import fetch_week_topics
+
+        scheduled = fetch_week_topics()
+    except Exception as exc:
+        logger.debug("week topics skipped: %s", exc)
+    idea_list = get_best_bets(
+        channel_id, ideas or best_bet_option_count(), games=False, scheduled=scheduled
+    )
+    want = best_bet_preview_count() if previews is None else previews
+    if want <= 0:
+        return idea_list, []
+    try:
+        recent = list(recent_input_topics(channel_id, limit=30))
+        covered = list(recent_input_topics(channel_id, limit=60))
+        covered += [str(e.get("topic") or "") for e in _build_entries(channel_id)]
+    except Exception:
+        recent, covered = [], []
+    preview_list = preview_options(
+        scheduled,
+        covered_topics=covered,
+        exclude=[*recent, *(b.topic for b in idea_list)],
+        ideas=[b.topic for b in idea_list],
+        n=want,
+        now=now,
+    )
+    return idea_list, preview_list
+
+
+def display_idea_menu(
+    ideas: list[BestBetResult], previews: list[BestBetResult], *, print_fn=print
+) -> None:
+    """Two groups, numbered on: the ideas, then the previews and predictions (decision 66)."""
+    print_fn("\n  Ideas (pick one, or type your own):")
+    for number, opt in enumerate(ideas, 1):
+        print_fn(f"   {number:>2}. [{opt.domain}] {opt.topic}")
+        print_fn(f"       {opt.rationale}")
+    if previews:
+        print_fn("\n  Previews and predictions:")
+        for number, opt in enumerate(previews, len(ideas) + 1):
+            print_fn(f"   {number:>2}. [{opt.domain}] {opt.topic}")
+            print_fn(f"       {opt.rationale}")
 
 
 def display_best_bet(result: BestBetResult) -> None:

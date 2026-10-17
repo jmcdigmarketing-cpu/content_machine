@@ -35,11 +35,13 @@ anything:
 py -m scripts.ops intent-check "can the chargers still make the super bowl"
 ```
 
-The idea list mixes the day's headlines, your past winners and a follow-up of your last
-public video. A game is offered only when it is an NFL or NBA game on national TV, a London-type
-game, or one of a team you made your own video about, and its line says when, where and the
-records; it takes its league's place, never more (decision §59). A follow-up waits until the
-video it follows is public.
+The idea list is ten, in two groups (decision §66). **Ideas** (1-5): the day's headlines,
+your past winners, a follow-up of your last public video, what viewers asked. **Previews and
+predictions** (6-10): the coming events - marquee NFL and NBA games (national TV, a London-type
+game, or a team you made your own video about), the next two weeks of UFC cards, awards, then
+the other NFL and NBA games - one of each kind in turn, each line saying when (and for a game,
+where and the records). An event an idea already covers is left out. Overnight drafts an idea,
+then a preview, in turn. A follow-up waits until the video it follows is public.
 
 Why ideas and angles come out the way they do: [idea_quality_diagnosis.md](idea_quality_diagnosis.md).
 

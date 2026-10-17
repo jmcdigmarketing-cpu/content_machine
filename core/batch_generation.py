@@ -129,9 +129,16 @@ def collect_topics(
             lines = [ln.strip() for ln in f if ln.strip() and not ln.lstrip().startswith("#")]
         return lines
     try:
-        from core.best_bet import get_best_bets, pick_record
+        from core.best_bet import get_idea_menu, pick_record
 
-        bets = get_best_bets(channel_id, count)
+        # Decision 66: an idea, then a preview, in turn.
+        ideas, previews = get_idea_menu(channel_id)
+        bets = []
+        for pair in zip(ideas, previews, strict=False):
+            bets.extend(pair)
+        longer = ideas if len(ideas) > len(previews) else previews
+        bets.extend(longer[min(len(ideas), len(previews)) :])
+        bets = bets[:count]
         if picks is not None:
             for rank, bet in enumerate(bets, 1):
                 picks[bet.topic] = pick_record(bets, rank, by="batch")

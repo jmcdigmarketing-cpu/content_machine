@@ -233,6 +233,40 @@ def schedule_enabled() -> bool:
     return os.getenv("BEST_BET_SCHEDULE", "true").strip().lower() not in ("0", "false", "no", "")
 
 
+_UFC_DAYS = 14
+
+
+def ufc_cards(
+    board: dict[str, Any],
+    *,
+    now: datetime,
+    days: int = _UFC_DAYS,
+    starts: dict[str, str] | None = None,
+) -> list[tuple[str, str]]:
+    """The UFC cards of the next `days` from the board's calendar (decision 66), each start
+    kept in `starts` so a draft knows when its card is (#1151)."""
+    leagues = (board or {}).get("leagues") or [{}]
+    calendar = (leagues[0] if isinstance(leagues[0], dict) else {}).get("calendar") or []
+    horizon = now + timedelta(days=days)
+    out: list[tuple[str, str]] = []
+    for entry in calendar:
+        if not isinstance(entry, dict):
+            continue
+        label = str(entry.get("label") or "").strip()
+        raw = str(entry.get("startDate") or "")
+        try:
+            when = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        if label and now <= when <= horizon:
+            out.append((label, "ufc"))
+            if starts is not None:
+                starts[label] = raw
+    return out
+
+
 def fetch_week_topics() -> list[tuple[str, str]]:
     """This week's boards. A league that cannot be read is skipped (debug, not a warning)."""
     if not schedule_enabled():
@@ -246,4 +280,10 @@ def fetch_week_topics() -> list[tuple[str, str]]:
             boards[league] = get_scoreboard(league)
         except Exception as exc:
             logger.debug("scoreboard skipped for %s: %s", league, exc)
-    return week_topics(boards, today=today, starts=_STARTS, details=_DETAILS)
+    topics = week_topics(boards, today=today, starts=_STARTS, details=_DETAILS)
+    try:  # decision 66: UFC cards are previews too
+        cards = ufc_cards(get_scoreboard("ufc"), now=datetime.now(timezone.utc), starts=_STARTS)
+        topics += [card for card in cards if card not in topics]
+    except Exception as exc:
+        logger.debug("UFC board skipped: %s", exc)
+    return topics

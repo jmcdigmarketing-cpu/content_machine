@@ -86,10 +86,12 @@ class TestCollectTopics(unittest.TestCase):
             self.assertEqual(bg.collect_topics("tapin", file=path), ["topic one", "topic two"])
 
     def test_best_bets_fallback(self):
+        # Decision 66: the ideas come from the menu's ideas half (games=False); with no
+        # schedule in the suite there are no previews, so the ideas fill the batch.
         bets = [SimpleNamespace(topic="bet 1"), SimpleNamespace(topic="bet 2")]
         with patch("core.best_bet.get_best_bets", return_value=bets) as gb:
             out = bg.collect_topics("tapin", count=2)
-        gb.assert_called_once_with("tapin", 2)
+        self.assertFalse(gb.call_args.kwargs["games"])
         self.assertEqual(out, ["bet 1", "bet 2"])
 
     def test_best_bets_unavailable_returns_empty(self):

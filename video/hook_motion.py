@@ -1,4 +1,9 @@
-"""First-caption-beat motion derived only from real word timings."""
+"""First-caption-beat motion derived only from real word timings.
+
+#418: zoompan's output size is the frame it was given, so a 1.08 zoom enlarged a
+1080x1920 crop and softened it. A lanczos pre-scale by the peak zoom makes that
+peak 1:1. Finished frames change wherever hook motion is enabled.
+"""
 
 from __future__ import annotations
 
@@ -29,6 +34,11 @@ def _first_cue_end(words: list[dict] | None, *, max_words: int = 5) -> float | N
     return cue_end if cue_end > 0 else None
 
 
+def _prescale(zoom: float) -> str:
+    """Even lanczos scale, using the render's own {width} and {height}."""
+    return f"scale=trunc({{width}}*{zoom:.4f}/2)*2:trunc({{height}}*{zoom:.4f}/2)*2:flags=lanczos,"
+
+
 def first_caption_motion_filter(
     words: list[dict] | None, config: dict | None, *, max_words: int = 5
 ) -> str:
@@ -45,7 +55,8 @@ def first_caption_motion_filter(
         return ""
     # d=1 keeps one output frame per input frame. The expression returns exactly
     # 1.0 after the first cue, so later beats retain the existing composition.
-    return (
+    # The pre-scale is the peak zoom, so z at that peak reads native pixels.
+    return _prescale(zoom) + (
         "zoompan="
         f"z='if(lte(in_time,{cue_end:.3f}),"
         f"1+({zoom:.4f}-1)*(in_time/{cue_end:.3f}),1)':"
@@ -65,7 +76,7 @@ def named_motion_filter(
     if cue_end is None:
         return ""
     if preset == "punch-in":
-        return (
+        return _prescale(1.12) + (
             "zoompan="
             f"z='if(lte(in_time,{cue_end:.3f}),"
             f"1+0.12*sqrt(in_time/{cue_end:.3f}),1.12)':"
@@ -73,7 +84,7 @@ def named_motion_filter(
             "s={width}x{height}:fps=30"
         )
     if preset == "snap-zoom":
-        return (
+        return _prescale(1.14) + (
             "zoompan="
             "z='if(lte(in_time,0.150),1.14,1.14)':"
             "x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:"

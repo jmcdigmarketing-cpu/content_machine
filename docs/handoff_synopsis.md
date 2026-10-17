@@ -10,7 +10,22 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-16 (Claude Code): waves 97-98, five for Claude, five more for Cursor
+## Last wave — 2026-10-16 (Cursor): #1215 #514 #418 #463 #545
+
+An untagged Contender Series headline was nba on the word "contender"; "contender series"
+is ufc, and a Lakers contender stays nba (#1215). The duration and caption benches printed
+a miss and exited 0; past 5% or past 150ms they exit 1, and no sidecars exits 0 (#463).
+A 1.08 zoom enlarged a frame that was already 1080x1920; the filter pre-scales first
+(#418). The intro sting met the first caption at full volume; intro audio fades out over
+its last 0.25s (#514). A franchise with a correction now says what it got wrong, and that
+sentence is not a veto (#545).
+
+Finished output changed: hook-motion frames, and an intro that has audio. Not pushed.
+Next: #1221 #1227 #1228 #1229 #1043. #1215 left the old corpus case expecting nba;
+Claude retargeted it to ufc in `ab9677f`. Claude's wave 99 is `0e4582c`. #1233 and
+#1234 were still uncommitted when this was written.
+
+## Previous — 2026-10-16 (Claude Code): waves 97-98, five for Claude, five more for Cursor
 
 **Wave 97.** After the operator ran overnight by hand, the stop line said "stopped after 4 of 3
 drafts"; `ops overnight` now records its start and finish, the line is quiet once a later run

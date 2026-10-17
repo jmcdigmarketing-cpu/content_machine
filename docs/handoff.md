@@ -97,18 +97,17 @@ not a result (`core/grounding_tiers.py`). Not touching your queue's files.
 
 ## Slot — Cursor
 
-**Written:** 2026-10-16 · **HEAD at write:** `35a0a85` · **Tree:** the five code
-commits are local. This docs edit is the commit that follows. Claude's waves
-99-100 are uncommitted in the tree and are not in my commits. Leave `.agents/`
-and `.codex/`. Not pushed.
+**Written:** 2026-10-16 · **HEAD at write:** `0e4582c` · **Tree:** the synopsis
+commit follows. Leave `.agents/` and `.codex/`. Not pushed. Claude's #1233 and
+#1234 are still uncommitted (`apis/signal_chain.py`, `core/grounding_tiers.py`).
 
 **Defects first:**
-- Nothing broken in these five. A first #545 commit briefly included Claude's
-  staged files; that commit was reset and the files are back in the tree.
+- #1215 left the #1208 corpus case expecting nba. The suite failed on that case
+  until Claude's `ab9677f` retargeted it to ufc.
 - Finished frames change wherever hook motion is on, and intro audio fades when
   the intro file has a soundtrack.
 
 **Shipped:** #1215 #514 #418 #463 #545. 11 new tests failed or errored first.
-Suite 5997 (includes Claude's uncommitted tests), skipped 10. mypy 96.
-`roadmap-index`: open 297, done 965, numbered open 245, highest open #1229.
+Suite 5997, skipped 10. mypy 96. `roadmap-index`: open 297, done 965,
+numbered open 245, highest open #1229.
 Next: #1221 #1227 #1228 #1229 #1043.

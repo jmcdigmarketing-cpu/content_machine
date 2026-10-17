@@ -150,6 +150,10 @@ def build_intro_concat_command(
 ) -> list[str]:
     """
     Concat intro then body; both scaled to 9:16. Silent audio on intro if missing.
+
+    #514: the sting meets the first caption at the cut. Fade the intro audio out
+    over the last 0.25s. The body track is not faded. Finished audio changes
+    when the intro file has a soundtrack.
     """
     scale = (
         f"scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
@@ -157,7 +161,13 @@ def build_intro_concat_command(
     )
 
     if intro_has_audio:
-        audio_intro = "[0:a]aformat=sample_rates=48000:channel_layouts=stereo[a0]"
+        dur = max(float(intro_duration), 0.0)
+        fade_d = min(0.25, dur) if dur else 0.25
+        fade_at = max(0.0, dur - fade_d)
+        audio_intro = (
+            "[0:a]aformat=sample_rates=48000:channel_layouts=stereo,"
+            f"afade=t=out:st={fade_at:.3f}:d={fade_d:.3f}[a0]"
+        )
     else:
         dur = max(intro_duration, 0.1)
         audio_intro = (

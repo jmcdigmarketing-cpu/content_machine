@@ -209,6 +209,23 @@ class TestConcatCommand(unittest.TestCase):
         cmd = self._cmd(has_audio=True)
         self.assertLess(cmd.index("intro.mp4"), cmd.index("body.mp4"))
 
+    def test_intro_audio_fades_out_before_the_first_caption(self):
+        """#514: the sting is concatenated in front of the body, so its tail meets
+        the first caption at the cut. Fade only the intro audio, over the last 0.25s."""
+        graph = self._cmd(has_audio=True, duration=2.15)[
+            self._cmd(has_audio=True).index("-filter_complex") + 1
+        ]
+        self.assertIn(
+            "[0:a]aformat=sample_rates=48000:channel_layouts=stereo,afade=t=out:st=1.900:d=0.250[a0]",
+            graph,
+        )
+        body = graph.split("[1:a]", 1)[1]
+        self.assertNotIn("afade", body)
+
+    def test_a_silent_intro_is_not_faded(self):
+        graph = self._cmd(has_audio=False)[self._cmd(has_audio=False).index("-filter_complex") + 1]
+        self.assertNotIn("afade", graph)
+
 
 class TestIntroResolution(_IntroCase):
     def test_profile_intro_wins_over_env(self):

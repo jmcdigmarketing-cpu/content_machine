@@ -4,7 +4,7 @@
 
 Every doc in this repo, by what it is for. Conventions:
 [docs_standard.md](docs_standard.md). Current verdict on the system:
-[audit_2026-09-26.md](audit_2026-09-26.md). What happens next:
+[audit_2026-10-17.md](audit_2026-10-17.md). What happens next:
 [master_plan.md](master_plan.md).
 
 **Status keys.** `living` = kept true at HEAD · `frozen` = true on its date, never
@@ -17,7 +17,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [../README.md](../README.md) | What the product is and how to run it |
 | [../CLAUDE.md](../CLAUDE.md) · [../AGENTS.md](../AGENTS.md) | Agent entry points — read before editing code |
 | [master_plan.md](master_plan.md) | The canonical forward plan (M0–M5) |
-| [audit_2026-09-26.md](audit_2026-09-26.md) | Where the system actually stands, with evidence |
+| [audit_2026-10-17.md](audit_2026-10-17.md) | Where the system actually stands, with evidence |
 | [handoff_synopsis.md](handoff_synopsis.md) | State as of the last working session |
 
 ## Charter — why this exists
@@ -92,7 +92,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 
 | Doc | Date |
 |---|---|
-| [audit_2026-09-26.md](audit_2026-09-26.md) | 2026-09-26 — **current**; before→after of the 09-20 findings |
+| [audit_2026-10-17.md](audit_2026-10-17.md) | 2026-10-17 — **current**; CI red six days, the suite reached the real database, Cursor's commits read |
+| [audit_2026-09-26.md](audit_2026-09-26.md) | 2026-09-26 — before→after of the 09-20 findings |
 | [review_2026-09-26.md](review_2026-09-26.md) | 2026-09-26 — own review: fixes erased by later work, fixes that reached one copy, the regression corpus |
 | [audit_2026-09.md](audit_2026-09.md) | 2026-09-20 |
 | [audit_2026-08.md](audit_2026-08.md) | 2026-08 |

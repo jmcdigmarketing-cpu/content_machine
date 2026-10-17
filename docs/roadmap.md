@@ -100,6 +100,12 @@ league's slot (#1244); a follow-up once its video is public (#1245); no news rep
 Filed #1247-#1260. #1247 (a bare unittest from the repo root reaches the real database) is
 Claude's, in the grand audit; Cursor's order of fifteen is in the mailbox. `bef5a56` waits for
 that audit before the push.
+**2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
+push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
+the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
+#1255 answered) and TapIn keeps its colour grade (§61). Cursor's `29c280c` and `bef5a56` were
+read in full; three corrections. Filed #1263-#1269. The audit:
+[audit_2026-10-17.md](audit_2026-10-17.md).
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

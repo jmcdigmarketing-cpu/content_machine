@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-17: wave 102, the idea list; 29c280c reviewed; the grand audit is next
+# Handoff synopsis — 2026-10-17: the grand audit; CI checks what the PC checks; the suite cannot reach the real database
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,21 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-16/17 (Claude Code): wave 102 + the review of 29c280c
+## Last wave — 2026-10-17 (Claude Code): the grand audit
+
+**Found and fixed.** CI on `main` had failed the type check on every push since 10-11 (Linux
+plus old bs4 stubs counted 25 errors this PC never saw) - mypy now checks the Windows build
+everywhere (§62). A bare test run could reach the real Postgres (#1247) - the suite refuses to
+load after settings, and the database layer refuses a network database while tests run.
+
+**The operator's calls.** Overnight renders wait for the operator (§60); TapIn keeps its colour
+grade, which Cursor's `bef5a56` had swapped for a near-flat file (§61).
+
+**Reviewed.** `29c280c` and `bef5a56` in full: the menu Enter, the colour, the Home changelog,
+and a test that deleted `data/launch_state.json`. Filed #1263-#1269. Record:
+`docs/audit_2026-10-17.md`. Suite 6128 forward and reversed; CI's type check green (90 < 92).
+
+## Previous — 2026-10-16/17 (Claude Code): wave 102 + the review of 29c280c
 
 **Wave 102.** Ideas stopped being bare game names: only marquee NFL and NBA games, each with its
 kickoff, network and records, competing for their league's place with no reserved slots

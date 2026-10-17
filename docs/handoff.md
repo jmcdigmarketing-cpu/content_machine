@@ -53,47 +53,38 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-17 early · **HEAD at write:** my wave 102 commit on `bef5a56` (`git log -1`)
-· **Tree:** clean of mine; leave `.agents/` and `.codex/`. **Not pushed** - `bef5a56` is not
-reviewed yet; the grand audit (the operator's next prompt) reviews it, then pushes everything.
+**Written:** 2026-10-17 · **HEAD at write:** my audit commit on `444e2e7` (`git log -1`) ·
+**Tree:** your wave 103 files are yours; I added my lines to the shared docs and the corpus in
+the working tree too, so your commit keeps them. **Pushed** `54f641b` (your
+`29c280c` and `bef5a56`, reviewed, with my corrections): CI's type check passed - 90 errors,
+baseline 92.
 
-**Cursor - your next fifteen, in this order (the operator asked me to write it):**
-1. **#1248** menu option 7 "Watch and publish" (since Oct 1: 38 drafts, 4 rendered overnight, 0
-   decisions, 1 public) - `core/ui.prompt_startup_mode` + `main.py`, through `go-public`.
-2. **#1064** confirm a claim and go public from the app. 3. **#1253** overnight drafts fewer,
-   and says so, while 22 wait. 4. **#449** batch approve queue (yours; it goes with #1248).
-5. **#1249** a neutral topic gates to the channel's domains (run 158 ran every signal, ~30 s;
-   CLAUDE.md's `make_signal()` rules). 6. **#1252** OpenRouter 429s (36 this week) cool that
-   provider - read how the router's breaker trips first. 7. **#1251** the vault's stale lines
-   read once per run. 8. **#1250** `timings` holds `word_count`. 9. **#1256** your #544's week
-   (`ContentRunRecord` has no `created_at`). 10. **#1257** your #466: `roadmap-index` prints 232
-   lines - the list behind `--list`. 11. **#1258** boxing tagged ufc. 12. **#1260** an award's
-   date. 13. **#1259** the UFC follow-up repeats its topic. 14. **#1254** `desktop_app.md`
-   (reviewed 10-09). 15. **#1068** the review room confirms claims. Then your #421 #425 #450
-   #457. **#1247 is mine** (grand audit).
+**Cursor - the audit changed in your work:**
+- `config/channels.json` (#497): `color_lut` is out of TapIn and MoneyWise - the 2-point files
+  were nearly flat and replaced TapIn's saturation 1.18 / contrast 1.08 (the operator: keep the
+  current look, decision §61). Your `RenderLutTests` now asks that the shipped channels keep
+  their grade; the golden `grade.cube` case still proves the path. The field is parked in
+  `test_no_profile_field_is_unset_on_every_shipped_channel` with its reason.
+- `desktop/home.py` (#532): the changelog stamps once per process (Refresh emptied it), and
+  `git` runs with `CREATE_NO_WINDOW`. Your `test_home_writes_isolated_launch_state...` deleted
+  the operator's `data/launch_state.json` when it existed - it compares it now.
+- `tests/__init__.py` refuses to load when `config.settings` came first, and sets
+  `CONTENT_SUITE=1`; `storage/db.py` then opens only SQLite or `CONTENT_TEST_DATABASE_URL`.
+- **mypy checks the Windows build** (`platform = "win32"`, no `types-beautifulsoup4`;
+  decision §62). CI had failed on every push since 10-11. Lower `mypy_baseline.txt` only from
+  a count taken with this config.
+- Read and left as written in `bef5a56`: `signal_contract`, unit sanity, the booth's tags and
+  captions, the licence ledger, text-variant thumbnails, latency rows, the toast sound.
 
-**Cursor - what the review of `29c280c` changed:** `core/console_input.menu_line` (#489) - the
-Enter typed after the key stayed buffered and answered the next prompt (the next menu took its
-default, the next key landed a prompt late, an empty topic became the last topic). Now
-`swallow_enter` takes an Enter within 0.75 s and puts any other key back (`msvcrt.ungetwch`);
-`after_key=` is the test seam; your tests pass unchanged. Filed against yours, code unchanged:
-#1256, #1257. Left as written: topic recall, the BEL, `--quiet`, pins at the peak, the yt-dlp
-fallback, the two-line thumbnail, `explain`, `moat-backup --restore`. Of `bef5a56` only
-`apis/signal_contract.py` is read (shape kept); it also carried my slot claim - please stage
-only your own paths.
+**The operator, 2026-10-17:** "keep overnight renders waiting for me" (§60). Your
+`watch_and_publish` keeps to it; `tests/test_grand_audit.py` holds who may call
+`apply_go_public` (yours in `core/review_bind.py` is on the list). **Your wave 103 is not
+reviewed yet** - I review it when it is committed; `draft_count`'s cap of 8 would stop
+overnight drafting while 22 drafts wait.
 
-**Shared files of mine (committed):** `core/best_bet.py` (marquee games, `game_line`, league
-slots, no news replays), `core/seasonal_calendar.py` (`game_detail`), `core/topic_graph.py` (an
-arc waits for a public video), `core/batch_review.py` (soccer is news),
-`publishing/youtube_publisher.py` (`video_id`), `core/console_input.py`, `.env.example`.
+**Numbers:** the audit filed #1263-#1269; please number yours from #1276.
 
-**Defects first:** **#1247 - a bare `python -m unittest` from the repo root reaches the real
-Postgres.** Use `discover -s tests -t .` or named `tests.` modules, never a list that can come
-out empty (it happened to me on 10-16; cleaned with the operator's yes, job 59 pending again).
-Run 126 is unlisted; run 155 (job 59) waits for the worker; the R2 address is unset.
-
-**Shipped:** wave 102 (#1242-#1246, decision §59), the #489 correction; filed #1247-#1260.
-Suite green forward and reversed on the committed tree. **Next - the grand audit:** scope in `planning_log.md` (2026-10-16/17).
+**Defects first:** none open of mine. Suite 6128 forward and reversed.
 
 ## Slot — Cursor
 

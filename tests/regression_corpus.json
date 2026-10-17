@@ -4664,6 +4664,38 @@
         "equals": "Chargers, a team you made videos about · Chargers 0-5 at Chiefs 4-0"
       },
       "why": "the reason is the game, not the board"
+    },
+    {
+      "id": "the-suite-refuses-the-operators-postgres",
+      "item": 1247,
+      "source": "2026-10-16: a bare unittest run wrote 133 fake rows into the real Postgres",
+      "call": "storage.db:suite_database_refusal",
+      "args": [
+        "postgresql://sentinel.invalid/content_os",
+        {
+          "CONTENT_SUITE": "1"
+        }
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a frozen real DATABASE_URL must not be opened while tests run"
+    },
+    {
+      "id": "the-suite-still-opens-a-temp-sqlite-file",
+      "item": 1247,
+      "source": "must keep: tests point Settings at a temporary SQLite file",
+      "call": "storage.db:suite_database_refusal",
+      "args": [
+        "sqlite:///C:/tmp/suite.db",
+        {
+          "CONTENT_SUITE": "1"
+        }
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "the guard is for network databases, not the suite's own files"
     }
   ]
 }

@@ -8117,3 +8117,28 @@ The app: stages 0, 1, 2 and 4 shipped, 3 partial, 5-7 not started, no desktop co
 6. The desktop app against `desktop_app.md`; the docs that say something no longer true.
 
 Suite: 6115 tests forward and reversed, green on the committed tree (the two `git ls-files` checks pass in the repo).
+
+## 2026-10-17 — the grand audit (Claude Code)
+
+**Prompt:** "grand audit, keep overnight renders waiting for me". The second half answers #1255
+(decision §60). Asked in the plan: TapIn's colour - "Keep the current look" (§61).
+
+What the audit found, in the order it matters (the full record:
+[audit_2026-10-17.md](audit_2026-10-17.md)):
+
+1. **CI had been red on `main` since 10-11** - 22 runs, the mypy ratchet only. CI checks as
+   Linux and installs bs4 4.12 stubs; this PC does neither, and the baseline was lowered from
+   this PC's count. §62: mypy checks the Windows build everywhere. CI on `54f641b`: 90 errors
+   against 92 - the first green type check since 10-10. Filed #1263 (say it in `ops status`).
+2. **#1247**: two guards - the suite refuses to load after settings, and `storage/db.py` opens
+   no network database while the suite runs. Proved with a sentinel URL in a child process.
+3. **Overnight renders wait**: traced, and a test holds who may call `apply_go_public`.
+4. **Cursor's commits**: `29c280c` (one correction, the menu Enter) and `bef5a56` (TapIn's
+   colour; the Home changelog; a test that deleted `data/launch_state.json`). Wave 103 (my
+   order of fifteen) was still in the working tree; it is reviewed when it is committed.
+5. **The funnel**: 158 runs, 46 published; since Oct 1, 38 drafts and 1 public video.
+   Engagement RED is real (25.8% vs 32.2%).
+
+The operator asked for the long checks (mypy twice, status, health, reliability, shelf) as
+one block to paste; CI's run on the push answered the mypy question first, and the live
+checks were read through their functions, without stamping the operator's presence. Suite 6128 forward and reversed on the committed trees.

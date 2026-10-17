@@ -314,7 +314,6 @@ class OpeningVerbTests(unittest.TestCase):
         self.assertTrue(any("Buckley" in f for f in flagged), flagged)
 
 
-
 # ---- D1 #1250: explain prints phases, not every value in `timings` ----------------------------
 
 
@@ -333,6 +332,7 @@ class ExplainPhasesTests(unittest.TestCase):
         self.assertEqual(line, "Timings: signals_and_variants 19.5s, research_brief 11.8s")
         self.assertIn("Words: 257", text)
         self.assertNotIn("angle_spread", [name for name, _s in phase_seconds(timings)])
+
 
 _ = (json, subprocess, MagicMock)
 

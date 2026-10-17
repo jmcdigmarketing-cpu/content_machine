@@ -7,6 +7,7 @@ names none keeps the folder.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from typing import Any
@@ -135,3 +136,77 @@ def clips_for_topic(paths: list[str], topic: str, index: dict[str, Any] | None =
         elif not tags:
             untagged.append(path)
     return matched or untagged
+
+
+def canonical_team(name: str) -> str:
+    """A nickname or a full name, as the index stores it. Empty when it is neither."""
+    raw = (name or "").strip()
+    if not raw:
+        return ""
+    from apis.nba_teams import NBA_TEAM_NAMES
+    from apis.nfl_entities import NFL_TEAM_NAMES
+
+    key = raw.casefold()
+    if key in NFL_TEAM_NAMES:
+        return NFL_TEAM_NAMES[key]
+    if key in NBA_TEAM_NAMES:
+        return NBA_TEAM_NAMES[key]
+    for full in (*NFL_TEAM_NAMES.values(), *NBA_TEAM_NAMES.values()):
+        if full.casefold() == key:
+            return full
+    return ""
+
+
+def _row_key(path: str, clips: dict[Any, Any]) -> str | None:
+    if path in clips and isinstance(clips[path], dict):
+        return path
+    try:
+        want = os.path.normcase(os.path.abspath(path))
+    except (OSError, ValueError):
+        return None
+    for key, meta in clips.items():
+        try:
+            if os.path.normcase(os.path.abspath(str(key))) == want and isinstance(meta, dict):
+                return str(key)
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def _write_index(path: str, data: dict[str, Any]) -> None:
+    directory = os.path.dirname(path) or "."
+    os.makedirs(directory, exist_ok=True)
+    temporary = os.path.join(directory, os.path.basename(path) + ".tmp")
+    with open(temporary, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=2)
+    os.replace(temporary, path)
+
+
+def tag_clip(path: str, team: str, *, index_path: str, apply: bool) -> dict[str, Any]:
+    """Write `teams` on a clip already in the index. A missing row is not created.
+
+    Without `apply` the row is left as it is and the result says what would be written.
+    """
+    from core.owned_beats import load_clip_index
+
+    full = canonical_team(team)
+    if not full:
+        return {"ok": False, "error": f"unknown team {team!r}", "applied": False, "path": path}
+    data = load_clip_index(index_path)
+    clips = data.get("clips") if isinstance(data, dict) else None
+    if not isinstance(clips, dict):
+        clips = {}
+        data = {"clips": clips}
+    key = _row_key(path, clips)
+    if key is None:
+        return {"ok": False, "error": "not in the library", "applied": False, "path": path}
+    row = dict(clips[key])
+    teams = [str(item).strip() for item in (row.get("teams") or []) if str(item).strip()]
+    if full not in teams:
+        teams.append(full)
+    if apply:
+        row["teams"] = teams
+        clips[key] = row
+        data["clips"] = clips
+        _write_index(index_path, data)
+    return {"ok": True, "team": full, "applied": bool(apply), "path": key, "error": ""}

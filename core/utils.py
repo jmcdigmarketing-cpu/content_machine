@@ -13,6 +13,5 @@ def generate_filename_from_topic(topic, extension):
 def clean_script_for_tts(script):
     """Strip markdown so TTS reads naturally."""
     script = re.sub(r"\*\*(.*?)\*\*", r"\1", script)
-    script = re.sub(r"\*(.*?)\*", r"\1", script)
     script = script.replace("#", "").replace("`", "").replace("_", " ")
     return script.strip()

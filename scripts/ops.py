@@ -1938,6 +1938,31 @@ def cmd_footage_add(args: argparse.Namespace) -> int:
 
 
 @_register(
+    "footage-tag",
+    "Tag a clip already in the library (--path --team [--apply])",
+)
+def cmd_footage_tag(args: argparse.Namespace) -> int:
+    from assets.clip_tags import tag_clip
+    from config.paths import CLIP_INDEX_FILE
+
+    result = tag_clip(
+        str(args.path or ""),
+        str(getattr(args, "team", "") or ""),
+        index_path=CLIP_INDEX_FILE,
+        apply=bool(getattr(args, "apply", False)),
+    )
+    if not result["ok"]:
+        print(f"footage-tag: {result['error']}")
+        return 1
+    name = os.path.basename(str(result["path"]))
+    if result["applied"]:
+        print(f"footage-tag: tagged {name} as {result['team']}")
+    else:
+        print(f"footage-tag: would tag {name} as {result['team']} (add --apply)")
+    return 0
+
+
+@_register(
     "footage-licence",
     "Save a recorded Commons, Internet Archive, or NASA (cc0) search "
     "(--catalogue --fixture --niche --subject --apply)",
@@ -3892,6 +3917,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="preview-render: only the first N seconds (default: the whole voice track)",
     )
     parser.add_argument("--game", default="", help="footage-add: game folder name, e.g. Minecraft")
+    parser.add_argument(
+        "--team",
+        default="",
+        help="footage-tag: team nickname or full name, e.g. chargers",
+    )
     parser.add_argument(
         "--licence", default="", help="footage-add: the terms the footage is used under"
     )

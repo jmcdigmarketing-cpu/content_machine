@@ -200,7 +200,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,260,1
+Style: Default,{font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,{margin},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -215,8 +215,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Title,{title_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,260,1
-Style: Body,{body_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,260,1
+Style: Title,{title_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,{margin},1
+Style: Body,{body_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,{margin},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -323,6 +323,7 @@ def build_ass_karaoke(
     anchor: str = "bottom",
     voice2_primary: str = "&H00F7C34F&",  # #506: the second voice's spoken word
     entrance: str = "none",  # #503: pop / fade / slide / none
+    margin: int = 260,
 ) -> str:
     """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing).
 
@@ -368,6 +369,7 @@ def build_ass_karaoke(
             primary=primary,
             secondary=secondary,
             alignment=alignment,
+            margin=int(margin),
         )
     else:
         header = _ASS_HEADER.format(
@@ -376,12 +378,13 @@ def build_ass_karaoke(
             primary=primary,
             secondary=secondary,
             alignment=alignment,
+            margin=int(margin),
         )
     if two_voices:
         voice2 = (
             f"Style: Voice2,{body if paired else font},{size},{voice2_primary},{secondary},"
             "&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,"
-            f"{alignment},80,80,260,1\n"
+            f"{alignment},80,80,{int(margin)},1\n"
         )
         header = header.replace("\n\n[Events]", "\n" + voice2.rstrip("\n") + "\n\n[Events]", 1)
     return header + "\n".join(events) + "\n"

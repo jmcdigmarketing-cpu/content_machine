@@ -164,11 +164,41 @@ def caption_force_style(channel_id: str | None = None) -> str:
     boxed = bool(skin.get("boxed", False))
     border_style = 3 if boxed else 1
     back = "&H99000000&" if boxed else "&H00000000&"
+    margin = _skin_margin(skin, 72)
     return (
         f"FontName={font},FontSize=18,PrimaryColour={fill},"
         f"OutlineColour={outline},BackColour={back},BorderStyle={border_style},"
-        "Outline=2,Shadow=0,Alignment=2,MarginV=72"
+        f"Outline=2,Shadow=0,Alignment=2,MarginV={margin}"
     )
+
+
+def _skin_margin(skin: dict, default: int) -> int:
+    raw = skin.get("margin_v")
+    if isinstance(raw, bool) or not isinstance(raw, (int, float, str)) or raw == "":
+        return default
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return default
+
+
+def _with_hook_card(ass: str, script: str, channel_id: str | None) -> str:
+    """#1056: the whole hook, top of frame, for the first second."""
+    from core.title_generator import _hook_line
+    from video.caption_timing import _ass_ts
+
+    sentence = _hook_line(script).replace("\n", " ").replace("{", "(").replace("}", ")").strip()
+    if not sentence:
+        return ass
+    title, _body = caption_fonts(channel_id)
+    style = (
+        f"Style: Hook,{title},64,&H00FFFFFF,&H00000000,&H00000000,&H64000000,"
+        "1,0,0,0,100,100,0,0,1,3,2,8,80,80,120,1"
+    )
+    if "\n\n[Events]" in ass:
+        ass = ass.replace("\n\n[Events]", "\n" + style + "\n\n[Events]", 1)
+    event = f"Dialogue: 1,{_ass_ts(0)},{_ass_ts(1)},Hook,,0,0,0,,{sentence}\n"
+    return ass + event
 
 
 def load_word_timings(audio_path: str | None) -> list[dict] | None:
@@ -291,18 +321,27 @@ def generate_subtitle_file(
                 anchor = choose_caption_anchor(background_path)
             except Exception as exc:
                 logger.debug("caption placement skipped: %s", exc)
+            skin = _caption_skin(channel_id)
+            primary = (
+                _ass_color(skin.get("highlight_color"), "#FFFF00")
+                if skin.get("highlight_color")
+                else "&H0000FFFF"
+            )
+            margin = _skin_margin(skin, 260) if skin.get("margin_v") not in (None, "") else 260
             text = build_ass_karaoke(
                 words,
                 max_words=max(2, min(4, max_words)),
                 title_font=title_font,
                 body_font=body_font,
                 anchor=anchor,
+                primary=primary,
                 # #506: a two-voice render lights the second voice in its own colour.
-                voice2_primary=_ass_color(
-                    _caption_skin(channel_id).get("second_voice_color"), "#4FC3F7"
-                ),
+                voice2_primary=_ass_color(skin.get("second_voice_color"), "#4FC3F7"),
                 entrance=caption_entrance(channel_id),
+                margin=margin,
             )
+            if skin.get("hook_card"):
+                text = _with_hook_card(text, script, channel_id)
             ext = ".ass"
             companion_srt = build_srt_from_words(words, max_words=max_words)
         elif caption_entrance(channel_id) != "none" or has_emoji(words):

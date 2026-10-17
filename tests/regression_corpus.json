@@ -4453,6 +4453,37 @@
         "equals": "Titans at Colts crashed (exit 74)"
       },
       "why": "the crash took the rest of the night and the report did not name the draft"
+    },
+    {
+      "id": "chargers-nickname-is-the-full-name",
+      "item": 1235,
+      "source": "GameClip files carry no team",
+      "call": "assets.clip_tags:canonical_team",
+      "args": ["chargers"],
+      "expect": {"equals": "Los Angeles Chargers"},
+      "why": "a tag of chargers has to land as the name the topic match uses"
+    },
+    {
+      "id": "a-hook-is-a-touch-faster",
+      "item": 1039,
+      "source": "the hook was spoken at the channel pace",
+      "call": "core.voice.delivery:delivery_for",
+      "args": ["*Turn* the season around."],
+      "kwargs": {"hook": true, "speed": 1.05},
+      "select": "speed",
+      "expect": {"equals": 1.1},
+      "why": "the first sentence has to be a touch faster than the channel pace"
+    },
+    {
+      "id": "an-asterisk-is-not-spoken",
+      "item": 1039,
+      "source": "emphasis marks",
+      "call": "core.voice.delivery:delivery_for",
+      "args": ["*Turn* the season around."],
+      "kwargs": {"hook": true, "speed": 1.05},
+      "select": "text",
+      "expect": {"equals": "Turn the season around."},
+      "why": "the asterisks would have been read aloud"
     }
   ]
 }

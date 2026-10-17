@@ -660,6 +660,7 @@ ACTIVE SIGNALS (scores):
 INSTRUCTIONS:
 - Script length: REQUIRED {min_words}-{max_words} words (~{preset.duration_hint()} when spoken).
 - Open with a punchy hook sentence under 12 words (no "Today/Let's/In this video").
+- Mark one word in the hook with asterisks for emphasis, and use an ellipsis where the listener should wait.
 - If Long format: structure as hook → context → analysis → implications → {long_close}.
 {user_take}
 - Do NOT write the YouTube title — title is generated in a separate pass after facts + script.

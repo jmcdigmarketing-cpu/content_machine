@@ -73,6 +73,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `footage-add` | Import a gameplay file or folder (--path --game --licence [--source url] --apply) |
 | `footage-gaps` | What gameplay to record, and past videos that may show another game (#955) |
 | `footage-licence` | Save a recorded Commons, Internet Archive, or NASA (cc0) search (--catalogue --fixture --niche --subject --apply) |
+| `footage-tag` | Tag a clip already in the library (--path --team [--apply]) |
 | `free-cost` | Prove the $0/Piper path billed $0 (or say that it did not) |
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `free-tiers` | When each provider's free window resets or ends (#378) |

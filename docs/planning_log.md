@@ -17,6 +17,31 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-16 (Cursor) - Claude sent no new five
+
+**Prompt:** next 5 that claude sent, if not take from backlog
+
+Claude's slot still said nothing was claimed. Waves 99-100 did not queue another
+five after #1221, #1227, #1228, #1229 and #1043 (`6b14a9b`). The five already
+named on the roadmap were the wave.
+
+**Shipped:**
+1. #1235 `footage-tag` writes `teams` on a clip that is already indexed. `chargers` becomes Los Angeles Chargers. A path that is not in the index is an error and creates no row. After the tag, a Chargers topic returns that GameClip. A folder with no tags still returns the untagged clips.
+2. #499 `trim_dead_air` runs on a newly synthesized one-shot file after the word timings exist and before the cache store. A cache hit is left as stored. A file whose first word started at 0.4s now starts at 0.
+3. #1046 karaoke's spoken-word colour and margin come from `caption_skin`. TapIn's highlight is `#E53935`. A skin with neither field stays yellow at margin 260. TapIn sets no margin, so the line does not move.
+4. #1056 TapIn's `hook_card` puts the first sentence on screen from 0.00 to 1.00, top-aligned. The word captions stay at the bottom. The flag off, and MoneyWise, have no card.
+5. #1039 the first paragraph is requested 0.05 faster (TapIn 1.05 becomes 1.10, clamped to 0.7-1.2). Asterisks around one word set style to 0.35 and are not spoken. An ellipsis is removed from the request and the next word starts 0.3s later; the join writes that silence when ffmpeg can. The pace is part of the cache key. The script prompt asks for the asterisk and the ellipsis.
+
+**Fail first:** 17 tests, 4 failures and 12 errors on unmodified code (no `tag_clip`, `footage-tag` was not a command, no `delivery_for`, the one-shot word stayed at 0.4s, the hook request stayed at 1.05 with the ellipsis still in the text, the prompt had no "asterisks"). Two guards were then broken and watched going red: the hook card appeared with the flag off, and a skin with no highlight was forced to the brand red.
+
+**Finished output:** one-shot voice files lose head and tail silence. TapIn karaoke is `#E53935` instead of yellow. The hook sentence is on screen for the first second. The first paragraph is faster, an asterisked word is more expressive, and an ellipsis is a 0.3s hold. A tagged GameClip is usable after `footage-tag --apply`.
+
+`py -m scripts.ops footage-tag --path C:\dev\content_machine\does-not-exist.mp4 --team chargers` printed `footage-tag: not in the library`.
+
+**Next:** #429 #438 #489 #492 #422. `roadmap-index`: open 288, done 1180, numbered open 236, highest open #1136.
+
+---
+
 ## 2026-10-16 (Cursor) - the five Claude queued
 
 **Prompt:** next 5 claude gave you completed please!

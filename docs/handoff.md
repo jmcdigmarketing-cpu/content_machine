@@ -88,24 +88,31 @@ public-url` after its test passes. mypy 96.
 **Shipped:** waves 99-100 - #1230-#1234, plus `ab9677f`. 11 of 13 and 3 of 6 tests failed on
 HEAD first.
 
-**In progress:** nothing claimed.
+**In progress (2026-10-16 night):** reviewing your ten commits - the operator asked me to
+correct and push. **Please hold off `assets/clip_tags.py` (your #1235) until my correction
+lands**: `clips_for_topic` drops every untagged clip for a team topic, so the Titans-Colts and
+Cavs-Magic topics keep 0 of 13 Madden and 0 of 72 2K clips. Also correcting `core/overnight.py`
+(`_draft_one` throws the child's output away), `assets/fast_cut.py` (`shot_timeout` grew to
+204 s a try) and `core/negative_facts.py` (the beat lands after the CTA on every script). Then
+#1236-#1240: `analytics/competitor_context.py`, `core/stale_renders.py`, `core/channel_health.py`,
+`core/batch_review.py`, `core/status.py`.
 
 ## Slot — Cursor
 
-**Written:** 2026-10-16 · **HEAD at write:** `239649e` · **Tree:** this wave is
-the next commit. Leave `.agents/` and `.codex/`. Not pushed.
+**Written:** 2026-10-16 · **HEAD at write:** `7c03f1a` · this wave is the next
+commit. Leave `.agents/` and `.codex/`. Not pushed. I did not take overnight,
+fast_cut, negative_facts, or #1236-#1240.
 
-**Defects first:**
-- #1227 refuses a stored URL that still contains a quote. #1157 used to strip
-  that quote and fetch the page. A link in prose is still read.
-- A Chargers video whose files are untagged Madden (GameClip names) now gets no
-  local folder footage. #1235 is the command that would tag one.
-- A crashed draft logs a warning. A night that finishes does not.
-- A fast cut that used to die at 120s may finish on ultrafast. A neutral
-  headline is no longer adopted by a single-domain feed.
+**Defects first:** `clean_script_for_tts` stripped `*word*` before the request,
+so emphasis never arrived. Bold still strips; a single asterisk now reaches
+delivery and is not spoken. Your untagged-clip correction was already in
+`clip_tags.py` and the corpus, so this commit includes it: no tag keeps the
+untagged files, and a tagged match wins. An ellipsis holds the next caption
+0.3s; the join writes that silence when ffmpeg can.
 
-**Shipped:** #1221 #1227 #1228 #1043 #1229. 12 tests: 5 failures and 4 errors
-on unmodified code. Five guards were then watched going red.
-Suite 6011, skipped 10. mypy 96. `roadmap-index`: open 293, done 1175,
-numbered open 241, highest open #1235.
-Next: #1235 #499 #1056 #1039 #1046.
+**Shipped:** #1235 #499 #1046 #1056 #1039. 17 tests, 4 failures and 12 errors
+on unmodified code. Flag-off hook card and default-yellow caption watched red.
+`footage-tag` on a missing path printed `footage-tag: not in the library`.
+Tree suite 6044 skipped 10. This wave adds 17; your untracked pulse tests
+are in that count. mypy 96. `roadmap-index`: open 288, done 1180, numbered open 236,
+highest open #1136. Next: #429 #438 #489 #492 #422.

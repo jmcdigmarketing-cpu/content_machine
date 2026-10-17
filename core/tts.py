@@ -387,7 +387,13 @@ def _channel_voice_overlay(channel_id: str | None) -> dict[str, float]:
     return values
 
 
-def _elevenlabs_voice_settings(client, voice_id: str, speed: float, channel_id: str | None = None):
+def _elevenlabs_voice_settings(
+    client,
+    voice_id: str,
+    speed: float,
+    channel_id: str | None = None,
+    style: float | None = None,
+):
     """The voice's own saved settings with only `speed` replaced; None at 1.0 (#890).
 
     A settings object with nothing but `speed` could reset stability and similarity to
@@ -397,6 +403,8 @@ def _elevenlabs_voice_settings(client, voice_id: str, speed: float, channel_id: 
     experiment can replace those three.
     """
     overlay = _channel_voice_overlay(channel_id)
+    if style is not None:
+        overlay = {**overlay, "style": float(style)}
     if speed == 1.0 and not overlay:
         return None
     try:
@@ -610,6 +618,24 @@ def _under_test_runner() -> bool:
     """
     argv0 = os.path.basename(str(sys.argv[0] if sys.argv else ""))
     return "unittest" in argv0 or "pytest" in argv0 or "pytest" in sys.modules
+
+
+def trim_dead_air(path: str) -> bool:
+    """#499: one-shot files, not only the paragraph join (#404)."""
+    from core.voice.dead_air import trim_dead_air as _trim
+
+    return _trim(path)
+
+
+def _finish_spoken(path: str, cache_key: str | None) -> str:
+    """Trim a file that was just synthesized, then store it. A cache hit does not come here."""
+    try:
+        trim_dead_air(path)
+    except Exception as exc:
+        logger.warning("dead-air trim failed: %s", exc)
+    if cache_key:
+        tts_cache_store(cache_key, path)
+    return path
 
 
 def tts_cache_store(key: str, src_path: str) -> None:
@@ -983,15 +1009,33 @@ def concat_list_text(paths: list[str]) -> str:
 
 
 def concat_audio_segments(paths: list[str], dest: str) -> str:
-    """Re-encode concatenated MP3s. Copy-concat across providers is unsafe."""
+    """Re-encode concatenated MP3s. Copy-concat across providers is unsafe.
+
+    A segment that noted a delivery pause (#1039) is followed by that much
+    silence. The word sidecar adds the same hold, so the next caption waits
+    with the audio.
+    """
     import subprocess
+
+    from core.voice.delivery import pause_after, write_silence
 
     if not paths:
         raise RuntimeError("no TTS segments to concat")
+    joined: list[str] = []
+    gaps: list[str] = []
+    for path in paths:
+        joined.append(path)
+        pause = pause_after(path)
+        if pause <= 0:
+            continue
+        gap = path + ".gap.mp3"
+        if write_silence(gap, pause):
+            joined.append(gap)
+            gaps.append(gap)
     list_file = dest + ".concat.txt"
     try:
         with open(list_file, "w", encoding="utf-8") as f:
-            f.write(concat_list_text(paths))
+            f.write(concat_list_text(joined))
         cmd = [
             "ffmpeg",
             "-y",
@@ -1014,10 +1058,11 @@ def concat_audio_segments(paths: list[str], dest: str) -> str:
             raise RuntimeError(f"ffmpeg concat failed (rc={proc.returncode}): {err}")
         return dest
     finally:
-        try:
-            os.remove(list_file)
-        except OSError:
-            pass
+        for extra in (list_file, *gaps):
+            try:
+                os.remove(extra)
+            except OSError:
+                pass
 
 
 def _write_concat_word_sidecar(
@@ -1029,6 +1074,8 @@ def _write_concat_word_sidecar(
     which segment - so which voice - spoke each word. One voice writes no `role` key,
     so a single-voice sidecar is byte-identical to before.
     """
+    from core.voice.delivery import pause_after
+
     tag = bool(roles) and len(set(roles or [])) > 1
     merged: list[dict[str, Any]] = []
     offset = 0.0
@@ -1052,6 +1099,7 @@ def _write_concat_word_sidecar(
         # duration includes silence after the last word, so it is only the
         # fallback for a segment that has no word timings.
         offset += span if span else segment_audio_duration(path)
+        offset += pause_after(path)
     try:
         with open(dest + ".words.json", "w", encoding="utf-8") as f:
             json.dump(merged, f)
@@ -1086,6 +1134,13 @@ def _generate_by_sentences(
     # the lexicon. The caller's script string is not this list.
     sents = [apply_pronunciation_lexicon(part, channel_id) for part in sents]
     alts = [apply_pronunciation_lexicon(part, channel_id) for part in alts]
+    from core.voice.delivery import delivery_for, note_pause
+
+    base_speed = speech_speed(channel_id)
+    sent_plans = [delivery_for(part, hook=i == 0, speed=base_speed) for i, part in enumerate(sents)]
+    alt_plans = [delivery_for(part, hook=i == 0, speed=base_speed) for i, part in enumerate(alts)]
+    sents = [str(plan["text"]) for plan in sent_plans]
+    alts = [str(plan["text"]) for plan in alt_plans]
     try:
         for i, (sent, alt) in enumerate(zip(sents, alts, strict=True)):
             seg = f"{output_path}.seg{i}.mp3"
@@ -1096,11 +1151,10 @@ def _generate_by_sentences(
             with voice_role(role):
                 if role not in cache_voice:
                     cache_voice[role] = _tts_cache_voice(channel_id)
-                key = tts_cache_key(
-                    paragraph_cache_text(alt, previous, following),
-                    provider,
-                    cache_voice[role],
-                )
+                key_text = paragraph_cache_text(alt, previous, following)
+                if sent_plans[i]["speed"] != base_speed:
+                    key_text += f"\npace={sent_plans[i]['speed']}"
+                key = tts_cache_key(key_text, provider, cache_voice[role])
                 if tts_cache_lookup(key, seg):
                     _note_voice_spoken()
                     cached_chars += len(alt)
@@ -1114,8 +1168,15 @@ def _generate_by_sentences(
                         allow_piper_mix=False,
                         previous_text=previous,
                         next_text=following,
+                        speed=float(sent_plans[i]["speed"]),
+                        style=sent_plans[i]["style"]
+                        if isinstance(sent_plans[i]["style"], (int, float))
+                        else None,
                     )
                     synth_chars += len(alt)
+                pause = sent_plans[i]["pause_after"]
+                if isinstance(pause, (int, float)) and pause > 0:
+                    note_pause(seg, float(pause))
             paths.append(seg)
         try:
             concat_audio_segments(paths, output_path)
@@ -1161,6 +1222,8 @@ def synthesize_to_path(
     allow_piper_mix: bool = True,
     previous_text: str = "",
     next_text: str = "",
+    speed: float | None = None,
+    style: float | None = None,
 ) -> str:
     """Write synthesized audio for one text blob. Callers own cache lookup + actuals.
 
@@ -1187,8 +1250,7 @@ def synthesize_to_path(
     # tried first; on any failure it falls back to the ElevenLabs default below.
     alt = _try_alt_tts_provider(spoken_for_alt, output_path, channel_id)
     if alt:
-        tts_cache_store(cache_key, alt)
-        return alt
+        return _finish_spoken(alt, cache_key)
 
     if allow_piper_mix and _should_piper_mix():
         mixed_spoken = apply_pronunciation_lexicon(spoken, channel_id)
@@ -1201,7 +1263,7 @@ def synthesize_to_path(
             _last_piper_mix = True
             every = _piper_mix_every()
             print(f"[TTS] Channel: {channel_id} | Provider: piper (mix 1/{every})")
-            return mixed
+            return _finish_spoken(mixed, None)
 
     # Free mode (strict): local $0 voice failed/absent and paid ElevenLabs is
     # disallowed — block with install guidance instead of silently paying.
@@ -1221,8 +1283,7 @@ def synthesize_to_path(
             logger.debug("breaker toast skipped: %s", exc)
         piped = _synth_piper_for_quota(spoken, output_path, channel_id)
         if piped:
-            tts_cache_store(cache_key, piped)
-            return piped
+            return _finish_spoken(piped, cache_key)
         raise RuntimeError(
             "ElevenLabs monthly character budget exhausted "
             f"({_elevenlabs_budget_display()}). Set ELEVENLABS_MONTHLY_CHAR_BUDGET "
@@ -1248,9 +1309,8 @@ def synthesize_to_path(
             # Word-level timestamps (free from the same TTS call) power accurate /
             # karaoke captions (video/caption_timing). Best-effort — any failure falls
             # back to the plain stream, so captions revert to the proportional estimate.
-            settings = _elevenlabs_voice_settings(
-                client, voice_id, speech_speed(channel_id), channel_id
-            )
+            pace = speech_speed(channel_id) if speed is None else speed
+            settings = _elevenlabs_voice_settings(client, voice_id, pace, channel_id, style=style)
             extra = {"voice_settings": settings} if settings is not None else {}
             if _word_timestamps_enabled() and _save_word_timestamps(
                 client,
@@ -1268,8 +1328,7 @@ def synthesize_to_path(
                 )
                 _elevenlabs_record_chars(len(spoken))
                 _note_voice_spoken(voice_id)
-                tts_cache_store(cache_key, output_path)
-                return output_path
+                return _finish_spoken(output_path, cache_key)
 
             audio = client.text_to_speech.convert(
                 voice_id=voice_id,
@@ -1290,8 +1349,7 @@ def synthesize_to_path(
     _elevenlabs_record_chars(len(spoken))
     _note_voice_spoken(last_voice)
     print(f"[TTS] Channel: {channel_id} | Voice: {last_voice} | Model: {model_id}")
-    tts_cache_store(cache_key, output_path)
-    return output_path
+    return _finish_spoken(output_path, cache_key)
 
 
 # #775: no default long-form override any more - the operator opts in with TTS_PROVIDER_LONG.

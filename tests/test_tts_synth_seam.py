@@ -186,7 +186,13 @@ class TestSentenceCache(unittest.TestCase):
                 "TTS_CACHE_DIR": cache_dir,
                 "TTS_PROVIDER": "elevenlabs",
             }
-            key_a = tts.tts_cache_key(tts.paragraph_cache_text(a, "", b), "elevenlabs", "")
+            # #1039: the first paragraph is the hook, so its cache key carries the pace.
+            pace = tts.speech_speed("tapin") + 0.05
+            key_a = tts.tts_cache_key(
+                tts.paragraph_cache_text(a, "", b) + f"\npace={pace}",
+                "elevenlabs",
+                "",
+            )
             src = os.path.join(tmp, "a.mp3")
             with open(src, "wb") as f:
                 f.write(b"aaa")

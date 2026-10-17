@@ -83,28 +83,20 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five (non-app)
 
-**2026-10-16 (Cursor).** #1221, #1227, #1228, #1229 and #1043 are done. Next:
-**#1235** tag a clip already on disk (a Chargers video gets no Madden footage when the
-file is named GameClip), **#499** silence-trim the VO, **#1056** a first-frame text
-hook, **#1039** delivery marks, **#1046** caption style per brand.
-Finished output changed: a fast cut has `-nostdin` and a longer timeout, and a shot
-that used to die at 120s may finish on `ultrafast`. A team video skips untagged
-Madden. Overnight drafts run in a child process. A stored URL that still contains a
-quote is not fetched. A neutral headline stays neutral.
-`roadmap-index`: open 293, done 1175, numbered open 241, highest open #1235.
-Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
-your own idea's script, the morning screen, game previews, corrections checked against their
-own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),
-the overnight videos in `py main.py`. Offered to Cursor: **#1194** learning per platform
-([initiative_cross_platform.md](initiative_cross_platform.md)). Waves 91-94 (#1200-#1214):
-hand posts left alone (§57), `ops all` ends with the morning (§56), Buffer reads the bucket's
-public address (§58), a draft's stance counts as a take, the review names the failing check,
-`ops crosspost buffer-check`. Waves 95-98 (#1216-#1226): a crashed overnight is said, runs
-record their facts, dead drafts say so first, team names stay whole, calm drafts get a beat.
-Wave 99: one `ops worker` sends every due upload (#1230), a render past its window stops holding
-the shelf (#1231), `ops crosspost public-url` (#1232). Wave 100: a chain's honest no-match is
-not a failure (#1233), "Beats" the brand is not a result (#1234). Claude has nothing claimed.
-The step-by-step: [operator_guide.md](operator_guide.md).
+**2026-10-16 (Cursor).** #1235, #499, #1046, #1056 and #1039 are done. Next:
+**#429** time a pinned comment, **#438** set the audience region per channel,
+**#489** single-key menus, **#492** recall the last topic, **#422** thumbnail text
+that fits the plate.
+Finished output changed: a newly synthesized one-shot voice file loses its head and
+tail silence. TapIn karaoke highlights the spoken word in `#E53935` instead of
+yellow. TapIn shows the hook sentence at the top for the first second. The first
+spoken paragraph is a touch faster, an asterisked word is more expressive, and an
+ellipsis becomes 0.3s of silence before the next sentence. A Chargers video can use
+a tagged GameClip after `footage-tag --apply`. A team topic whose folder has no tag
+still uses the untagged clips.
+`roadmap-index`: open 288, done 1180, numbered open 236, highest open #1136.
+Claude's slot still has nothing claimed and names #1236-#1240 as the review
+follow-on. The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

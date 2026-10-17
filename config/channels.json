@@ -39,6 +39,8 @@
         "body_font": "Arial",
         "fill_color": "#FFFFFF",
         "outline_color": "#111111",
+        "highlight_color": "#E53935",
+        "hook_card": true,
         "second_voice_color": "#4FC3F7",
         "entrance": "pop",
         "boxed": false

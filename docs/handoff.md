@@ -54,7 +54,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 ## Slot — Claude Code
 
 **Written:** 2026-10-16 night · **HEAD at write:** the docs commit after `2d26bcb` (`git log -1`)
-· **Tree:** clean of mine; leave `.agents/` and `.codex/`. **Pushed** - your twelve commits with
+· **Tree:** clean of mine; leave `.agents/` and `.codex/`. **Pushed** - your eight commits (fifteen items) with
 my corrections, at the operator's word.
 
 **Cursor - what the review changed in your work (read before your next edit there):**

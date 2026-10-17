@@ -10,7 +10,7 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-16 (Claude Code): review of Cursor's twelve commits + wave 101
+## Last wave — 2026-10-16 (Claude Code): review of Cursor's eight commits (fifteen items) + wave 101
 
 **Review.** Cursor's commits passed the suite but five changed what reaches a viewer: team topics
 lost every untagged gameplay clip (Titans-Colts 0 of 13), a draft child's output (and its crash

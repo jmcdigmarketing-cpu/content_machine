@@ -7811,3 +7811,83 @@ operator's own idea. Corpus +6. Suite 5965, forward and reversed.
 
 Closed **#1222-#1226**. Claude has nothing claimed. Next prompt: review Cursor's commits,
 correct, push.
+
+## 2026-10-16 — waves 99-100 (Claude Code): the operator's terminal, Cursor working alongside
+
+**Prompt:** "next 5 that cursor hasnt touched, cursor will be working alongside you live now,
+and fix whats going on here" + the terminal. Asked: a command that tests the public address and
+writes it (yes); one worker run sends every due upload (yes); a render past its window stops
+holding the shelf (yes, the file stays).
+
+### What the terminal showed
+
+- 7:07 PM `ops worker`: job 58 (run 126) uploaded, job 59 (run 155) left pending - due since
+  5:10 PM. My page had said the line sends both.
+- Overnight paused by run 114 - 12 days old, UFC news, never uploaded.
+- "off anime - All providers in chain failed": AniList said "no anime match", Jikan was
+  unreachable, and the chain kept the last answer.
+- "High-stakes claim about 'Beats Pill'": the brand matched "beats".
+- TikTok and Instagram wait on the bucket's public address - the operator's switch in Cloudflare.
+
+### Cursor alongside
+
+Committed locally while I worked: `e4ceb7f` #1215, `93cb516` benches, `e1fdd22` zoom,
+`c990c85` intro sting. Not reviewed here; my commits sit on top, so nothing is pushed this round.
+
+### Wave 99 shipped
+
+1. **#1230** a single pass drains due jobs (cap 10).
+2. **#1231** live after: `ops shelf` - run 114 "rendered 12 days ago, past its window - nothing
+   uploads it"; `ops overnight-plan` - "would render: run 157" (was "Paused: 3 finished videos").
+3. **#1232** live: `crosspost public-url http://...` refuses and `.env` is unchanged (checked by
+   hash); `crosspost status` names the Cloudflare clicks and the command.
+
+`tests/test_worker_shelf_public.py` (13): **11 of 13 failed or errored on `dfef780`**; the 2 that
+passed guard a fresh render and a queued upload. Corpus +1. Suite 5991, forward and reversed.
+
+## 2026-10-16 (Cursor) - the five Claude queued first
+
+**Prompt:** "next 5 claude gave you completed please". The confirmed list was #1215 #514
+#418 #463 #545, which was already the recommended five. The operator's second five
+(#1221 #1227 #1228 #1229 #1043) stay next. Not pushed: Claude reviews and pushes.
+
+### Shipped
+
+1. **#1215** `apis/topic_scorer.py` matches "contender series" as ufc before the NBA list.
+   The live title with no feed tag was `nba`; it is `ufc`. "Why the Lakers are not a
+   contender yet" stays `nba`. Watched fail first: the candidate domain was `nba`. The
+   Lakers guard went red when bare "contender" was classified ufc. Corpus +2.
+2. **#463** `duration_verdict(3.3, 2.4)` returns 1; a 200ms line start returns 1. Inside
+   5% and inside 150ms return 0. No sidecars exits 0. The suite calls the verdicts. The
+   audio scan still needs real renders, so it is not a CI job. 4 tests errored first
+   (the verdicts were missing). The 150ms guard went red when the verdict always returned 0.
+3. **#418** `video/hook_motion.py` lanczos-scales by the peak zoom before zoompan, using
+   the render's own width and height. Punch-in is 1.12 and snap-zoom is 1.14. Motion off
+   stays empty. Watched fail first: the scale string was absent. Finished frames change
+   wherever hook motion is enabled (TapIn 1.08, MoneyWise 1.05).
+4. **#514** `video/channel_intro.py` fades intro audio out over the last 0.25s. The body
+   track and a silent intro are not faded. Watched fail first: the graph had no afade.
+   The silent-intro guard went red when the fade was added to it. Finished audio changes
+   when the intro file has a soundtrack.
+5. **#545** `core/negative_facts.py` `with_correction_beat`, called from
+   `core/content_engine.py` after the last rewrite. The sentence is "What I got wrong
+   last time: " plus the newest claim for that franchise. `matching_negatives` ignores
+   that sentence; a second sentence that states the claim still vetoes (decisions §29).
+   A Lakers topic does not inherit a UFC correction. No correction returns the same
+   script. 3 tests errored first. The veto guard went red when the beat was scanned
+   with the rest of the script.
+
+11 of the new tests failed or errored before their fix. One local commit per item:
+`e4ceb7f` `93cb516` `e1fdd22` `c990c85` `35a0a85`.
+
+### Not done
+
+#1221 #1227 #1228 #1229 #1043. The full bench scripts are not a workflow step: they
+read `output/` and the caption bench downloads a model.
+
+### Audit
+
+mypy 96, equal to the baseline. Suite 5997, skipped 10, green; that run includes
+Claude's uncommitted tests in the tree. `git status --short data/` empty. Claude's
+waves 99-100 are not in these commits.
+

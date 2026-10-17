@@ -113,15 +113,19 @@ an upload still unlisted (`go-public`, or `verify-claim` first when it is held f
 
 **Uploads go out on their own** once this is run, one time:
 `py -m scripts.ops worker-task --install`. It sends queued uploads every 15 minutes while you
-are signed in to Windows. Without it they wait for `py -m scripts.ops worker`, and the header
-says "1 upload overdue" when one has.
+are signed in to Windows. Without it they wait for `py -m scripts.ops worker`, which sends
+every upload that is due in one go, and the header says "1 upload overdue" when one has. A
+render that was never uploaded and is past twice its window stops counting toward overnight's
+three; `ops shelf` shows it with the line that retires it.
 
 **TikTok and Instagram follow YouTube** (#1188, decision §54): once a video is public on
 YouTube it is scheduled on both through Buffer - one a day per platform, the AI label on.
 Setting it up once (the Buffer key, the R2 bucket keys, the channel ids) is in
 [platform_publish_setup.md](platform_publish_setup.md); `py -m scripts.ops crosspost status`
 shows each video on each platform, `crosspost cancel --run-id N` takes one back, and
-`crosspost buffer-check` tries the whole path once with a Buffer draft it deletes. A video you
+`crosspost buffer-check` tries the whole path once with a Buffer draft it deletes. Once the
+bucket's public address is on in Cloudflare, `py -m scripts.ops crosspost public-url
+https://pub-....r2.dev` tests it and saves it to `.env`. A video you
 posted by hand in Buffer is found and left on that platform; `crosspost done --run-id N` says so
 for both.
 

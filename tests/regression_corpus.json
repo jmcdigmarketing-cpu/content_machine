@@ -4318,6 +4318,19 @@
         "equals": "nba"
       },
       "why": "contender series is UFC; a title contender is not"
+    },
+    {
+      "id": "public-url-refuses-http",
+      "item": 1232,
+      "source": "must keep: only an https address is tested and written to .env",
+      "call": "publishing.video_host:check_public_url",
+      "args": [
+        "http://pub-abc.r2.dev"
+      ],
+      "expect": {
+        "contains": "https://"
+      },
+      "why": "Buffer reads https; a wrong address must never reach .env"
     }
   ]
 }

@@ -51,6 +51,39 @@ _PLACEHOLDERS = frozenset(
 _ENV_LINE = re.compile(r"^\s*(export\s+)?[A-Za-z_][A-Za-z0-9_.]*\s*=")
 
 
+def _env_path(path: str | None) -> str:
+    if path:
+        return path
+    from config.paths import ROOT_DIR
+
+    return os.getenv("ENV_LINT_FILE", "").strip() or os.path.join(ROOT_DIR, ".env")
+
+
+def set_env_value(name: str, value: str, path: str | None = None) -> None:
+    """#1232: ``NAME=value`` in `.env` - the first uncommented line for ``name`` replaced, else
+    one added at the end; the file's line endings kept. Run only by an operator command."""
+    target = _env_path(path)
+    try:
+        with open(target, encoding="utf-8", newline="") as f:
+            text = f.read()
+    except FileNotFoundError:
+        text = ""
+    nl = "\r\n" if "\r\n" in text else "\n"
+    lines = text.split(nl) if text else []
+    pattern = re.compile(rf"^\s*(?:export\s+)?{re.escape(name)}\s*=")
+    for i, line in enumerate(lines):
+        if pattern.match(line):
+            lines[i] = f"{name}={value}"
+            break
+    else:
+        if lines and lines[-1] == "":
+            lines[-1:] = [f"{name}={value}", ""]
+        else:
+            lines.extend([f"{name}={value}", ""])
+    with open(target, "w", encoding="utf-8", newline="") as f:
+        f.write(nl.join(lines))
+
+
 def env_file_problems(path: str | None = None) -> list[int]:
     """Line numbers of `.env` that are not NAME=value (#1193). Never reads out a value.
 

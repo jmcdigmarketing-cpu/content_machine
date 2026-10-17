@@ -83,17 +83,14 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five (non-app)
 
-**2026-10-15.** #1184, #1209, #1208, #456 and #392 are done. The list is the hole this
-wave left and four small checks that are still open.
-**#1215** an untagged Contender Series headline is still ranked as NBA, because the word
-"contender" matches before UFC. **#514** the intro sting overlaps the first caption.
-**#418** a bounded zoom can still soften a 1080x1920 frame, and nothing checks.
-**#463** the benches exist and nothing fails when they regress. **#545** a correction
-note never becomes a "what I got wrong" beat in the next script. **Then (the operator,
-2026-10-16):** **#1221** a neutral headline made a gaming best bet (with #1215), **#1227** junk
-correction URLs, **#1228** the fast-cut timeout, **#1229** one draft per child process, **#1043**
-footage tagged by team (run 155 cut four untagged Madden clips).
-`roadmap-index` after Claude's waves 97-98: open 302, done 957, numbered open 250; highest filed #1229.
+**2026-10-16.** #1215, #514, #418, #463 and #545 are done. The list is the five the
+operator queued after those. **#1221** a neutral headline made a gaming best bet.
+**#1227** junk correction URLs. **#1228** the fast-cut timeout. **#1229** one draft per
+child process. **#1043** footage tagged by team (run 155 cut four untagged Madden clips).
+Finished output changed: hook-motion frames are pre-scaled, and an intro with audio fades
+out over its last quarter second.
+`roadmap-index` after Cursor's five, with Claude's uncommitted #1230-#1232 already ticked:
+open 297, done 965, numbered open 245, highest open #1229.
 Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
 your own idea's script, the morning screen, game previews, corrections checked against their
 own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),
@@ -101,15 +98,11 @@ the overnight videos in `py main.py`. Offered to Cursor: **#1194** learning per 
 ([initiative_cross_platform.md](initiative_cross_platform.md)). Waves 91-94 (#1200-#1214):
 hand posts left alone (§57), `ops all` ends with the morning (§56), Buffer reads the bucket's
 public address (§58), a draft's stance counts as a take, the review names the failing check,
-`ops crosspost buffer-check`. Wave 95: an overnight run that stopped early is said, with its
-exit code and log (#1216 - Oct 16 crashed after one draft); a run records the facts it was
-written from, so health stopped reading authenticity RED (#1217). Wave 96: a `.env` warning
-names the right lines (#1218), a draft past its window says so first and "n" sets it aside
-(#1219), a signal no longer run is not flagged (#1220). Wave 97: the stop line counts only the
-run that stopped (#1223); `ops blocking` reads the shelf and the run's own scores (#1222). Wave
-98: team names stay whole (#1224), a hyphenated label and a model's "..." are caught (#1225), a
-calm draft gets a "what to watch" beat (#1226). Claude has nothing claimed. The step-by-step:
-[operator_guide.md](operator_guide.md).
+`ops crosspost buffer-check`. Waves 95-98 (#1216-#1226): a crashed overnight is said, runs
+record their facts, dead drafts say so first, team names stay whole, calm drafts get a beat.
+Wave 99: one `ops worker` sends every due upload (#1230), a render past its window stops holding
+the shelf (#1231), `ops crosspost public-url` (#1232). Claude has #1233-#1234 claimed. The
+step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

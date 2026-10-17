@@ -95,6 +95,9 @@ Set up once:
 3. `py -m scripts.ops crosspost selftest` (puts 1 KB in the bucket, reads it back from the
    public address the way Buffer does, deletes it), then `py -m scripts.ops crosspost channels
    --apply` (keeps the TikTok and Instagram channel ids).
+   The address can be saved for you: `py -m scripts.ops crosspost public-url
+   https://pub-....r2.dev` puts 1 KB in the bucket, reads it from that address the way Buffer
+   does, deletes it, and only then writes `R2_PUBLIC_BASE_URL` into `.env` (#1232).
 4. `py -m scripts.ops crosspost buffer-check` once (#1214): the newest rendered video goes to the
    public address, Buffer makes a TikTok **draft** from it (nothing is published), reads it back,
    and the draft and the copy are deleted. `ok:` means Buffer can read the bucket; a refusal is

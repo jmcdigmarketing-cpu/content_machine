@@ -214,7 +214,7 @@ def gather(
                 "crosspost",
                 True,
                 "TikTok + Instagram through Buffer: "
-                + ("ready" if not missing else "waits on " + ", ".join(missing)),
+                + ("ready" if not missing else crosspost.waits_line(missing)),
             )
     except Exception as exc:
         logger.debug("doctor crosspost skipped: %s", exc)

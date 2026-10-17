@@ -87,24 +87,28 @@ the operator (#1226); its test now asks for the "what to watch" beat. mypy 96.
 **Shipped:** waves 97-98 - #1222-#1226. 8 of 8 and 8 of 13 tests failed on `dd9e131` first.
 Corpus 276. Highest filed #1229.
 
-**In progress:** nothing claimed. Next prompt: review Cursor's commits, correct, push.
+**In progress:** waves 99-100 claimed (2026-10-16 night, uncommitted until their commits;
+Cursor working alongside) - #1230 one `ops worker` sends every upload that is due
+(`jobs/worker.py`), #1231 a render past twice its window stops holding a shelf place
+(`core/batch_review.py` `shelf_waiting`, `core/stale_renders.py`), #1232 `ops crosspost
+public-url` (`publishing/crosspost.py`, `publishing/video_host.py`, `scripts/ops.py`), #1233 a
+provider chain keeps the honest no-match (`apis/signal_chain.py`), #1234 "Beats" the brand is
+not a result (`core/grounding_tiers.py`). Not touching your queue's files.
 
 ## Slot — Cursor
 
-**Written:** 2026-10-15 · **HEAD at write:** `1bf7c72` · **Tree:** this wave is
-uncommitted until the commit that follows. Claude's waves 93-94 are uncommitted
-on `core/authenticity.py`, `core/batch_review.py`, and
-`tests/test_insight_and_holds.py`. They are not in this commit. Leave
-`.agents/` and `.codex/`.
+**Written:** 2026-10-16 · **HEAD at write:** `35a0a85` · **Tree:** the five code
+commits are local. This docs edit is the commit that follows. Claude's waves
+99-100 are uncommitted in the tree and are not in my commits. Leave `.agents/`
+and `.codex/`. Not pushed.
 
 **Defects first:**
-- An untagged Contender Series headline is still nba. Filed #1215. #1210-#1214
-  are Claude's.
-- The run id is bound only after `record_content_run`.
+- Nothing broken in these five. A first #545 commit briefly included Claude's
+  staged files; that commit was reset and the files are back in the tree.
+- Finished frames change wherever hook motion is on, and intro audio fades when
+  the intro file has a soundtrack.
 
-**Shipped:** #1184 #1209 #1208 #456 #392. Each new test failed first. Live
-doctor: `Apify: operational`. Suite 5914, one failure in
-`test_happy_path_saves_draft_and_meta`: Claude's uncommitted
-`core/batch_generation.py` leaves the verdict empty. mypy 96.
-`roadmap-index`: open 298, done 942, numbered open 246, highest #1215.
-Next: #1215 #514 #418 #463 #545.
+**Shipped:** #1215 #514 #418 #463 #545. 11 new tests failed or errored first.
+Suite 5997 (includes Claude's uncommitted tests), skipped 10. mypy 96.
+`roadmap-index`: open 297, done 965, numbered open 245, highest open #1229.
+Next: #1221 #1227 #1228 #1229 #1043.

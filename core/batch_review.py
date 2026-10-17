@@ -608,11 +608,12 @@ def shelf_max() -> int:
 
 
 def shelf_waiting(channel_id: str) -> int:
-    """How many finished videos are not public - the rows `ops shelf` lists."""
+    """How many finished videos are not public and can still go out - the rows `ops shelf`
+    lists, less a render past its window (#1231)."""
     try:
         from core.stale_renders import shelf_rows
 
-        return len(shelf_rows(channel_id))
+        return sum(1 for row in shelf_rows(channel_id) if not row.get("stale"))
     except Exception as exc:
         logger.debug("shelf not read for the overnight limit: %s", exc)
         return 0

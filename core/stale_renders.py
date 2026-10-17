@@ -145,6 +145,19 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
                     state=f"rendered {age:.0f} days ago, never uploaded",
                     command=f"py -m scripts.ops retire-renders --channel {channel_id} "
                     f"--run-id {run.id} --apply",
+                    stale=True,
+                )
+            )
+        elif age is not None and age > 2 * _news_window(run, channel_id):
+            # #1231: run 114 (UFC news, a 2-day window) sat 12 days on the shelf and held one of
+            # overnight's three places. It no longer counts; its file stays.
+            rows.append(
+                dict(
+                    base,
+                    state=f"rendered {age:.0f} days ago, past its window - nothing uploads it",
+                    command=f"py -m scripts.ops retire-renders --channel {channel_id} "
+                    f"--run-id {run.id} --apply",
+                    stale=True,
                 )
             )
         else:
@@ -174,6 +187,22 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
             }
         )
     return rows
+
+
+def _news_window(run: Any, channel_id: str) -> float:
+    """The render's freshness window in days, read the way a draft's is (`batch_review`)."""
+    try:
+        from core.batch_review import freshness_window_days
+
+        meta = {
+            "topic": str(getattr(run, "topic", "") or ""),
+            "title": str(getattr(run, "title", "") or ""),
+            "channel_id": channel_id,
+        }
+        return float(freshness_window_days(meta))
+    except Exception as exc:
+        logger.debug("render window unread for run %s: %s", getattr(run, "id", "?"), exc)
+        return float(STALE_DAYS)
 
 
 def _upload_title(row: Any) -> str:

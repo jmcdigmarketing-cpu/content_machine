@@ -3366,7 +3366,7 @@ for _batch_name, (_batch_help, _steps, _stop) in BATCHES.items():
 @_register(
     "crosspost",
     "TikTok + Instagram through Buffer: [channels | send | status | cancel | selftest | "
-    "buffer-check | list | done] (#968, #1188, #1214)",
+    "buffer-check | public-url ADDRESS | list | done] (#968, #1188, #1214, #1232)",
 )
 def cmd_crosspost(args: argparse.Namespace) -> int:
     """`ops crosspost` packs the newest rendered videos for Buffer's app; `channels`,
@@ -3379,7 +3379,15 @@ def cmd_crosspost(args: argparse.Namespace) -> int:
     channel = resolve_channel_id(getattr(args, "channel", None))
     action = str(getattr(args, "target", "") or "").strip().lower()
     apply = bool(getattr(args, "apply", False))
-    if action in ("channels", "send", "status", "cancel", "selftest", "buffer-check"):
+    if action in (
+        "channels",
+        "send",
+        "status",
+        "cancel",
+        "selftest",
+        "buffer-check",
+        "public-url",
+    ):
         return _crosspost_api(action, channel, args, apply=apply)
     if action == "list":
         print("\n".join(crosspost.waiting_lines(channel)))
@@ -3416,6 +3424,20 @@ def _crosspost_api(action: str, channel: str, args: argparse.Namespace, *, apply
     """The Buffer API verbs of `ops crosspost` (#1187-#1189)."""
     from publishing import buffer_api, crosspost, video_host
 
+    if action == "public-url":  # #1232
+        address = str(getattr(args, "value", "") or "").strip().rstrip("/")
+        problem = video_host.check_public_url(address)
+        if problem:
+            print(f"R2 public address - not saved: {problem}")
+            return 1
+        from core.secrets_doctor import set_env_value
+
+        set_env_value("R2_PUBLIC_BASE_URL", address)
+        print(
+            "R2 public address - ok: Buffer can read the bucket there; saved to .env as "
+            "R2_PUBLIC_BASE_URL. Next: py -m scripts.ops crosspost buffer-check"
+        )
+        return 0
     if action == "buffer-check":  # #1214
         lines = crosspost.buffer_check(channel)
         print("\n".join(lines))
@@ -3432,7 +3454,7 @@ def _crosspost_api(action: str, channel: str, args: argparse.Namespace, *, apply
         missing = crosspost.setup_missing(channel)
         print("\n".join(lines or [f"Through Buffer - {channel}: nothing sent yet"]))
         if missing:
-            print("  Not set up yet: " + ", ".join(missing))
+            print("  Not set up yet - " + crosspost.waits_line(missing))
         return 0
     if action == "cancel":
         run_id = int(getattr(args, "run_id", 0) or 0)
@@ -3470,7 +3492,7 @@ def _crosspost_api(action: str, channel: str, args: argparse.Namespace, *, apply
         if apply and crosspost.buffer_channel_ids(channel):
             for line in crosspost.switch_on(channel):
                 print(line)
-        print(f"Crosspost - {channel}: waits on " + ", ".join(missing))
+        print(f"Crosspost - {channel}: " + crosspost.waits_line(missing))
         return 1
     lines = [*crosspost.sync_status(channel), *crosspost.send_due(channel, apply=apply)]
     print("\n".join(lines or [f"Crosspost - {channel}: nothing new is public on YouTube"]))
@@ -3679,6 +3701,12 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default=None,
         help="Positional argument for some commands (e.g. ingest: a URL / PDF path / YouTube link)",
+    )
+    parser.add_argument(
+        "value",
+        nargs="?",
+        default=None,
+        help="A second positional for some commands (crosspost public-url: the address)",
     )
     parser.add_argument(
         "--source",

@@ -410,6 +410,18 @@ def channel_lines(rows: list[dict[str, Any]]) -> list[str]:
     return out
 
 
+def waits_line(missing: list[str]) -> str:
+    """'waits on X' - and, when the bucket's public address is what is missing, how to set it
+    (#1232: the line said only "wait on R2_PUBLIC_BASE_URL")."""
+    line = "waits on " + ", ".join(missing)
+    if "R2_PUBLIC_BASE_URL" in missing:
+        line += (
+            " - in Cloudflare: R2 > your bucket > Settings > Public Development URL > Enable, "
+            "then: py -m scripts.ops crosspost public-url https://pub-....r2.dev"
+        )
+    return line
+
+
 def setup_missing(channel_id: str) -> list[str]:
     """What still has to be set before a video can go out through Buffer."""
     from publishing import buffer_api, video_host
@@ -939,7 +951,7 @@ def buffer_check(channel_id: str) -> list[str]:
 
     missing = setup_missing(channel_id)
     if missing:
-        return [f"Buffer check - {channel_id}: waits on " + ", ".join(missing)]
+        return [f"Buffer check - {channel_id}: " + waits_line(missing)]
     run = next(
         (
             r
@@ -1001,7 +1013,7 @@ def step(channel_id: str) -> list[str]:
         started = switch_on(channel_id) if buffer_channel_ids(channel_id) else []
         return [
             *started,
-            f"Crosspost - {channel_id}: TikTok and Instagram wait on " + ", ".join(missing),
+            f"Crosspost - {channel_id}: TikTok and Instagram " + waits_line(missing),
         ]
     lines: list[str] = []
     try:

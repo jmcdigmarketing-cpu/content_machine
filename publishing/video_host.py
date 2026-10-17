@@ -18,6 +18,7 @@ Keys: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`,
 from __future__ import annotations
 
 import os
+import re
 import secrets
 from datetime import datetime, timezone
 from typing import Any
@@ -97,6 +98,29 @@ def remove(key: str, *, client: Any = None) -> bool:
         logger.warning("hosted copy %s not removed: %s", key, type(exc).__name__)
         return False
     return True
+
+
+_PUBLIC_URL_RE = re.compile(r"^https://[A-Za-z0-9.-]+(?::\d+)?(?:/[^\s?#]*)?$")
+
+
+def check_public_url(url: str, *, client: Any = None, head: Any = None, get: Any = None) -> str:
+    """#1232: '' when ``url`` serves the bucket the way Buffer reads it, else what failed - the
+    self-test, run against that address before it is written anywhere."""
+    address = (url or "").strip().rstrip("/")
+    if not _PUBLIC_URL_RE.match(address):
+        return "not an https:// address - copy it from Cloudflare (https://pub-....r2.dev)"
+    other = [name for name in missing() if name != "R2_PUBLIC_BASE_URL"]
+    if other:
+        return "missing " + ", ".join(other)
+    before = os.environ.get("R2_PUBLIC_BASE_URL")
+    os.environ["R2_PUBLIC_BASE_URL"] = address
+    try:
+        return self_test(client=client, head=head, get=get)
+    finally:
+        if before is None:
+            os.environ.pop("R2_PUBLIC_BASE_URL", None)
+        else:
+            os.environ["R2_PUBLIC_BASE_URL"] = before
 
 
 def self_test(*, client: Any = None, head: Any = None, get: Any = None) -> str:

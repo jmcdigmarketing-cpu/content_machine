@@ -322,6 +322,20 @@ def process_one() -> bool:
     return True
 
 
+# #1230: how many jobs one pass may take - enough for a day's uploads, never a spin.
+PASS_CAP = 10
+
+
+def drain_due(cap: int = PASS_CAP) -> int:
+    """Every job that is due, in one pass. 2026-10-16: `ops worker` uploaded job 58 and stopped;
+    job 59 (run 155), due since 5:10 PM, stayed pending. Each job keeps its own scheduled time
+    and the quota check in `process_one`."""
+    done = 0
+    while done < cap and process_one():
+        done += 1
+    return done
+
+
 def main():
     parser = argparse.ArgumentParser(description="Content OS job worker")
     parser.add_argument(
@@ -333,7 +347,9 @@ def main():
     args = parser.parse_args()
 
     if args.loop <= 0:
-        processed = process_one()
+        processed = drain_due()
+        if processed > 1:
+            print(f"Sent {processed} due job(s) in one pass.")
         if not processed:
             from apis.youtube_quota import format_quota_detail, has_quota_for_upload
 

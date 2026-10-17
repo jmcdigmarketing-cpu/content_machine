@@ -64,6 +64,8 @@ def fits_cap(times: list[datetime], slot: datetime, cap: int) -> bool:
     The busiest window always starts on one of the videos, so checking the windows that
     start on each one (and contain the slot) is enough.
     """
+    if cap <= 0:
+        return True  # decision 65: no cap
     slot = _utc(slot)
     every = sorted([_utc(t) for t in times] + [slot])
     for start in every:

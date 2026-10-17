@@ -7,7 +7,7 @@ that errors reads **yellow "n/a"**, never crashes the view.
 
 Sub-scores (each `green|yellow|red` + a one-line rationale):
 - **engagement** - recent engaged-rate vs the channel baseline (trend).
-- **cadence** - headroom under `MAX_VIDEOS_PER_WEEK` (over-cadence is a policy risk).
+- **cadence** - headroom under `MAX_VIDEOS_PER_WEEK` when one is set (decision 65: none by default).
 - **authenticity** - mean authenticity score over recent runs' `quality_json`.
 - **reliability** - Apify/LLM/signal breakers + budgets (`core/reliability.py`).
 - **cost** - per-video cost, and margin when revenue exists (`core/unit_economics.py`).
@@ -83,6 +83,8 @@ def _cadence_sub(channel_id: str) -> HealthSub:
     from core.cadence import cadence_status
 
     c = cadence_status(channel_id)
+    if not c.capped:  # decision 65: no cap
+        return HealthSub("cadence", GREEN, f"{c.total} in the {c.window_days}-day window, no cap")
     room = c.cap - c.total
     detail = f"{c.total}/{c.cap} in the {c.window_days}-day window"
     if c.total > c.cap:

@@ -71,7 +71,9 @@ def plan_spaced_uploads(
     day (the long video's) alone as well.
     """
     status = cadence_status(channel_id)
-    room = max(0, status.cap - status.total - max(0, reserve))
+    # Decision 65: without a cap every run gets a slot.
+    capped_room = max(0, status.cap - status.total - max(0, reserve))
+    room = capped_room if status.capped else len(items)
     out: list[SpacedSlot] = []
     after: datetime | None = None
     tz = _channel_tz(channel_id) if one_per_day else None

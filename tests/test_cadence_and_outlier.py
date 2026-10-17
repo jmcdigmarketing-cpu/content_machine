@@ -16,11 +16,12 @@ def _row(published_at):
 
 class TestCadence(unittest.TestCase):
     def test_default_cap(self):
+        # Decision 65 (the operator, 2026-10-17: "Remove it"): no cap unless one is set.
         with patch.dict("os.environ", {}, clear=False):
             import os
 
             os.environ.pop("MAX_VIDEOS_PER_WEEK", None)
-            self.assertEqual(max_videos_per_week(), 5)
+            self.assertEqual(max_videos_per_week(), 0)
 
     def test_cap_from_env(self):
         with patch.dict("os.environ", {"MAX_VIDEOS_PER_WEEK": "3"}):

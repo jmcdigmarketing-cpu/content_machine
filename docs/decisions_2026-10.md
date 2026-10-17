@@ -230,3 +230,19 @@ spacing of §54 had put run 155's Titans preview nine hours after kickoff. **Con
 reverses §54's "one a day per platform"; the rest of §54 stands (after YouTube is public, the AI
 label on). The YouTube cadence guardrail (`MAX_VIDEOS_PER_WEEK`) is a separate rule and is
 unchanged.
+
+## 64. TikTok and Instagram post the same evening, and Reels run to 3 minutes (2026-10-17)
+**Decision:** until a platform has its own learned hours (4 posts), a crosspost goes at the next
+10 PM in the channel's time zone - always within a day of the video going public. Instagram
+takes videos up to 180 seconds (`INSTAGRAM_MAX_SECONDS`). **Why:** the operator's answers.
+Run 157 (UFC) went public on Saturday and its TikTok post was given YouTube's learned UFC slot,
+Thursday 3:00 AM; Instagram skipped it at the 90 s cap. Both were moved: run 157 posts with
+runs 126 and 155 on Saturday at 10 PM.
+
+## 65. No YouTube cadence cap unless one is set (2026-10-17)
+**Decision:** `MAX_VIDEOS_PER_WEEK` unset means no cap: the start menu shows no cadence line
+(only the weekly floor when short of it), health's cadence is green, and no upload is blocked
+and no slot skipped for volume. Setting it brings the cap back as it was. **Why:** the
+operator - "Remove it"; "volume is a struggle right now". **Consequence:** the cap was the
+volume half of the 2026 "mass-produced" guardrail; the variation half (the authenticity check)
+is unchanged and still holds each script. The per-video Shorts spacing (#1055) stays.

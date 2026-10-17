@@ -360,6 +360,71 @@ class ConsolePayloadTests(unittest.TestCase):
             self.assertEqual(ask.ask_text("  Pick: ", payload={"intent": "x"}), "3")
 
 
+# ---- decision 65: no YouTube cadence cap unless one is set ------------------------------------
+
+
+def _cadence(total, cap=0):
+    from core.cadence import CadenceStatus
+
+    return CadenceStatus(recent=total, upcoming=0, cap=cap, window_days=7)
+
+
+class NoCadenceCapTests(unittest.TestCase):
+    """The operator, 2026-10-17: "Remove it" - the start menu warned "Cadence 5/5 in a 7-day
+    window", and the cap also blocked uploads (`publish_blockers`) and scheduling
+    (`spaced_queue`). MAX_VIDEOS_PER_WEEK still sets one when given."""
+
+    def setUp(self):
+        p = patch.dict(os.environ, {"MAX_VIDEOS_PER_WEEK": ""})
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_by_default_there_is_no_cap(self):
+        from core.cadence import max_videos_per_week
+
+        self.assertEqual(max_videos_per_week(), 0)
+        self.assertTrue(_cadence(9).ok)
+
+    def test_the_menu_warns_nothing(self):
+        from core.cadence import display_cadence
+
+        said: list[str] = []
+        display_cadence(_cadence(9), print_fn=said.append)
+        self.assertFalse(any("Cadence" in s or "cap" in s for s in said), said)
+
+    def test_health_is_green_and_the_header_has_no_ceiling(self):
+        from core.channel_health import _cadence_sub
+        from core.status import _hdr_week
+
+        with patch("core.cadence.cadence_status", return_value=_cadence(9)):
+            self.assertEqual(_cadence_sub("tapin").status, "green")
+            self.assertEqual(_hdr_week("tapin"), "week 9 of 3+")
+
+    def test_every_video_gets_a_slot(self):
+        from core.spaced_queue import plan_spaced_uploads
+
+        when = datetime(2026, 10, 20, 2, 0, tzinfo=timezone.utc)
+        with (
+            patch("core.spaced_queue.cadence_status", return_value=_cadence(9)),
+            patch("core.spaced_queue.planned_post_time", return_value=when),
+        ):
+            slots = plan_spaced_uploads([(i, f"run {i}") for i in range(4)], channel_id="tapin")
+        self.assertFalse([s for s in slots if s.skipped])
+
+    def test_the_backlog_has_no_ceiling(self):
+        from publishing.backlog import fits_cap
+
+        now = datetime(2026, 10, 17, tzinfo=timezone.utc)
+        self.assertTrue(fits_cap([now] * 9, now, 0))
+
+    def test_a_cap_still_works_when_set(self):
+        from core.cadence import max_videos_per_week
+
+        with patch.dict(os.environ, {"MAX_VIDEOS_PER_WEEK": "5"}):
+            self.assertEqual(max_videos_per_week(), 5)
+        self.assertFalse(_cadence(5, cap=5).ok)
+
+
 _ = (json, subprocess, MagicMock)
 
 if __name__ == "__main__":

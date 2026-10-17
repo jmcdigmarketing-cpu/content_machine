@@ -115,7 +115,9 @@ class SlotTests(_Stores):
 
         self._scheduled(NOW + timedelta(days=1, hours=8), "s1")
         self._scheduled(NOW + timedelta(days=2, hours=8), "s2")
-        slots = plan_backlog_slots("tapin", weeks=2, now=NOW)
+        # The cap is the operator's to set (decision 65: none by default); this one sets 5.
+        with patch.dict("os.environ", {"MAX_VIDEOS_PER_WEEK": "5"}):
+            slots = plan_backlog_slots("tapin", weeks=2, now=NOW)
         self.assertEqual(len(slots), 8)
         everything = [*slots, NOW + timedelta(days=1, hours=8), NOW + timedelta(days=2, hours=8)]
         for slot in slots:

@@ -387,12 +387,10 @@ def _hdr_last(channel_id: str) -> str:
 def _hdr_week(channel_id: str) -> str:
     """#1133: "week 2 of 3-5" - uploads in the last seven days plus those scheduled, against
     the floor and the cap the operator set."""
-    from core.cadence import cadence_status, weekly_target
+    from core.cadence import cadence_status, week_band
 
     status = cadence_status(channel_id)
-    target = min(weekly_target(), status.cap)
-    band = f"{target}-{status.cap}" if status.cap > target else str(target)
-    return f"week {status.total} of {band}"
+    return f"week {status.total} of {week_band(status)}"
 
 
 def _hdr_shelf(channel_id: str) -> str:

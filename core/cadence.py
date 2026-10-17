@@ -10,7 +10,8 @@ Pairs with the Phase O authenticity variation check (variety), this enforces
 volume.
 
 Env:
-  MAX_VIDEOS_PER_WEEK = 5 (default)
+  MAX_VIDEOS_PER_WEEK = a cap; unset (the default since decision 65) means no cap - nothing
+  warns, blocks an upload or skips a slot for volume.
 """
 
 from __future__ import annotations
@@ -23,7 +24,8 @@ from core.logging import get_logger
 
 logger = get_logger("core.cadence")
 
-_DEFAULT_CAP = 5
+# Decision 65 (the operator, 2026-10-17: "Remove it"): no cap unless one is set.
+_DEFAULT_CAP = 0
 
 
 @dataclass
@@ -38,8 +40,12 @@ class CadenceStatus:
         return self.recent + self.upcoming
 
     @property
+    def capped(self) -> bool:
+        return self.cap > 0
+
+    @property
     def ok(self) -> bool:
-        return self.total < self.cap
+        return not self.capped or self.total < self.cap
 
 
 def max_videos_per_week() -> int:
@@ -60,15 +66,24 @@ def weekly_target() -> int:
 
     raw = os.getenv("UPLOADS_PER_WEEK_TARGET", "").strip()
     target = int(raw) if raw.isdigit() and int(raw) > 0 else _DEFAULT_TARGET
-    return min(target, max_videos_per_week())
+    cap = max_videos_per_week()
+    return min(target, cap) if cap else target
+
+
+def week_band(status: CadenceStatus) -> str:
+    """ "3-5" under a cap, "3+" without one (decision 65)."""
+    target = min(weekly_target(), status.cap) if status.capped else weekly_target()
+    if not status.capped:
+        return f"{target}+"
+    return f"{target}-{status.cap}" if status.cap > target else str(target)
 
 
 def target_line(status: CadenceStatus) -> str:
     """ "Week: 1 of 3-5 ... short 2" when under target, else "" (#764)."""
-    target = min(weekly_target(), status.cap)
+    target = min(weekly_target(), status.cap) if status.capped else weekly_target()
     if status.total >= target:
         return ""
-    band = f"{target}-{status.cap}" if status.cap > target else str(target)
+    band = week_band(status)
     return (
         f"Week: {status.total} of {band} ({status.recent} up, {status.upcoming} scheduled) - "
         f"short {target - status.total}: py -m scripts.ops batch-review"
@@ -114,6 +129,12 @@ def cadence_status(
 
 
 def display_cadence(status: CadenceStatus, *, print_fn=print) -> None:
+    if not status.capped:
+        # Decision 65: no cap, so no cadence line - only the weekly floor, when short of it.
+        line = target_line(status)
+        if line:
+            print_fn(f"\n  {line}")
+        return
     icon = "✓" if status.ok else "⚠"
     try:
         from core.themes import meter

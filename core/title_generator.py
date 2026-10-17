@@ -143,7 +143,9 @@ def _repair_title_to_angle(title: str, angle: str, *, fallback: str) -> str:
 
 
 def _hook_line(script: str) -> str:
-    text = (script or "").strip()
+    from core.voice.delivery import display_text
+
+    text = display_text(script).strip()  # the hook card and titles show no "*emphasis*" marks
     if not text:
         return ""
     first = re.split(r"(?<=[.!?])\s+", text, maxsplit=1)[0]

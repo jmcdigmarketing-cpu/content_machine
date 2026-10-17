@@ -161,7 +161,8 @@ arc counter" (a draft written from "week 4"), "its title breaks a name" - and th
 names the failing check beside the verdict. A draft past its window, or whose game has
 started, says that first. Asked "still current?", **n** sets it aside (nothing is deleted;
 `py -m scripts.ops batch-review --expired` lists it) and Enter leaves it for later. A game's
-draft has the 2-day window of news. A calm draft (an explainer, a list, a plan) gets one "what
+draft has the 2-day window of news. When two or more drafts are past their window the review
+asks once - "Set aside the N drafts past their window? [Y/n]" - before the walk. A calm draft (an explainer, a list, a plan) gets one "what
 to watch" line rather than a take; your own idea and a hope video stay as written. A title that
 ends in "..." waits ("its title is cut off").
 

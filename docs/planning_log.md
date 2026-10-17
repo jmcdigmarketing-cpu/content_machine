@@ -7956,3 +7956,33 @@ chain with nothing connected, an active answer, and "beat" the verb. Corpus +2. 
 - Cursor's `e4ceb7f` (#1215) left #1208's corpus case expecting nba; the corpus test failed on
   every commit from there. Corrected in `ab9677f`.
 - Not pushed: Cursor's seven commits sit under mine and are not reviewed.
+
+## 2026-10-16 — review of Cursor's waves + wave 101 (Claude Code)
+
+**Prompt:** "next 5". Asked: swap the competitors for 5 from the shortlist; health leaves out
+videos under 20 views; one question for old drafts; **review Cursor's commits, correct, push
+all**.
+
+### The review
+
+Cursor's HEAD `6b14a9b` passed 6011 tests in a clean worktree; the problems were behaviour:
+1. **#1043** untagged clips left out for any team topic - Titans-Colts 0 of 13 Madden clips,
+   Cavs-Magic 0 of 72 2K. Corrected in `7c03f1a`: 13 of 13, 72 of 72.
+2. **#1229** the overnight child's output captured and dropped - the faulthandler traceback too.
+3. **#1228** 204 s a shot try. Held to 120 s.
+4. **#545** the correction sentence after the CTA, on every later script. Before the closer, once.
+5. **#1056/#1039** (`e207cc3`, committed while I worked): the hook card showed "*Pokemon's*" -
+   the script prompt asks for emphasis marks and only the voice request stripped them.
+   `delivery.display_text` for the card, titles and captions.
+Checked and fine: the test edits, the zoom pre-scale, the intro fade, #1221, #1227 (it followed
+the spec I wrote), the footage-tag command.
+
+### Wave 101
+
+#1236-#1240 in `2d26bcb`. The competitor sync after the swap met YouTube RSS answering 404 for
+all six channels (filed #1241); the pulse is empty until a sync succeeds, which is the honest
+answer now.
+
+`tests/test_review_corrections.py` 6 of 7, `tests/test_pulse_shelf_health.py` 7 of 9,
+`tests/test_marks_off_screen.py` 2 of 3 failed first; the rest are guards. Corpus +3. Suite 6047, forward and reversed.
+

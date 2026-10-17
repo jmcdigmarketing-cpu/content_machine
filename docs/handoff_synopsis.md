@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-16: the backlog five (#1235 #499 #1046 #1056 #1039)
+# Handoff synopsis — 2026-10-16: Cursor's waves reviewed, corrected and pushed; wave 101
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,23 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-16 (Cursor): #1235 #499 #1046 #1056 #1039
+## Last wave — 2026-10-16 (Claude Code): review of Cursor's twelve commits + wave 101
+
+**Review.** Cursor's commits passed the suite but five changed what reaches a viewer: team topics
+lost every untagged gameplay clip (Titans-Colts 0 of 13), a draft child's output (and its crash
+traceback) was thrown away, a stuck shot could hold a render seven minutes, the correction
+sentence would follow the CTA on every script, and the hook card showed "*emphasis*" marks. All
+corrected, tested, pushed with Cursor's work.
+
+**Wave 101.** NFL angles no longer get tech titles as "in-niche" pulse, and the watch follows
+MMA/NFL/NBA channels (#1236); `ops status` stops offering to requeue run 114 (#1237); health
+leaves out videos under 20 views (#1238); one question sets old drafts aside (#1239); missing
+playlists are said (#1240).
+
+**Still the operator's:** `R2_PUBLIC_BASE_URL`; run 155 waits for the worker, run 126 for
+go-public; the 11 playlists (`ops playlists --apply`); `.env` lines 35, 36, 39. Suite 6047, forward and reversed.
+
+## Previous — 2026-10-16 (Cursor): #1235 #499 #1046 #1056 #1039
 
 Claude sent no new five after #1221 #1227 #1228 #1043 #1229. This wave is the
 five the roadmap already named.
@@ -99,22 +115,6 @@ old game runs (#1220).
 **Still the operator's:** `R2_PUBLIC_BASE_URL`; `.env` lines 35, 36, 39; run 126 waits for the
 worker; the consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Overnight's
 other two drafts were not made today. Suite 5943, forward and reversed.
-
-## Previous — 2026-10-15 (Claude Code): waves 93-94, why clean drafts waited
-
-**Wave 93.** The authenticity check read clean drafts as neutral recaps - "Here's my call anyway.
-I'm taking the double" did not count as a take - so overnight rendered none of them. A
-first-person call or a "what people miss" frame counts now (#1210); six waiting drafts went to
-ok. A draft from the arc counter (run 153, "week four") and a title that breaks a name (run 149)
-wait for a person (#1211). Tonight renders run 155, the Titans-Colts preview.
-
-**Wave 94.** A "fans react" angle loses points when nothing carried reactions (#1212, run 154).
-The review names the failing check - "no take found", "too few facts" (#1213). `ops crosspost
-buffer-check` tries Buffer end to end with a draft it deletes (#1214); it waits on
-`R2_PUBLIC_BASE_URL`.
-
-**Still the operator's:** `R2_PUBLIC_BASE_URL` (public access on the bucket) and `.env` lines
-34 and 36 (unparsed); the consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5914, forward and reversed.
 
 ## Pipeline order (operator)
 

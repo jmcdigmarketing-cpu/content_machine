@@ -7,6 +7,22 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-15 (Claude Code): waves 93-94, why clean drafts waited
+
+**Wave 93.** The authenticity check read clean drafts as neutral recaps - "Here's my call anyway.
+I'm taking the double" did not count as a take - so overnight rendered none of them. A
+first-person call or a "what people miss" frame counts now (#1210); six waiting drafts went to
+ok. A draft from the arc counter (run 153, "week four") and a title that breaks a name (run 149)
+wait for a person (#1211). Tonight renders run 155, the Titans-Colts preview.
+
+**Wave 94.** A "fans react" angle loses points when nothing carried reactions (#1212, run 154).
+The review names the failing check - "no take found", "too few facts" (#1213). `ops crosspost
+buffer-check` tries Buffer end to end with a draft it deletes (#1214); it waits on
+`R2_PUBLIC_BASE_URL`.
+
+**Still the operator's:** `R2_PUBLIC_BASE_URL` (public access on the bucket) and `.env` lines
+34 and 36 (unparsed); the consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5914, forward and reversed.
+
 ## Previous — 2026-10-15 (Cursor): five defects (#1184, #1209, #1208, #456, #392)
 
 An open correction was written again the next day. The second scan now leaves the file

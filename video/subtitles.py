@@ -296,6 +296,9 @@ def generate_subtitle_file(
     words: list[dict] | None = None,
     background_path: str | None = None,
 ) -> str:
+    from core.voice.delivery import display_text
+
+    script = display_text(script)  # captions and the hook card show no "*emphasis*" marks
     output_dir = SUBTITLE_DIR
     os.makedirs(output_dir, exist_ok=True)
 

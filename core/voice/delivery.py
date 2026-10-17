@@ -19,6 +19,12 @@ _SPEED_MIN, _SPEED_MAX = 0.7, 1.2
 _PAUSE_SUFFIX = ".delivery_pause"
 
 
+def display_text(text: str) -> str:
+    """The script as it is seen - "*word*" back to "word". Review of 2026-10-16: the hook card,
+    the title's hook line and the no-timing captions read the marks the voice request strips."""
+    return _EMPHASIS.sub(r"\1", text or "")
+
+
 def delivery_for(text: str, *, hook: bool, speed: float) -> dict[str, Any]:
     """Spoken text, pace, emphasis style, and the seconds to hold after it."""
     spoken = text or ""

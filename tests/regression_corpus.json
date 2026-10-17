@@ -4484,6 +4484,70 @@
       "select": "text",
       "expect": {"equals": "Turn the season around."},
       "why": "the asterisks would have been read aloud"
+    },
+    {
+      "id": "titans-colts-keeps-the-untagged-madden-clips",
+      "item": 1043,
+      "source": "review 2026-10-16: Titans-Colts kept 0 of 13 Madden clips",
+      "call": "assets.clip_tags:clips_for_topic",
+      "args": [
+        [
+          "/lib/madden/GameClip_1.mp4",
+          "/lib/madden/GameClip_2.mp4"
+        ],
+        "Tennessee Titans at Indianapolis Colts",
+        {
+          "clips": {}
+        }
+      ],
+      "expect": {
+        "equals": [
+          "/lib/madden/GameClip_1.mp4",
+          "/lib/madden/GameClip_2.mp4"
+        ]
+      },
+      "why": "the operator's clips carry no team; leaving them out left NFL videos no gameplay"
+    },
+    {
+      "id": "a-chiefs-clip-is-not-a-chargers-clip",
+      "item": 1043,
+      "source": "must keep: a clip tagged with another team is left out",
+      "call": "assets.clip_tags:clips_for_topic",
+      "args": [
+        [
+          "/lib/madden/kc.mp4",
+          "/lib/madden/GameClip_1.mp4"
+        ],
+        "Chargers Hopeium going into week 5",
+        {
+          "clips": {
+            "/lib/madden/kc.mp4": {
+              "teams": [
+                "Kansas City Chiefs"
+              ]
+            }
+          }
+        }
+      ],
+      "expect": {
+        "equals": [
+          "/lib/madden/GameClip_1.mp4"
+        ]
+      },
+      "why": "#1043's point: a Chargers video does not cut Chiefs footage"
+    },
+    {
+      "id": "the-hook-card-shows-no-asterisks",
+      "item": 1056,
+      "source": "review 2026-10-16: the hook card read '*Pokemon's*'",
+      "call": "core.voice.delivery:display_text",
+      "args": [
+        "A sleep therapist designed *Pokemon's* new body pillows..."
+      ],
+      "expect": {
+        "equals": "A sleep therapist designed Pokemon's new body pillows..."
+      },
+      "why": "the emphasis mark is for the voice, not the screen"
     }
   ]
 }

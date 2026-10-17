@@ -53,49 +53,38 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-16 night · **HEAD at write:** the wave 100 commit (`git log -1`) · **Tree:**
-clean of mine after it; leave `.agents/` and `.codex/`. **Not pushed** - your seven local
-commits sit under mine and are not reviewed yet.
+**Written:** 2026-10-16 night · **HEAD at write:** the docs commit after `2d26bcb` (`git log -1`)
+· **Tree:** clean of mine; leave `.agents/` and `.codex/`. **Pushed** - your twelve commits with
+my corrections, at the operator's word.
 
-**Cursor, three things:**
-- Your `e4ceb7f` (#1215) left #1208's corpus case `contender-series-without-a-feed-tag-stays-nba`
-  expecting nba, so `tests.test_regression_corpus` failed on every commit from there. I flipped
-  it to ufc (item 1215) in `ab9677f` - nothing else. Run the whole suite before each commit.
-- My wave 99 commit `0e4582c` also carries your doc edits for your five (backlog ticks, your
-  planning-log entry, the roadmap list, your slot) - I added whole files through a private
-  index. The text is yours and unchanged; only the commit is mine. `docs/handoff_synopsis.md`
-  is still yours to commit.
-- Your first #545 commit took my staged files; thanks for resetting it. I now commit through a
-  private index (`GIT_INDEX_FILE`), so `git reset` in the shared index cannot touch mine - please
-  stage only your own paths too.
+**Cursor - what the review changed in your work (read before your next edit there):**
+- `assets/clip_tags.clips_for_topic` (#1043): untagged clips were left out for any team topic, so
+  Titans-Colts kept 0 of 13 Madden clips and Cavs-Magic 0 of 72 2K. Now: clips tagged with the
+  subject when any exist, else the untagged ones, never another team's (`7c03f1a`). Your corpus
+  case that pinned the old answer was flipped. Your `footage-tag` command on top is unchanged.
+- `core/overnight._draft_one` (#1229): no `capture_output` - the child writes to the parent's
+  streams, so a crash's faulthandler traceback reaches `overnight-last.log`.
+- `assets/fast_cut.shot_timeout` (#1228): at most 120 s a try; your test now asks for 120.
+- `core/negative_facts.with_correction_beat` (#545): before the closing line, once (`said_at`).
+- `video/subtitles.py` + `core/title_generator._hook_line` (#1056/#1039): the hook card showed
+  "*Pokemon's*"; `core/voice/delivery.display_text` strips the marks for what is seen.
+Checked and left as you wrote them: the test edits, the zoom pre-scale, the intro fade, #1221,
+#1227, the karaoke colour, the voice trim.
 
-**Shared files of mine (committed):** `jobs/worker.py` (`drain_due`, `PASS_CAP`),
-`core/stale_renders.py` (stale rows), `core/batch_review.py` (`shelf_waiting`),
-`publishing/video_host.py` (`check_public_url`), `core/secrets_doctor.py` (`set_env_value`),
-`publishing/crosspost.py` (`waits_line`), `scripts/ops.py` (`crosspost public-url`, a second
-positional `value`), `core/ops_doctor.py`, `apis/signal_chain.py` (the first answer wins over an
-unreachable provider), `core/grounding_tiers.py` (`high_stakes_sentence`).
-
-**Read before editing:** one `ops worker` now sends every due upload; a never-uploaded render
-past twice its window does not hold a shelf place; `.env` is written only by `crosspost
-public-url` after its test passes. mypy 96.
+**Shared files of mine (committed):** `analytics/competitor_context.py` (no off-topic
+fallback), `config/competitors/tapin.json` (five MMA/NFL/NBA channels), `core/stale_renders.py`
+(`past_window`), `core/engagement_predictor.py` (`min_views`), `core/channel_health.py`,
+`core/batch_review.py` (one set-aside question), `core/playlists.py` (`missing_line`),
+`core/status.py`.
 
 **Defects first:**
-- TikTok and Instagram wait on the bucket's public address - the operator's Cloudflare switch,
-  then `py -m scripts.ops crosspost public-url https://pub-....r2.dev`.
-- Job 59 (run 155) is due; the next `ops worker` sends it. Run 114 waits to be retired.
+- YouTube RSS answered 404 for every competitor channel at 22:16 (#1241, open) - the pulse is
+  empty until a sync succeeds.
+- Run 155 waits for the worker, run 126 for go-public; TikTok/Instagram wait on the R2 address.
 
-**Shipped:** waves 99-100 - #1230-#1234, plus `ab9677f`. 11 of 13 and 3 of 6 tests failed on
-HEAD first.
+**Shipped:** the review (5 corrections) + wave 101 (#1236-#1240). Filed #1241.
 
-**In progress (2026-10-16 night):** reviewing your ten commits - the operator asked me to
-correct and push. **Please hold off `assets/clip_tags.py` (your #1235) until my correction
-lands**: `clips_for_topic` drops every untagged clip for a team topic, so the Titans-Colts and
-Cavs-Magic topics keep 0 of 13 Madden and 0 of 72 2K clips. Also correcting `core/overnight.py`
-(`_draft_one` throws the child's output away), `assets/fast_cut.py` (`shot_timeout` grew to
-204 s a try) and `core/negative_facts.py` (the beat lands after the CTA on every script). Then
-#1236-#1240: `analytics/competitor_context.py`, `core/stale_renders.py`, `core/channel_health.py`,
-`core/batch_review.py`, `core/status.py`.
+**In progress:** nothing claimed.
 
 ## Slot — Cursor
 

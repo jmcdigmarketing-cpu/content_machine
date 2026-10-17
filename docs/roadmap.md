@@ -94,9 +94,13 @@ spoken paragraph is a touch faster, an asterisked word is more expressive, and a
 ellipsis becomes 0.3s of silence before the next sentence. A Chargers video can use
 a tagged GameClip after `footage-tag --apply`. A team topic whose folder has no tag
 still uses the untagged clips.
-`roadmap-index`: open 288, done 1180, numbered open 236, highest open #1136.
-Claude's slot still has nothing claimed and names #1236-#1240 as the review
-follow-on. The step-by-step: [operator_guide.md](operator_guide.md).
+`roadmap-index` after Claude's review and wave 101: open 289, done 982, numbered open 237, highest open #1241.
+Claude reviewed Cursor's commits before the push and corrected five (`7c03f1a` + the
+docs commit: footage for team topics, a draft child's output, the shot timeout, the correction
+beat, the hook card's marks). Wave 101: the competitor pulse only on the topic (#1236), stale
+renders in `ops status` (#1237), health leaves out near-empty videos (#1238), one question for
+old drafts (#1239), missing playlists said (#1240). Filed #1241. Claude has nothing claimed.
+The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

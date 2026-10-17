@@ -68,6 +68,18 @@ def counts() -> dict[str, object]:
     }
 
 
+def open_numbered(lines: list[str]) -> list[tuple[int, str]]:
+    """Open numbered backlog lines, in file order. A ticked line is not open."""
+    out: list[tuple[int, str]] = []
+    for line in lines:
+        match = NUM_RE.match(line)
+        if not match:
+            continue
+        title = line.split(".", 1)[1].strip().replace("**", "")
+        out.append((int(match.group(1)), title))
+    return out
+
+
 def render(data: dict[str, object] | None = None) -> str:
     """Operator-facing report. ASCII only (candidate 250)."""
     data = data or counts()
@@ -92,4 +104,9 @@ def render(data: dict[str, object] | None = None) -> str:
     if data["untagged"]:
         out.append(f"  untagged     : {data['untagged']} open item(s) carry no size")
     out.append(f"  numbered     : {data['numbered_open']} open, highest #{data['highest_number']}")
+    out.append("Open numbered")
+    for number, title in open_numbered(_lines("backlog.md")):
+        shown = title.replace("\u2192", "->").replace("\u2014", "-").replace("\u2013", "-")
+        shown = shown.encode("cp1252", "replace").decode("cp1252")
+        out.append(f"  #{number} {shown}")
     return "\n".join(out)

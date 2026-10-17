@@ -911,7 +911,7 @@ def _publish_row(run_id: int, channel_id: str) -> Any:
     return None
 
 
-def video_lines(run_id: int, channel_id: str) -> list[str]:
+def video_lines(run_id: int, channel_id: str, *, tty: bool = False) -> list[str]:
     """#1192: where a rendered video is - its file, its YouTube link (Studio's page while it is
     not public), and TikTok/Instagram. [] when nothing can be read."""
     out: list[str] = []
@@ -942,6 +942,10 @@ def video_lines(run_id: int, channel_id: str) -> list[str]:
             out.append(state)
     except Exception as exc:
         logger.debug("video lines for run %s unreadable: %s", run_id, exc)
+    if tty and out:
+        from core.ui import linkify
+
+        out = [linkify(line, tty=True) for line in out]
     return out
 
 
@@ -976,7 +980,15 @@ def overnight_rendered_lines(
     lines = [f"Overnight - {channel_id}: rendered {len(rows)} in the last {hours:.0f} hours"]
     for row in rows:
         lines.append(f"  run {row['run_id']}  {row['title'][:70]}")
-        lines.extend(f"      {line}" for line in video_lines(row["run_id"], channel_id))  # #1192
+        try:
+            import sys
+
+            linked = bool(sys.stdout) and sys.stdout.isatty()
+        except Exception:
+            linked = False
+        lines.extend(
+            f"      {line}" for line in video_lines(row["run_id"], channel_id, tty=linked)
+        )  # #1192
         where = shelf.get(row["run_id"])
         if where:
             lines.append(f"      {where['state']}")

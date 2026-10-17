@@ -724,8 +724,8 @@ Render & visual craft
 - [x] 419. **Caption line-break optimizer** *(2026-08-28)* — a lone final word is rebalanced on BOTH caption paths. The first cut only touched `split_script_into_lines` (the estimated-timing fallback), so on a normal ASR-timed run it did nothing — `group_into_lines` now rebalances too, moving the word with its own start/end. Rebalancing is per sentence: the running-list version merged two sentences into one cue, which `test_sentence_boundaries_not_crossed` has forbidden since long before 419 `[S]`
 - [x] 420. **Verify loudness + true peak *after* encode** *(2026-09-09)* - post-encode `loudnorm=print_format=json` reads `input_i` / `input_tp` / `input_lra`. A real 1.5s A/V fixture reports all three; `passed` is false when analysis is unavailable. Peak-over-target uses the same `LUFS_TARGET_TP` as the loudnorm filter (retargeting the env for a hot-peak fixture also retargets the filter, so that case is not a separate fixture) `[S]`
 - [ ] 421. **Render time budget with progressive fallback** — degrade the preset rather than run long when the queue is deep `[M]`
-- [ ] 422. **Thumbnail text auto-fit with hierarchy rules** — Pillow thumbs currently pick a size and hope `[M]`
-- [ ] 423. **Generate contrast-safe palettes from channel tokens** — makes #185's auditor largely unnecessary by construction `[M]`
+- [x] 422. **Thumbnail text auto-fit with hierarchy rules** — Pillow thumbs currently pick a size and hope `[M]` **Done (2026-10-16):** a 280px plate wraps "Los Angeles Chargers Super Bowl"; the first line's size is larger than the second, and the box stays inside the margin. A 1280px plate still fits on one line.
+- [x] 423. **Generate contrast-safe palettes from channel tokens** — makes #185's auditor largely unnecessary by construction `[M]` **Done (2026-10-16):** MoneyWise's caption fill `#F7E7A9` is used on dark navy (contrast at least 4.5 against the sampled pixel). The same gold on a gold plate is not used. TapIn stays white.
 - [ ] 424. **B-roll license ledger with expiry** — which clip, which license, which videos it appears in. A licensing question has no answer today `[M]`
 - [ ] 425. **Vertical-crop scoring for 16:9 sources** — the scoring half of Phase R, shippable long before clip-from-source `[M]`
 - [x] 426. **Render artifact manifest (input hashes) on the run row** *(2026-08-28)* — mp4 + script hashed at the same finalize site as #340 `[S]`
@@ -734,7 +734,7 @@ Publish, SEO & policy
 
 - [ ] 427. **Per-domain description template engine with slot validation** — description assembly is concatenation across #118/#125/#128 and grows a branch per policy line `[M]`
 - [x] 428. **Hashtag performance tracking** — tags are generated and never evaluated `[S]` *(fixed wave 50)* **Done:** `analytics/tag_performance.py` joins each run's YouTube tags and description #hashtags (case-blind) to outcomes and ranks them by shrunk lift over the channel, three videos minimum; a tag on 80%+ of videos is named, not ranked. `ops tag-report`. Report-only.
-- [ ] 429. **Scheduled pinned comment + its performance** — `youtube/pin_comment.py` posts; nothing times it to the traffic peak or measures it `[S]`
+- [x] 429. **Scheduled pinned comment + its performance** — `youtube/pin_comment.py` posts; nothing times it to the traffic peak or measures it `[S]` **Done (2026-10-16):** with `YOUTUBE_PIN_COMMENT` on, a Monday 15:00 UTC comment is `scheduled` and `commentThreads.insert` is not called. After the peak, `post_due` inserts once and the body contains the topic. Off stays a no-op. The API still has no pin method. Performance of the comment is not measured.
 - [x] 430. **Community-post drafts from the weekly report** *(2026-09-09)* - `community_post_draft` turns `next_actions` into vault `{date}_community-draft.md` via `write_report_note`. Weekly-report `main()` writes it. YouTube client is never constructed. Fail-first: `ImportError` for the helper `[S]`
 - [x] 431. **Verify chapter timings against real word timings** *(2026-09-09)* - `chapter_block(..., word_timings=)` + `refine_run_chapters` from `pipeline.py`. The extras test asserting `0:20`/`0:40` cannot fail: that is also the equal-span fallback for three sentences over 60s. New guard uses 5s/12s starts; ignoring timings produces `0:20`/`0:40` `[S]`
 - [x] 432. **Publish dry-run that prints the exact API payload** *(2026-08-28)* — `ops publish-dry-run` / `PUBLISH_DRY_RUN=1` prints the real `videos().insert` body with tokens redacted, and never calls insert `[S]`
@@ -743,13 +743,13 @@ Publish, SEO & policy
 - [ ] 435. **Policy-page diff watcher** — the 2026 authenticity rules are existential and the project tracks them by hand `[M]`
 - [ ] 436. **Strike / appeal evidence bundle from the run ledger** — `policy_runbook.py` documents the process; the ledger already holds the evidence it asks for `[M]`
 - [x] 437. **One-command publish rollback** *(2026-09-09)* — `ops rollback-publish` unlist + correction description + vault dossier. Dry-run default; `get_youtube_service` is never constructed unless `--apply` and `YOUTUBE_UPLOAD_ENABLED`. Fail-first: `rollback-publish` not in `COMMANDS` `[S]`
-- [ ] 438. **Per-channel audience-language / region targeting** — #108 sets language; targeting is a separate lever that is never set `[S]`
+- [x] 438. **Per-channel audience-language / region targeting** — #108 sets language; targeting is a separate lever that is never set `[S]` **Done (2026-10-16):** TapIn's `audience_language` is `en`, so `YOUTUBE_DEFAULT_LANGUAGE=fr` still writes `defaultLanguage` `en`. `publish-dry-run` prints `audience.region` `US` beside the snippet. `regionRestriction` is not set.
 - [x] 439. **Shorts-eligibility validator before upload** *(2026-08-28)* — `shorts_refuse_reason` on the publish path refuses landscape and over-60s with a sentence; a missing file is fail-open `[S]`
 - [x] 440. **Immutable 24h / 7d performance snapshots** *(2026-09-09)* - `merge_metric_snapshots` nests `snapshots.24h` / `7d` inside `metrics_json` on first capture; a later sync updates live totals and cannot rewrite an existing bucket. `render_dossier` prints both. Fail-first: dossier omitted `24h snapshot` `[S]`
 
 Operator surface
 
-- [ ] 441. **`ops explain --run-id`** — one narrative of every decision the run made and why. The postmortem covers failures; this covers choices `[M]`
+- [x] 441. **`ops explain --run-id`** — one narrative of every decision the run made and why. The postmortem covers failures; this covers choices `[M]` **Done (2026-10-16):** `explain_trace` names the topic, the selected topic, status, a timing, the grade and the cost from fields the trace already stores. `py -m scripts.ops explain --run-id 999999` printed `No run with that id.` and wrote nothing.
 - [x] 442. **`ops next`** *(2026-08-27)* — thin `@_register`: projected-cost line, then vault-decay warnings, then `blocking_publish_sentence`. One printed action. No second scanner `[S]`
 - [x] 443. **`ops diff-runs A B`** *(2026-08-28)* — joins grade, cost, ungrounded, and disputed for two run ids; missing ids exit without mutating `[S]`
 - [x] 444. **Minutes-per-published-video trend** *(2026-08-28)* — persisted to its own sidecar on publish (never `quota_state`), surfaced as a one-liner; tests isolate the file `[S]`
@@ -777,7 +777,7 @@ Engineering hygiene
 - [x] 463. **Wire `scripts/bench_*.py` into CI with thresholds** — the benchmarks exist and nothing fails when they regress `[S]` **Done (2026-10-16):** `duration_verdict(3.3, 2.4)` returns 1 and a 200ms line start returns 1; inside 5% and inside 150ms return 0. No sidecars exits 0. The suite calls the verdicts. The audio scan still needs real renders and is not a CI job. Watched fail first: both verdicts were missing. The 150ms guard went red when the verdict always returned 0.
 - [ ] 464. **VCR-style recorded API fixture library** — the enabling asset for 386, 387, and 398 `[M]`
 - [ ] 465. **Alembic up/down test against a real snapshot** — two migration stories (#35) is a problem; neither is verified `[M]`
-- [ ] 466. **Generate the open-items index from the checkboxes** — this list is maintained by hand and the header count is already load-bearing in the docs lint `[S]`
+- [x] 466. **Generate the open-items index from the checkboxes** — this list is maintained by hand and the header count is already load-bearing in the docs lint `[S]` **Done (2026-10-16):** `open_numbered` drops a line once it is `[x]`. `ops roadmap-index` prints each open numbered title from those same lines.
 
 Strategy & bigger bets
 
@@ -793,7 +793,7 @@ Strategy & bigger bets
 - [ ] 476. **Portfolio allocator across channels** — where the next 10 videos should go for expected RPM, given cadence caps `[L]`
 - [ ] 477. **Per-channel break-even model** — at what RPM and volume does a channel cover its ~$1/video allocated cost `[M]`
 - [ ] 478. **White-label channel kit** — spin up channel #3 from a template in a day; #51's Channel DNA export is the input, this is the consumer `[L]`
-- [ ] 479. **Restore drill for `moat_backup.py`** — a backup that has never been restored is a hypothesis `[S]`
+- [x] 479. **Restore drill for `moat_backup.py`** — a backup that has never been restored is a hypothesis `[S]` **Done (2026-10-16):** `restore_into` copied `traces/1.json` out of a backup made by `apply_plan` into a temp directory, and the file still contained `Titans at Colts`. `ops moat-backup --restore` is the caller. A real backup is not touched.
 - [ ] 480. **Open-source the signal contract as positioning** — the narrowest genuinely reusable piece; costs nothing strategic and is the cheapest credibility asset the repo has `[M]`
 
 ---
@@ -819,14 +819,14 @@ Terminal & TUI craft
 - [x] 486. **Colour-blind-safe palette variant** *(2026-09-07)* — `CONTENT_UI_COLORBLIND=1` uses token `colorblind_roles` (success ansi256 33, error 208). `plain` stays empty of color `[S]`
 - [x] 487. **`NO_COLOR` and non-TTY detection** *(2026-09-06)* — non-TTY and `CONTENT_UI_COLOR=false` already disabled color; `NO_COLOR` (any non-empty value) now does too. TTY + `NO_COLOR=1` → `paint()` returns plaintext `[S]`
 - [x] 488. **Terminal-width awareness** *(2026-09-06)* — fact preview / grounding / links go through `fact_display_width()` (`terminal_width(maximum=160) - 4`). Banner max stays 100. Patch width to 140: a 120-char fact prints fuller than 90; `_elide` still adds `… (+N chars)` `[S]`
-- [ ] 489. **Single-key menu mode** — press `1`, no Enter, for the high-frequency prompts `[S]`
+- [x] 489. **Single-key menu mode** — press `1`, no Enter, for the high-frequency prompts `[S]` **Done (2026-10-16):** on a TTY, `menu_line` returns the one key and Enter is the empty default. A scripted `input_fn` still returns the whole line, so `6` still selects overnight review. The startup, channel, cost and proceed prompts use it.
 - [x] 490. **Progress ETA from measured history** *(2026-09-06)* — `DiscoverySpinner._load_typical_timings` median over last 20 traces with `signals_and_variants` / `variant_scoring` (≥5s). Fixtures 20/40/60 → hint ≈ 40, not 20. Empty store stays silent `[S]`
 - [x] 491. **Spinner frames respect the active theme's glyph set** *(already shipped; ticked 2026-09-06)* — `DiscoverySpinner` uses `active_theme().spinner_frames`; `tests/test_themes.py` asserts pokemon frames on the live spinner `[S]`
-- [ ] 492. **Up-arrow recall for topics** — retyping a long topic after an abort is the common case `[S]`
-- [ ] 493. **`--quiet` run mode** — gates and the report card only, no narration `[S]`
+- [x] 492. **Up-arrow recall for topics** — retyping a long topic after an abort is the common case `[S]` **Done (2026-10-16):** the last accepted topic is stored per channel in `TOPIC_RECALL_FILE`. Enter returns it; a typed line replaces it. MoneyWise does not see TapIn's topic. The topic prompt names it.
+- [x] 493. **`--quiet` run mode** — gates and the report card only, no narration `[S]` **Done (2026-10-16):** `CONTENT_UI_QUIET` hides the signal breakdown and keeps the sentence-rhythm line on the report. With the flag unset, the breakdown is printed. `--quiet` is removed from argv.
 - [ ] 494. **`--replay <run-id>`** — reprint a past run's console output from its stored trace `[M]`
-- [ ] 495. **Bell or flash when a gate needs an answer** — discovery is long enough to walk away from `[S]`
-- [ ] 496. **OSC 8 terminal hyperlinks** on run ids, file paths and YouTube URLs `[S]`
+- [x] 495. **Bell or flash when a gate needs an answer** — discovery is long enough to walk away from `[S]` **Done (2026-10-16):** `gate_bell` returns one BEL for Select, Proceed and Choose when stdout is a TTY and `NO_COLOR` is unset. A fact prompt, a pipe, and `NO_COLOR` stay silent. `TerminalBackend.ask_text` writes that BEL.
+- [x] 496. **OSC 8 terminal hyperlinks** on run ids, file paths and YouTube URLs `[S]` **Done (2026-10-16):** on a TTY, a YouTube URL, a Windows path and `run 155` are OSC 8 links. Off a TTY the text is unchanged. `video_lines(..., tty=True)` links the public YouTube URL.
 
 Video & render craft — permanent, survives every toolkit change
 
@@ -878,12 +878,12 @@ Content engine & angles
 - [ ] 536. **An editable outline step** before prose generation `[M]`
 - [ ] 537. **Per-section regeneration** — rewrite the hook without re-running the body or re-billing it `[M]`
 - [ ] 538. **Generate two hooks in one run** and keep both for the thumbnail experiment `[M]`
-- [ ] 539. **Reading-level target per channel**, measured and enforced `[S]`
+- [x] 539. **Reading-level target per channel**, measured and enforced `[S]` **Done (2026-10-16):** `reading_grade` puts the cat/dog script under 8 and the dense script over 12. A target of 6 adds `reading grade` to the script check. TapIn sets no `reading_level`, so a hard script is recorded and not blocked. The report prints `Reading grade: 6.2`.
 - [x] 540. **Sentence-length rhythm check** *(2026-09-07)* — five 3-word sentences flag; a long/short mix does not. Warn-only, features `sentence_rhythm`. `display_fact_engine_report` prints the hits (#679 / #540) `[S]`
 - [x] 541. **Per-channel ban-list of LLM tells** *(2026-09-07)* — `lint_persona_script("In today's video we delve...")` hits both phrases. MoneyWise `5-10 years` still clean. `config/llm_tells.json` shared phrase `here's the kicker` is not in `_FILLER_PHRASES`; emptying `ROOT_DIR` drops the hit (#679 / #541) `[S]`
 - [x] 542. **Cut the summary paragraph** models insert before a CTA *(2026-09-07)* — drops `In summary...` immediately before `Like and subscribe`. Env `CTA_SUMMARY_STRIP` (default on). Persists `pre_paragraphs` / `post_paragraphs` (§25) and prints them in the fact-engine report before Proceed (#680) `[S]`
 - [x] 543. **Quote the operator verbatim** *(2026-09-15, wave 17)* - typed thoughts are the brief since run 77. `idea_intake.operator_quotes` pulls first-person opinion sentences (i think / my take / imo); `_build_prompts` emits an OPERATOR'S OWN WORDS block the script must carry in quotation marks; `quote_survived` re-checks the final script after every rewrite pass and the run records `operator_quote_used`. Warn-only, like persona lint - no new gate `[M]`
-- [ ] 544. **Script memory** — never reuse the same opening construction twice in a week `[M]`
+- [x] 544. **Script memory** — never reuse the same opening construction twice in a week `[M]` **Done (2026-10-16):** a first sentence whose first eight words match a script from the last seven days is dropped once, and `before` stays 1. A fresh opening is unchanged. A script from eight days ago does not count. The content engine calls it and keeps the count on the run.
 - [x] 545. **A "what I got wrong last time" beat** when a correction exists for the franchise `[M]` **Done (2026-10-16):** `with_correction_beat` appends "What I got wrong last time: " plus the newest claim for that franchise, after the last rewrite. `matching_negatives` ignores that sentence; a second sentence that states the claim still hits (decisions §29). A Lakers topic does not inherit a UFC correction. No correction returns the same script. Watched fail first: the helpers were missing. The veto guard went red when the beat was scanned with the rest of the script. **Corrected 2026-10-16 (Claude, `7c03f1a`):** the sentence went after the CTA and on every later script; before the closing line, once (`said_at`)
 - [ ] 546. **Script length learned from retention** rather than the fixed preset table `[M]`
 
@@ -1656,4 +1656,4 @@ Review 4 - what the four waves shipped green but inert (2026-09-08)
 - [x] 1238. **Health went RED on a 3-view video** *(run 119: 3 views, 0% engaged)* `[S]` **Done (2026-10-16, wave 101; the operator's call).** `run_engagement_map(min_views=)`; health leaves out videos under 20 views and says so
 - [x] 1239. **16 old drafts asked "still current?" one by one** `[S]` **Done (2026-10-16, wave 101; the operator's call).** One "Set aside the N drafts past their window? [Y/n]" when two or more are
 - [x] 1240. **No playlist exists on YouTube and nothing said so** *(all 11 of TapIn's; each upload logged "no playlist yet")* `[S]` **Done (2026-10-16, wave 101; the operator's call).** `playlists.missing_line` in `ops status`
-- [ ] 1241. **Competitor sync has no fallback when YouTube RSS answers 404** *(2026-10-16 22:16: all six channels, Marques Brownlee's too, whose feed worked at 4:30 PM; the snapshot came back empty)* - read a channel's newest uploads through the free backend (`youtube_competitors`' yt-dlp path) when the feed fails, and say which source answered `[S]`
+- [x] 1241. **Competitor sync has no fallback when YouTube RSS answers 404** *(2026-10-16 22:16: all six channels, Marques Brownlee's too, whose feed worked at 4:30 PM; the snapshot came back empty)* - read a channel's newest uploads through the free backend (`youtube_competitors`' yt-dlp path) when the feed fails, and say which source answered `[S]` **Done (2026-10-16):** on a feed-wide 404 only, `sync_competitors` asks `fetch_channel_uploads_free` (yt-dlp, no Apify, no Data API units). A row that comes back is `source` `yt-dlp` and `sync_method` becomes `yt-dlp`. An empty free path stays `feed_down` 404 and does not claim yt-dlp. Tests inject the fetcher.

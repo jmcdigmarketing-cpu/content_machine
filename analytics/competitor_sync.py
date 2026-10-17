@@ -217,7 +217,12 @@ def fetch_channel_recent_videos(
     return fetch_channel_recent_videos_api(service, youtube_channel_id, max_results=max_results)
 
 
-def sync_competitors(channel_id: str) -> dict[str, Any]:
+def source_for_videos(videos: list) -> str:
+    """Which path produced a competitor row. Empty means the RSS feed, still down."""
+    return "yt-dlp" if videos else "rss"
+
+
+def sync_competitors(channel_id: str, *, uploads_free=None) -> dict[str, Any]:
     global _sync_api_units
     _sync_api_units = 0
     channels = get_competitor_channels(channel_id)
@@ -251,15 +256,31 @@ def sync_competitors(channel_id: str) -> dict[str, Any]:
         if feed_wide_down(statuses):
             raw_status = statuses[0]
             snapshot["feed_down"] = int(raw_status) if raw_status is not None else 0
+            fetcher = uploads_free
+            if fetcher is None:
+                from apis.free_backends import fetch_channel_uploads_free
+
+                fetcher = fetch_channel_uploads_free
+            got_any = False
             for comp in channels:
+                try:
+                    videos = list(fetcher(comp["id"], max_results=8) or [])
+                except Exception as exc:
+                    logger.debug("free uploads failed for %s: %s", comp["id"], exc)
+                    videos = []
+                if videos:
+                    got_any = True
                 snapshot["competitors"].append(
                     {
                         "youtube_channel_id": comp["id"],
                         "label": comp["label"],
-                        "recent_videos": [],
+                        "recent_videos": videos,
                         "feed_status": probes[comp["id"]].status,
+                        "source": source_for_videos(videos),
                     }
                 )
+            if got_any:
+                snapshot["sync_method"] = "yt-dlp"
             ensure_data_dir()
             path = competitors_data_path(channel_id)
             with open(path, "w", encoding="utf-8") as f:

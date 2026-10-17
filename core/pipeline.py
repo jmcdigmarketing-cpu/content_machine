@@ -1382,6 +1382,10 @@ def run_pipeline(
     if content.get("script_clean"):
         result.features["script_clean"] = dict(content["script_clean"])  # #1143
     result.features["sentence_rhythm"] = list(content.get("sentence_rhythm") or [])
+    if "reading_grade" in content:
+        result.features["reading_grade"] = content.get("reading_grade")
+    if content.get("opening_reuse"):
+        result.features["opening_reuse"] = dict(content["opening_reuse"])
     if content.get("claim_verification"):
         result.features["claim_verification"] = content["claim_verification"]
     if content.get("quote_attribution"):

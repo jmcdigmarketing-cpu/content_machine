@@ -1,5 +1,6 @@
 """CLI presentation helpers."""
 
+import json
 import os
 import re
 import sys
@@ -38,6 +39,112 @@ def fact_display_width() -> int:
     from core.ui_theme import terminal_width
 
     return max(56, terminal_width(maximum=160) - 4)
+
+
+def quiet_on() -> bool:
+    return os.getenv("CONTENT_UI_QUIET", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def consume_quiet_flag(argv: list[str]) -> list[str]:
+    """`--quiet` keeps gates and the report card. Narration stays when it is absent."""
+    if "--quiet" not in argv:
+        return list(argv)
+    os.environ["CONTENT_UI_QUIET"] = "1"
+    return [arg for arg in argv if arg != "--quiet"]
+
+
+def narrate(text: str, *, print_fn=print) -> None:
+    if quiet_on():
+        return
+    print_fn(text)
+
+
+_OSC_URL = re.compile(r"https?://[^\s)]+")
+_OSC_PATH = re.compile(r"[A-Za-z]:\\(?:[^\\\s]+\\)*[^\\\s]+")
+_OSC_RUN = re.compile(r"\brun (\d+)\b")
+
+
+def _osc(url: str, label: str) -> str:
+    return f"\033]8;;{url}\033\\{label}\033]8;;\033\\"
+
+
+def linkify(text: str, *, tty: bool) -> str:
+    """OSC 8 links for a YouTube URL, a Windows path, and `run N`. Plain text off a TTY."""
+    if not tty or not text:
+        return text
+
+    def _url(match: re.Match[str]) -> str:
+        url = match.group(0).rstrip(".,)")
+        return _osc(url, url) + match.group(0)[len(url) :]
+
+    def _path(match: re.Match[str]) -> str:
+        path = match.group(0)
+        return _osc("file:///" + path.replace("\\", "/"), path)
+
+    def _run(match: re.Match[str]) -> str:
+        from config.paths import TRACES_DIR
+
+        path = os.path.join(TRACES_DIR, f"{match.group(1)}.json")
+        return _osc("file:///" + path.replace("\\", "/"), match.group(0))
+
+    text = _OSC_URL.sub(_url, text)
+    text = _OSC_PATH.sub(_path, text)
+    return _OSC_RUN.sub(_run, text)
+
+
+def _topic_recall_path() -> str:
+    raw = (os.getenv("TOPIC_RECALL_FILE") or "").strip()
+    if raw:
+        return raw
+    from config.paths import DATA_DIR
+
+    return os.path.join(DATA_DIR, "last_topics.json")
+
+
+def _read_topics() -> dict[str, str]:
+    path = _topic_recall_path()
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {str(key): str(value) for key, value in data.items() if str(value).strip()}
+
+
+def recall_topic(channel_id: str) -> str:
+    return _read_topics().get(channel_id or "", "")
+
+
+def remember_topic(channel_id: str, topic: str) -> None:
+    text = (topic or "").strip()
+    if not channel_id or not text:
+        return
+    topics = _read_topics()
+    topics[channel_id] = text
+    path = _topic_recall_path()
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(topics, handle)
+
+
+def topic_prompt(channel_id: str) -> str:
+    last = recall_topic(channel_id)
+    if last:
+        return f"  Topic [Enter = {last}]: "
+    return "  Topic: "
+
+
+def resolve_topic_answer(raw: str, channel_id: str) -> str:
+    """Enter keeps the last topic for this channel. A typed line replaces it."""
+    text = (raw or "").strip()
+    if text:
+        remember_topic(channel_id, text)
+        return text
+    return recall_topic(channel_id)
 
 
 # ---------------------------------------------------------------------------
@@ -339,6 +446,8 @@ def _franchise_art_for(topic: str) -> tuple[str, str] | None:
 
 def print_domain_art(domain: str, *, topic: str = "", print_fn=emit) -> None:
     """Print a small decorative ASCII panel for the topic's franchise or domain."""
+    if quiet_on():
+        return
     from core.ascii_art import ascii_enabled
     from core.ui_theme import paint, ui_color_enabled
 
@@ -575,6 +684,8 @@ def format_timing(seconds: float) -> str:
 
 
 def display_database_status(print_fn=emit):
+    if quiet_on():
+        return
     from config.settings import get_settings
 
     get_settings()
@@ -951,6 +1062,8 @@ def _elide(text: str, width: int) -> str:
 
 
 def display_signal_breakdown(signals: dict[str, Any], *, print_fn=emit):
+    if quiet_on():
+        return
     subsection("Signal breakdown (selected variant)", print_fn)
     print_fn("  (Used in composite = connected + active + score > 0)")
     for name in SIGNAL_ORDER:
@@ -1940,6 +2053,10 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
         print_fn(f"\n  ⚠ Sentence rhythm: {rhythm[0]}")
         print_fn("    Uniform sentence length is an LLM tell — regenerate before publishing.")
 
+    grade = features.get("reading_grade")
+    if isinstance(grade, int | float):
+        print_fn(f"\n  Reading grade: {float(grade):.1f}")
+
     if display_claim_verification(features.get("claim_verification"), print_fn=print_fn):
         needs_review = True
 
@@ -2027,8 +2144,12 @@ def prompt_channel_selection(*, print_fn=emit, input_fn=ask_text) -> str:
         note = f"  ({_GENERIC_NOTE})" if cid == _GENERIC_CHANNEL else ""
         print_fn(f"{marker}{i}. {profile.name} ({cid}){domain}{note}")
 
+    from core.console_input import menu_line
+
     hint = str(default_index + 1)
-    choice = input_fn(f"  Select 1-{len(ids)} [Enter = {hint}]: ").strip()
+    choice = menu_line(
+        f"  Select 1-{len(ids)} [Enter = {hint}]: ", input_fn, print_fn=print_fn
+    ).strip()
     picked = default_id
     if choice.isdigit() and 0 <= int(choice) - 1 < len(ids):
         picked = ids[int(choice) - 1]
@@ -2094,7 +2215,9 @@ def prompt_startup_mode(*, print_fn=emit, input_fn=ask_text) -> str:
     print_fn("  5) Make a video from my own idea (paste idea or a YouTube link)")
     # #1192 (operator, 2026-10-14: "i dont know how to see or access overnight uploads")
     print_fn("  6) Overnight videos and drafts - each file, its YouTube link, then the drafts")
-    choice = input_fn("  Select 1-6 [1]: ").strip() or "1"
+    from core.console_input import menu_line
+
+    choice = menu_line("  Select 1-6 [1]: ", input_fn, print_fn=print_fn).strip() or "1"
     if choice == "2":
         return "queue_manager"
     if choice == "3":
@@ -2146,7 +2269,9 @@ def prompt_cost_mode(*, print_fn=emit, input_fn=ask_text) -> str:
         print_fn("  " + format_readiness_line(free_backend_readiness()))
     except Exception as exc:
         logger.debug("Free-mode readiness line skipped: %s", exc)
-    choice = input_fn("  Select 1-2 [1]: ").strip() or "1"
+    from core.console_input import menu_line
+
+    choice = menu_line("  Select 1-2 [1]: ", input_fn, print_fn=print_fn).strip() or "1"
     return COST_MODE_FREE if choice == "2" else COST_MODE_STANDARD
 
 
@@ -2206,9 +2331,11 @@ def prompt_proceed_or_length(
             "they cannot answer this."
         )
 
+    from core.console_input import menu_line
+
     prompt = "  Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]: "
     for attempt in range(_PROCEED_MAX_ASKS):
-        raw = input_fn(prompt).strip().lower()
+        raw = menu_line(prompt, input_fn, print_fn=print_fn).strip().lower()
         if raw == "y":
             return ("render", current_choice)
         if raw == "+":

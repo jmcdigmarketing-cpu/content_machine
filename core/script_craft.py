@@ -32,6 +32,25 @@ _SUPERLATIVE = (
 )
 
 
+def _syllables(word: str) -> int:
+    groups = re.findall(r"[aeiouy]+", word.lower())
+    count = len(groups)
+    if word.lower().endswith("e") and count > 1:
+        count -= 1
+    return max(1, count)
+
+
+def reading_grade(script: str) -> float | None:
+    """Flesch-Kincaid grade. None when there is nothing to measure."""
+    parts = [p.strip() for p in _SENTENCE.findall(script or "") if p.strip()]
+    words = re.findall(r"[A-Za-z']+", script or "")
+    if not parts or not words:
+        return None
+    syllables = sum(_syllables(word) for word in words)
+    grade = 0.39 * (len(words) / len(parts)) + 11.8 * (syllables / len(words)) - 15.59
+    return round(grade, 1)
+
+
 def sentence_rhythm_flags(script: str) -> list[str]:
     """Uniform sentence length is the clearest LLM tell. Warn-only."""
     parts = [p.strip() for p in _SENTENCE.findall(script or "") if p.strip()]
@@ -447,6 +466,7 @@ def script_check(
     unsupported: list[str] | None = None,
     cut: list[str] | None = None,
     short_by: int = 0,
+    reading_target: float | None = None,
 ) -> dict[str, Any]:
     """#1143: the finished script against what the operator asked for, in one result.
 
@@ -475,6 +495,10 @@ def script_check(
     twice = len(said_twice(script))
     if twice:
         why.append(f"{twice} thing{'s' if twice > 1 else ''} said twice")  # #1155
+    if reading_target is not None:
+        grade = reading_grade(script)
+        if grade is not None and grade > float(reading_target):
+            why.append(f"reading grade {grade:.1f} is above {float(reading_target):.0f}")
     check: dict[str, Any] = {
         "ok": not why,
         "why": why,

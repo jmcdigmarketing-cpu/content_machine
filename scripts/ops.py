@@ -444,10 +444,31 @@ def cmd_policy_canary(args: argparse.Namespace) -> int:
 
 @_register("moat-backup", "Plan pg_dump + vault + traces backup (secrets excluded; dry-run)")
 def cmd_moat_backup(args: argparse.Namespace) -> int:
+    if getattr(args, "restore", False):
+        from core.moat_backup import restore_into
+
+        backup = args.file or ""
+        dest = args.path or ""
+        if not backup or not dest:
+            print("moat-backup --restore needs --file <backup> and --path <dest>")
+            return 1
+        names = restore_into(backup, dest)
+        print(f"Restored {len(names)} file(s) into {dest}")
+        return 0
     from core.moat_backup import run
 
     print(run(dest=args.file, apply=bool(getattr(args, "apply", False)))["text"])
     return 0
+
+
+@_register("explain", "One narrative of a run from its trace (topic, status, timings, grade, cost)")
+def cmd_explain(args: argparse.Namespace) -> int:
+    from core.run_trace import explain_trace, read_trace
+
+    run_id = int(getattr(args, "run_id", 0) or 0)
+    text = explain_trace(read_trace(run_id) if run_id else None)
+    print(text)
+    return 0 if run_id and not text.startswith("No run") else 1
 
 
 @_register("ypp", "YPP readiness: YouTube's own numbers with ads excluded, disclosure, cadence")
@@ -3793,6 +3814,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=None, help="test: seed for --order shuffle")
     parser.add_argument("--arm", default="", help="pick-thumbnail: text_on or face_forward")
     parser.add_argument("--path", default="", help="pick-thumbnail: exact candidate image path")
+    parser.add_argument(
+        "--restore",
+        action="store_true",
+        help="moat-backup: copy a backup (--file) into --path and check a file came back",
+    )
     parser.add_argument(
         "--limit",
         type=int,

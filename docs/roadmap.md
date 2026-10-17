@@ -83,18 +83,22 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five (non-app)
 
-**2026-10-16 (Cursor).** #1235, #499, #1046, #1056 and #1039 are done. Next:
-**#429** time a pinned comment, **#438** set the audience region per channel,
-**#489** single-key menus, **#492** recall the last topic, **#422** thumbnail text
-that fits the plate.
-Finished output changed: a newly synthesized one-shot voice file loses its head and
-tail silence. TapIn karaoke highlights the spoken word in `#E53935` instead of
-yellow. TapIn shows the hook sentence at the top for the first second. The first
-spoken paragraph is a touch faster, an asterisked word is more expressive, and an
-ellipsis becomes 0.3s of silence before the next sentence. A Chargers video can use
-a tagged GameClip after `footage-tag --apply`. A team topic whose folder has no tag
-still uses the untagged clips.
-`roadmap-index` after Claude's review and wave 101: open 289, done 982, numbered open 237, highest open #1241.
+**2026-10-16 (Cursor).** #429, #438, #441, #422, #423, #466, #479, #489, #492,
+#493, #495, #496, #539, #544 and #1241 are done. Next, from the open numbered
+lines `roadmap-index` still prints: **#508** thumbnail face-crop with the Pillow
+stack already in the plate, **#532** a changelog from `git log` since the last
+launch, **#269** burned captions against a sidecar, **#497** a per-channel LUT
+in place of the three `eq` scalars, **#509** thumbnail text variants.
+Finished output changed: thumbnail type size, and plate colours from the channel.
+A script whose opening matches another from the last seven days may lose that
+first sentence once; the count from before the drop is kept. An upload's language
+comes from the channel. A pin comment is posted only when the existing flag is
+on, and then at the channel's next peak. When every competitor RSS feed is down,
+the pulse can fill from yt-dlp. The terminal takes one key on the numbered
+prompts, recalls the last topic, can hide narration with `--quiet`, rings once
+at a gate, and links URLs, paths and run ids. A non-TTY run does not bell or
+emit OSC sequences.
+`roadmap-index`: open 274, done 1200, numbered open 222, highest open #1136.
 Claude reviewed Cursor's commits before the push and corrected five (`7c03f1a` + the
 docs commit: footage for team topics, a draft child's output, the shot timeout, the correction
 beat, the hook card's marks). Wave 101: the competitor pulse only on the topic (#1236), stale

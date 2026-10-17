@@ -23,6 +23,7 @@ import os
 import re
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from typing import Any
 
@@ -356,6 +357,63 @@ def _cosine(left: Counter[str], right: Counter[str]) -> float:
 
 def _content_cosine(script: str, other: str) -> float:
     return _cosine(_content_tokens(script), _content_tokens(other))
+
+
+def drop_reused_opening(script: str, recent: list[str]) -> tuple[str, dict[str, Any]]:
+    """Drop a first sentence that opened another script this week. Once. Count kept (§25)."""
+    text = script or ""
+    opening = _opening(text, words=8)
+    before = 0
+    if opening:
+        before = sum(1 for other in recent or [] if _opening(other, words=8) == opening)
+    report: dict[str, Any] = {"before": before, "dropped": False}
+    if before < 1:
+        return text, report
+    parts = [part.strip() for part in _SENTENCE_SPLIT.split(text) if part.strip()]
+    if len(parts) < 2:
+        return text, report
+    report["dropped"] = True
+    return " ".join(parts[1:]), report
+
+
+def scripts_within(rows: list[tuple[str, Any]], *, now: datetime, days: int = 7) -> list[str]:
+    """Script text from the last `days`, dropping anything older."""
+    from datetime import timedelta
+
+    cutoff = now - timedelta(days=days)
+    if cutoff.tzinfo is None:
+        cutoff = cutoff.replace(tzinfo=timezone.utc)
+    kept: list[str] = []
+    for text, at in rows:
+        body = str(text or "").strip()
+        if not body:
+            continue
+        if isinstance(at, datetime):
+            moment = at if at.tzinfo else at.replace(tzinfo=timezone.utc)
+            if moment < cutoff:
+                continue
+        elif at is not None:
+            continue
+        kept.append(body)
+    return kept
+
+
+def scripts_this_week(channel_id: str, *, now: datetime | None = None) -> list[str]:
+    """Recent scripts for this channel, only the last seven days."""
+    moment = now or datetime.now(timezone.utc)
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        runs = get_content_run_repository().list_for_channel(channel_id)
+    except Exception as exc:
+        logger.debug("opening week unreadable: %s", exc)
+        return []
+    rows: list[tuple[str, Any]] = []
+    for run in runs[:13]:
+        text = (getattr(run, "script_preview", "") or "").strip()
+        if text:
+            rows.append((text, getattr(run, "created_at", None)))
+    return scripts_within(rows, now=moment, days=7)
 
 
 def _recent_scripts(channel_id: str, *, exclude_run_id: int | None) -> list[str]:

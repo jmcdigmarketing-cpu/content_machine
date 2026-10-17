@@ -4548,6 +4548,23 @@
         "equals": "A sleep therapist designed Pokemon's new body pillows..."
       },
       "why": "the emphasis mark is for the voice, not the screen"
+    },
+    {
+      "id": "rss-404-yt-dlp",
+      "item": 1241,
+      "source": "2026-10-16 22:16 competitor sync, every feed 404",
+      "call": "analytics.competitor_sync:source_for_videos",
+      "args": [
+        [
+          {
+            "title": "UFC card this weekend"
+          }
+        ]
+      ],
+      "expect": {
+        "equals": "yt-dlp"
+      },
+      "why": "YouTube RSS answered 404 for every competitor and the snapshot came back empty"
     }
   ]
 }

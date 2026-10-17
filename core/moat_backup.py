@@ -120,6 +120,28 @@ def apply_plan(planned: BackupPlan, *, apply: bool = False) -> int:
     return copied
 
 
+def restore_into(backup: str | os.PathLike[str], dest: str | os.PathLike[str]) -> list[str]:
+    """Copy a backup made by apply_plan into dest. Returns the restored paths.
+
+    Does not touch a live backup directory except to read it.
+    """
+    import shutil
+
+    src = Path(backup) / "traces"
+    if not src.is_dir():
+        return []
+    out = Path(dest) / "traces"
+    out.mkdir(parents=True, exist_ok=True)
+    restored: list[str] = []
+    for item in src.iterdir():
+        if not item.is_file() or item.name in _EXCLUDE_NAMES:
+            continue
+        target = out / item.name
+        shutil.copy2(item, target)
+        restored.append(str(target))
+    return restored
+
+
 def render(planned: BackupPlan, *, apply: bool = False) -> str:
     lines = [
         "Moat backup (secrets excluded)",

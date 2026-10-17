@@ -17,6 +17,53 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-16 (Cursor) - next fifteen, Claude had not queued one
+
+**Prompt:** next 15 that claude sent, if not take from backlog
+
+Claude's slot and waves 99-101 did not name a new fifteen. The roadmap's next
+five were #429 #438 #489 #492 #422. The only item Claude had filed and left
+open was #1241 (YouTube RSS 404 on every competitor at 22:16, so the pulse was
+empty). The other ten are the cheapest open lines that already had an input
+and were not parked, not an operator action, and not waiting on more runs.
+Left out on purpose: #494 (a trace never stores console text), #459 (parked;
+it would remove reddit's free backend), #1136 and the listen/footage items,
+#1029 #975 #863, #1015, and the desktop programme.
+
+**Fail first:** 36 tests in `tests/test_next_fifteen.py`. On unmodified code,
+3 failures and 31 errors. The failures were the audience language staying `fr`,
+the dry run missing `audience`, and the terminal writing no BEL. Two tests were
+already green and were not the fix: a scripted `input_fn` already returns the
+whole line, and `render()` already printed `highest #1241`. The index assertion
+now looks for an open title. The quiet test's printer took no arguments while
+`subsection` calls it with none; that helper was fixed before the assertion
+counted. With `quiet_on` forced off, that test went red.
+
+**Shipped:**
+1. #489 one key on the startup, channel, cost and proceed prompts. Enter is the empty default. A scripted answer stays a line.
+2. #492 the last accepted topic per channel. Enter keeps it. The file is `TOPIC_RECALL_FILE`.
+3. #493 `--quiet` hides the signal breakdown and the discovery line. The report card stays. Off is unchanged.
+4. #495 one BEL on Select, Proceed and Choose. A fact prompt, a pipe, and `NO_COLOR` stay quiet.
+5. #496 OSC 8 on a YouTube URL, a Windows path, and `run N`. Plain text off a TTY.
+6. #539 `reading_grade` is stored and printed. A missed target is a script-check line. TapIn sets no target, so a hard script is not blocked.
+7. #438 TapIn language `en` wins over `YOUTUBE_DEFAULT_LANGUAGE`. Region `US` is on the dry-run `audience` key. No `regionRestriction`.
+8. #479 `restore_into` copies a backup's `traces/1.json` into a temp directory. `ops moat-backup --restore` is the caller.
+9. #466 `open_numbered` drops a ticked line. `roadmap-index` prints the open titles.
+10. #422 a narrow plate wraps, first line larger. The box stays inside the margin.
+11. #423 MoneyWise uses `#F7E7A9` on dark navy. Gold on gold is not used.
+12. #441 `ops explain --run-id 999999` printed `No run with that id.`
+13. #544 a repeated opening is dropped once. `before` is kept. An eight-day-old script does not count.
+14. #429 an enabled pin waits for the next `post_schedule` peak, then `post_due` inserts once. Off is a no-op.
+15. #1241 a feed-wide 404 asks yt-dlp. A row that comes back is `source` `yt-dlp`. An empty answer stays `feed_down` and does not claim yt-dlp.
+
+**Finished output:** thumbnail size and colours; a repeated opening may be rewritten once; upload language comes from the channel; a pin posts at the peak when the flag is on; a feed-wide RSS 404 can fill from yt-dlp; the terminal's one-key menus, recall, quiet, bell and links.
+
+`publish-dry-run` printed `audience.region` `US` and `defaultLanguage` `en`, with no `regionRestriction`.
+
+**Not done:** #494, #459, #1136, the listen and footage items, #1029 #975 #863, #1015, the desktop programme. Comment performance is not measured. TapIn still has no reading-level number.
+
+**Next** (`roadmap-index`: open 274, done 1200, numbered open 222, highest open #1136): #508 #532 #269 #497 #509.
+
 ## 2026-10-16 (Cursor) - Claude sent no new five
 
 **Prompt:** next 5 that claude sent, if not take from backlog

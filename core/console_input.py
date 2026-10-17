@@ -22,7 +22,9 @@ identical to today's.
 
 from __future__ import annotations
 
+import os
 import sys
+from typing import Any
 
 from core.logging import get_logger
 
@@ -98,6 +100,89 @@ def input_pending() -> bool:
     except Exception as exc:
         logger.debug("input_pending unavailable: %s", exc)
         return False
+
+
+def _read_one_key() -> str:
+    """One console key. Enter is ``\\r`` or ``\\n``. Never raises to the caller."""
+    try:
+        import msvcrt
+
+        ch = msvcrt.getwch()
+        if ch in ("\x00", "\xe0"):
+            msvcrt.getwch()
+            return ""
+        return ch
+    except ImportError:
+        pass
+    except Exception as exc:
+        logger.debug("menu key unavailable: %s", exc)
+        return ""
+    try:
+        termios: Any = __import__("termios")
+        tty: Any = __import__("tty")
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+        return ch or ""
+    except Exception as exc:
+        logger.debug("menu key unavailable: %s", exc)
+        return ""
+
+
+def menu_line(
+    prompt: str,
+    input_fn=None,
+    *,
+    tty: bool | None = None,
+    read_char=None,
+    print_fn=None,
+) -> str:
+    """A numbered menu. On a TTY, one key is enough and Enter is the empty default.
+
+    A scripted ``input_fn`` (tests, the desktop bridge) still returns the whole
+    line. ``read_char`` is how a test supplies the key without a console.
+    """
+    from core.ask import ask_text
+
+    fn = input_fn or ask_text
+    interactive = read_char is not None or (
+        fn is ask_text and (tty if tty is not None else _stdin_is_tty())
+    )
+    if not interactive:
+        return fn(prompt)
+    from core.ask import gate_bell
+
+    try:
+        tty = bool(sys.stdout) and sys.stdout.isatty()
+    except Exception:
+        tty = False
+    bell = gate_bell(
+        prompt,
+        tty=tty,
+        no_color=bool(os.getenv("NO_COLOR", "").strip()),
+    )
+    if bell:
+        sys.stdout.write(bell)
+        sys.stdout.flush()
+    if print_fn is not None:
+        print_fn(prompt, end="")
+    else:
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+    ch = (read_char or _read_one_key)()
+    if ch == "\x03":
+        raise KeyboardInterrupt
+    shown = "" if ch in ("\r", "\n") else ch
+    if print_fn is not None:
+        print_fn(shown)
+    else:
+        sys.stdout.write(shown + "\n")
+        sys.stdout.flush()
+    return shown
 
 
 def read_pending_lines() -> list[str]:

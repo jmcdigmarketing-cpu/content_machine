@@ -147,7 +147,7 @@ class SyncSkipsApiTests(unittest.TestCase):
                 patch("apis.youtube_quota.record_usage") as rec,
                 patch.object(cs, "_get_youtube_service") as svc,
             ):
-                snap = cs.sync_competitors("tapin")
+                snap = cs.sync_competitors("tapin", uploads_free=lambda *_args, **_kwargs: [])
             with open(path, encoding="utf-8") as handle:
                 written = json.loads(handle.read())
         return snap, written, rec, svc

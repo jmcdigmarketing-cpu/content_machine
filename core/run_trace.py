@@ -307,6 +307,35 @@ def read_trace(run_id: int) -> dict[str, Any] | None:
         return None
 
 
+def explain_trace(trace: dict[str, Any] | None) -> str:
+    """One narrative from fields write_run_trace already stores. Nothing is written."""
+    if not trace:
+        return "No run with that id."
+    raw_timings = trace.get("timings")
+    timings: dict[str, Any] = raw_timings if isinstance(raw_timings, dict) else {}
+    timing_bits = ", ".join(f"{key} {value}" for key, value in timings.items())
+    raw_quality = trace.get("quality")
+    quality: dict[str, Any] = raw_quality if isinstance(raw_quality, dict) else {}
+    raw_cost = trace.get("cost")
+    cost: dict[str, Any] = raw_cost if isinstance(raw_cost, dict) else {}
+    topic = str(trace.get("input_topic") or "")
+    selected = str(trace.get("selected_topic") or "")
+    lines = [f"Run {trace.get('run_id', '?')} {trace.get('status') or 'unknown'}."]
+    if topic:
+        lines.append(f"Topic: {topic}")
+    if selected:
+        lines.append(f"Selected: {selected}")
+    if timing_bits:
+        lines.append(f"Timings: {timing_bits}")
+    grade = quality.get("grade")
+    if grade:
+        lines.append(f"Grade: {grade}")
+    total = cost.get("total")
+    if total is not None:
+        lines.append(f"Cost: {total}")
+    return "\n".join(lines)
+
+
 def update_trace(run_id: int | None, patch: dict[str, Any]) -> bool:
     """Merge keys into an existing trace. Fail-open; False when there was nothing to update.
 

@@ -88,20 +88,18 @@ fallback), `config/competitors/tapin.json` (five MMA/NFL/NBA channels), `core/st
 
 ## Slot — Cursor
 
-**Written:** 2026-10-16 · **HEAD at write:** `7c03f1a` · this wave is the next
-commit. Leave `.agents/` and `.codex/`. Not pushed. I did not take overnight,
-fast_cut, negative_facts, or #1236-#1240.
+**Written:** 2026-10-16 · **HEAD at write:** `1b2bdf0` · this wave is the next
+commit. Leave `.agents/` and `.codex/`. Not pushed. I did not take your review
+corrections or wave 101.
 
-**Defects first:** `clean_script_for_tts` stripped `*word*` before the request,
-so emphasis never arrived. Bold still strips; a single asterisk now reaches
-delivery and is not spoken. Your untagged-clip correction was already in
-`clip_tags.py` and the corpus, so this commit includes it: no tag keeps the
-untagged files, and a tagged match wins. An ellipsis holds the next caption
-0.3s; the join writes that silence when ffmpeg can.
+**Defects first:** none new in your tree. #1241 was open (RSS 404, empty pulse);
+the fallback is in this commit. TapIn still has no `reading_level`, so a hard
+script is recorded and not blocked. A pin's later performance is not measured.
+#494 stays open: a trace still stores no console text.
 
-**Shipped:** #1235 #499 #1046 #1056 #1039. 17 tests, 4 failures and 12 errors
-on unmodified code. Flag-off hook card and default-yellow caption watched red.
-`footage-tag` on a missing path printed `footage-tag: not in the library`.
-Tree suite 6044 skipped 10. This wave adds 17; your untracked pulse tests
-are in that count. mypy 96. `roadmap-index`: open 288, done 1180, numbered open 236,
-highest open #1136. Next: #429 #438 #489 #492 #422.
+**Shipped:** #489 #492 #493 #495 #496 #539 #438 #479 #466 #422 #423 #441 #544
+#429 #1241. 36 tests, 3 failures and 31 errors on unmodified code. Quiet-off
+watched red. `explain --run-id 999999` printed `No run with that id.`
+`publish-dry-run` printed `audience.region` `US` and language `en`, no
+geo-block. `roadmap-index`: open 274, done 1200, numbered open 222, highest
+open #1136. Next: #508 #532 #269 #497 #509.

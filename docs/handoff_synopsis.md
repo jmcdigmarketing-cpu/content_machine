@@ -10,7 +10,25 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-16 (Claude Code): review of Cursor's eight commits (fifteen items) + wave 101
+## Last wave — 2026-10-16 (Cursor): fifteen from the backlog
+
+Claude had not queued a fifteen. This wave is the roadmap's five, #1241, and
+the next cheapest open lines that already had an input.
+
+Menus take one key. The last topic is recalled per channel. `--quiet` keeps
+gates and the report card. A gate rings once on a TTY. URLs, paths and run ids
+are links on a TTY. Reading grade is measured; TapIn has no target, so nothing
+is blocked for it. Upload language is the channel's. Region is printed on the
+dry run and does not geo-block. A moat backup can be restored into a temp
+directory. `roadmap-index` lists the open numbered titles. Thumbnails wrap and
+take the channel colour when the contrast holds. `ops explain --run-id` reads
+the trace. A repeated opening is dropped once and the earlier count is kept.
+A pin comment waits for the next peak. A feed-wide RSS 404 can fill from yt-dlp.
+
+`roadmap-index`: open 274, done 1200, numbered open 222, highest open #1136.
+Next: #508 #532 #269 #497 #509.
+
+## Previous — 2026-10-16 (Claude Code): review of Cursor's eight commits (fifteen items) + wave 101
 
 **Review.** Cursor's commits passed the suite but five changed what reaches a viewer: team topics
 lost every untagged gameplay clip (Titans-Colts 0 of 13), a draft child's output (and its crash
@@ -190,7 +208,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the ship stage (roadmap.md). Cursor: #1121 · #462 · #404 · #388 · #409. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #508 #532 #269 #497 #509 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

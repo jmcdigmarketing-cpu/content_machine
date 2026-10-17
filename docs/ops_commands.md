@@ -65,6 +65,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `end-card-preview` | Render the channel end card as a PNG still before a full encode (--path dest.png) |
 | `env-lint` | Env keys read in code vs documented in .env.example (#639) |
 | `experiment` | Script-lever A/B report (start/stop: py -m core.experiments) |
+| `explain` | One narrative of a run from its trace (topic, status, timings, grade, cost) |
 | `facts-room` | Rank pasted facts, links and vault lines by confidence (#860); --facts-file holds them |
 | `feature-report` | Recorded run features vs engaged rate, report-only (#357) |
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |

@@ -326,10 +326,32 @@ def process_one() -> bool:
 PASS_CAP = 10
 
 
+def _post_due_pins() -> None:
+    """Post a pin comment whose peak has passed. A missing file does not build a YouTube client."""
+    try:
+        from datetime import datetime, timezone
+
+        from youtube.oauth import get_youtube_service
+        from youtube.pin_comment import due_channels, post_due
+
+        channels = due_channels()
+        if not channels:
+            return
+        for channel_id in channels:
+            service = get_youtube_service(channel_id)
+            if service is None:
+                logger.debug("pin comment due but YouTube is not configured for %s", channel_id)
+                continue
+            post_due(service, now=datetime.now(timezone.utc), channel_id=channel_id)
+    except Exception as exc:
+        logger.debug("due pin comments skipped: %s", exc)
+
+
 def drain_due(cap: int = PASS_CAP) -> int:
     """Every job that is due, in one pass. 2026-10-16: `ops worker` uploaded job 58 and stopped;
     job 59 (run 155), due since 5:10 PM, stayed pending. Each job keeps its own scheduled time
     and the quota check in `process_one`."""
+    _post_due_pins()
     done = 0
     while done < cap and process_one():
         done += 1

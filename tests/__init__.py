@@ -212,6 +212,8 @@ os.environ["CROSSPOST_AUTO"] = "false"
 os.environ["ENV_LINT_FILE"] = _suite_store("env_lint.env")
 os.environ["CONTENT_WINDOW_STATE"] = _suite_store("window_state.json")
 os.environ["CONTENT_UI_MASCOT_STAMP"] = _suite_store("mascot_shown_day.txt")
+os.environ["TOPIC_RECALL_FILE"] = _suite_store("last_topics.json")
+os.environ["PIN_COMMENT_FILE"] = _suite_store("pin_comments.json")
 
 
 _SUITE_STORE_PATCHES = (

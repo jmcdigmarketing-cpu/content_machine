@@ -82,8 +82,9 @@ def _run_intelligence_report_flow_body(channel_id: str) -> None:
         print_report_summary,
         save_report,
     )
+    from core.ui import resolve_topic_answer, topic_prompt
 
-    topic = ask_text("  Topic: ").strip()
+    topic = resolve_topic_answer(ask_text(topic_prompt(channel_id)), channel_id)
     if not topic:
         print("  Topic required.")
         return
@@ -160,6 +161,9 @@ def _print_startup(channel_id: str) -> None:
 
 
 def main():
+    from core.ui import consume_quiet_flag
+
+    sys.argv = consume_quiet_flag(sys.argv)
     from core.intelligence_report import intelligence_mode_enabled, production_tail_enabled
 
     if production_tail_enabled():
@@ -641,7 +645,7 @@ def _offer_spaced_queue(
 _YES_WORDS = frozenset({"y", "yes", "ok", "okay", "sure", "yep", "yeah", "ya", "yea"})
 
 
-def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
+def _ask_topic_or_thoughts(creative_brief: str = "", channel_id: str = "") -> tuple[str, str]:
     """Option 1 type-your-own: a topic, or the idea in your own words (run 77).
 
     Thoughts typed (or pasted over several lines) are not a search string. Discovery
@@ -650,8 +654,12 @@ def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
     """
     from core.console_input import input_pending, read_pending_lines
     from core.idea_intake import creative_brief_for_run, parse_pasted_idea
+    from core.ui import remember_topic, resolve_topic_answer, topic_prompt
 
-    typed = ask_text("  Topic (or your thoughts on the idea): ").strip()
+    prompt = topic_prompt(channel_id) if channel_id else "  Topic (or your thoughts on the idea): "
+    typed = ask_text(prompt).strip()
+    if not typed and channel_id:
+        typed = resolve_topic_answer("", channel_id)
     if typed and input_pending():
         extra = [line for line in read_pending_lines() if line.strip()]
         if extra:
@@ -671,6 +679,8 @@ def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
         if override and override.lower().strip(".!") not in _YES_WORDS:
             topic = override
         print("  Your thoughts steer the angles, their ranking, and the script.")
+    if channel_id and topic:
+        remember_topic(channel_id, topic)
     return topic, brief
 
 
@@ -720,10 +730,10 @@ def _run_new_video_flow_body(
                 best_bet_pick = pick_record(options, int(sel))
                 from_best_bet = True
             else:
-                topic, creative_brief = _ask_topic_or_thoughts(creative_brief)
+                topic, creative_brief = _ask_topic_or_thoughts(creative_brief, channel_id)
                 best_bet_pick = pick_record(options, None)
         else:
-            topic, creative_brief = _ask_topic_or_thoughts(creative_brief)
+            topic, creative_brief = _ask_topic_or_thoughts(creative_brief, channel_id)
 
     from analytics.post_timing import display_recommended_time, get_recommended_time
 
@@ -744,7 +754,9 @@ def _run_new_video_flow_body(
     t_disc = discovery.timings.get("signals_and_variants", 0) + discovery.timings.get(
         "variant_scoring", 0
     )
-    print(f"  Completed in {t_disc:.1f}s")
+    from core.ui import narrate
+
+    narrate(f"  Completed in {t_disc:.1f}s")
 
     display_signal_health(discovery.base_signals, topic=topic, channel_id=channel_id)
     try:

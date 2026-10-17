@@ -2437,6 +2437,19 @@ def generate_content_package(
         script,
         lambda text, recent=_recent: rewrite_repeated(text, recent),
     )
+    opening_reuse: dict = {"before": 0, "dropped": False}
+    try:
+        from core.authenticity import drop_reused_opening, scripts_this_week
+
+        week = scripts_this_week(channel_id) if channel_id else []
+        script, opening_reuse = drop_reused_opening(script, week)
+        if opening_reuse.get("dropped"):
+            logger.info(
+                "opening reused %s time(s) this week; first sentence dropped",
+                opening_reuse.get("before"),
+            )
+    except Exception as exc:
+        logger.debug("opening reuse skipped: %s", exc)
 
     # #1141: the stance holds on every sentence of the finished script - it was read on the
     # first and last line only, and before five later passes had rewritten the script.
@@ -2626,8 +2639,17 @@ def generate_content_package(
 
     # #1143: the finished script against what the operator asked for, in one result.
     from core.claim_types import blocking_unsupported as _blocking
-    from core.script_craft import script_check
+    from core.script_craft import reading_grade, script_check
 
+    reading_target = None
+    try:
+        from config.channels import channel_reading_target
+
+        if channel_id:
+            reading_target = channel_reading_target(channel_id)
+    except Exception as exc:
+        logger.debug("reading target skipped: %s", exc)
+    grade = reading_grade(script)
     script_clean = script_check(
         script=script,
         title=title,
@@ -2638,6 +2660,7 @@ def generate_content_package(
         cut=[*cut_box["claims"], *cut_box["stance"], *cut_box["repeats"]],
         # #1162: only a cut of an unbacked sentence may leave a script under its minimum.
         short_by=max(0, min_words - count_spoken_words(script)) if cut_box["claims"] else 0,
+        reading_target=reading_target,
     )
 
     return {
@@ -2696,6 +2719,8 @@ def generate_content_package(
         "read_aloud": read_aloud_box.get("report") or {},
         "script_clean": script_clean,
         "sentence_rhythm": rhythm_hits,
+        "reading_grade": grade,
+        "opening_reuse": opening_reuse,
         "script_passes": script_passes,
         "chapters_written": chapters_box,  # #1010
     }

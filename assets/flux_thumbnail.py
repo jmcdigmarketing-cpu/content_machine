@@ -507,7 +507,9 @@ def _pillow_thumbnail(
     out_path = os.path.join(output_dir, filename)
     from assets.thumbnail_compose import compose_thumbnail
 
-    plate = compose_thumbnail(img, display or "Video", out_path, subject=subject)
+    plate = compose_thumbnail(
+        img, display or "Video", out_path, subject=subject, channel_id=channel_id
+    )
     if plate.refused:
         logger.warning("thumbnail plate refused (%s) for %s", plate.refused, display[:40])
         return ThumbnailResult(

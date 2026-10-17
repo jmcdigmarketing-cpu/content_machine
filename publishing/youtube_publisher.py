@@ -80,7 +80,14 @@ def dry_run_insert_body(request: PublishRequest, *, channel_id: str) -> dict[str
     except Exception as exc:
         logger.debug("dry-run status defaults skipped: %s", exc)
         status = {"privacyStatus": request.privacy_status or "private"}
-    return {"snippet": snippet, "status": status}
+    body: dict[str, Any] = {"snippet": snippet, "status": status}
+    try:
+        from core.youtube_meta import audience_for
+
+        body["audience"] = audience_for(channel_id)
+    except Exception as exc:
+        logger.debug("audience skipped: %s", exc)
+    return body
 
 
 def redact_publish_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -135,7 +142,7 @@ def _post_upload_extras(
     try:
         from youtube.pin_comment import maybe_pin_top_answer
 
-        maybe_pin_top_answer(service, video_id=video_id, topic=request.title)
+        maybe_pin_top_answer(service, video_id=video_id, topic=request.title, channel_id=channel_id)
     except Exception as exc:
         logger.debug("pin comment skipped: %s", exc)
 

@@ -84,11 +84,35 @@ def apply_snippet_defaults(
     if not cat:
         title = topic or str(out.get("title") or "")
         out["categoryId"] = category_id_for_topic(title, channel_id, domain=domain)
-    lang = default_language()
+    lang = ""
+    if channel_id:
+        try:
+            from config.channels import get_channel_profile
+
+            lang = (get_channel_profile(channel_id).audience_language or "").strip()
+        except Exception as exc:
+            logger.debug("channel language skipped: %s", exc)
+    if not lang:
+        lang = default_language() or ""
     if lang:
         out["defaultLanguage"] = lang
         out["defaultAudioLanguage"] = lang
     return out
+
+
+def audience_for(channel_id: str | None) -> dict[str, str]:
+    """Language and region for a dry run. Region is never written as regionRestriction."""
+    language = ""
+    region = ""
+    try:
+        from config.channels import get_channel_profile
+
+        profile = get_channel_profile(channel_id or "")
+        language = (profile.audience_language or "").strip()
+        region = (profile.audience_region or "").strip()
+    except Exception as exc:
+        logger.debug("audience skipped: %s", exc)
+    return {"language": language or default_language() or "", "region": region}
 
 
 def audit_made_for_kids(status: dict[str, Any]) -> dict[str, Any]:

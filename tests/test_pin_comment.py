@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import tempfile
 import unittest
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 from apis.youtube_comments_signal import _is_clean
@@ -49,19 +51,24 @@ class TestPinTopComment(unittest.TestCase):
             "id": "thread1"
         }
         question = "When does GTA 6 actually release on PlayStation?"
-        with patch.dict(os.environ, {"YOUTUBE_PIN_COMMENT": "true"}, clear=False):
-            result = maybe_pin_top_answer(
-                service,
-                video_id="vid1",
-                topic="GTA 6 leak",
-                questions=[question],
-            )
-        self.assertEqual(result.status, "posted")
-        insert = service.commentThreads.return_value.insert
-        insert.assert_called_once()
-        body = insert.call_args.kwargs["body"]
-        text = body["snippet"]["topLevelComment"]["snippet"]["textOriginal"]
-        self.assertIn("GTA", text)
+        monday = datetime(2026, 10, 12, 15, 0, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {
+                "YOUTUBE_PIN_COMMENT": "true",
+                "PIN_COMMENT_FILE": os.path.join(tmp, "pins.json"),
+            }
+            with patch.dict(os.environ, env, clear=False):
+                result = maybe_pin_top_answer(
+                    service,
+                    video_id="vid1",
+                    topic="GTA 6 leak",
+                    questions=[question],
+                    channel_id="tapin",
+                    now=monday,
+                )
+        self.assertEqual(result.status, "scheduled")
+        service.commentThreads.assert_not_called()
+        self.assertIn("T", result.detail or "")
 
 
 if __name__ == "__main__":

@@ -212,6 +212,33 @@ def _load_static_post_schedule(channel_id: str | None = None) -> PostScheduleCon
     )
 
 
+def next_peak(channel_id: str, now: datetime) -> datetime:
+    """The next static post-schedule peak after ``now``, in UTC."""
+    cfg = _load_static_post_schedule(channel_id)
+    zone: ZoneInfo | timezone = timezone.utc
+    try:
+        zone = ZoneInfo(cfg.timezone)
+    except Exception:
+        zone = timezone.utc
+    local = (
+        now.astimezone(zone) if now.tzinfo else now.replace(tzinfo=timezone.utc).astimezone(zone)
+    )
+    best: datetime | None = None
+    for offset in range(8):
+        day = local + timedelta(days=offset)
+        for slot in cfg.slots:
+            if slot.weekday != day.weekday():
+                continue
+            candidate = day.replace(hour=slot.hour, minute=slot.minute, second=0, microsecond=0)
+            if candidate <= local:
+                continue
+            if best is None or candidate < best:
+                best = candidate
+    if best is None:
+        return now.astimezone(timezone.utc)
+    return best.astimezone(timezone.utc)
+
+
 def _use_learned_post_slots() -> bool:
     mode = os.getenv("USE_LEARNED_POST_SLOTS", "auto").strip().lower()
     return mode in ("1", "true", "yes", "auto")

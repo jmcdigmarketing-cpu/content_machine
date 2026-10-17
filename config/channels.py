@@ -81,6 +81,22 @@ class ChannelProfile:
     hook_motion: dict[str, Any] = field(default_factory=dict)
     # #411: a bed from the operator's own tracks - {enabled, folder, volume}.
     music: dict[str, Any] = field(default_factory=dict)
+    # #438: snippet language and the region named on a dry run. Never a geo-block.
+    audience_language: str = ""
+    audience_region: str = ""
+
+
+def channel_reading_target(channel_id: str) -> float | None:
+    """channels.json ``reading_level``, or None when the channel sets no target.
+
+    TapIn sets none: the grade is recorded and the script check does not fail.
+    """
+    raw = _load_channels_file()
+    channels = raw.get("channels", raw) if isinstance(raw, dict) else {}
+    cfg = channels.get(channel_id, {}) if isinstance(channels, dict) else {}
+    if not isinstance(cfg, dict):
+        return None
+    return _optional_float(cfg.get("reading_level"))
 
 
 def _optional_float(value) -> float | None:
@@ -187,6 +203,8 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
             color_grade=dict(cfg.get("color_grade") or {}),
             hook_motion=dict(cfg.get("hook_motion") or {}),
             music=dict(cfg.get("music") or {}),
+            audience_language=str(cfg.get("audience_language") or "").strip(),
+            audience_region=str(cfg.get("audience_region") or "").strip(),
         )
 
     profiles.setdefault(

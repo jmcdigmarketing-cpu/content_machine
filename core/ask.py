@@ -7,9 +7,30 @@ Stage 1 installs BridgeBackend (core.ask_bridge) so the worker blocks on a queue
 from __future__ import annotations
 
 import builtins
+import os
+import re
+import sys
 from collections.abc import Sequence
 
 from core import process_state
+
+_GATE_BELL = re.compile(r"Select |Proceed\?|Choose |Sign in|Set aside", re.I)
+
+
+def gate_bell(prompt: str, *, tty: bool, no_color: bool) -> str:
+    """One BEL when a gate is waiting on a TTY. A fact line, a pipe, and NO_COLOR stay quiet."""
+    if not tty or no_color:
+        return ""
+    if not _GATE_BELL.search(prompt or ""):
+        return ""
+    return "\a"
+
+
+def _stdout_is_tty() -> bool:
+    try:
+        return bool(sys.stdout) and sys.stdout.isatty()
+    except Exception:
+        return False
 
 
 class Backend:
@@ -19,6 +40,14 @@ class Backend:
 
 class TerminalBackend(Backend):
     def ask_text(self, prompt: str = "") -> str:
+        bell = gate_bell(
+            prompt,
+            tty=_stdout_is_tty(),
+            no_color=bool(os.getenv("NO_COLOR", "").strip()),
+        )
+        if bell:
+            sys.stdout.write(bell)
+            sys.stdout.flush()
         return builtins.input(prompt)
 
 

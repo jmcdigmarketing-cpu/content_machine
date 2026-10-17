@@ -3,6 +3,8 @@
     "default": {
       "name": "Default",
       "domain": "neutral",
+      "audience_language": "en",
+      "audience_region": "US",
       "tts": {
         "voice_pool": {
           "nPczCjzI2devNBz1zQrb": 3,
@@ -24,6 +26,8 @@
     "tapin": {
       "name": "TapIn Media",
       "domain": "gaming",
+      "audience_language": "en",
+      "audience_region": "US",
       "overnight": {"renders": 2},
       "extra_domains": ["soccer"],
       "persona": {
@@ -147,6 +151,8 @@
     "moneywise": {
       "name": "MoneyWise",
       "domain": "finance",
+      "audience_language": "en",
+      "audience_region": "US",
       "parked": true,
       "persona": {
         "perspective": "someone who reads the filing, the print, or the fine print before having an opinion - and says plainly what it means for a normal paycheck",

@@ -143,6 +143,41 @@ def _full_one(url: str, log: _YtdlpLogger | None = None) -> dict | None:
         return ydl.extract_info(url, download=False)
 
 
+def fetch_channel_uploads_free(channel_id: str, *, max_results: int = 8) -> list[dict]:
+    """Newest uploads on a channel via yt-dlp. [] on any failure. Never raises.
+
+    No Apify and no Data API units. The caller records which source answered.
+    """
+    if not (channel_id or "").strip() or not youtube_available():
+        return []
+    url = f"https://www.youtube.com/channel/{channel_id}/videos"
+    try:
+        from yt_dlp import YoutubeDL
+
+        opts = _ytdlp_opts(
+            extract_flat="in_playlist",
+            noplaylist=False,
+            playlistend=max(1, int(max_results)),
+        )
+        with YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(url, download=False) or {}
+    except Exception as exc:
+        logger.debug("yt-dlp channel uploads failed for %s: %s", channel_id, exc)
+        return []
+    out: list[dict] = []
+    for entry in info.get("entries") or []:
+        if not isinstance(entry, dict):
+            continue
+        video_id = str(entry.get("id") or "").strip()
+        title = str(entry.get("title") or "").strip()
+        if not video_id or not title:
+            continue
+        out.append({"title": title, "video_id": video_id})
+        if len(out) >= max_results:
+            break
+    return out
+
+
 def fetch_youtube_free(
     query: str, top_n: int | None = None, search_n: int | None = None
 ) -> list[dict]:

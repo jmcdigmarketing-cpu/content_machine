@@ -2475,6 +2475,12 @@ def generate_content_package(
         logger.debug("script craft skipped: %s", exc)
         rhythm_hits = []
 
+    # #545: after the last rewrite, so trim and the stance pass cannot drop it.
+    # No correction returns the same script. The veto ignores this one sentence.
+    from core.negative_facts import with_correction_beat
+
+    script = with_correction_beat(script, topic, channel_id)
+
     from core.title_generator import generate_title, strip_label
 
     title = generate_title(

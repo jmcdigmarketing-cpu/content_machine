@@ -82,9 +82,48 @@ def record_negative(franchise: str, claim: str, *, reason: str = "") -> None:
     STORE_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
+# #545. One spoken sentence. The veto ignores it (decisions §29): naming the
+# correction is not re-asserting it. A later sentence that states the claim is.
+BEAT_PREFIX = "What I got wrong last time:"
+
+
+def _script_without_correction_beat(script: str) -> str:
+    pieces = re.split(r"(?<=[.!?])\s+", script or "")
+    kept = [part for part in pieces if not part.lstrip().startswith(BEAT_PREFIX)]
+    return " ".join(kept)
+
+
+def correction_beat(topic: str, channel_id: str | None = None) -> str:
+    """The newest recorded negative for this topic's franchise, or ""."""
+    key = franchise_for(topic, channel_id)
+    rows = [
+        row
+        for row in (_load().get(key) or [])
+        if isinstance(row, dict) and str(row.get("claim") or "").strip()
+    ]
+    if not rows:
+        return ""
+    claim = str(rows[-1].get("claim") or "").strip()
+    spoken = claim if claim[-1:] in ".!?" else f"{claim}."
+    return f"{BEAT_PREFIX} {spoken}"
+
+
+def with_correction_beat(script: str, topic: str, channel_id: str | None = None) -> str:
+    """Append the beat. No correction, or the beat already present, returns `script`."""
+    beat = correction_beat(topic, channel_id)
+    if not beat or BEAT_PREFIX in (script or ""):
+        return script
+    text = (script or "").rstrip()
+    if not text:
+        return beat
+    if text[-1] not in ".!?":
+        text += "."
+    return f"{text} {beat}"
+
+
 def matching_negatives(script: str, *, franchise: str) -> list[str]:
     rows = list(_load().get((franchise or "").strip().lower()) or [])
-    hay = _tokens(script)
+    hay = _tokens(_script_without_correction_beat(script))
     hits: list[str] = []
     for row in rows:
         claim = str(row.get("claim") or "").strip()

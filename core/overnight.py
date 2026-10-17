@@ -177,7 +177,7 @@ def _run_overnight_body(
     file: str | None,
     facts_file: str | None,
 ) -> OvernightResult:
-    from core.batch_generation import collect_topics, run_batch
+    from core.batch_generation import collect_topics
     from core.operator_facts import load_key_facts
 
     want = count
@@ -207,7 +207,8 @@ def _run_overnight_body(
         batch_kwargs["key_facts"] = key_facts
     if picks:
         batch_kwargs["picks"] = picks  # #913: the best-bet ranks the batch took
-    result.outcomes = run_batch(channel, picked, **batch_kwargs)
+    # #1229: one child per draft. A native crash records its exit and the night goes on.
+    result.outcomes = draft_each(channel, picked, **batch_kwargs)
     result.drafted = sum(1 for o in result.outcomes if getattr(o, "ok", False))
 
     # Mirror each drafted run into the vault (Pillar 4). run_batch persists a
@@ -426,8 +427,151 @@ def render_overnight(result: OvernightResult) -> str:
     return "\n".join(lines)
 
 
+def crashed_draft_line(topic: str, code: int) -> str:
+    """What the report says when a draft's process dies. The exit code is the one Python saw."""
+    return f"{topic} crashed (exit {code})"
+
+
+def draft_each(
+    channel: str,
+    topics: list[str],
+    *,
+    key_facts: list[str] | None = None,
+    picks: dict[str, dict] | None = None,
+) -> list[Any]:
+    """One child process per topic. A crashed child is one failed draft."""
+    return [
+        _draft_one(
+            channel,
+            topic,
+            key_facts=key_facts,
+            pick=(picks or {}).get(topic),
+        )
+        for topic in topics
+    ]
+
+
+def _draft_one(
+    channel: str,
+    topic: str,
+    *,
+    key_facts: list[str] | None,
+    pick: dict | None,
+) -> Any:
+    import json
+    import os
+    import subprocess
+    import sys
+    import tempfile
+    from pathlib import Path
+
+    from core.batch_generation import DraftOutcome
+
+    fd, job = tempfile.mkstemp(prefix="draftjob_", suffix=".json")
+    os.close(fd)
+    result_path = job + ".result.json"
+    payload = {
+        "channel": channel,
+        "topic": topic,
+        "key_facts": key_facts,
+        "pick": pick,
+        "result": result_path,
+    }
+    try:
+        Path(job).write_text(json.dumps(payload), encoding="utf-8")
+        proc = subprocess.run(
+            [sys.executable, "-m", "core.overnight", "--draft-job", job],
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, TypeError, ValueError) as exc:
+        logger.warning("overnight draft was not started for %s: %s", topic, exc)
+        return DraftOutcome(topic=topic, error=str(exc))
+    finally:
+        try:
+            os.remove(job)
+        except OSError:
+            pass
+    try:
+        if proc.returncode != 0 or not os.path.isfile(result_path):
+            line = crashed_draft_line(topic, int(proc.returncode))
+            logger.warning("%s", line)
+            return DraftOutcome(topic=topic, error=line)
+        data = json.loads(Path(result_path).read_text(encoding="utf-8"))
+        return _outcome_from(data)
+    finally:
+        try:
+            os.remove(result_path)
+        except OSError:
+            pass
+
+
+def _outcome_from(data: dict) -> Any:
+    from dataclasses import fields
+
+    from core.batch_generation import DraftOutcome
+
+    known = {item.name for item in fields(DraftOutcome)}
+    return DraftOutcome(**{key: value for key, value in data.items() if key in known})
+
+
+def _write_outcome(path: str, outcome: Any) -> None:
+    import json
+    from dataclasses import asdict
+    from pathlib import Path
+
+    Path(path).write_text(json.dumps(asdict(outcome)), encoding="utf-8")
+
+
+def _draft_job(path: str) -> int:
+    """The child: one topic, then exit. A non-zero exit is the crash the parent records."""
+    import json
+    import os
+    from pathlib import Path
+
+    from core.batch_generation import DraftOutcome
+
+    spec = json.loads(Path(path).read_text(encoding="utf-8"))
+    topic = str(spec.get("topic") or "")
+    if os.getenv("OVERNIGHT_DRAFT_STUB") == "1":
+        crash = os.getenv("OVERNIGHT_CRASH_TOPIC") or ""
+        if crash and topic == crash:
+            os._exit(int(os.getenv("OVERNIGHT_CRASH_CODE") or "74"))
+        _write_outcome(
+            str(spec["result"]),
+            DraftOutcome(topic=topic, ok=True, title=topic, run_id=1),
+        )
+        return 0
+    try:
+        from core.nightly_task import enable_crash_traceback
+
+        enable_crash_traceback()
+    except Exception as exc:
+        logger.debug("overnight child traceback hook skipped: %s", exc)
+    from core.batch_generation import run_batch
+
+    kwargs: dict[str, Any] = {}
+    facts = spec.get("key_facts")
+    if facts:
+        kwargs["key_facts"] = facts
+    pick = spec.get("pick")
+    if pick:
+        kwargs["picks"] = {topic: pick}
+    outcomes = run_batch(str(spec.get("channel") or ""), [topic], **kwargs)
+    outcome = outcomes[0] if outcomes else DraftOutcome(topic=topic, error="no outcome")
+    _write_outcome(str(spec["result"]), outcome)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
+    import sys
+
+    args_in = list(sys.argv[1:] if argv is None else argv)
+    if args_in[:1] == ["--draft-job"]:
+        if len(args_in) < 2:
+            return 2
+        return _draft_job(args_in[1])
 
     parser = argparse.ArgumentParser(description="Overnight operator (drafts + grade + dossiers)")
     parser.add_argument("--channel", default=None)

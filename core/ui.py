@@ -1720,14 +1720,19 @@ def prompt_key_facts_result(
             }
         )
 
+    from core.source_diversity import clean_urls
+
     source_urls: list[str] = []
     seen_urls: set[str] = set()
     for url in [
         *(str(item.get("url") or "") for item in pasted_sources),
         *(str(getattr(record, "source_url", "") or "") for record in selected_records),
     ]:
-        clean = url.strip()
-        if not clean or clean.lower() in seen_urls:
+        cleaned = clean_urls([url.strip()])
+        if not cleaned:
+            continue
+        clean = cleaned[0]
+        if clean.lower() in seen_urls:
             continue
         seen_urls.add(clean.lower())
         source_urls.append(clean)

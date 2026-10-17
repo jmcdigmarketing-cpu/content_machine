@@ -69,7 +69,6 @@ _DARK_REDRAWS = 2
 _KEEP_TMP_DAYS = 3
 _PHRASE_END = tuple(",.!?;:")
 # Fixed, not the NVENC helper: the concat stream copy needs every shot encoded identically.
-_SHOT_ENCODER = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-g", "30"]
 
 
 def fast_cut_enabled() -> bool:
@@ -348,7 +347,18 @@ def plan_windowed_shots(
     ]
 
 
-def build_shot_command(clip: str, start: float, length: float, output: str) -> list[str]:
+def shot_timeout(length: float) -> int:
+    """Seconds ffmpeg may spend on one shot.
+
+    Run 155: a 6.8s cut of a 29s 1080p60 clip did not finish in the fixed 120s.
+    """
+    seconds = max(0.0, float(length))
+    return max(45, round(seconds * 30))
+
+
+def build_shot_command(
+    clip: str, start: float, length: float, output: str, *, preset: str = "veryfast"
+) -> list[str]:
     from assets.clip_bands import crop_for_clip
 
     # This clip's own measured text bands (#788); an unmeasured clip keeps the env default.
@@ -360,6 +370,7 @@ def build_shot_command(clip: str, start: float, length: float, output: str) -> l
     )
     return [
         "ffmpeg",
+        "-nostdin",
         "-y",
         "-loglevel",
         "error",
@@ -372,7 +383,14 @@ def build_shot_command(clip: str, start: float, length: float, output: str) -> l
         "-vf",
         f"{band}scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
         f"crop={TARGET_W}:{TARGET_H},fps=30,format=yuv420p,setpts=PTS-STARTPTS",
-        *_SHOT_ENCODER,
+        "-c:v",
+        "libx264",
+        "-preset",
+        preset,
+        "-crf",
+        "20",
+        "-g",
+        "30",
         "-pix_fmt",
         "yuv420p",
         "-r",
@@ -479,14 +497,34 @@ def try_fast_cut_background(
 
 
 def _render_shot(clip: str, start: float, length: float, path: str) -> None:
-    proc = subprocess.run(
-        build_shot_command(os.path.abspath(clip), start, length, path),
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-    if proc.returncode != 0 or not os.path.isfile(path):
-        raise RuntimeError(f"shot from {clip}: {(proc.stderr or '')[-300:]}")
+    """One shot. `-nostdin` so ffmpeg cannot sit on a pipe; one ultrafast retry."""
+    timeout = shot_timeout(length)
+    source = os.path.abspath(clip)
+    last = ""
+    for preset in ("veryfast", "ultrafast"):
+        try:
+            proc = subprocess.run(
+                build_shot_command(source, start, length, path, preset=preset),
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            last = "timed out"
+            logger.warning(
+                "fast cut shot timed out: %.1fs from %s (preset %s)",
+                length,
+                clip,
+                preset,
+            )
+            if preset == "veryfast":
+                continue
+            break
+        if proc.returncode == 0 and os.path.isfile(path):
+            return
+        last = (proc.stderr or "")[-300:]
+        break
+    raise RuntimeError(f"shot {length:.1f}s from {clip}: {last}")
 
 
 def _concat(list_path: str, output: str, duration: float) -> None:

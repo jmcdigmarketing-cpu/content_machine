@@ -60,7 +60,9 @@ def topic_clips(index: dict[str, Any], *, topic: str, channel_id: str | None = N
             continue
         ranked.append((float((meta or {}).get("duration_s") or 0.0), str(path)))
     ranked.sort(key=lambda row: row[0], reverse=True)
-    return [path for _dur, path in ranked]
+    from assets.clip_tags import clips_for_topic
+
+    return clips_for_topic([path for _dur, path in ranked], topic, index)
 
 
 def assign_owned_clips(

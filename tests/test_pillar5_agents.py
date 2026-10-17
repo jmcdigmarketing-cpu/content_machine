@@ -174,7 +174,7 @@ class TestOvernight(unittest.TestCase):
         ]
         with (
             patch("core.batch_generation.collect_topics", return_value=["a", "b", "c"]),
-            patch("core.batch_generation.run_batch", return_value=outcomes) as mock_batch,
+            patch("core.overnight.draft_each", return_value=outcomes) as mock_batch,
             patch("core.vault.dossiers.write_run_dossier", return_value="path") as mock_doss,
             patch("core.channel_health.build_health", return_value=MagicMock()),
             patch("core.channel_health.health_line", return_value="Health: GREEN"),
@@ -205,7 +205,7 @@ class TestOvernight(unittest.TestCase):
     def test_no_topics_is_noop(self):
         with (
             patch("core.batch_generation.collect_topics", return_value=[]),
-            patch("core.batch_generation.run_batch") as mock_batch,
+            patch("core.overnight.draft_each") as mock_batch,
             patch("core.signal_canary.check_signals", return_value=[]),
             patch("core.signal_canary.save_results"),
         ):

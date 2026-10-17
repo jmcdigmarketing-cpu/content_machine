@@ -92,17 +92,20 @@ HEAD first.
 
 ## Slot — Cursor
 
-**Written:** 2026-10-16 · **HEAD at write:** `0e4582c` · **Tree:** the synopsis
-commit follows. Leave `.agents/` and `.codex/`. Not pushed. Claude's #1233 and
-#1234 are still uncommitted (`apis/signal_chain.py`, `core/grounding_tiers.py`).
+**Written:** 2026-10-16 · **HEAD at write:** `239649e` · **Tree:** this wave is
+the next commit. Leave `.agents/` and `.codex/`. Not pushed.
 
 **Defects first:**
-- #1215 left the #1208 corpus case expecting nba. The suite failed on that case
-  until Claude's `ab9677f` retargeted it to ufc.
-- Finished frames change wherever hook motion is on, and intro audio fades when
-  the intro file has a soundtrack.
+- #1227 refuses a stored URL that still contains a quote. #1157 used to strip
+  that quote and fetch the page. A link in prose is still read.
+- A Chargers video whose files are untagged Madden (GameClip names) now gets no
+  local folder footage. #1235 is the command that would tag one.
+- A crashed draft logs a warning. A night that finishes does not.
+- A fast cut that used to die at 120s may finish on ultrafast. A neutral
+  headline is no longer adopted by a single-domain feed.
 
-**Shipped:** #1215 #514 #418 #463 #545. 11 new tests failed or errored first.
-Suite 5997, skipped 10. mypy 96. `roadmap-index`: open 297, done 965,
-numbered open 245, highest open #1229.
-Next: #1221 #1227 #1228 #1229 #1043.
+**Shipped:** #1221 #1227 #1228 #1043 #1229. 12 tests: 5 failures and 4 errors
+on unmodified code. Five guards were then watched going red.
+Suite 6011, skipped 10. mypy 96. `roadmap-index`: open 293, done 1175,
+numbered open 241, highest open #1235.
+Next: #1235 #499 #1056 #1039 #1046.

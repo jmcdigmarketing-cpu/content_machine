@@ -29,8 +29,6 @@ from core.logging import get_logger
 
 logger = get_logger("core.description_extras")
 
-_URL_RE = re.compile(r"https?://[^\s)>\]]+", re.I)
-
 DEFAULT_AI_DISCLOSURE = "Made with AI-assisted narration and editing."
 DEFAULT_FINANCE_DISCLAIMER = (
     "Not financial advice. For informational purposes only. Do your own research."
@@ -132,21 +130,21 @@ def collect_source_urls(
     found: list[str] = []
     seen: set[str] = set()
 
+    from core.source_diversity import clean_urls, urls_from_text
+
     def _add(raw: str) -> None:
-        url = (raw or "").strip().rstrip(".,);")
-        if not url.lower().startswith(("http://", "https://")):
-            return
-        key = url.lower()
-        if key in seen:
-            return
-        seen.add(key)
-        found.append(url)
+        for url in clean_urls([str(raw)]):
+            key = url.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            found.append(url)
 
     for line in extra_urls or []:
         _add(str(line))
     for line in key_facts or []:
-        for match in _URL_RE.findall(str(line)):
-            _add(match)
+        for url in urls_from_text(str(line)):
+            _add(url)
     if channel_id and topic:
         try:
             from core.obsidian_facts import load_fact_records

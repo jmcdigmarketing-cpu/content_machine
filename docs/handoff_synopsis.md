@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-16: what the morning and the angle read (waves 97-98)
+# Handoff synopsis — 2026-10-16: the five Claude queued (#1221 #1227 #1228 #1043 #1229)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,24 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-16 (Cursor): #1215 #514 #418 #463 #545
+## Last wave — 2026-10-16 (Cursor): #1221 #1227 #1228 #1043 #1229
+
+The Dr Food headline stayed neutral on a gaming feed, so it is not a best bet (#1221).
+A stored URL that still contains a quote, a brace, or an image host is not fetched;
+the quoted Last.fm page that #1157 used to strip and retry is refused (#1227). A 6.8s
+fast cut no longer dies at 120s: `-nostdin`, a timeout of 204s, one `ultrafast` retry
+only after a timeout (#1228). "How the 0-4 chargers can turn it around" returns the
+Chargers clip and not the four untagged Madden files; a topic with no team keeps the
+folder (#1043). Each overnight draft is its own child; a crash names that draft and
+the set-aside pass and the renders still run (#1229).
+
+Finished output changed: a timed-out shot may finish on `ultrafast`. A team video
+with only untagged Madden gets no local folder footage. A stored quoted URL is no
+longer fetched. A neutral headline is no longer adopted by a single-domain feed.
+Not pushed. Next: #1235 #499 #1056 #1039 #1046. `roadmap-index`: open 293, done 1175,
+numbered open 241, highest open #1235.
+
+## Previous — 2026-10-16 (Cursor): #1215 #514 #418 #463 #545
 
 An untagged Contender Series headline was nba on the word "contender"; "contender series"
 is ufc, and a Lakers contender stays nba (#1215). The duration and caption benches printed

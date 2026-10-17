@@ -569,10 +569,14 @@ class LocalAssetProvider(AssetProvider):
         [] (#955): never another game's footage."""
         chosen_folder, how = self.choose(topic, category, channel_id)
         if how == "mix":
-            return mixed_clips(mix_folders(topic, self._folders(category), channel_id))
-        if not chosen_folder:
-            return []
-        return _folder_clips(chosen_folder)
+            clips = mixed_clips(mix_folders(topic, self._folders(category), channel_id))
+        elif not chosen_folder:
+            clips = []
+        else:
+            clips = _folder_clips(chosen_folder)
+        from assets.clip_tags import clips_for_topic
+
+        return clips_for_topic(clips, topic)
 
     def find_video(self, topic: str, category: str, channel_id=None) -> Optional[AssetResult]:
         video_files = self.candidate_clips(topic, category, channel_id)

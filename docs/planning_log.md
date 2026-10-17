@@ -17,6 +17,27 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-16 (Cursor) - the five Claude queued
+
+**Prompt:** next 5 claude gave you completed please!
+
+Claude's waves 99-100 (`239649e`) had shipped #1230-#1234. The five still open, and
+the ones the operator queued, were #1221, #1227, #1228, #1043 and #1229.
+
+**Shipped:**
+1. #1221 a neutral headline stays neutral. `_domain_for_feed("neutral", ["gaming"])` was `gaming`. It is `neutral`. A Lakers headline on a UFC feed is still ufc.
+2. #1227 a stored URL that still contains a quote, a brace, or an image host is refused. `collect_source_urls` kept the boxart template, the bare boxart URL, the quoted Last.fm URL and a png. It keeps the ESPN page. This reverses #1157's strip-and-keep for a stored quoted URL. A link in prose is still read without the quote around it.
+3. #1228 `-nostdin` before `-i`, `shot_timeout(6.8)` is 204, one `ultrafast` retry only after `TimeoutExpired`. A shot that finishes is not retried.
+4. #1043 a Chargers topic on four untagged Madden clips plus `chargers_drive.mp4` returned all five. It returns the Chargers file. "NFL draft night shock trade" still returns all five. Ingest writes `teams` and `game`.
+5. #1229 each overnight draft is a child process. A child that exits 74 is named in the report; the other drafts, the set-aside pass and the renders still run. The child passes `key_facts` into `run_batch`.
+
+**Fail first:** 12 tests, 5 failures and 4 errors, on unmodified code. Then the facts-through-child guard went red when the child dropped `key_facts`, the no-retry guard went red when a finished shot continued, the feed-wins guard went red when the single-domain override was removed, the no-team guard went red when untagged clips were dropped for every topic, and the ingest guard went red when `teams` was not written.
+
+**Deliberately not done:** the full duration and caption benches, the operator's R2 public URL, and an `ops` command that tags a clip already on disk. That last one is #1235. A Chargers video whose library is only `GameClip` files now gets no local Madden footage.
+
+**Next:** #1235, #499, #1056, #1039, #1046.
+`roadmap-index`: open 293, done 1175, numbered open 241, highest open #1235.
+
 ## 2026-10-11 (Claude Code) - waves 79-80: the record was wrong; uploads and mornings
 
 **Prompt:** next 10 n push, update docs, 6 questinos or decisions for me? update artifacts too, any missed utilizations or efficiencies? whats next to take the next step as a project?

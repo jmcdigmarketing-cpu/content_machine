@@ -10,9 +10,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-TITLE = (
-    "The next Sean O'Malley: Ranking the best prospects from Season 10 of Contender Series"
-)
+TITLE = "The next Sean O'Malley: Ranking the best prospects from Season 10 of Contender Series"
 FEED = {
     "name": "MMA Fighting",
     "url": "https://www.mmafighting.com/rss/index.xml",

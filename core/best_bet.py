@@ -719,7 +719,8 @@ def _domain_for_feed(word_domain: str, feed_domains: list[str] | None) -> str:
     """A single-domain feed wins when the headline's words name something else.
 
     `mma` and `ufc` are one domain. An untagged source, or a feed tagged with
-    more than one domain, keeps the word domain.
+    more than one domain, keeps the word domain. A headline with no domain
+    words stays neutral (#1221): the feed does not assign one.
     """
     tags = {str(d).strip().lower() for d in (feed_domains or []) if str(d).strip()}
     if not tags:
@@ -727,6 +728,9 @@ def _domain_for_feed(word_domain: str, feed_domains: list[str] | None) -> str:
     folded = {"ufc" if tag == "mma" else tag for tag in tags}
     if word_domain in tags or word_domain in folded:
         return word_domain
+    # #1221: "Dr Food walks free..." is neutral. A gaming feed made it a gaming bet.
+    if not word_domain or word_domain == "neutral":
+        return word_domain or "neutral"
     if len(folded) == 1:
         return next(iter(folded))
     return word_domain

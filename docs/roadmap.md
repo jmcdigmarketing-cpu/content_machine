@@ -83,14 +83,15 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five (non-app)
 
-**2026-10-16.** #1215, #514, #418, #463 and #545 are done. The list is the five the
-operator queued after those. **#1221** a neutral headline made a gaming best bet.
-**#1227** junk correction URLs. **#1228** the fast-cut timeout. **#1229** one draft per
-child process. **#1043** footage tagged by team (run 155 cut four untagged Madden clips).
-Finished output changed: hook-motion frames are pre-scaled, and an intro with audio fades
-out over its last quarter second.
-`roadmap-index` after Cursor's five, with Claude's uncommitted #1230-#1232 already ticked:
-open 297, done 965, numbered open 245, highest open #1229.
+**2026-10-16 (Cursor).** #1221, #1227, #1228, #1229 and #1043 are done. Next:
+**#1235** tag a clip already on disk (a Chargers video gets no Madden footage when the
+file is named GameClip), **#499** silence-trim the VO, **#1056** a first-frame text
+hook, **#1039** delivery marks, **#1046** caption style per brand.
+Finished output changed: a fast cut has `-nostdin` and a longer timeout, and a shot
+that used to die at 120s may finish on `ultrafast`. A team video skips untagged
+Madden. Overnight drafts run in a child process. A stored URL that still contains a
+quote is not fetched. A neutral headline stays neutral.
+`roadmap-index`: open 293, done 1175, numbered open 241, highest open #1235.
 Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
 your own idea's script, the morning screen, game previews, corrections checked against their
 own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),

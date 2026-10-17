@@ -52,18 +52,30 @@ def is_page_url(url: str) -> bool:
     return not _MEDIA_HOST_RE.search(parsed.netloc or "")
 
 
+_REFUSE_IN_URL = ('"', "'", "{", "}")
+
+
 def clean_urls(urls: list[str]) -> list[str]:
-    """`urls` without the quote or brace a raw-data line left on the end, pages only."""
+    """Pages only. A URL that still contains a quote or a brace is not fetched (#1227).
+
+    Stripping the quote and fetching the page left Last.fm and Twitch box-art
+    templates in the correction scan, which retried them every run.
+    """
     out: list[str] = []
     for raw in urls or []:
-        url = str(raw or "").strip().rstrip(_URL_TAIL)
+        text = str(raw or "").strip()
+        if any(mark in text for mark in _REFUSE_IN_URL):
+            continue
+        url = text.rstrip(_URL_TAIL)
         if url and is_page_url(url) and url not in out:
             out.append(url)
     return out
 
 
 def urls_from_text(text: str) -> list[str]:
-    return clean_urls(_URL.findall(text or ""))
+    """URLs in prose. A quote or brace that closed the surrounding text is not part of the URL."""
+    stripped = [match.strip().rstrip(_URL_TAIL) for match in _URL.findall(text or "")]
+    return clean_urls(stripped)
 
 
 def is_news_shaped(topic: str) -> bool:

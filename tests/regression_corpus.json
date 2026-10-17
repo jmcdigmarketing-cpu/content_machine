@@ -3270,9 +3270,9 @@
       "why": "a picture counted as an outlet and was read as an article by the correction scan"
     },
     {
-      "id": "a-quoted-link-is-read-without-its-quote",
-      "item": 1157,
-      "source": "run 120's stored sources: a last.fm link ending in a double quote",
+      "id": "a-quoted-link-is-not-fetched",
+      "item": 1227,
+      "source": "run 120 stored the Last.fm link with a quote; #1157 stripped it and the scan retried the page every run",
       "call": "core.source_diversity:clean_urls",
       "args": [
         [
@@ -3280,11 +3280,9 @@
         ]
       ],
       "expect": {
-        "equals": [
-          "https://www.last.fm/music/Agust+D/_/People"
-        ]
+        "equals": []
       },
-      "why": "the link came out of a signal's raw data with the quote attached"
+      "why": "#1227: stripping the quote left a page the correction scan could never clear"
     },
     {
       "id": "script-blocks-are-not-article-text",
@@ -4357,6 +4355,102 @@
         "truthy": true
       },
       "why": "the check exists for exactly this"
+    },
+    {
+      "id": "dr-food-neutral-stays-neutral",
+      "item": 1221,
+      "source": "overnight 2026-10-16 draft 2: a gaming feed made a neutral headline a gaming bet",
+      "call": "core.best_bet:_domain_for_feed",
+      "args": [
+        "neutral",
+        ["gaming"]
+      ],
+      "expect": {
+        "equals": "neutral"
+      },
+      "why": "a single-domain feed assigned its domain when the headline named none"
+    },
+    {
+      "id": "boxart-template-is-not-a-source",
+      "item": 1227,
+      "source": "correction scan log: ttv-boxart/509672-{widt",
+      "call": "core.description_extras:collect_source_urls",
+      "kwargs": {
+        "extra_urls": [
+          "https://static-cdn.jtvnw.net/ttv-boxart/509672-{widt",
+          "https://www.espn.com/nba/story/_/id/123/cavs-beat-magic"
+        ]
+      },
+      "expect": {
+        "equals": [
+          "https://www.espn.com/nba/story/_/id/123/cavs-beat-magic"
+        ]
+      },
+      "why": "the description collector kept the template the scan was written to skip"
+    },
+    {
+      "id": "shot-command-does-not-read-stdin",
+      "item": 1228,
+      "source": "run 155: a 6.8s Madden cut timed out at 120s",
+      "call": "assets.fast_cut:build_shot_command",
+      "args": [
+        "madden_clip.mp4",
+        0,
+        6.8,
+        "shot.mp4"
+      ],
+      "expect": {
+        "contains": "-nostdin"
+      },
+      "why": "ffmpeg sat on stdin until the fixed timeout, then the render kept the old background"
+    },
+    {
+      "id": "chargers-topic-skips-an-untagged-madden-clip",
+      "item": 1043,
+      "source": "run 155 cut four untagged Madden clips",
+      "call": "assets.clip_tags:clips_for_topic",
+      "args": [
+        [
+          "/lib/madden/clip0.mp4"
+        ],
+        "How the 0-4 chargers can turn it around this year"
+      ],
+      "expect": {
+        "equals": []
+      },
+      "why": "the Madden folder was the pool, and no clip was tagged Chargers"
+    },
+    {
+      "id": "nfl-draft-keeps-an-untagged-clip",
+      "item": 1043,
+      "source": "must keep: a topic with no team still uses the game folder",
+      "call": "assets.clip_tags:clips_for_topic",
+      "args": [
+        [
+          "/lib/madden/clip0.mp4"
+        ],
+        "NFL draft night shock trade"
+      ],
+      "expect": {
+        "equals": [
+          "/lib/madden/clip0.mp4"
+        ]
+      },
+      "why": "tagging by team must not empty the pool for a league topic"
+    },
+    {
+      "id": "a-crashed-draft-names-its-exit",
+      "item": 1229,
+      "source": "2026-10-16 overnight: 0xC0000374 at draft 2 of 3",
+      "call": "core.overnight:crashed_draft_line",
+      "args": [
+        "Titans at Colts",
+        74
+      ],
+      "expect": {
+        "equals": "Titans at Colts crashed (exit 74)"
+      },
+      "why": "the crash took the rest of the night and the report did not name the draft"
     }
   ]
 }

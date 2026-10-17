@@ -75,7 +75,7 @@ class BatchTests(BatchCase):
         with (
             patch("core.best_bet.get_best_bets", return_value=BETS),
             patch("core.overnight_quota.adjust_count", return_value=(2, "")),
-            patch("core.batch_generation.run_batch", return_value=[]) as batch,
+            patch("core.overnight.draft_each", return_value=[]) as batch,
             patch("core.channel_health.build_health", return_value=MagicMock()),
             patch("core.channel_health.health_line", return_value=""),
             patch("core.events.emit_event", return_value=True),

@@ -385,6 +385,9 @@ def _record_index(dest: str, source: str, *, index_path: str | None = None) -> N
     data = _load_index(path)
     duration = _probe_duration(dest)
     width, height, codec = _probe_stream(dest)
+    from assets.clip_tags import describe_clip
+
+    tagged = describe_clip(dest)
     data.setdefault("clips", {})[dest] = {
         "source": source,
         "duration_s": duration,
@@ -393,6 +396,9 @@ def _record_index(dest: str, source: str, *, index_path: str | None = None) -> N
         "codec": codec,
         "hud": _hud_flag(dest),
         "bands": _bands(dest, duration),
+        "teams": tagged["teams"],
+        "players": tagged["players"],
+        "game": tagged["game"],
     }
     _save_index(path, data)
 

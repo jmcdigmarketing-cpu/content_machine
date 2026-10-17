@@ -375,7 +375,11 @@ class RealSourceTests(unittest.TestCase):
         self.assertTrue(is_page_url("https://www.espn.com/nba/story/_/id/123/cavs-beat-magic"))
 
     def test_the_correction_scan_skips_what_was_stored_before(self):
-        """50 of 71 stored links were of this kind; the scan warned six times a night."""
+        """50 of 71 stored links were of this kind; the scan warned six times a night.
+
+        #1227: a trailing quote is not stripped and fetched. The Last.fm page
+        stayed in the scan and was retried every run.
+        """
         from core import correction_dossier
 
         run = SimpleNamespace(
@@ -391,13 +395,7 @@ class RealSourceTests(unittest.TestCase):
             )
         )
         _claims, sources = correction_dossier._claims_and_sources(run)
-        self.assertEqual(
-            sources,
-            [
-                "https://www.last.fm/music/Agust+D/_/People",
-                "https://www.espn.com/nba/story/_/id/123/cavs-beat-magic",
-            ],
-        )
+        self.assertEqual(sources, ["https://www.espn.com/nba/story/_/id/123/cavs-beat-magic"])
 
 
 if __name__ == "__main__":

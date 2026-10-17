@@ -53,14 +53,17 @@ def _clean(text: str | None, limit: int) -> str:
 
 def _normalize(sources: list[dict[str, Any]] | None) -> list[tuple[str, str]]:
     """(url, title) pairs from raw source dicts; drops anything without an http URL."""
+    from core.source_diversity import clean_urls
+
     out: list[tuple[str, str]] = []
     seen: set[str] = set()
     for s in sources or []:
         if not isinstance(s, dict):
             continue
-        url = _clean(s.get("url"), 500)
-        if not url.lower().startswith(("http://", "https://")):
+        cleaned = clean_urls([_clean(s.get("url"), 500)])
+        if not cleaned:
             continue
+        url = cleaned[0]
         if url in seen:
             continue
         seen.add(url)

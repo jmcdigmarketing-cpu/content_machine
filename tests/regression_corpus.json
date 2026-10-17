@@ -3928,8 +3928,8 @@
       "why": "Contender Series matched the NBA word contender, and the MMA feed tag was ignored"
     },
     {
-      "id": "contender-series-without-a-feed-tag-stays-nba",
-      "item": 1208,
+      "id": "contender-series-without-a-feed-tag-is-ufc",
+      "item": 1215,
       "source": "the same headline with no feed tag still matches the word contender",
       "call": "core.best_bet:_consider_candidate",
       "args": [
@@ -3943,9 +3943,9 @@
       },
       "select": "domain",
       "expect": {
-        "equals": "nba"
+        "equals": "ufc"
       },
-      "why": "the keyword list is unchanged; only a tagged feed overrides it"
+      "why": "#1208 pinned this as nba; #1215 (Cursor) made Contender Series UFC and left this case red"
     },
     {
       "id": "run151-my-call-is-a-take",

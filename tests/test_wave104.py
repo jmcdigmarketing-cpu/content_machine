@@ -334,6 +334,32 @@ class ExplainPhasesTests(unittest.TestCase):
         self.assertNotIn("angle_spread", [name for name, _s in phase_seconds(timings)])
 
 
+# ---- the angle prompt crashed the console (operator, 2026-10-17) ------------------------------
+
+
+class ConsolePayloadTests(unittest.TestCase):
+    """`py main.py` -> 1 -> best bet 4 died at the angle step: "TypeError:
+    TerminalBackend.ask_text() got an unexpected keyword argument 'payload'". `ask_text` has
+    passed the discovery read on since 3ef604d (the app's angle step); only the app's backend
+    took it. mypy listed the line - the ratchet counted it as a tolerated error."""
+
+    def test_the_terminal_takes_a_payload_and_ignores_it(self):
+        from core import ask
+
+        with (
+            patch.object(ask, "_backend", ask.TerminalBackend()),
+            patch("builtins.input", return_value="2") as typed,
+        ):
+            self.assertEqual(ask.ask_choice("  Pick an angle: ", payload={"intent": "x"}), "2")
+        typed.assert_called_once_with("  Pick an angle: ")
+
+    def test_a_scripted_answer_too(self):
+        from core import ask
+
+        with patch.object(ask, "_backend", ask.ScriptedBackend(["3"])):
+            self.assertEqual(ask.ask_text("  Pick: ", payload={"intent": "x"}), "3")
+
+
 _ = (json, subprocess, MagicMock)
 
 if __name__ == "__main__":

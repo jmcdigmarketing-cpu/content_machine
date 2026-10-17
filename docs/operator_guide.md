@@ -125,7 +125,8 @@ render that was never uploaded and is past twice its window stops counting towar
 three; `ops shelf` shows it with the line that retires it.
 
 **TikTok and Instagram follow YouTube** (#1188, decision §54): once a video is public on
-YouTube it is scheduled on both through Buffer - one a day per platform, the AI label on.
+YouTube it is scheduled on both through Buffer at the channel's suggested time, with no spacing
+between posts (decision §63), the AI label on. A game preview goes before its game.
 Setting it up once (the Buffer key, the R2 bucket keys, the channel ids) is in
 [platform_publish_setup.md](platform_publish_setup.md); `py -m scripts.ops crosspost status`
 shows each video on each platform, `crosspost cancel --run-id N` takes one back, and

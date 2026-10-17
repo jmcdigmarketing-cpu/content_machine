@@ -219,3 +219,14 @@ checked as Linux, `msvcrt`, `windll` and `CREATE_NO_WINDOW` were errors, and the
 overrode bs4's types - CI counted 25 more than this PC, and the baseline had been lowered from
 this PC's count. The product runs on Windows; a Linux-only path is behind a `sys.platform`
 check that mypy reads.
+
+## 63. TikTok and Instagram posts are not spaced (2026-10-17)
+**Decision:** a video made public on YouTube is scheduled on TikTok and Instagram at the
+channel's suggested time, however many posts that day already holds; a game preview goes before
+its game (its draft's `event_at`), and one whose game has started is skipped. **Why:** the
+operator - "bypass this always and lets actually just erase this rule. volume is a struggle
+right now we do not have the volume or consistency to govern ourselves by that". The one-a-day
+spacing of §54 had put run 155's Titans preview nine hours after kickoff. **Consequence:** this
+reverses §54's "one a day per platform"; the rest of §54 stands (after YouTube is public, the AI
+label on). The YouTube cadence guardrail (`MAX_VIDEOS_PER_WEEK`) is a separate rule and is
+unchanged.

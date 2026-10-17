@@ -300,12 +300,13 @@ class SendTests(CrosspostCase):
         self.assertEqual(self.create.call_count, 1)
         self.assertIn("Buffer key rejected", "\n".join(lines))
 
-    def test_one_a_day_per_platform(self):
+    def test_two_videos_can_go_on_the_same_day(self):
+        # Decision 63 (the operator, 2026-10-17): "erase this rule" - no spacing between posts.
         self._first_then((113, "yt113"), (114, "yt114"))
         tiktok = sorted(c.kwargs["due_at"] for c in self.create.call_args_list
                         if c.kwargs["service"] == "tiktok")  # fmt: skip
         self.assertEqual(len(tiktok), 2)
-        self.assertGreaterEqual(tiktok[1] - tiktok[0], timedelta(hours=20))
+        self.assertLess(tiktok[1] - tiktok[0], timedelta(hours=20))
 
     def test_a_far_slot_is_still_scheduled(self):
         # Was "a slot past the link's week waits": the address is public now (2026-10-15,

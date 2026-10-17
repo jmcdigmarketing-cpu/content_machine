@@ -34,12 +34,16 @@ def _stdout_is_tty() -> bool:
 
 
 class Backend:
-    def ask_text(self, prompt: str = "") -> str:
+    # `payload` is what the app's backend shows beside the question (the angle step's
+    # discovery read, 3ef604d). A console has nowhere to show it - it is ignored there, never
+    # refused: refusing it crashed `py main.py` at the angle step (2026-10-17).
+    def ask_text(self, prompt: str = "", *, payload: object = None) -> str:
         raise NotImplementedError
 
 
 class TerminalBackend(Backend):
-    def ask_text(self, prompt: str = "") -> str:
+    def ask_text(self, prompt: str = "", *, payload: object = None) -> str:
+        del payload
         bell = gate_bell(
             prompt,
             tty=_stdout_is_tty(),
@@ -55,8 +59,8 @@ class ScriptedBackend(Backend):
     def __init__(self, answers: Sequence[str]) -> None:
         self._answers = list(answers)
 
-    def ask_text(self, prompt: str = "") -> str:
-        del prompt
+    def ask_text(self, prompt: str = "", *, payload: object = None) -> str:
+        del prompt, payload
         if not self._answers:
             raise EOFError("scripted ask() ran out of answers")
         return self._answers.pop(0)

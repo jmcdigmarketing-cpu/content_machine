@@ -654,6 +654,28 @@ def shelf_pause(channel_id: str, *, waiting: int | None = None) -> str:
     )
 
 
+def draft_meta_for_run(channel_id: str, run_id: int, *, root: str | None = None) -> dict[str, Any]:
+    """The `meta.json` of the draft that became `run_id`, or {} (crosspost reads its game's
+    start, 2026-10-17)."""
+    if root is None:
+        from core.batch_generation import _drafts_dir
+
+        root = _drafts_dir(channel_id)
+    try:
+        names = sorted(os.listdir(root), reverse=True)  # newest first
+    except OSError:
+        return {}
+    for name in names:
+        try:
+            with open(os.path.join(root, name, "meta.json"), encoding="utf-8") as f:
+                meta = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if isinstance(meta, dict) and str(meta.get("run_id") or "") == str(run_id):
+            return meta
+    return {}
+
+
 def game_block_reason(meta: dict[str, Any], *, now: datetime | None = None) -> str:
     """#1151 (operator, 2026-10-13: "render only before the game"). "" for a draft that is
     not about a scheduled game."""

@@ -23,8 +23,9 @@ caption. What was packed and what the operator marked posted is kept in
 (`video_host`) and the Buffer channel ids (`crosspost channels --apply`), a video goes to
 TikTok and Instagram on its own once it is public on YouTube - the operator's watch-before-
 public covers these platforms too. Only videos made public after it was switched on: the first
-run records what was already public (`buffer.baseline`). Each platform gets one post a day at
-the channel's suggested slot; the AI label is on and the caption keeps the disclosure line.
+run records what was already public (`buffer.baseline`). Each post goes at the channel's
+suggested slot - no spacing between posts (decision 63, the operator: "volume is a struggle right
+now"); the AI label is on and the caption keeps the disclosure line.
 `createPost` has no idempotency key, so a call is marked `sending` before it is made, and one
 that got no answer is looked for in Buffer before it is ever sent again.
 
@@ -326,7 +327,6 @@ PLATFORMS = ("tiktok", "instagram")
 _LABEL = {"tiktok": "TikTok", "instagram": "Instagram"}
 _CHANNEL_ENV = {"tiktok": "BUFFER_TIKTOK_CHANNEL_ID", "instagram": "BUFFER_INSTAGRAM_CHANNEL_ID"}
 _LIVE = ("scheduled", "sending", "retry")  # states that still need the hosted copy
-_MIN_GAP = timedelta(hours=20)  # one post a day per platform
 _LEAD = timedelta(minutes=15)
 # A create call with no answer: Buffer makes a post at once, so one not found this long after
 # the call was never made, and may be sent.
@@ -472,9 +472,34 @@ def _due_of(state: dict[str, Any]) -> datetime | None:
     return _stamp(state.get("due_at"))
 
 
+# A game preview posts at least this long before kickoff (the operator, 2026-10-17).
+_BEFORE_GAME = timedelta(minutes=30)
+
+
+def _kickoff_for(channel_id: str, run_id: int) -> datetime | None:
+    """When the game a video previews starts - its draft's `event_at` (#1151) - or None."""
+    try:
+        from core.batch_review import draft_meta_for_run
+
+        raw = str(draft_meta_for_run(channel_id, run_id).get("event_at") or "")
+    except Exception as exc:
+        logger.debug("game start for run %s unread: %s", run_id, exc)
+        return None
+    return _stamp(raw.replace("Z", "+00:00")) if raw else None
+
+
 def _next_due(
-    channel_id: str, topic: str, service: str, posts: dict[str, Any], now: datetime
-) -> tuple[datetime, str]:
+    channel_id: str,
+    topic: str,
+    service: str,
+    posts: dict[str, Any],
+    now: datetime,
+    *,
+    kickoff: datetime | None = None,
+) -> tuple[datetime | None, str]:
+    """When to post, and why. A game preview goes before its game (the operator, 2026-10-17:
+    run 155's Titans preview had been spaced to nine hours after kickoff); None when its game
+    has started or starts too soon."""
     from publishing.platform_recommend import hour_choice
 
     hour, note = hour_choice(channel_id, service)
@@ -486,15 +511,16 @@ def _next_due(
             due = now + _LEAD
     else:
         due = _at_utc_hour(hour, now + _LEAD)
-    taken = []
-    for entry in posts.values():
-        state = entry.get(service) if isinstance(entry, dict) else None
-        if isinstance(state, dict) and state.get("state") in ("scheduled", "sending"):
-            when = _due_of(state)
-            if when:
-                taken.append(when)
-    while any(abs(due - other) < _MIN_GAP for other in taken):
-        due += timedelta(days=1)
+    # Decision 63 (2026-10-17): no spacing between posts - the one-a-day rule pushed a game
+    # preview past its kickoff, and there is not the volume to ration.
+    del posts
+    if kickoff is not None:
+        latest = kickoff - _BEFORE_GAME
+        if due > latest:
+            earliest = now + _LEAD
+            if earliest > latest:
+                return None, "its game has started"
+            return earliest, f"before its game ({_local(kickoff, channel_id)})"
     return due, note
 
 
@@ -633,6 +659,7 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
         )
         rendered = _rendered_at(path)
         topic = str(getattr(run, "input_topic", "") or getattr(run, "selected_topic", "") or "")
+        kickoff = _kickoff_for(channel_id, run_id)
         seconds = _duration(path)
         limit = reel_max_seconds()
         if apply:
@@ -695,7 +722,13 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 if marked and moment - marked < _SENDING_GRACE:
                     lines.append(f"  run {run_id} {label}: waiting to see whether Buffer made it")
                     continue
-            due, note = _next_due(channel_id, topic, service, posts, moment)
+            due, note = _next_due(channel_id, topic, service, posts, moment, kickoff=kickoff)
+            if due is None:
+                if apply:
+                    entry[service] = {"state": "skipped", "error": note, "at": _now_text(moment)}
+                    _save(channel_id, data)
+                lines.append(f"  run {run_id} {label}: skipped - {note}")
+                continue
             if not apply:
                 lines.append(
                     f"  would schedule run {run_id} on {label} for {_local(due, channel_id)} - {note}"

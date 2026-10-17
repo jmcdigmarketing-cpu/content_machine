@@ -60,16 +60,18 @@ class TestInjectInsight(unittest.TestCase):
                 mock_llm.assert_not_called()
         self.assertEqual(out, _RECAP)
 
-    def test_explainer_intent_does_not_inject_a_take(self):
-        """#660. A calm explainer is not a defect to repair."""
+    def test_explainer_intent_gets_a_what_to_watch_beat_not_a_take(self):
+        """#660 kept a calm explainer as it was; #1226 (the operator, 2026-10-16) gives it the
+        neutral beat - runs 159 and 150 were held for "no take found" without one."""
         from core.angle_intent import ANGLE_EXPLAINER
 
-        with patch.object(ce, "_call_content_llm") as mock_llm:
-            out = ce._maybe_inject_insight(
+        with patch.object(ce, "_call_content_llm", return_value={}) as mock_llm:
+            ce._maybe_inject_insight(
                 _RECAP, _FACTS, "how does the offside rule actually work", intent=ANGLE_EXPLAINER
             )
-            mock_llm.assert_not_called()
-        self.assertEqual(out, _RECAP)
+        prompt = mock_llm.call_args.args[0]
+        self.assertIn("what to watch", prompt)
+        self.assertIn("not a contrarian hot take", prompt)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-16: what the morning said that was not so (waves 95-96)
+# Handoff synopsis — 2026-10-16: what the morning and the angle read (waves 97-98)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,27 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-16 (Claude Code): waves 95-96, what the morning said that was not so
+## Last wave — 2026-10-16 (Claude Code): waves 97-98, five for Claude, five more for Cursor
+
+**Wave 97.** After the operator ran overnight by hand, the stop line said "stopped after 4 of 3
+drafts"; `ops overnight` now records its start and finish, the line is quiet once a later run
+finished and counts only the run that stopped (#1223). `ops blocking` read a pulled run, then a
+trace's stale scores; it reads the shelf and the run's record (#1222).
+
+**Wave 98.** Run 159 came back "New York Jets vs England Patriots" - the angle prompt was told
+"York, Jets, England"; whole names now, and a broken team name fails the title check (#1224).
+Run 158 kept "Long-term outlook:" and ended its title in "..." (#1225). The check read neither of
+run 158's takes, and calm drafts were held for one they never got; they get a "what to watch"
+beat now (#1226).
+
+**Cursor:** after its five (#1215 #514 #418 #463 #545), the operator added #1221 #1227 #1228
+#1229 #1043. Claude reviews, corrects and pushes Cursor's work in the next prompt.
+
+**Still the operator's:** `R2_PUBLIC_BASE_URL`; `.env` lines 35, 36, 39; the worker (runs 155,
+126 queued - the shelf is full, so overnight is paused); the consent screen; `schedule-drafts
+--wake`. Suite 5965, forward and reversed.
+
+## Previous — 2026-10-16 (Claude Code): waves 95-96, what the morning said that was not so
 
 **Wave 95.** Overnight woke with the PC at 4:30 PM, made run 156 and crashed at 4:32 (0xC0000374,
 heap corruption in ntdll, no traceback); the morning said it ran. It now says when it stopped,
@@ -43,24 +63,6 @@ buffer-check` tries Buffer end to end with a draft it deletes (#1214); it waits 
 
 **Still the operator's:** `R2_PUBLIC_BASE_URL` (public access on the bucket) and `.env` lines
 34 and 36 (unparsed); the consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5914, forward and reversed.
-
-## Previous — 2026-10-15 (Cursor): five defects (#1184, #1209, #1208, #456, #392)
-
-An open correction was written again the next day. The second scan now leaves the file
-and returns nothing, so the overnight warning does not fire again. A closed note still
-gets a new file (#1184). The Buffer request count is a date-keyed file: a later process
-with the memory counter at 0 still prints `210/250`, and yesterday does not count (#1209).
-
-The Contender Series headline was `trending on MMA Fighting now` and `nba averages`,
-because the word "contender" matches the NBA list. A feed with one domain wins. The line
-is `ufc averages`. The same title with no feed tag stays `nba` (#1208, #1215).
-
-`import main` and `core.pipeline` fail when they pass double the 2026-10-10 times (2.56s
-and 1.66s). Watched fail at 0.94s against a 0.01s budget (#456). `ops doctor` says
-`Apify: they are down` or `Apify: we broke it`. OpenRouter's status page answered 403.
-Live: `Apify: operational` (#392).
-
-**Next:** #1215 #514 #418 #463 #545.
 
 ## Pipeline order (operator)
 

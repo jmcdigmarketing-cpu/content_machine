@@ -7794,3 +7794,20 @@ reviewed, corrected and pushed in the next prompt.
 `tests/test_stop_record_and_shelf.py` (9): **8 of 8 failed or errored on `dd9e131`** before the
 grace case was added; all 9 pass. No corpus case: both fixes read files and the database. Suite
 5952, forward and reversed.
+
+### Wave 98 shipped
+
+3. **#1224** `_subject_terms` on the Jets topic: "New York Jets", "New England Patriots"; on run
+   157's: "Bo Nickal", "Joe Pyfer", "Cleveland". "England Patriots" fails the title check.
+4. **#1225** run 158's label folds to `long_term_outlook` and is dropped; its stored title now
+   waits: "its title is cut off".
+5. **#1226** run 158 re-scored review -> ok (the only change of 22 waiting drafts). Runs 159 and
+   150 stay at review: the beat is for new drafts. A hope video keeps no beat (#1084's test
+   kept); #660's explainer test now asks for the "what to watch" beat (the operator's call).
+
+`tests/test_names_labels_takes.py` (13): **8 of 13 failed on `dd9e131`**; the 5 that passed
+guard a single name, short and whole team names, a subject before a colon, a plain recap and the
+operator's own idea. Corpus +6. Suite 5965, forward and reversed.
+
+Closed **#1222-#1226**. Claude has nothing claimed. Next prompt: review Cursor's commits,
+correct, push.

@@ -4203,6 +4203,95 @@
         }
       },
       "why": "a signal kept off games by #1170 stayed YELLOW for weeks"
+    },
+    {
+      "id": "run159-the-two-teams-stay-whole",
+      "item": 1224,
+      "source": "run 159 (2026-10-16): the angle prompt said 'York, Jets, England'",
+      "call": "apis.topic_variants:_subject_terms",
+      "args": [
+        "New York Jets at New England Patriots"
+      ],
+      "expect": {
+        "includes_all": [
+          "New York Jets",
+          "New England Patriots"
+        ],
+        "excludes_any": [
+          "England"
+        ]
+      },
+      "why": "the angle came back 'New York Jets vs England Patriots'"
+    },
+    {
+      "id": "run159-england-patriots-is-broken",
+      "item": 1224,
+      "source": "run 159's angle",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "New York Jets vs England Patriots: How playoff races shape this AFC East clash"
+      ],
+      "expect": {
+        "equals": "New England Patriots"
+      },
+      "why": "the title check knew Los Angeles, Las Vegas and New Orleans only"
+    },
+    {
+      "id": "trail-blazers-have-lost-nothing",
+      "item": 1224,
+      "source": "must keep: a two-word nickname stands alone",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Trail Blazers rookies stand out in Portland's opener"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "a short team name is not a broken one"
+    },
+    {
+      "id": "run158-a-hyphenated-label-is-dropped",
+      "item": 1225,
+      "source": "run 158 (2026-10-16): 'Long-term outlook: Pokemon's Snorlax ...'",
+      "call": "apis.topic_variants:_clean_angle_lines",
+      "args": [
+        "Long-term outlook: Pokemon's Snorlax and Bewear pillows could pave the way",
+        [
+          "long_term_outlook"
+        ]
+      ],
+      "expect": {
+        "equals": [
+          "Pokemon's Snorlax and Bewear pillows could pave the way"
+        ]
+      },
+      "why": "the hyphen stopped the label match; the title then said 'positive outlook'"
+    },
+    {
+      "id": "run158-a-title-the-model-cut",
+      "item": 1225,
+      "source": "run 158's title, 94 characters",
+      "call": "core.title_generator:title_cut_off",
+      "args": [
+        "Pokemon's Snorlax and Bewear body pillows designed by sleep therapist signal positive outlook\u2026"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "an ellipsis under the limit is the model's, not ours"
+    },
+    {
+      "id": "run158-if-this-sells-is-a-take",
+      "item": 1226,
+      "source": "run 158 (2026-10-16): authenticity 'no take found'",
+      "call": "core.authenticity:has_insight",
+      "args": [
+        "If this sells, every franchise with a cozy mascot suddenly has a blueprint: hire a specialist, slap a character on it, sell rest instead of plastic. Watch whether the therapist credit survives past this first drop."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a prediction and a what-to-watch line read as a recap"
     }
   ]
 }

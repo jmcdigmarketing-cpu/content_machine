@@ -157,7 +157,9 @@ arc counter" (a draft written from "week 4"), "its title breaks a name" - and th
 names the failing check beside the verdict. A draft past its window, or whose game has
 started, says that first. Asked "still current?", **n** sets it aside (nothing is deleted;
 `py -m scripts.ops batch-review --expired` lists it) and Enter leaves it for later. A game's
-draft has the 2-day window of news.
+draft has the 2-day window of news. A calm draft (an explainer, a list, a plan) gets one "what
+to watch" line rather than a take; your own idea and a hope video stay as written. A title that
+ends in "..." waits ("its title is cut off").
 
 **Where are the overnight videos?** `py main.py`, then **6) Overnight videos and drafts**: each
 video of the last week with the full path of its mp4 (open it from File Explorer), its YouTube

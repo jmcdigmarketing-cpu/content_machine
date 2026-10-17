@@ -84,7 +84,9 @@ def _clean_angle_lines(
 
     def _is_label(text: str) -> bool:
         key = text.strip().strip(" .:").lower()
-        return bool(_SNAKE_LABEL_RE.match(key)) or key.replace(" ", "_") in labels
+        # #1225: run 158's "Long-term outlook:" is `long_term_outlook` - fold hyphens too.
+        folded = re.sub(r"[\s-]+", "_", key)
+        return bool(_SNAKE_LABEL_RE.match(key)) or folded in labels
 
     out: list[str] = []
     for line in (raw or "").splitlines():
@@ -544,9 +546,18 @@ def _subject_terms(topic: str) -> list[str]:
     generalise the subject away ("Kape punches his ticket" → "one fighter…").
     ALL-CAPS acronyms (UFC, MMA, NBA) are excluded — they're domains, not subjects.
     """
-    terms: list[str] = []
+    from apis.topic_tokens import title_phrases
+
+    # #1224: whole names first. Run 159, "New York Jets at New England Patriots", was told
+    # "Keep the seed's subject: York, Jets, England" and came back "... vs England Patriots".
+    terms: list[str] = [
+        phrase
+        for phrase in title_phrases(topic)
+        if len(phrase.split()) > 1 and not phrase.isupper()
+    ]
+    covered = {word.lower() for phrase in terms for word in phrase.split()}
     for w in re.findall(r"[A-Z][a-zA-Z]{2,}", topic):
-        if w.isupper() or w.lower() in _SUBJECT_COMMON:
+        if w.isupper() or w.lower() in _SUBJECT_COMMON or w.lower() in covered:
             continue
         if w not in terms:
             terms.append(w)
@@ -556,7 +567,7 @@ def _subject_terms(topic: str) -> list[str]:
 
     for team in nfl_teams(topic) + nba_teams(topic):
         nickname = team.split()[-1]
-        if nickname not in terms:
+        if nickname not in terms and team not in terms:
             terms.append(nickname)
     return terms[:3]
 

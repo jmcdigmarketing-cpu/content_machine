@@ -188,18 +188,51 @@ _SPLIT_PLACES = {"Angeles": "Los", "Vegas": "Las", "Orleans": "New"}
 
 
 def broken_place_name(title: str) -> str:
-    """The place name a title has broken ("Los Angeles" for "Loss Angeles"), or ""."""
+    """The place name a title has broken ("Los Angeles" for "Loss Angeles"), or "". #1224: or
+    the team name that lost its first word ("New England Patriots" for "England Patriots")."""
     words = re.findall(r"[A-Za-z']+", title or "")
     for i, word in enumerate(words):
         first = _SPLIT_PLACES.get(word)
         if first and (i == 0 or words[i - 1] != first):
             return f"{first} {word}"
+    return broken_team_name(title)
+
+
+# A nickname of two words: "Trail Blazers" stands alone and has lost nothing.
+_TWO_WORD_NICKNAMES = frozenset({"Portland Trail Blazers"})
+
+
+def broken_team_name(title: str) -> str:
+    """A three-word team named without its first word ("England Patriots", "York Jets"), as the
+    full name, or "" (#1224, run 159)."""
+    from apis.nba_teams import NBA_TEAM_NAMES
+    from apis.nfl_entities import NFL_TEAM_NAMES
+
+    text = title or ""
+    for full in sorted({*NFL_TEAM_NAMES.values(), *NBA_TEAM_NAMES.values()}):
+        parts = full.split()
+        if len(parts) < 3 or full in _TWO_WORD_NICKNAMES:
+            continue
+        tail = " ".join(parts[1:])
+        if re.search(rf"\b{re.escape(tail)}\b", text) and not re.search(
+            rf"\b{re.escape(full)}\b", text
+        ):
+            return full
     return ""
+
+
+_CUT_OFF_RE = re.compile(r"(?:\u2026|\.{3})\s*$")
+
+
+def title_cut_off(title: str) -> bool:
+    """#1225: a title that ends in an ellipsis - run 158's model wrote "... positive outlook\u2026"."""
+    return bool(_CUT_OFF_RE.search(title or ""))
 
 
 def _clean_title(raw: str, *, fallback: str, angle: str = "") -> str:
     title = (raw or "").strip().strip('"').strip("'")
     title = re.sub(r"\s+", " ", title)
+    title = _CUT_OFF_RE.sub("", title).rstrip(" ,;:-")  # #1225: the model's own "..."
     if not title or _SLOP_RE.search(title):
         return fallback
     title = _drop_frame(title, angle)

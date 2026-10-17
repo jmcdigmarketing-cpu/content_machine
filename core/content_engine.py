@@ -1428,11 +1428,16 @@ def _maybe_inject_insight(
     pay nothing. Also no-op for calm intents (#660) — an explainer without a
     take is the assignment, not a defect.
     """
-    from core.angle_intent import ANGLE_TAKE, CALM_INTENTS, detect_angle_intent
+    from core.angle_intent import ANGLE_HOPE, ANGLE_TAKE, detect_angle_intent
 
     kind = intent or detect_angle_intent(topic)
-    if own_idea or kind in CALM_INTENTS:
-        return script  # #1016: the operator's own idea is not given a take it did not have
+    if own_idea or kind == ANGLE_HOPE:
+        # #1016: the operator's own idea is not given a take it did not have; #1084: a hope
+        # video keeps its hope.
+        return script
+    # #1226 (operator, 2026-10-16; reverses #660 for the other calm intents): a calm draft gets
+    # the "what to watch" beat below - it was given none, and the authenticity check then held
+    # runs 159 and 150 for "no take found".
     if not _insight_injection_enabled():
         return script
     from core.authenticity import has_insight

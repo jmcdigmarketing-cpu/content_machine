@@ -53,45 +53,41 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-16 · **HEAD at write:** `2fe6f3d` (wave 95) + the wave 96 commit
+**Written:** 2026-10-16 evening · **HEAD at write:** `80d5141` (wave 97) + the wave 98 commit
 (`git log -1`) · **Tree:** clean of mine after the commit; leave `.agents/` and `.codex/`.
-Pushed.
+Pushed (no Cursor commit sat under mine).
 
-**Cursor:** two for you. **#1221** - overnight's draft 2 today was "TikToker Dr Food walks free
-months after life sentence for smuggling drugs in sweets": `infer_topic_domain` says neutral, and
-a gaming-tagged feed made it `gaming` in `best_bet._domain_for_feed` (beside your #1215; I did not
-touch `core/best_bet.py`). **#1222** is filed, not taken: `ops blocking` describes run 139, a
-pulled run. Shared files of mine: `core/nightly_task.py` (`stopped_line`, `overnight_stop_line`,
-`enable_crash_traceback`), `core/batch_review.py` (`_timing_lines`, `drafts_made_since`,
-`dead_reason` first in the gate, "n" sets aside), `core/run_quality.py` (`run_fact_count`),
-`core/run_features.py` + `core/content_engine.py` (`fact_lines`), `core/publish_blockers.py`,
-`core/batch_generation.py`, `core/facts/enrichment.py` (`used_fact_lines`), `core/data_quality.py`,
-`config/settings.py` (`load_env_file`), `scripts/ops.py`, `scripts/worker_task.pyw`.
+**Cursor - your queue, from the operator (2026-10-16):** first your own five, **#1215 #514
+#418 #463 #545**; then these five, filed with their evidence in `docs/backlog.md`:
+**#1221** a neutral headline made a gaming best bet by its feed (`core/best_bet._domain_for_feed`
+- with #1215), **#1227** the correction scan fetches URL fragments every run
+(`core/correction_dossier.py`, `description_extras.collect_source_urls`), **#1228** a fast-cut
+shot timed out at 120 s (`assets/fast_cut.py`), **#1229** one overnight draft per child process
+(`core/overnight.py`), **#1043** clip index tagged by team. Commit locally, one commit per item
+or pair, each test failing first - **do not push**: Claude reviews, corrects and pushes your
+commits in the operator's next prompt.
 
-**Read before editing:** `key_facts_count` is still the pasted facts; `fact_lines` is what a run
-was written from - read it through `run_quality.run_fact_count`. `config.settings` mutes
-python-dotenv's "could not parse" record and logs the doctor's line instead. A dead draft (its
-game started, or past its window) is the first reason in `unattended_block_reason`. mypy 96.
+**Shared files of mine (committed and pushed - read before editing):** `core/nightly_task.py`
+(`record_overnight`, `overnight_stop_line`), `scripts/ops.py` (`cmd_overnight` records its start
+and finish), `core/review_booth.py` (`_pulled`), `core/publish_blockers.py` (the record's quality
+wins), `apis/topic_variants.py` (`_subject_terms` whole names, `_is_label` folds hyphens),
+`core/title_generator.py` (`broken_team_name`, `title_cut_off`), `core/authenticity.py` (stance
+patterns), `core/content_engine.py` (`_maybe_inject_insight`: calm intents get the neutral beat,
+not own ideas or hope), `core/batch_review.py`, `tests/__init__.py` (`OVERNIGHT_RECORD_FILE`).
+
+**Read before editing:** topic words come from `apis/topic_tokens` - `_subject_terms` was a
+private tokenizer and split "New England". `#660`'s "a calm explainer gets no beat" is reversed by
+the operator (#1226); its test now asks for the "what to watch" beat. mypy 96.
 
 **Defects first:**
-- Overnight crashed today at 4:32 PM after 1 of 3 drafts (0xC0000374, heap corruption, the only
-  Python crash in 30 days; the WER report needs admin). Cause unknown - `faulthandler` is on now,
-  so a next one names its Python line in `output\logs\overnight-last.log`.
-- Nothing goes to TikTok or Instagram until `R2_PUBLIC_BASE_URL` is set. Run 126 is overdue (no
-  worker task). 37 older runs keep `fact_lines`-less scores (outside the approved back-fill).
+- Overnight is paused: the shelf holds 3 (155 and 126 queued, 114 never uploaded) and nothing
+  sends uploads. Run 157 is clean and next in line.
+- The 10-16 crash's cause is unknown; `faulthandler` will name it next time.
 
-**Shipped:** waves 95-96 - #1216-#1220. 16 of 17 tests failed or errored on `58dafb6` first, and
-10 of 12. Corpus 270. Highest filed #1222.
+**Shipped:** waves 97-98 - #1222-#1226. 8 of 8 and 8 of 13 tests failed on `dd9e131` first.
+Corpus 276. Highest filed #1229.
 
-**In progress:** waves 97-98 claimed (2026-10-16 evening, uncommitted until their commits) -
-#1223 the overnight stop line (`core/nightly_task.py`, `scripts/ops.py` `cmd_overnight`), #1222
-`ops blocking` reads the shelf (`core/review_booth.py`, `core/publish_blockers.py`), #1224 team
-names stay whole (`apis/topic_variants.py`, `core/title_generator.py`), #1225 hyphenated labels
-and a model's "…" (same files), #1226 insight check + a calm draft's "what to watch" beat
-(`core/authenticity.py`, `core/content_engine.py` `_maybe_inject_insight`). **Cursor - the
-operator added five for you, after your own five:** #1221, #1227, #1228, #1229, #1043 (filed
-with evidence in the backlog when wave 97 commits). Not touching `core/best_bet.py`,
-`core/correction_dossier.py`, `assets/fast_cut.py`, `core/overnight.py`.
+**In progress:** nothing claimed. Next prompt: review Cursor's commits, correct, push.
 
 ## Slot — Cursor
 

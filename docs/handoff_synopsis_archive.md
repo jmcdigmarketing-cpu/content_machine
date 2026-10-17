@@ -7,6 +7,24 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-15 (Cursor): five defects (#1184, #1209, #1208, #456, #392)
+
+An open correction was written again the next day. The second scan now leaves the file
+and returns nothing, so the overnight warning does not fire again. A closed note still
+gets a new file (#1184). The Buffer request count is a date-keyed file: a later process
+with the memory counter at 0 still prints `210/250`, and yesterday does not count (#1209).
+
+The Contender Series headline was `trending on MMA Fighting now` and `nba averages`,
+because the word "contender" matches the NBA list. A feed with one domain wins. The line
+is `ufc averages`. The same title with no feed tag stays `nba` (#1208, #1215).
+
+`import main` and `core.pipeline` fail when they pass double the 2026-10-10 times (2.56s
+and 1.66s). Watched fail at 0.94s against a 0.01s budget (#456). `ops doctor` says
+`Apify: they are down` or `Apify: we broke it`. OpenRouter's status page answered 403.
+Live: `Apify: operational` (#392).
+
+**Next:** #1215 #514 #418 #463 #545.
+
 ## Previous — 2026-10-15 (Cursor): one video, three feeds (#1194-#1199)
 
 Buffer's posts came back with no views. One `posts` query per channel now asks for metrics,

@@ -733,6 +733,10 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
         # Run 116's draft was titled "Contrarian: Spain's World Cup win ..." - the angle's
         # label, pasted in front of the title. A person fixes that; overnight must not ship it.
         return f'its title starts with a label ("{label}")'
+    from core.title_generator import title_cut_off
+
+    if title_cut_off(draft.title):  # #1225: run 158 ended "... positive outlook\u2026"
+        return "its title is cut off"
     return ""
 
 

@@ -155,6 +155,15 @@ _STANCE_PATTERNS = (
     re.compile(r"\b(?:people|fans|everyone|most people) (?:keep )?miss(?:es|ing)?\b"),
     re.compile(r"\bknow the difference\b"),
     re.compile(r"\bthe smart (?:bet|money|play)\b"),
+    # #1226: run 158 - "If this sells, every franchise with a cozy mascot suddenly has a
+    # blueprint", "Watch whether the therapist credit survives". And the beat the insight pass
+    # asks of a calm draft ("what to watch") had no marker at all.
+    re.compile(r"\bwatch (?:whether|if|how|for whether)\b"),
+    re.compile(r"\bwhat to watch\b"),
+    re.compile(
+        r"\bif (?:this|that|it|he|she|they) (?:sells|works|lands|hits|holds|sticks|pays off)\b"
+    ),
+    re.compile(r"\bthat'?s the difference between\b"),
 )
 
 # Deliberately absent: "hot take". `title_generator` bans "my hot take" as slop

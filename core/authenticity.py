@@ -543,6 +543,24 @@ def _insight_check(script: str) -> AuthenticityCheck:
     )
 
 
+# Wave 112 (the operator: yes): half the viewers are gone by a quarter of the video, so the first
+# sentence after the intro carries the call or the take. `has_insight` reads a whole script and
+# missed "Packers win this one" (a call) and "the UFC is wasting him" (a take).
+_FIRST_LINE_CALL = re.compile(
+    r"\b(?:will|won'?t|can'?t|cannot|should|shouldn'?t|must|deserves?|wasting|wasted|"
+    r"overrated|underrated|mistake|trap|robbed|robbery|"
+    r"(?:win|wins|lose|loses|beat|beats|cover|covers)\s+(?:this|tonight|it|by|the game|"
+    r"easily|outright|again|unless|if|on (?:sunday|monday|thursday|saturday)))\b",
+    re.IGNORECASE,
+)
+
+
+def first_line_take(sentence: str) -> bool:
+    """True when one sentence carries a call or a take - the first-line rule (wave 112)."""
+    text = (sentence or "").strip()
+    return bool(text) and (bool(_FIRST_LINE_CALL.search(text)) or has_insight(text))
+
+
 def has_insight(script: str) -> bool:
     """True if the script carries an opinion/prediction/analysis beat (a 'take').
 

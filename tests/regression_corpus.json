@@ -5428,6 +5428,56 @@
         "truthy": true
       },
       "why": "another outlet's picks are not a story"
+    },
+    {
+      "id": "a-plain-call-is-a-first-line-take",
+      "item": 1311,
+      "source": "wave 112: has_insight missed 'Packers win this one' as a call",
+      "call": "core.authenticity:first_line_take",
+      "args": [
+        "Packers win this one, and Dallas can't stop the deep ball."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the first-line rule must not refuse a real call"
+    },
+    {
+      "id": "a-bare-fact-is-not-a-first-line-take",
+      "item": 1311,
+      "source": "wave 112: a grounded fact with no call is what the rule asks to replace",
+      "call": "core.authenticity:first_line_take",
+      "args": [
+        "The Chargers are 0-4 for the first time since 2017."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the stake and the call come first"
+    },
+    {
+      "id": "paid-signal-outcome-is-joined-by-run",
+      "item": 1312,
+      "source": "measured 2026-10-18: the attribution read the composite score its signals feed",
+      "call": "core.paid_signal_attribution:_outcome",
+      "args": [
+        {
+          "run_id": 7,
+          "composite_score": 90.0
+        }
+      ],
+      "kwargs": {
+        "prefer": "engaged_rate",
+        "outcomes": {
+          "engaged_rate": {
+            "7": 0.25
+          }
+        }
+      },
+      "expect": {
+        "falsy": true
+      },
+      "why": "JSON keys are strings; a run's outcome is looked up by its integer id - an unmatched run has no outcome, never the composite"
     }
   ]
 }

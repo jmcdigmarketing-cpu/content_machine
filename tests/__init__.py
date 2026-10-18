@@ -107,6 +107,8 @@ os.environ["PREVIEW_CALLS"] = "false"
 os.environ["HOLDOUT_EVERY"] = "0"
 # Wave 111 (#138): overnight's Monday compilation runs ffmpeg and queues an upload.
 os.environ["WEEK_COMPILE"] = "false"
+# Wave 112: the first-line rule refuses openers without a call; its own tests turn it on.
+os.environ["FIRST_LINE_RULE"] = "false"
 # #771 turned the whisper aligner on by default; no test may load a model.
 os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 # #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one

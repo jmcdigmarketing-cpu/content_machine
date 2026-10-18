@@ -422,6 +422,10 @@ def _build_prompts(
         # #1096: "turn it around - reasons for hope" asks for a plan as well as the hope.
         user_take += f"\n- The idea also asks {_ALSO_LINES[also]}."
 
+    rule = _first_line_rule(channel_id)  # wave 112: the stake and the call come first
+    first_line_note = (
+        f"\nIt states the stake and your call (or your take) - {rule}." if rule else ""
+    )
     retention_rule = ""
     if preset.choice in ("2", "3"):
         retention_rule = (
@@ -446,7 +450,7 @@ You are a sports and gaming scriptwriter for vertical video (YouTube Shorts and 
 
 {length_note}
 
-HOOK RULE: The script's FIRST sentence must be a specific fact, number, or contradiction — under 12 words.
+HOOK RULE: The script's FIRST sentence must be a specific fact, number, or contradiction — under 12 words.{first_line_note}
 Never open with "Today", "Let's", "In this video", "Welcome", or a direct question.
 Strong hooks: "He lost $2 billion in one afternoon." / "Nobody saw this roster move coming." / "The division just lost its only credible contender."
 {retention_rule}
@@ -913,6 +917,22 @@ def _hook_problems(
     return problems
 
 
+def _first_line_rule(channel_id: str = "") -> str:
+    """Wave 112 (the operator: yes): "" when off (FIRST_LINE_RULE=false), else the reason, with
+    the channel's measured cliff when there is one."""
+    if os.getenv("FIRST_LINE_RULE", "true").strip().lower() in ("0", "false", "no", "off"):
+        return ""
+    try:
+        from core.retention import drop_off_ratio
+
+        pos = drop_off_ratio(channel_id) if channel_id else None
+    except Exception:
+        pos = None
+    if pos is None:
+        return "most viewers decide in the first seconds"
+    return f"half this channel's viewers are gone by {round(pos * 100)}% of the video"
+
+
 def _hook_variants(
     script: str,
     *,
@@ -934,6 +954,7 @@ def _hook_variants(
     """
     from analytics.hook_learning import rank_openers, regen_guidance
     from core.angle_intent import stance_flip, stance_rule
+    from core.authenticity import first_line_take
     from core.hook_score import hook_regen_enabled, score_hook, score_script_hook
 
     extra: dict[str, Any] = {"variants": [], "picked": ""}
@@ -946,6 +967,9 @@ def _hook_variants(
     problems = _hook_problems(current.hook, grounding_text, recent_openers=recent)
     # #1161: what the claim check said the first sentence states and the facts do not.
     problems = [*problems, *(f"it states what the facts do not: {c}" for c in unbacked or [])]
+    rule = _first_line_rule(channel_id)
+    if rule and not first_line_take(current.hook):
+        problems.append("it carries no call or take - " + rule)
     if problems:
         extra["problems"] = problems
     guidance: dict[str, Any] = {}
@@ -961,6 +985,8 @@ def _hook_variants(
         "never with a stock line ('Here's the part everyone's missing', 'Nobody wants to "
         "say this'). Use only names and numbers already in the script; invent nothing."
     )
+    if rule:
+        system_prompt += f"\nEach opener states the stake and the call (or the take): {rule}."
     if problems and grounding_text.strip():
         # #1018: the current hook is not on solid ground - build the new one from facts.
         facts_excerpt = "\n".join(
@@ -1021,6 +1047,8 @@ def _hook_variants(
         flip = stance_flip(opener, intent, idea=idea) if intent else ""
         if opener_problems:
             row["refused"] = "; ".join(opener_problems)
+        elif rule and not first_line_take(opener):
+            row["refused"] = "no call or take in the first sentence"
         elif flip:
             row["refused"] = f"knocks the idea's stance ({flip})"
         elif not problems and _new_specifics(script, opener):

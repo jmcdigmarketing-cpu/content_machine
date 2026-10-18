@@ -341,7 +341,8 @@ def cmd_competitors(args: argparse.Namespace) -> int:
 def cmd_paid_signals(args: argparse.Namespace) -> int:
     from core.paid_signal_attribution import report_from_traces
 
-    print(report_from_traces(channel_id=args.channel, limit=args.limit or 50))
+    # Wave 112: every trace - the last 50 held 5 measured runs, all with both signals on.
+    print(report_from_traces(channel_id=args.channel, limit=args.limit or 500))
     return 0
 
 

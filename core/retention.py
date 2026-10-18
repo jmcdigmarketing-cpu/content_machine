@@ -120,6 +120,22 @@ def pacing_hint(channel_id: str | None) -> str:
     )
 
 
+def cliff_line(channel_id: str | None) -> str:
+    """Wave 112: where the channel loses half its viewers, for growth - or ""."""
+    if not channel_id:
+        return ""
+    try:
+        pos = drop_off_ratio(channel_id)
+    except Exception:
+        return ""
+    if pos is None:
+        return ""
+    return (
+        f"Retention: half the viewers are gone by {round(pos * 100)}% of a video - the first "
+        "sentence after the intro carries the stake and the call."
+    )
+
+
 def display_retention(channel_id: str, *, print_fn=print) -> None:
     avg = average_curve(channel_id)
     if not avg:

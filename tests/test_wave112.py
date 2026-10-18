@@ -169,5 +169,129 @@ class WeekThumbnailTests(unittest.TestCase):
         self.assertEqual(features["thumbnail_pick"]["path"], "C:/out/week.png")
 
 
+class FirstLineRuleTests(unittest.TestCase):
+    """Item 6 (the operator: yes): half the viewers are gone by a quarter of the video, so the
+    first sentence after the intro carries the stake and the call (or the take)."""
+
+    def test_a_call_or_a_take_counts_and_a_bare_fact_does_not(self):
+        from core.authenticity import first_line_take
+
+        for line in (
+            "Packers win this one, and Dallas can't stop the deep ball.",
+            "Rakhmonov is 19-0 and the UFC is wasting him.",
+            "If the Chargers can't cover Kelce, they lose by ten.",
+            "My call: the Packers win by a touchdown.",
+        ):
+            self.assertTrue(first_line_take(line), line)
+        for line in (
+            "The Chargers are 0-4 for the first time since 2017.",
+            "Gaethje TKO'd Topuria in round 2.",
+            "Morales has three straight first-round knockouts.",
+        ):
+            self.assertFalse(first_line_take(line), line)
+
+    def test_the_rewrite_takes_an_opener_with_a_call(self):
+        from core import content_engine as ce
+
+        script = ("The Chargers are 0-4 for the first time since 2017. Herbert has thrown six "
+                  "interceptions. The defense ranks last against the pass.")  # fmt: skip
+        openers = {"openers": ["The Chargers are 0-4 and Herbert keeps throwing picks.",
+                               "The Chargers lose again unless Herbert stops throwing picks."]}  # fmt: skip
+        sent: list[str] = []
+
+        def llm(system, user, **_kw):
+            sent.append(system)
+            return openers
+
+        with (
+            patch.dict(os.environ, {"HOOK_REGEN_ENABLED": "true", "FIRST_LINE_RULE": "true"}),
+            patch.object(ce, "_call_content_llm", side_effect=llm),
+            patch.object(ce, "_recent_openers", return_value=[]),
+            patch("analytics.hook_learning.regen_guidance", return_value={}),
+            patch("core.retention.drop_off_ratio", return_value=0.25),
+        ):
+            new, extra = ce._hook_variants(script, channel_id="tapin")
+        self.assertIn("stake and the call", sent[0])
+        self.assertTrue(new.startswith("The Chargers lose again unless"), extra)
+
+    def test_growth_says_where_the_cliff_is(self):
+        from core.retention import cliff_line
+
+        with patch("core.retention.drop_off_ratio", return_value=0.25):
+            line = cliff_line("tapin")
+        self.assertIn("half the viewers are gone by 25%", line)
+
+
+class ThirdChannelGateTests(unittest.TestCase):
+    """Item 7, #1079: a third channel is decided with data - the gate, printed."""
+
+    def _rows(self, stayed):
+        return [{"stayed": s, "published": NOW - timedelta(days=i)} for i, s in enumerate(stayed)]
+
+    def test_the_line_says_where_tapin_stands_against_the_bar(self):
+        from analytics import growth
+
+        with (
+            patch.object(growth, "_rows", return_value=self._rows([0.25] * 12)),
+            patch.dict(os.environ, {"THIRD_CHANNEL_BAR": "0.35"}),
+        ):
+            line = growth.third_channel_line("tapin")
+        self.assertIn("not yet", line)
+        self.assertIn("25%", line)
+        self.assertIn("35%", line)
+
+    def test_the_bar_cleared_says_so(self):
+        from analytics import growth
+
+        with (
+            patch.object(growth, "_rows", return_value=self._rows([0.40] * 10 + [0.1] * 5)),
+            patch.dict(os.environ, {"THIRD_CHANNEL_BAR": "0.35"}),
+        ):
+            line = growth.third_channel_line("tapin")
+        self.assertIn("cleared", line)
+
+
+class PaidSignalOutcomeTests(unittest.TestCase):
+    """Item 8, #1071 step 1: the "keep" was measured on the composite score the signals feed."""
+
+    def _traces(self):
+        traces = []
+        for run_id in range(1, 13):
+            on = run_id % 2 == 0
+            traces.append({"run_id": run_id, "composite_score": 90.0 if on else 30.0,
+                           "signals": {"tiktok_trends": {"active": on, "status": "ok"}}})  # fmt: skip
+        return traces
+
+    def test_lift_is_read_on_measured_outcomes_not_the_composite(self):
+        from core.paid_signal_attribution import attribute_paid_signals
+
+        # Runs with the signal held worse: 20% engaged against 30%.
+        engaged = {r: (0.20 if r % 2 == 0 else 0.30) for r in range(1, 13)}
+        lifts = attribute_paid_signals(self._traces(), names=("tiktok_trends",),
+                                       outcomes={"engaged_rate": engaged})  # fmt: skip
+        lift = lifts[0]
+        self.assertEqual(lift.metric, "engaged_rate")
+        self.assertLess(lift.lift, 0)
+
+    def test_no_outcomes_is_wait_not_the_composite(self):
+        from core.paid_signal_attribution import attribute_paid_signals, recommend_catalog_action
+
+        lift = attribute_paid_signals(self._traces(), names=("tiktok_trends",), outcomes={})[0]
+        self.assertNotEqual(lift.metric, "composite_score")
+        self.assertEqual(recommend_catalog_action(lift), "wait")
+
+    def test_the_report_joins_the_channels_outcomes(self):
+        from core import paid_signal_attribution as psa
+
+        engaged = {r: (0.20 if r % 2 == 0 else 0.30) for r in range(1, 13)}
+        with (
+            patch("core.engagement_predictor.run_engagement_map", return_value=engaged),
+            patch("core.predictions.ledger._views_outcomes", return_value={}),
+        ):
+            text = psa.report_from_traces(self._traces(), channel_id="tapin")
+        self.assertIn("engaged_rate", text)
+        self.assertIn("disable", text)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -80,9 +80,9 @@ and queued for a free slot - the operator said a $0 compilation, public at a slo
 
 **Wave 112 in progress (batches A-E; a batch not in `git log` was not finished):** A done -
 #1307-#1310 (status reuses the doctor result, roundups dropped, the week's games called,
-the compilation's thumbnail). Next: B #1136 claims (sources for the operator's yes), C the
-first-line rule, #1290 retune at n>=21, paid-signal attribution on outcomes, D #1042 the
-matchup card, E #1077 the menu. **Defects first:** none open of mine.
+the compilation's thumbnail), B (#1136 settled with the operator's yes) and C (#1311 the
+first-line rule, #1079 the gate line, #1312 attribution on outcomes; #1290 not retuned, by
+master_plan M4.5) done. Next: D #1042 the matchup card, E #1077 the menu. **Defects first:** none open of mine.
 
 ## Slot — Cursor
 

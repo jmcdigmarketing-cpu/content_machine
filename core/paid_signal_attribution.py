@@ -68,7 +68,18 @@ def _mean(values: list[float]) -> ArmStats:
     return ArmStats(n=len(values), mean=sum(values) / len(values))
 
 
-def _outcome(trace: dict[str, Any], *, prefer: str) -> float | None:
+def _outcome(
+    trace: dict[str, Any], *, prefer: str, outcomes: dict[str, dict[int, float]] | None = None
+) -> float | None:
+    if outcomes is not None:
+        # Wave 112: the measured outcome, joined by run id - traces carry no engaged rate, so
+        # every run fell back to the composite score these signals themselves feed.
+        table = outcomes.get(prefer) or {}
+        try:
+            value = table.get(int(trace.get("run_id")))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            value = None
+        return float(value) if value is not None else None
     if prefer == "engaged_rate":
         raw = trace.get("engaged_rate")
         if raw is None:
@@ -93,11 +104,12 @@ def attribute_signal(
     name: str,
     *,
     metric: str = "engaged_rate",
+    outcomes: dict[str, dict[int, float]] | None = None,
 ) -> SignalLift:
     on: list[float] = []
     off: list[float] = []
     for trace in traces:
-        value = _outcome(trace, prefer=metric)
+        value = _outcome(trace, prefer=metric, outcomes=outcomes)
         if value is None:
             continue
         sig = (trace.get("signals") or {}).get(name)
@@ -114,14 +126,20 @@ def attribute_paid_signals(
     traces: list[dict[str, Any]],
     *,
     names: tuple[str, ...] = PAID_SIGNALS,
+    outcomes: dict[str, dict[int, float]] | None = None,
 ) -> list[SignalLift]:
-    """Engaged-rate first; fall back to composite when no rates exist."""
+    """Engaged-rate first. With `outcomes` (wave 112) each run's measured engaged rate and
+    7-day views are joined by run id, and there is no fallback to the composite score - a
+    signal's lift on the score it feeds says nothing about viewers. Without them, the old
+    behaviour: composite when no rates exist."""
     out: list[SignalLift] = []
     for name in names:
-        lift = attribute_signal(traces, name, metric="engaged_rate")
-        if lift.with_signal.n + lift.without_signal.n == 0:
+        lift = attribute_signal(traces, name, metric="engaged_rate", outcomes=outcomes)
+        if outcomes is None and lift.with_signal.n + lift.without_signal.n == 0:
             lift = attribute_signal(traces, name, metric="composite_score")
         out.append(lift)
+        if outcomes and outcomes.get("views_7d"):
+            out.append(attribute_signal(traces, name, metric="views_7d", outcomes=outcomes))
     return out
 
 
@@ -140,6 +158,7 @@ def recommend_catalog_action(lift: SignalLift) -> str:
 def render_report(lifts: list[SignalLift]) -> str:
     lines = ["Paid-signal attribution", "=" * 40]
     lines.append("Does not change apify_sources.json (operator decides).")
+    lines.append("Read on measured outcomes: engaged rate, and 7-day views on a log scale.")
     for lift in lifts:
         action = recommend_catalog_action(lift)
         delta = lift.lift
@@ -174,4 +193,23 @@ def report_from_traces(
         except Exception as exc:
             logger.debug("paid-signal traces skipped: %s", exc)
             traces = []
-    return render_report(attribute_paid_signals(traces or []))
+    outcomes = _channel_outcomes(channel_id) if channel_id else None
+    return render_report(attribute_paid_signals(traces or [], outcomes=outcomes))
+
+
+def _channel_outcomes(channel_id: str) -> dict[str, dict[int, float]]:
+    """Each measured run's engaged rate and 7-day views (log), by run id (wave 112)."""
+    out: dict[str, dict[int, float]] = {}
+    try:
+        from core.engagement_predictor import run_engagement_map
+
+        out["engaged_rate"] = {int(k): float(v) for k, v in run_engagement_map(channel_id).items()}
+    except Exception as exc:
+        logger.debug("paid-signal engaged rates unread: %s", exc)
+    try:
+        from core.predictions.ledger import _views_outcomes
+
+        out["views_7d"] = {int(k): float(v) for k, v in _views_outcomes(channel_id).items()}
+    except Exception as exc:
+        logger.debug("paid-signal views unread: %s", exc)
+    return out

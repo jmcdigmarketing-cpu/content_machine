@@ -18,6 +18,7 @@ that is not there is not reported. Below `_MIN_VIDEOS` measured videos it says "
 from __future__ import annotations
 
 import json
+import os
 import statistics
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
@@ -157,6 +158,28 @@ def intro_split(channel_id: str) -> dict[str, Any]:
     if without:
         out["without"] = round(_median(without), 3)
     return out
+
+
+_GATE_VIDEOS = 10
+
+
+def third_channel_line(channel_id: str) -> str:
+    """#1079: a third channel is decided with data, once this channel's stayed share holds the
+    bar (`THIRD_CHANNEL_BAR`, 35%) as the median of its last ten measured videos - or ""."""
+    try:
+        bar = float(os.getenv("THIRD_CHANNEL_BAR", "0.35") or 0.35)
+    except ValueError:
+        bar = 0.35
+    measured = [r for r in _rows(channel_id) if r.get("stayed") is not None and r.get("published")]
+    recent = sorted(measured, key=lambda r: r["published"], reverse=True)[:_GATE_VIDEOS]
+    if len(recent) < _GATE_VIDEOS:
+        return f"Third channel: not yet - {len(recent)} of {_GATE_VIDEOS} videos measured"
+    median = _median([float(r["stayed"]) for r in recent])
+    if median >= bar:
+        return (f"Third channel: the bar is cleared - {median:.0%} stayed over the last "
+                f"{_GATE_VIDEOS} videos against {bar:.0%}; the decision is yours (#1079)")  # fmt: skip
+    return (f"Third channel: not yet - {median:.0%} stayed over the last {_GATE_VIDEOS} videos "
+            f"against a bar of {bar:.0%} (#1079)")  # fmt: skip
 
 
 def intro_line(channel_id: str) -> str:
@@ -497,6 +520,18 @@ def render(channel_id: str) -> str:
         lines.append(f"  {intro_line(channel_id)}")  # #988
     except Exception as exc:
         logger.debug("intro line skipped: %s", exc)
+    try:
+        lines.append(f"  {third_channel_line(channel_id)}")  # #1079
+    except Exception as exc:
+        logger.debug("third-channel line skipped: %s", exc)
+    try:  # wave 112: where the channel loses half its viewers
+        from core.retention import cliff_line
+
+        cliff = cliff_line(channel_id)
+        if cliff:
+            lines.append(f"  {cliff}")
+    except Exception as exc:
+        logger.debug("cliff line skipped: %s", exc)
     try:
         lines.append(f"  {shorts_line(channel_id, rep.get('shorts_split'))}")  # #1054
     except Exception as exc:

@@ -8492,8 +8492,8 @@ public videos' unconfirmed claims and bring sources (#1136).
 Measured first (read-only):
 - `ops status` took 7.9 s, 5.0 of it the doctor's probes for a line that counts passes.
 - `ops list` took 0.1 s, so #610 has no measured need.
-- Retention curves were already stored on 24 videos (100 points each) - #356 shipped - and read
-  by nothing. On average half the viewers are gone by 20% of the video, the steepest drops at
+- Retention curves were already stored on 24 videos (100 points each) - #356 shipped. I wrote
+  "read by nothing"; corrected in batch C - `pacing_hint` reads them for presets 2-3. On average half the viewers are gone by 20% of the video, the steepest drops at
   5-15%.
 - `ops paid-signals` measures its "keep" on the composite score the signals feed, which does not
   predict engagement.
@@ -8506,3 +8506,23 @@ call for the CI line stays), #1308 betting roundups are not ideas, #1309 overnig
 week's marquee games, #1310 the compilation's thumbnail. A first version saved inside `gather`;
 the callers save now, so `gather` stays pure. test_status_machine read a doctor result an
 earlier test had kept - it pins `last_checks` now. 8 of 8 new tests failed on clean HEAD.
+
+Batch B (item 5, #1136, the operator's yes on each):
+- Every blocking claim on runs 92 and 119 was researched.
+- Run 92: all four confirmed (TechSpot, Dexerto, Wikipedia).
+- Run 119: two confirmed (UFC.com, CBS Sports). The Brady line was rejected - he said "There's
+  absolutely no way" of Rakhmonov jumping the title queue, not of a Morales fight (Yahoo Sports) -
+  and a correction line went into the video's description, read back.
+
+Batch C (items 6-8):
+- #1311, the first-line rule, in both prompts and the rewrite's pick. A one-sentence detector,
+  because `has_insight` missed plain calls.
+- #1079's gate printed (24% stayed against 35%).
+- #1312: paid-signal attribution on measured outcomes. Over every trace the runs with the paid
+  signals held less and got fewer views, but the comparison group is 3-4 runs, so "wait"; the
+  finding is on #1071.
+- #1290 was not retuned: master_plan M4.5 leaves statistical retuning to n of about 85. The
+  scorer is a report-card component, and the learning's largest gap rests on 3 videos. #1079
+  took its place in the ten.
+- **Corrected:** I had written that the stored retention curves were read by nothing;
+  `retention.pacing_hint` puts the drop-off in the script prompt for presets 2-3.

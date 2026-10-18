@@ -18,7 +18,7 @@ can make (a Google console, money, the channel's niche). Each "You" step names t
 command or page.
 
 **Horizons.** **H0** this week · **H1** the next two to four weeks · **H2** the quarter.
-[roadmap.md](roadmap.md)'s next five are drawn from H0 and H1.
+[roadmap.md](roadmap.md)'s next items are drawn from H0 and H1; the ordered lists are at the end.
 
 ---
 
@@ -50,11 +50,11 @@ The ideas were small stories and the previews were not predictions.
 |---|---|---|---|---|
 | B1 | ideas were a date shuffle of 4 feeds | every configured feed for the channel's domains (17), ranked by how many outlets carry the story (#1300) | Code - done | H0 |
 | B2 | previews were matchup + records | a call and the why, against the board's line (#1301) | Code - done | H0 |
-| B3 | NFL and NBA news never reach the ideas: TapIn's niche is gaming, UFC, soccer | add `"nfl", "nba"` to `extra_domains` in `config/channels.json`, or keep news to gaming and UFC (#1303) | **You** | H0 |
-| B4 | a call's reason is often the season records, and nothing scores a call | feed it the script's matchup research; score calls after the game - "called 7 of 10" is a series and an E1 number (#1304) | Code | H1 |
+| B3 | NFL and NBA news never reached the ideas: TapIn's niche was gaming, UFC, soccer | **answered 2026-10-18: yes** - `extra_domains` gains `nfl` and `nba` (#1303) | Code | H1 |
+| B4 | a call's reason is often the season records, and nothing scores a call | ESPN's game summary (win projection, injuries, leaders, form) as supplied lines; a calls ledger scored after the game - "called 7 of 10" (#1304) | Code | H1 |
 | B5 | every video opens on a 2.15 s channel intro; `INTRO_TEST=alternate` is running | read the result once enough videos settle it; drop the intro if no-intro holds more viewers (#988) | Code + **You** | H1 |
 | B6 | the hook score runs against who stays (r = -0.41) | retune when 21 videos settle it (#1290) | Code | H1 |
-| B7 | no recurring format brings a viewer back | a series - "every UFC card, graded", "Week N picks, graded" (#991) | Code + **You** | H1 |
+| B7 | no recurring format brings a viewer back | **answered: "Picks, graded" first** - each week, last week's calls scored and this week's picks (#991) | Code | H1 |
 | B8 | clean is not good: a title still read "Denver Loss Angeles" | the title check (#1181) and the take check (#1292) gate a render | Code | - |
 
 **Exit:** the idea menu's first five each read "on N outlets" with N >= 2, every preview
@@ -73,13 +73,14 @@ by volume alone, so the levers are taken in order of what they can move:
 2. **TikTok and Instagram** - every public video goes there through Buffer, and each platform's
    results are read back (#1194-#1199, shipped). The weekly report says which feed liked what.
 3. **Watch hours** - a weekly long-form compilation from the week's Shorts (#138), the only path
-   to 4,000 hours at this size.
+   to 4,000 hours at this size. **Answered: a $0 compilation** - the week's public Shorts on a
+   16:9 canvas, a chapter each, no new script or voice.
 4. **Money that is not ads** - one affiliate spike with a kill criterion (#79): two weeks, drop
    it if video -> click -> sale cannot close.
 
 | | Decision | Who | H |
 |---|---|---|---|
-| C1 | do the ads continue? 62 of 64 new subscribers came while one ran, and `ops promotions` says what each campaign bought | **You** | H0 |
+| C1 | run another ad? The last one stopped Oct 8; 62 of 64 new subscribers came while it ran, and `ops promotions` says what it bought (a reminder for Oct 24 is set) | **You** | H0 |
 | C2 | volume: 13 uploads in 7 days now, two slots a day plus games; the cap is off (decision 65) | - | - |
 
 **Exit:** `py -m scripts.ops ypp` and `py -m scripts.ops growth` move week over week; the
@@ -126,5 +127,47 @@ Yours, each one line:
 1. `py -m scripts.ops schedule-drafts --wake` - overnight can wake the PC again (A4).
 2. Publish the Google OAuth app - the sign-in stops ending every 7 days (A5).
 3. Turn on the YouTube Reporting API - the link is in `py -m scripts.ops doctor` (D5).
-4. NFL and NBA news in the ideas, or not (B3).
-5. Ads: continue or stop (C1).
+4. Ads: run another one, or not (C1) - the Oct 24 reminder asks.
+
+Answered 2026-10-18: NFL and NBA news join the ideas (B3); the weekly long-form is a $0
+compilation (C); the first series is "Picks, graded" (B7); 1 in 5 overnight drafts is a holdout
+(#83).
+
+## Next ten (H1, wave 111)
+
+In order, cheapest and safest first; each batch is committed on its own.
+
+| # | Item | Exit |
+|---|---|---|
+| 1 | NFL and NBA news in the ideas (#1303) | the menu's ideas include an NFL or NBA story |
+| 2 | Audit corrections (#104, #1059 were shipped) and the twelve stale doc cards (#1269) | `tests/test_docs_standard.py` green; every card re-read |
+| 3 | A status-only update keeps what YouTube holds (#1306) | `videos.list part=status` is the same before and after a go-public |
+| 4 | A voice note's names corrected to the run's own (#1296) | "Molot" reads "Malott" |
+| 5 | A test may not read the real `data/` (#1305) | `ops test` names any test that does |
+| 6 | A call's why from the game itself (#1304) | a preview's why cites an injury, a projection or form |
+| 7 | The calls ledger, scored (#1304) | `ops predictions` prints "Calls: N of M right"; the second menu build is fast |
+| 8 | Picks, graded (#991) | the menu offers it once 3 calls are scored in a week |
+| 9 | Holdouts, 1 in 5 overnight drafts (#83) | `ops predictions` compares holdouts with ranked picks |
+| 10 | The weekly $0 compilation (#138) | one command renders the week's Shorts as one video; it goes public at a slot |
+
+## The quarter (H2, November-December 2026)
+
+In order. Each needs H0/H1 underneath it, and each has a command that says it is done.
+
+| # | Item | Needs | Exit |
+|---|---|---|---|
+| 1 | Click-through into title and thumbnail learning (#1058) | the Reporting API on (yours) | `ops packaging` shows CTR per long-form video |
+| 2 | The weekly compilation every Sunday, unattended (#138) | H1 #10 | `ops ypp` long-form hours rise from 10 |
+| 3 | Picks, graded every week, and its own numbers (#991, #1304) | H1 #7-8 | `ops growth` shows the series' stayed share against the channel's |
+| 4 | Stat cards and score bugs drawn from the facts (#1042) | - | a render with a record card; stayed share compared |
+| 5 | The hook score retuned, the intro decided (#1290, #988) | 21 settled videos; 3+ each side of the intro test | `ops growth`: hook r above 0, the intro split settled |
+| 6 | An honest learning loop: holdouts read, a stop rule, the retention curve (#83, #354, #356) | H1 #9 | `ops predictions` holdout line with n; `ops retention` stores curves |
+| 7 | The two Apify actors replaced where quality holds (#1071) | - | `ops reliability`: $0 Apify across ten runs |
+| 8 | Re-cuts of past winners (#1057) | the retention curve (#356) | re-cuts published and measured |
+| 9 | The $0 voice, after your blind listen (#1038, the $0 TTS switch) | your ears | `ops tts-arms` verdict |
+| 10 | The third-channel gate (#1079) | TapIn's stayed share past the bar | a decision recorded |
+| 11 | The app: Stage 3 panels (the facts room first), then Stage 5 packaging | - | [desktop_app.md](desktop_app.md)'s stage exits |
+
+**Beyond (2027):** clipping Shorts from long sources (Phase R), avatar and upscaling, a
+multimodal review of the finished video, MoneyWise's depth wave once it is un-parked.
+[master_plan.md](master_plan.md) M5 keeps reach last: it multiplies the quality underneath it.

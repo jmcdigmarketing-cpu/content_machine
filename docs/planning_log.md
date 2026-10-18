@@ -8389,3 +8389,25 @@ test_wave18 (the seam's name), test_ops_batches and test_signin_health (no suite
 test_best_bet (the domain feeds - the network guard caught it), test_next_fifteen (it named
 #494, which the audit retired). Suite: 6,313 tests forward and reversed, the same verdict
 (was 6,284).
+
+## 2026-10-18 afternoon — wave 111, the long-term plan and the next ten (Claude Code)
+
+**Prompts:** "with the where it falls short, what was planned? what is planned long and short term
+to improve the project?" - answered in chat, with the gap named: the plan's quarter (H2) was a
+heading, not a list. Then "yes, update all docs and artifacts as well. then next 10, its okay if the
+session stops in progress". Answers, all four the recommended option: NFL and NBA news join the
+ideas (#1303); the weekly long-form is a $0 compilation of the week's Shorts (#138); the first
+series is "Picks, graded" (#991); 1 in 5 overnight drafts is a holdout (#83).
+
+Measured first (read-only): HEAD a183730 green; the draft queue empty; run 153 reached Buffer on
+its own through the wave 110 worker pass; Instagram reels 119-129 views against YouTube's median
+first week of 83; the Reporting API still off; hook learning n=18 of 21; the intro test 1 without
+against 5 with. The Back-Home ticks say the ad stopped Oct 8 - the plan's "do the ads continue?"
+became "run another?". The audit missed two shipped items: #104 is #601's `ops playlists`, #1059 is
+#951's stayed share. No failed run among the last 25, so #445 (resume a run) has no measured need.
+ESPN's free game summary carries a win projection, injuries, leaders and last-five form.
+
+Batch A (docs): [hands_off_plan.md](hands_off_plan.md) gained the ordered next ten (H1) and the
+quarter (H2, eleven items, each with what it needs and a command for done) and "Beyond (2027)";
+the Story's stale "Next" section became the three horizons. Committed on its own, because the
+session may stop partway.

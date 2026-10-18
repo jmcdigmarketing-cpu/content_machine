@@ -75,7 +75,9 @@ suite; `suite_hygiene.without_dotenv` around `ops test` (#1302).
 **Live:** 52tS6g1fu_k public (Buffer 11:45); 3nlkdFTjxe0 public 22:00Z - its log row says
 "private" (a hand edit was refused), so the worker's read-back sends it.
 
-**Defects first:** none open of mine. **Next:** #1304 #1305 #1306 #138 #991; #1303 is the operator's.
+**Defects first:** none open of mine. **Next:** wave 111 in batches - the plan's "Next ten"
+(the operator answered #1303 yes, #138 a $0 compilation, #991 Picks graded, #83 holdouts 1 in 5);
+a batch that is not in `git log` was not finished. Batch A (the plan's H1/H2) is committed.
 Suite 6,313, forward and reversed.
 
 ## Slot — Cursor

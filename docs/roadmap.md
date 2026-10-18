@@ -86,11 +86,11 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 **2026-10-18 (Claude, wave 110).** The plan is now [hands_off_plan.md](hands_off_plan.md); the
 backlog audit closed 188 of 258 ([backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md)),
 which retired or merged four of the last five (#421, #425, #293) and shipped #1295. Next, from
-the plan's H0/H1: **#1304** a preview's call fed the matchup research and scored after the game,
-**#1305** a test that reads the real `data/` fails, **#1306** what a status-only update leaves on
-YouTube, **#138** a weekly long-form compilation (the only path to watch hours at this size),
-**#991** a series format. #457 (a lockfile) stays next after them. Five are yours, one line each,
-in the plan's "This week".
+the plan's H1 (the operator's answers 2026-10-18, wave 111 - the ordered ten are in the
+plan): **#1303** NFL/NBA news in ideas, **#1269** the stale doc cards, **#1306**, **#1296**,
+**#1305**, **#1304** (a why from the game, a calls ledger scored), **#991** Picks, graded,
+**#83** holdouts 1 in 5, **#138** the $0 weekly compilation. The quarter after (H2) is listed
+there too. Four steps are yours, in the plan's "This week".
 **2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
 push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
 the suite cannot reach the real database. The operator: overnight renders wait for them (§60,

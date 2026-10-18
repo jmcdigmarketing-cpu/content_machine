@@ -89,16 +89,16 @@ six corrections, and shipped #1261 #1262 #1263 #1265 #1266. Filed #1270-#1272. C
 queue is Claude's now. Next: **#421** a render time budget that degrades the preset,
 **#425** vertical-crop scoring for 16:9 sources, **#450** voice-note fact intake,
 **#457** a lockfile so the environment cannot silently disagree with
-`pyproject.toml`, **#257** drag-drop a facts file onto the booth (the
-lowest-numbered open `[S]` that is not waiting on a run, a clip, or a decision).
-`roadmap-index` after wave 104: open 263, done 1242, numbered open 211, highest #1272.
+`pyproject.toml`, **#293** a `content-os://open-last` protocol handler (the
+lowest-numbered open `[S]` that is not waiting on a run, a clip, or a decision; #257 was done
+in wave 107).
 **2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
 push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
 the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
 #1255 answered) and TapIn keeps its colour grade (§61). Cursor's `29c280c` and `bef5a56` were
 read in full; three corrections. Filed #1263-#1269. The audit:
 [audit_2026-10-17.md](audit_2026-10-17.md).
-**2026-10-17 evening (Claude).** The angle-step crash fixed (#1278); crossposts unspaced, previews before kickoff, the evening slot and 3-minute Reels (§63-§64); no YouTube cadence cap (§65); ten ideas, five of them previews (§66). Wave 105: the seven stranded renders on public slots two a day (#1273), times in EDT (#1274), scheduled videos crossposted when they go live (#1275), no bare-name follow-up (#1276), crosspost status says why (#1277). Filed #1283-#1285, then did them: `requeue_upload --queue` public at a slot (#1283), a dead worker's job freed at once (#1284), taken slots skipped and a 6 PM slot for news (#1285). `roadmap-index`: open 263, done 1255, numbered open 211, highest #1272.
+**2026-10-17 evening (Claude).** The angle-step crash fixed (#1278); crossposts unspaced, previews before kickoff, the evening slot and 3-minute Reels (§63-§64); no YouTube cadence cap (§65); ten ideas, five of them previews (§66). Wave 105: the seven stranded renders on public slots two a day (#1273), times in EDT (#1274), scheduled videos crossposted when they go live (#1275), no bare-name follow-up (#1276), crosspost status says why (#1277). Filed #1283-#1285, then did them: `requeue_upload --queue` public at a slot (#1283), a dead worker's job freed at once (#1284), taken slots skipped and a 6 PM slot for news (#1285). Wave 107: a preview from a headline knows its event (#1286), why engagement fell in `ops health` (#1271), menu 7 schedules a video for its slot (#1270), the morning says how many drafts to decide (#1272), facts dropped on the booth (#257). `roadmap-index`: open 259, done 1260, numbered open 207, highest #1269.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

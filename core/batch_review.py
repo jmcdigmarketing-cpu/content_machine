@@ -533,6 +533,14 @@ def drafts_line(channel_id: str, *, root: str | None = None) -> str:
         parts.append(f"{len(skipped) - stale} need you")
     if stale:
         parts.append(f"{stale} past their window")
+    try:  # #1272: overnight writes nothing new at the cap - say how many to decide
+        from core.overnight import _DRAFT_WAIT_CAP
+
+        waiting = len(pending_drafts(channel_id, root=root))
+        if waiting >= _DRAFT_WAIT_CAP:
+            parts.append(f"overnight drafts again once {waiting - _DRAFT_WAIT_CAP + 1} are decided")
+    except Exception as exc:
+        logger.debug("draft cap line skipped: %s", exc)
     return (
         f"Drafts waiting: {total} - {', '.join(parts)}: "
         f"py -m scripts.ops batch-review --channel {channel_id}"

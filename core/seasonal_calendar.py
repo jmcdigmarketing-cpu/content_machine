@@ -267,6 +267,66 @@ def ufc_cards(
     return out
 
 
+# #1286: every event read this run - played games and started cards too - by name, with its start,
+# so a headline about one can be matched to it (run 160 named the card's two fighters).
+_EVENTS: dict[str, str] = {}
+_EVENT_DAYS_BACK = 3
+_EVENT_DAYS_AHEAD = 14
+
+
+def _start_of(raw: str) -> datetime | None:
+    try:
+        when = datetime.fromisoformat(str(raw or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+
+
+def events_from_boards(
+    boards: dict[str, Any], ufc_board: dict[str, Any] | None, *, now: datetime
+) -> dict[str, str]:
+    """{name: start} for each game on the boards and each UFC card, from a few days back to two
+    weeks ahead - played and started ones included."""
+    low = now - timedelta(days=_EVENT_DAYS_BACK)
+    high = now + timedelta(days=_EVENT_DAYS_AHEAD)
+    out: dict[str, str] = {}
+    for board in (boards or {}).values():
+        for event in (board or {}).get("events") or []:
+            if not isinstance(event, dict):
+                continue
+            name, raw = str(event.get("name") or "").strip(), str(event.get("date") or "")
+            when = _start_of(raw)
+            if name and when is not None and low <= when <= high:
+                out[name] = raw
+    leagues = (ufc_board or {}).get("leagues") or [{}]
+    calendar = (leagues[0] if isinstance(leagues[0], dict) else {}).get("calendar") or []
+    for entry in calendar:
+        if not isinstance(entry, dict):
+            continue
+        name, raw = str(entry.get("label") or "").strip(), str(entry.get("startDate") or "")
+        when = _start_of(raw)
+        if name and when is not None and low <= when <= high:
+            out[name] = raw
+    return out
+
+
+def event_for(text: str, *, events: dict[str, str] | None = None) -> tuple[str, str]:
+    """(name, start) of the event `text` names - two of its sides, or its only one - else
+    ("", ""). The same rule keeps a covered event off the idea menu (`best_bet.same_story`)."""
+    from core.best_bet import same_story
+
+    pool = _EVENTS if events is None else events
+    if events is None and not pool and schedule_enabled():
+        fetch_week_topics()  # fills _EVENTS
+        pool = _EVENTS
+    if not (text or "").strip():
+        return "", ""
+    for name, start in pool.items():
+        if same_story(name, [text]):
+            return name, start
+    return "", ""
+
+
 def fetch_week_topics() -> list[tuple[str, str]]:
     """This week's boards. A league that cannot be read is skipped (debug, not a warning)."""
     if not schedule_enabled():
@@ -281,9 +341,13 @@ def fetch_week_topics() -> list[tuple[str, str]]:
         except Exception as exc:
             logger.debug("scoreboard skipped for %s: %s", league, exc)
     topics = week_topics(boards, today=today, starts=_STARTS, details=_DETAILS)
+    now = datetime.now(timezone.utc)
+    ufc_board: dict[str, Any] = {}
     try:  # decision 66: UFC cards are previews too
-        cards = ufc_cards(get_scoreboard("ufc"), now=datetime.now(timezone.utc), starts=_STARTS)
+        ufc_board = get_scoreboard("ufc")
+        cards = ufc_cards(ufc_board, now=now, starts=_STARTS)
         topics += [card for card in cards if card not in topics]
     except Exception as exc:
         logger.debug("UFC board skipped: %s", exc)
+    _EVENTS.update(events_from_boards(boards, ufc_board, now=now))
     return topics

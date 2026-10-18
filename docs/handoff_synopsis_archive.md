@@ -7,6 +7,26 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-16 (Cursor): #1235 #499 #1046 #1056 #1039
+
+Claude sent no new five after #1221 #1227 #1228 #1043 #1229. This wave is the
+five the roadmap already named.
+
+`footage-tag` writes a team onto a clip that is already in the index. `chargers`
+becomes Los Angeles Chargers, and a Chargers topic then returns that GameClip.
+A path that is not indexed is refused and no row is created. A folder with no
+tags still returns the untagged clips (#1235). A one-shot voice file is
+silence-trimmed after its words exist and before it is cached; a cache hit is
+left alone (#499). TapIn karaoke highlights the spoken word in `#E53935`; a
+skin with no highlight stays yellow, and TapIn's margin stays 260 (#1046).
+The hook sentence is on screen from 0.00 to 1.00 at the top (#1056). The first
+paragraph is requested at 1.10 instead of 1.05, an asterisked word is style
+0.35 and is not spoken, and an ellipsis holds the next word 0.3s (#1039).
+
+Finished output changed: one-shot voice files, TapIn captions, and the first
+spoken paragraph. Not pushed. Next: #429 #438 #489 #492 #422.
+`roadmap-index`: open 288, done 1180, numbered open 236, highest open #1136.
+
 ## Previous — 2026-10-16 (Cursor): #1221 #1227 #1228 #1043 #1229
 
 The Dr Food headline stayed neutral on a gaming feed, so it is not a best bet (#1221).

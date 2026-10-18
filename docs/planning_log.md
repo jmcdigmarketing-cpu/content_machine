@@ -8254,3 +8254,18 @@ worker lock frees a dead worker's job at once (#1284); taken slots skipped, 6 PM
 (#1285). Live dry run: run 160 (an event that has passed and carries no `event_at`) would take
 Sunday 6 PM - it is the operator's to retire. tests/test_wave106.py 11 of 11 failed first.
 Suite green forward and reversed on the committed tree.
+
+## 2026-10-17 late night — wave 107 (Claude Code)
+
+**Prompt:** "mext 5". Answers: recency + engagement + volume (#1286, #1271, #1270, #1272, #257);
+menu 7's `s` = the next free noon/10 PM slot.
+
+Measured first: run 160 (a Malott-Buckley card preview) had no `event_at`, so the shelf's
+dry run would have queued it for Sunday 6 PM, after the card - filed as #1286 and done first.
+Health was yellow (27.4% engaged against 32.3%) with no trait the last five share: the long
+videos did better. So the `why:` line falls back to the weakest of the five - run 120, NBA,
+406 s, hook 63, at 11%. A no-title probe of `slot_for_run(160)` gave the card a slot; it now
+reads the run's own title, and `ops shelf` still offered run 160 a schedule line - it now
+says "its game has started" and gives the retire line. Drafts waiting: 1, so the new
+drafts clause does not show yet.
+tests/test_wave107.py failed first. Suite: 6,245 tests forward and reversed, the same verdict.

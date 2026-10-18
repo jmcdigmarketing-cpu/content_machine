@@ -507,7 +507,25 @@ def _kickoff_for(channel_id: str, run_id: int) -> datetime | None:
     except Exception as exc:
         logger.debug("game start for run %s unread: %s", run_id, exc)
         return None
-    return _stamp(raw.replace("Z", "+00:00")) if raw else None
+    if raw:
+        return _stamp(raw.replace("Z", "+00:00"))
+    # #1286: a video made from a headline names its event in its title - a preview only when it
+    # was made before the event.
+    try:
+        from core.seasonal_calendar import event_for
+
+        run = _content_run(run_id)
+        title = str(getattr(run, "title", "") or "") if run is not None else ""
+        _name, start = event_for(title)
+    except Exception as exc:
+        logger.debug("named event for run %s unread: %s", run_id, exc)
+        return None
+    when = _stamp(start.replace("Z", "+00:00")) if start else None
+    made = getattr(run, "created_at", None)
+    if when is None or not isinstance(made, datetime):
+        return None
+    made = made if made.tzinfo else made.replace(tzinfo=timezone.utc)
+    return when if made < when else None
 
 
 def _next_due(

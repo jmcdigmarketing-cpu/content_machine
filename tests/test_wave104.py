@@ -133,29 +133,27 @@ class DraftCapAfterExpiryTests(unittest.TestCase):
 
 
 class NoSlotChoiceTests(unittest.TestCase):
-    def test_the_prompt_and_the_menu_do_not_offer_a_slot(self):
-        from core.ui import prompt_startup_mode
+    def test_at_its_slot_never_publishes_now_and_without_a_slot_keeps_it(self):
+        # Wave 104 took out an "at its slot" that did nothing; #1270 (wave 107) made it schedule
+        # for real. What stays: it never makes a video public now, and with no slot it waits.
         from publishing.go_public import watch_and_publish
 
-        prompts: list[str] = []
         row = SimpleNamespace(id=1, content_run_id=1, youtube_video_id="aaa",
                               privacy_status="unlisted", channel_id="tapin")  # fmt: skip
         with (
             patch("publishing.go_public.unlisted_holds", return_value=[row]),
             patch("publishing.go_public._run_for_hold", return_value=None),
             patch("publishing.go_public.load_features", return_value={}),
-            patch("publishing.go_public.apply_go_public") as apply,
+            patch(
+                "core.spaced_queue.slot_for_run", return_value=(None, "no slot inside its window")
+            ),
+            patch("publishing.go_public.apply_go_public") as now,
+            patch("publishing.go_public.apply_schedule_public") as scheduled,
         ):
-            decisions = watch_and_publish("tapin", ask=lambda p: prompts.append(p) or "s",
-                                          print_fn=lambda *_a: None)  # fmt: skip
-        apply.assert_not_called()
+            decisions = watch_and_publish("tapin", ask=lambda _p: "s", print_fn=lambda *_a: None)
+        now.assert_not_called()
+        scheduled.assert_not_called()
         self.assertEqual(decisions, ["keep"])
-        self.assertNotIn("slot", prompts[0])
-        said: list[str] = []
-        with patch("core.intelligence_report.intelligence_mode_enabled", return_value=False):
-            prompt_startup_mode(print_fn=lambda *a: said.append(" ".join(map(str, a))),
-                                input_fn=lambda _p: "1")  # fmt: skip
-        self.assertFalse(any("7)" in line and "slot" in line for line in said))
 
 
 # ---- C5 #1064: the app asks before a video goes public -----------------------------------------

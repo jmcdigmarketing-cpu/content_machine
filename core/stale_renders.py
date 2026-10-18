@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -67,6 +67,8 @@ def shelf(channel_id: str, *, days: int = STALE_DAYS) -> dict[str, int]:
             stale += 1
         elif age is not None and age > 2 * _news_window(run, channel_id):
             past += 1  # #1237: run 114 was "recent - requeue_upload" at 12 days of a 2-day story
+        elif _event_started(run, channel_id, age):
+            past += 1  # #1286: a preview of a game that has started
     held = unlisted_holds(channel_id)
     claim = sum(1 for row in held if override_held(getattr(row, "content_run_id", None)))
     counts = {
@@ -165,6 +167,18 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
                     stale=True,
                 )
             )
+        elif _event_started(run, channel_id, age):
+            # #1286: run 160, a Malott-Buckley preview, was offered a slot after the card.
+            rows.append(
+                dict(
+                    base,
+                    state="its game has started - nothing uploads it",
+                    command=f"py -m scripts.ops retire-renders --channel {channel_id} "
+                    f"--run-id {run.id} --apply",
+                    stale=True,
+                    event_started=True,
+                )
+            )
         else:
             rows.append(
                 dict(
@@ -194,6 +208,26 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
             }
         )
     return rows
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _event_started(run: Any, channel_id: str, age: float | None) -> bool:
+    """#1286: a preview whose game or card has started - its draft's `event_at`, else the event
+    its title names (`spaced_queue.preview_event`)."""
+    try:
+        from core.spaced_queue import preview_event
+
+        now = _now()
+        rendered = now - timedelta(days=age or 0.0)
+        title = str(getattr(run, "title", "") or "")
+        event = preview_event(channel_id, int(run.id), title, rendered=rendered)
+    except Exception as exc:
+        logger.debug("event unread for run %s: %s", getattr(run, "id", "?"), exc)
+        return False
+    return event is not None and event <= now
 
 
 def _news_window(run: Any, channel_id: str) -> float:

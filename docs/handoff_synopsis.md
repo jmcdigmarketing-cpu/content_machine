@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-17 night: requeue goes public at a slot, a dead worker's job is freed at once
+# Handoff synopsis — 2026-10-17 late night: a headline preview knows its event, menu 7 schedules, health says why
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-17 night (Claude Code): #1283 #1284 #1285
+## Last wave — 2026-10-17 late night (Claude Code): #1286 #1271 #1270 #1272 #257
+
+A preview whose draft has no `event_at` is matched to the week's games and UFC cards by its title
+(`seasonal_calendar.event_for`), so the shelf, menu 7 and the crosspost kickoff know run 160's
+card has started. `ops health` gives a `why:` line under a soft engagement - a trait the last five
+share, else the weakest of them (live: run 120, NBA, 406 s, at 11%). Menu 7's `s` sets YouTube's
+`publishAt` at the next free noon/10 PM slot. The drafts line says how many to decide before
+overnight drafts again. The booth takes a dropped facts `.txt`. Suite: 6,245 tests forward and reversed, the same verdict.
+
+## Previous — 2026-10-17 night (Claude Code): #1283 #1284 #1285
 
 `requeue_upload --queue` schedules the run public at the next free noon/10 PM slot (`--private`
 keeps the old upload). The worker holds an OS lock for its life; alone, it frees a dead worker's
@@ -132,26 +141,6 @@ playlists are said (#1240).
 
 **Still the operator's:** `R2_PUBLIC_BASE_URL`; run 155 waits for the worker, run 126 for
 go-public; the 11 playlists (`ops playlists --apply`); `.env` lines 35, 36, 39. Suite 6047, forward and reversed.
-
-## Previous — 2026-10-16 (Cursor): #1235 #499 #1046 #1056 #1039
-
-Claude sent no new five after #1221 #1227 #1228 #1043 #1229. This wave is the
-five the roadmap already named.
-
-`footage-tag` writes a team onto a clip that is already in the index. `chargers`
-becomes Los Angeles Chargers, and a Chargers topic then returns that GameClip.
-A path that is not indexed is refused and no row is created. A folder with no
-tags still returns the untagged clips (#1235). A one-shot voice file is
-silence-trimmed after its words exist and before it is cached; a cache hit is
-left alone (#499). TapIn karaoke highlights the spoken word in `#E53935`; a
-skin with no highlight stays yellow, and TapIn's margin stays 260 (#1046).
-The hook sentence is on screen from 0.00 to 1.00 at the top (#1056). The first
-paragraph is requested at 1.10 instead of 1.05, an asterisked word is style
-0.35 and is not spoken, and an ellipsis holds the next word 0.3s (#1039).
-
-Finished output changed: one-shot voice files, TapIn captions, and the first
-spoken paragraph. Not pushed. Next: #429 #438 #489 #492 #422.
-`roadmap-index`: open 288, done 1180, numbered open 236, highest open #1136.
 
 ## Pipeline order (operator)
 

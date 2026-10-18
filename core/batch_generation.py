@@ -27,7 +27,7 @@ import os
 import re
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -194,7 +194,7 @@ def generate_draft(
 
     # #1151 / #1169: a schedule pick knows when its game is; ahead of it, the angles and the
     # script are written as a preview.
-    event_at = _game_start(topic, best_bet)
+    event_at = _game_start(topic, best_bet) or _named_event_start(topic)
     from core.facts.event_dates import game_started, preview_brief
 
     upcoming = bool(event_at) and game_started(event_at) is False
@@ -355,7 +355,8 @@ def generate_draft(
         "script_clean": result.features.get("script_clean"),  # #1143
         # #1150: run 139's title was flagged and overnight rendered it - the flag stopped here.
         "title_warnings": list(result.features.get("title_warnings") or []),
-        "event_at": event_at or None,  # #1151
+        # #1151; #1286: a headline naming a coming event (run 160) records that event's start.
+        "event_at": event_at or _named_event_start(f"{topic} {result.title or ''}") or None,
         "unplayed_result": unplayed or None,
         "fact_count": fact_count,
         "ungrounded_entities": out.ungrounded,
@@ -374,6 +375,22 @@ def generate_draft(
 
     out.path, out.ok, out.seconds = folder, True, round(time.time() - started, 1)
     return out
+
+
+def _named_event_start(text: str, *, now: datetime | None = None) -> str:
+    """#1286: the start of a coming event `text` names, or "". Only a coming one: a headline
+    about a card already fought is a recap, and a recap has no window to miss."""
+    try:
+        from core.seasonal_calendar import _start_of, event_for
+
+        _name, start = event_for(text)
+    except Exception as exc:
+        logger.debug("named event unread: %s", exc)
+        return ""
+    when = _start_of(start) if start else None
+    if when is None or when <= (now or datetime.now(timezone.utc)):
+        return ""
+    return start
 
 
 def _game_start(topic: str, best_bet: dict | None) -> str:

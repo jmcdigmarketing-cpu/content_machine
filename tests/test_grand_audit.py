@@ -118,12 +118,17 @@ class OvernightWaitsTests(unittest.TestCase):
             "core/review_bind.py",  # #1064: the app's Go public button, once claims are settled
         }
         callers = set()
+        scheduling = set()  # #1270: scheduling public is an operator's action too
         for folder in ("analytics", "apis", "assets", "config", "core", "desktop", "jobs",
                        "publishing", "scripts", "sports", "storage", "video", "youtube"):  # fmt: skip
             for path in Path(ROOT_DIR, folder).rglob("*.py"):
-                if "apply_go_public(" in path.read_text(encoding="utf-8", errors="replace"):
+                text = path.read_text(encoding="utf-8", errors="replace")
+                if "apply_go_public(" in text:
                     callers.add(path.relative_to(ROOT_DIR).as_posix())
+                if "apply_schedule_public(" in text:
+                    scheduling.add(path.relative_to(ROOT_DIR).as_posix())
         self.assertLessEqual(callers, allowed | {p for p in callers if p.startswith("desktop/")})
+        self.assertLessEqual(scheduling, {"publishing/go_public.py"})  # menu 7's "s" only
 
 
 # ---- decision 61: TapIn keeps its look --------------------------------------------------------

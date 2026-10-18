@@ -69,6 +69,8 @@ py -m scripts.ops verify-claim --run-id 120 --claim 1 --source "https://..." --a
 py -m scripts.ops verify-claim --run-id 120 --claim 1 --reject
 ```
 
+Or drop a `.txt` on the booth page's facts box (`ops booth`), one fact a line: it is saved to
+the vault as yours for that run's subject.
 The vault the facts are saved to and read from: [vault.md](vault.md).
 
 ## 4. Render and footage
@@ -110,6 +112,10 @@ py -m scripts.ops go-public --channel tapin            # what would go public
 py -m scripts.ops go-public --channel tapin --apply
 py -m scripts.ops recommend-time --channel tapin       # the slot, and how many posts back it
 ```
+
+**Menu 7** (`py main.py`, then 7) goes through each unlisted video: `n` public now, `s` public
+at its slot - the next free noon or 10 PM, before its game, inside its news window; YouTube
+makes it public then and Buffer follows - `k` keep, `a` set aside.
 
 A held run is refused until its claim is confirmed or rejected (step 3). Policy trouble:
 [policy_incident_runbook.md](policy_incident_runbook.md).
@@ -214,6 +220,8 @@ py -m scripts.ops weekly-report --channel tapin   # more of / less of / try next
 py -m scripts.ops predictions --channel tapin     # each run's prediction beside what it got
 ```
 
+`py -m scripts.ops health --channel tapin` says when engagement softens, and its `why:` line
+names what the last five share - or the one video pulling them down.
 `weekly-report` opens with three decisions, each with the number behind it. `growth` compares
 Shorts cut from a chapter with Shorts made as Shorts once three of each have a full week.
 

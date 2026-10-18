@@ -476,6 +476,46 @@ def apply_booth_tags(run_id: int, tags: list[str]) -> list[str]:
     return cleaned
 
 
+_FACTS_MAX_BYTES = 65536
+
+
+def parse_booth_facts_post(body: bytes, *, expected_run_id: int) -> tuple[int, str]:
+    """#257: the booth's facts form - the text pasted or dropped from a .txt."""
+    from urllib.parse import parse_qs
+
+    if len(body) > _FACTS_MAX_BYTES:
+        raise ValueError("Facts form is too large")
+    try:
+        fields = parse_qs(body.decode("utf-8", errors="strict"), keep_blank_values=True)
+        run_values = fields.get("run_id") or []
+        if len(run_values) != 1:
+            raise ValueError("Facts save requires exactly one run_id")
+        run_id = int(run_values[0])
+        text = "\n".join(fields.get("facts") or []).replace("\r\n", "\n").strip()
+    except (UnicodeDecodeError, TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid facts form: {exc}") from exc
+    if run_id != int(expected_run_id):
+        raise ValueError(f"Facts save must target displayed run {expected_run_id}")
+    return run_id, text
+
+
+def apply_booth_facts(run_id: int, text: str) -> int:
+    """#257: the facts go to the vault as the operator's for the run's topic - the next draft
+    on it reads them (the path `verify-claim` takes). Returns how many lines were kept."""
+    from core.facts.claim_confirm import _run_subject
+    from core.operator_facts import capture_facts_to_vault, clean_typed_lines
+
+    channel, topic = _run_subject(int(run_id))
+    # One fact a line, cleaned the way typed key facts are (`parse_pasted_block` reads trade
+    # trackers and took "Malott is 11-2." for a record header).
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    facts, _dropped = clean_typed_lines([(line, False) for line in lines])
+    if not channel or not topic or not facts:
+        return 0
+    path = capture_facts_to_vault(channel, topic, facts, tier="operator", origin="booth")
+    return len(facts) if path else 0
+
+
 def parse_booth_tags_post(body: bytes, *, expected_run_id: int) -> tuple[int, list[str]]:
     from urllib.parse import parse_qs
 
@@ -754,6 +794,25 @@ def booth_html(
     tag_chips = "".join(f"<span class='tag-chip'>{escape(tag)}</span>" for tag in tag_values)
     tag_field = escape(",".join(tag_values))
     tag_editor = ""
+    facts_box = ""
+    if run_id_int is not None:
+        # #257: drop a .txt (or paste) - the facts go to the vault for this run's topic.
+        facts_box = (
+            "<form method='post' action='/save-facts' class='facts-drop' id='facts-form'>"
+            f"<input type='hidden' name='run_id' value='{run_id_int}'>"
+            "<p><strong>Facts</strong> - drop a .txt here or paste lines</p>"
+            "<textarea id='facts' name='facts' rows='5' cols='60'></textarea>"
+            "<p><button type='submit'>Save facts</button></p>"
+            "</form>"
+            "<script>(function(){var f=document.getElementById('facts-form');"
+            "var t=document.getElementById('facts');if(!f||!t){return;}"
+            "f.addEventListener('dragover',function(e){e.preventDefault();});"
+            "f.addEventListener('drop',function(e){e.preventDefault();"
+            "var file=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];"
+            "if(!file){return;}var r=new FileReader();r.onload=function(){"
+            "t.value=(t.value?t.value+'\\n':'')+String(r.result||'');};r.readAsText(file);});"
+            "})();</script>"
+        )
     if run_id_int is not None:
         tag_editor = (
             "<form method='post' action='/save-tags' class='tag-editor'>"
@@ -766,6 +825,7 @@ def booth_html(
         )
     extras = (
         f"{numeric_chips}{semantic_bar}{grade_breakdown}{tts_cache_pill}{signal_dots}{tag_editor}"
+        f"{facts_box}"
     )
     public_metadata = (
         title_meter_html(title)
@@ -1363,6 +1423,24 @@ def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
                     apply_booth_tags(tagged_run, tags)
                 except Exception as exc:
                     logger.warning("Booth tag save failed: %s", exc)
+                    self.send_error(400, str(exc))
+                    return
+                self.send_response(303)
+                self.send_header("Location", "/booth.html")
+                self.end_headers()
+                return
+            if path == "/save-facts":  # #257
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    if length < 1 or length > _FACTS_MAX_BYTES:
+                        raise ValueError("Facts form length must be 1-65536 bytes")
+                    facts_run, text = parse_booth_facts_post(
+                        self.rfile.read(length), expected_run_id=displayed_run_id
+                    )
+                    saved = apply_booth_facts(facts_run, text)
+                    logger.info("Booth facts: %s line(s) saved for run %s", saved, facts_run)
+                except Exception as exc:
+                    logger.warning("Booth facts save failed: %s", exc)
                     self.send_error(400, str(exc))
                     return
                 self.send_response(303)

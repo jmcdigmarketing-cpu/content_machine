@@ -367,7 +367,7 @@ class WatchPublishTests(unittest.TestCase):
 
         rows = [self._row("aaa", 10), self._row("bbb", 11)]
         runs = {10: self._run(10, "Chargers"), 11: self._run(11, "Ballon")}
-        answers = iter(["n", "s"])
+        answers = iter(["n", "k"])  # wave 107: "s" schedules now (#1270)
         said: list[str] = []
         calls: list[tuple] = []
 

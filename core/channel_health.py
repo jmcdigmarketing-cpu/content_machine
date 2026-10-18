@@ -37,6 +37,7 @@ class HealthSub:
     name: str
     status: str
     detail: str
+    why: list[str] = field(default_factory=list)  # #1271: what a falling metric has in common
 
 
 @dataclass
@@ -72,11 +73,121 @@ def _engagement_sub(channel_id: str) -> HealthSub:
     if left > 0:
         plural = "video" if left == 1 else "videos"
         detail += f"; {left} {plural} under {HEALTH_MIN_VIEWS} views left out"
-    if delta < -0.05:
-        return HealthSub("engagement", RED, "declining - " + detail)
     if delta < -0.01:
-        return HealthSub("engagement", YELLOW, "softening - " + detail)
+        why = engagement_why(rates, _engagement_info(list(rates)))
+        status, word = (RED, "declining") if delta < -0.05 else (YELLOW, "softening")
+        return HealthSub("engagement", status, f"{word} - " + detail, why=why)
     return HealthSub("engagement", GREEN, "steady/up - " + detail)
+
+
+def _engagement_info(run_ids: list[int]) -> dict[int, dict[str, object]]:
+    """Per run: domain, video length, hook score and footage - what `engagement_why` compares."""
+    import json
+
+    from storage.repositories.content_runs import get_content_run_repository
+
+    repo = get_content_run_repository()
+    out: dict[int, dict[str, object]] = {}
+    for run_id in run_ids:
+        try:
+            run = repo.get(int(run_id))
+            features = json.loads(getattr(run, "features_json", "") or "{}") if run else {}
+            quality = json.loads(getattr(run, "quality_json", "") or "{}") if run else {}
+        except Exception as exc:
+            logger.debug("engagement info for run %s unread: %s", run_id, exc)
+            continue
+        out[int(run_id)] = {
+            "domain": features.get("domain") or "",
+            "seconds": (features.get("technical_qc") or {}).get("video_duration"),
+            "hook": quality.get("hook_score"),
+            "footage": str(quality.get("footage") or "").split(" ")[0],
+        }
+    return out
+
+
+def _length_band(info: dict[str, object]) -> str:
+    try:
+        seconds = float(info.get("seconds") or 0)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return ""
+    if seconds <= 0:
+        return ""
+    return "over 75 s" if seconds > 75 else ("under 45 s" if seconds < 45 else "45-75 s")
+
+
+def _hook_band(info: dict[str, object]) -> str:
+    try:
+        hook = float(info.get("hook") or 0)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return ""
+    if hook <= 0:
+        return ""
+    return "a hook under 70" if hook < 70 else "a hook of 70+"
+
+
+_WHY_FACTORS = (
+    ("run", _length_band),
+    ("are", lambda i: f"{i.get('domain')} videos" if i.get("domain") else ""),
+    ("have", _hook_band),
+    ("use", lambda i: f"{i.get('footage')} footage" if i.get("footage") else ""),
+)
+
+
+def engagement_why(rates: dict[int, float], info: dict[int, dict[str, object]]) -> list[str]:
+    """#1271: the one thing most of the last five share that the channel's better videos do not
+    - "4 of the last 5 run over 75 s: those average 20% against 35% for the rest". [] when no
+    such thing stands out, or with too few videos to say."""
+    from collections import Counter
+
+    ordered = sorted(rates)
+    recent = ordered[-5:]
+    if len(ordered) < 8 or len(recent) < 3:
+        return []
+    best: tuple[float, str] | None = None
+    for verb, band in _WHY_FACTORS:
+        groups = {run: band(info.get(run, {})) for run in ordered}
+        labels = Counter(groups[run] for run in recent if groups[run])
+        if not labels:
+            continue
+        label, count = labels.most_common(1)[0]
+        inside = [rates[run] for run in ordered if groups[run] == label]
+        rest = [rates[run] for run in ordered if groups[run] and groups[run] != label]
+        if count < 3 or len(inside) < 2 or not rest:
+            continue
+        mean_in, mean_rest = sum(inside) / len(inside), sum(rest) / len(rest)
+        gap = mean_rest - mean_in
+        if gap <= 0.02:
+            continue
+        line = (
+            f"{count} of the last {len(recent)} {verb} {label}: those average {mean_in:.0%} "
+            f"against {mean_rest:.0%} for the rest"
+        )
+        if best is None or gap * count > best[0]:
+            best = (gap * count, line)
+    if best:
+        return [best[1]]
+    # Live, 2026-10-17: no shared trait (the long videos did better) - one video drags it.
+    weakest = min(recent, key=lambda run: rates[run])
+    baseline = sum(rates[run] for run in ordered) / len(ordered)
+    if baseline - rates[weakest] <= 0.05:
+        return []
+    traits = info.get(weakest, {})
+    parts = [str(traits.get("domain") or "")]
+    try:
+        seconds = float(traits.get("seconds") or 0)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        seconds = 0.0
+    if seconds > 0:
+        parts.append(f"{seconds:.0f} s")
+    hook = traits.get("hook")
+    if isinstance(hook, (int, float)) and hook:
+        parts.append(f"hook {hook:.0f}")
+    described = ", ".join(part for part in parts if part)
+    return [
+        f"no one thing the last {len(recent)} share - the weakest is run {weakest}"
+        + (f" ({described})" if described else "")
+        + f" at {rates[weakest]:.0%}, against {baseline:.0%}"
+    ]
 
 
 def _cadence_sub(channel_id: str) -> HealthSub:
@@ -222,6 +333,7 @@ def render_health(report: HealthReport) -> str:
     ]
     for s in report.subs:
         lines.append(f"  {_MARK.get(s.status, '~')} {s.name:<13} {s.status.upper():<6} {s.detail}")
+        lines.extend(f"      why: {line}" for line in s.why)
     return "\n".join(lines)
 
 

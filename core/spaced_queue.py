@@ -219,6 +219,17 @@ def _age_days(run_id: int) -> float:
     return float(age) if age is not None else 0.0
 
 
+def _run_title(run_id: int) -> str:
+    from storage.repositories.content_runs import get_content_run_repository
+
+    try:
+        run = get_content_run_repository().get(int(run_id))
+    except Exception as exc:
+        logger.debug("run %s title unread: %s", run_id, exc)
+        return ""
+    return str(getattr(run, "title", "") or "")
+
+
 def _when(raw: object) -> datetime | None:
     if isinstance(raw, datetime):
         return raw if raw.tzinfo else raw.replace(tzinfo=timezone.utc)
@@ -227,6 +238,55 @@ def _when(raw: object) -> datetime | None:
     except ValueError:
         return None
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+
+
+def preview_event(
+    channel_id: str, run_id: int, title: str, *, rendered: datetime
+) -> datetime | None:
+    """The start of the event a video previews: its draft's `event_at`, else (#1286) the event
+    its title names - when the video was made before that event, so it is a preview."""
+    from core.batch_review import draft_meta_for_run
+
+    event = _when((draft_meta_for_run(channel_id, run_id) or {}).get("event_at"))
+    if event is not None:
+        return event
+    try:
+        from core.seasonal_calendar import event_for
+
+        _name, start = event_for(title)
+    except Exception as exc:
+        logger.debug("named event unread for run %s: %s", run_id, exc)
+        return None
+    named = _when(start) if start else None
+    return named if named is not None and rendered < named else None
+
+
+def slot_for_run(
+    channel_id: str, run_id: int, *, title: str = "", now: datetime | None = None
+) -> tuple[datetime | None, str]:
+    """#1270: the public slot for one video - the next free noon/10 PM, before its game, inside
+    its news window (6 PM when needed) - or (None, why)."""
+    moment = now or datetime.now(timezone.utc)
+    if not title:  # the event a title names is the only guard a draft without event_at has
+        title = _run_title(run_id)
+    window, age = _window_days(run_id, channel_id), _age_days(run_id)
+    event = preview_event(channel_id, run_id, title, rendered=moment - timedelta(days=age))
+    if event is not None and event <= moment:
+        return None, "its game has started"
+    deadline = event
+    if event is None and window < 7:
+        if age > window:
+            return None, f"past its {window:.0f}-day window"
+        deadline = moment + timedelta(days=window - age)
+    taken = _taken_slots(channel_id)
+    main = free_slots(channel_id, 1, now=moment, taken=taken)
+    if main and (deadline is None or main[0] < deadline):
+        return main[0], ""
+    evening = free_slots(channel_id, 3, now=moment, hours=_EVENING, taken=taken)
+    extra = next((e for e in evening if deadline is not None and e < deadline), None)
+    if extra is not None:
+        return extra, ""
+    return None, "no slot before its game" if event else "no slot inside its window"
 
 
 def shelf_schedule(
@@ -238,7 +298,6 @@ def shelf_schedule(
     first - then the rest, two a day (`twice_daily_slots`). A game that has started, a news
     video already past its window, or a game with no slot before it is listed with why.
     """
-    from core.batch_review import draft_meta_for_run
     from core.stale_renders import shelf_rows
 
     moment = now or datetime.now(timezone.utc)
@@ -246,14 +305,14 @@ def shelf_schedule(
     ranked: list[tuple[tuple[int, float], SpacedSlot, datetime | None, datetime | None]] = []
     left: list[SpacedSlot] = []
     for row in shelf_rows(channel_id):
-        if row.get("state") != "rendered, never uploaded":
-            continue
+        if row.get("state") != "rendered, never uploaded" and not row.get("event_started"):
+            continue  # a started game stays listed, so requeue_upload --queue sees it skipped
         run_id = int(row.get("run_id") or 0)
         if not run_id or (wanted is not None and run_id not in wanted):
             continue
         slot = SpacedSlot(run_id=run_id, title=str(row.get("title") or ""))
-        event = _when((draft_meta_for_run(channel_id, run_id) or {}).get("event_at"))
         window, age = _window_days(run_id, channel_id), _age_days(run_id)
+        event = preview_event(channel_id, run_id, slot.title, rendered=moment - timedelta(days=age))
         if event is not None and event <= moment:
             slot.skipped = "its game has started"
             left.append(slot)

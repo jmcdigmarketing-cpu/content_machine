@@ -53,26 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-17 night · **HEAD at write:** the #1283-#1285 commit (`git log -1`) ·
+**Written:** 2026-10-17 late night · **HEAD at write:** the wave 107 commit (`git log -1`) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**Tonight:** `requeue_upload --queue` is public at the next free slot now (`--private` for the
-old upload, #1283). The worker holds `WORKER_LOCK_FILE` (`data/worker.lock`) for its life and,
-alone, reclaims every "running" job at once (#1284) - a test that drives `process_one` and wants
-the 45-minute rule patches `jobs.worker._sole_worker` to False. `spaced_queue.shelf_schedule`
-skips taken slots (`_taken_slots`, `free_slots`) and gives news a 6 PM slot inside its window
-(#1285).
+**Wave 107:** `seasonal_calendar.event_for(title)` matches a headline to the week's games and
+UFC cards (`_EVENTS`, filled by `fetch_week_topics`; 3 days back, 14 ahead). `spaced_queue.preview_event`
+uses it when a draft has no `event_at` and the video was made before the event; `slot_for_run`
+reads the run's own title when none is passed; `stale_renders.shelf_rows` marks a started one
+`event_started` (retire line, stale) and `shelf_schedule` still lists it as skipped (#1286). `channel_health.engagement_why` (#1271).
+Menu 7's `s` calls `go_public.apply_schedule_public` - private + `publishAt`, only from
+`go_public` (the grand-audit test holds that) (#1270). `drafts_line` names the decisions left
+before overnight drafts again (#1272). The booth's `/save-facts` (#257).
 
-**Queue:** jobs 61-63 uploaded (runs 159, 153, 154); 64-66 pending (156 Mon noon, 158 Mon 10 PM,
-161 Tue noon EDT). Run 160 (tonight's UFC picks, no `event_at`) would take a slot if scheduled -
-the operator's to retire.
+**Queue:** jobs 64-66 pending (156 Mon noon, 158 Mon 10 PM, 161 Tue noon EDT). Run 160 is
+listed "its game has started" - the operator's to retire.
 
-**Defects first:** none open of mine. An event-less preview (a headline about a coming event,
-like run 160) is not known to be one - worth an item when the next wave is picked.
+**Defects first:** none open of mine.
 
-**Next:** the roadmap's five (#421 #425 #450 #457 #257), #1270, #1271. Suite green forward and reversed on the committed tree.
+**Next:** the roadmap's five (#421 #425 #450 #457 #293). Suite 6,245, forward and reversed.
 
 ## Slot — Cursor
 

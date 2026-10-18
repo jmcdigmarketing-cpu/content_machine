@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 
 from core.logging import get_logger
@@ -139,7 +140,7 @@ def listed_holds(channel_id: str) -> list:
 
 
 def watch_and_publish(channel_id: str, *, ask, print_fn) -> list[str]:
-    """One pass: each unlisted video, then now / keep / set aside.
+    """One pass: each unlisted video, then now / at its slot / keep / set aside.
 
     Nothing goes public unless the answer is now (#1255 stays the operator's call).
     A flagged claim is refused here; a grounding hold is refused by `apply_go_public`.
@@ -153,9 +154,8 @@ def watch_and_publish(channel_id: str, *, ask, print_fn) -> list[str]:
         run_id = getattr(row, "content_run_id", None)
         print_fn(f"  [{index}/{len(rows)}] {hold_summary(row, _run_for_hold(run_id))}")
         answer = (
-            # Wave 104 (the operator): no "at its slot" - it printed "kept for its slot" and
-            # scheduled nothing. Scheduling for the post time is #1270.
-            ask("  n now / k keep / a set aside / q quit [k]: ").strip().lower()
+            # #1270 (the operator): s schedules it public at the next free noon/10 PM slot.
+            ask("  n now / s at its slot / k keep / a set aside / q quit [k]: ").strip().lower()
         )
         video_id = str(getattr(row, "youtube_video_id", "") or "")
         if answer in ("q", "quit"):
@@ -175,6 +175,21 @@ def watch_and_publish(channel_id: str, *, ask, print_fn) -> list[str]:
             said = getattr(result, "detail", "") or getattr(result, "label", "")
             print_fn(f"    {result.status}: {said}")
             decisions.append("now")
+        elif answer in ("s", "slot"):
+            from core.spaced_queue import slot_for_run
+
+            run = _run_for_hold(run_id)
+            when, why = slot_for_run(
+                channel_id, int(run_id or 0), title=str(getattr(run, "title", "") or "")
+            )
+            if when is None:
+                print_fn(f"    Kept unlisted: {why}.")
+                decisions.append("keep")
+                continue
+            result = apply_schedule_public(video_id, channel_id=channel_id, when=when)
+            said = getattr(result, "detail", "") or getattr(result, "label", "")
+            print_fn(f"    {result.status}: {said}")
+            decisions.append("slot")
         elif answer in ("a", "aside"):
             merge_features(run_id, {"watch_aside": True})
             print_fn("    Set aside. It will not be offered again.")
@@ -183,6 +198,85 @@ def watch_and_publish(channel_id: str, *, ask, print_fn) -> list[str]:
             print_fn("    Kept unlisted.")
             decisions.append("keep")
     return decisions
+
+
+def apply_schedule_public(
+    video_id: str,
+    *,
+    channel_id: str = "tapin",
+    when: datetime,
+    dry_run: bool = False,
+    repo=None,
+) -> GoPublicResult:
+    """#1270: schedule an unlisted upload to go public at `when` - YouTube's `publishAt`, which
+    needs the video private until then. The log row says scheduled at that time, so the slot
+    counts as taken and the worker crossposts it once it is live (#1275). Only an operator's
+    action calls this (decision 60)."""
+    from publishing.youtube_publisher import _to_publish_at_rfc3339
+
+    video_id = (video_id or "").strip()
+    try:
+        if repo is None:
+            from storage.repositories.publish_log import get_publish_log_repository
+
+            repo = get_publish_log_repository()
+        rows = repo.list_uploaded_for_channel(channel_id)
+    except Exception as exc:
+        logger.warning("schedule-public: publish log unreadable: %s", exc)
+        rows = []
+    record = _find(rows, video_id)
+    run_id = record.content_run_id if record is not None else None
+    title = _run_title(run_id)
+    if record is not None and override_held(record.content_run_id):
+        return GoPublicResult(
+            "refused",
+            f"run {record.content_run_id} was rendered past the grounding gate; it stays "
+            f"unlisted until the flagged claim is fixed - py -m scripts.ops verify-claim "
+            f"--run-id {record.content_run_id}",
+            video_id,
+            run_id=run_id,
+            title=title,
+        )
+    body = {
+        "id": video_id,
+        "status": {"privacyStatus": "private", "publishAt": _to_publish_at_rfc3339(when)},
+    }
+    if dry_run:
+        return GoPublicResult("dry_run", json.dumps(body), video_id, run_id=run_id, title=title)
+    if os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() not in ("1", "true", "yes"):
+        return GoPublicResult(
+            "blocked", "YOUTUBE_UPLOAD_ENABLED is not true; nothing was sent", video_id,
+            run_id=run_id, title=title,
+        )  # fmt: skip
+    from publishing.snippet_update import manage_scope_problem
+
+    problem = manage_scope_problem(channel_id)
+    if problem:
+        return GoPublicResult("blocked", problem, video_id, run_id=run_id, title=title)
+    try:
+        from youtube.oauth import get_youtube_service
+
+        get_youtube_service(channel_id).videos().update(part="status", body=body).execute()
+    except Exception as exc:
+        from publishing.snippet_update import edit_error_text
+
+        logger.warning("schedule-public update failed: %s", exc)
+        return GoPublicResult(
+            "error", edit_error_text(exc, channel_id), video_id, run_id=run_id, title=title
+        )
+    if record is not None:
+        try:
+            repo.update(
+                record.id,
+                {"privacy_status": "private", "status": "scheduled", "published_at": when},
+            )
+        except Exception as exc:
+            logger.warning("schedule-public: publish log not updated: %s", exc)
+    from analytics.post_timing import format_scheduled_local
+
+    result = GoPublicResult("scheduled", "", video_id, run_id=run_id, title=title)
+    result.detail = f"{result.label} goes public {format_scheduled_local(when, channel_id)}"
+    return result
 
 
 def unlisted_holds(channel_id: str) -> list:

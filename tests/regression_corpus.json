@@ -4867,6 +4867,48 @@
         "not_contains": "angle"
       },
       "why": "the timings line is phases in seconds"
+    },
+    {
+      "id": "a-headline-preview-knows-its-card",
+      "item": 1286,
+      "source": "live, run 160: a Malott-Buckley preview had no event_at and the shelf would have queued it after the card",
+      "call": "core.seasonal_calendar:event_for",
+      "args": [
+        "Analyzing UFC Edmonton odds: Why two outlets picked Mike Malott to KO Buckley"
+      ],
+      "kwargs": {
+        "events": {
+          "UFC Fight Night: Buckley vs. Malott": "2026-10-17T21:00Z"
+        }
+      },
+      "expect": {
+        "equals": [
+          "UFC Fight Night: Buckley vs. Malott",
+          "2026-10-17T21:00Z"
+        ]
+      },
+      "why": "a title naming both sides of a card is a preview of that card"
+    },
+    {
+      "id": "one-side-of-a-card-is-not-its-preview",
+      "item": 1286,
+      "source": "live, run 160: the same rule keeps a covered event off the idea menu",
+      "call": "core.seasonal_calendar:event_for",
+      "args": [
+        "Why two outlets picked Mike Malott to KO Buckley"
+      ],
+      "kwargs": {
+        "events": {
+          "UFC Fight Night: Holland vs. Malott": "2026-10-17T21:00Z"
+        }
+      },
+      "expect": {
+        "equals": [
+          "",
+          ""
+        ]
+      },
+      "why": "two sides named, or the only one - a title sharing one fighter is another story"
     }
   ]
 }

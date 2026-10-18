@@ -1,6 +1,9 @@
 # Agent collaboration — Cursor and Claude Code on this repo
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-10-18
+
+*2026-10-18: Cursor is out of usage for October 2026; Claude holds both queues - see
+[handoff.md](handoff.md).*
 
 > **Read this before starting a project here.** It is short on purpose. It says what
 > each agent is reliably good at, what each one reliably gets wrong, and who decides

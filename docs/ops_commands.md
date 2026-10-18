@@ -169,6 +169,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `source-trust` | Corrections per source and the weight they cost it (#342) |
 | `spend` | Money spent on the project: total, `add --amount N --what X --kind K [--monthly]`, `end --entry N`, `result --entry N --subs N` (#980, #992) |
 | `status` | Queue, uploads, recent runs, SEO/competitors |
+| `status-fields` | Videos an update left with embedding or public view counts off (#1306; dry-run default; --apply restores) |
 | `studio` | Stage 4 Qt thumbnail canvas (last thumb + overlay; requires pip install -e ".[app]") |
 | `studio-deleted` | Cancel publish_log rows whose YouTube videos were Studio-deleted |
 | `sync-metrics` | Pull YouTube Analytics into performance memory |

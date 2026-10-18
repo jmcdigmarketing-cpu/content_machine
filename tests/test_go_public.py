@@ -101,7 +101,11 @@ class GoPublicTests(unittest.TestCase):
         self.assertEqual(result.status, "updated", result.detail)
         kwargs = service.videos.return_value.update.call_args.kwargs
         self.assertEqual(kwargs["part"], "status")
-        self.assertEqual(kwargs["body"]["status"], {"privacyStatus": "public"})
+        status = kwargs["body"]["status"]
+        self.assertEqual(status["privacyStatus"], "public")
+        # #1306: privacy alone made YouTube switch embedding and public stats off.
+        self.assertIs(status["embeddable"], True)
+        self.assertIs(status["publicStatsViewable"], True)
         repo.update.assert_called_once_with(7, {"privacy_status": "public"})
 
     def test_apply_blocked_without_upload_flag(self):

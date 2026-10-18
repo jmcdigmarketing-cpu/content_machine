@@ -498,13 +498,17 @@ def pull(channel_id: str, run_id: int) -> str:
             notes.append(f"run {run_id} ({video}): not changed - {problem}")
             continue
         try:
+            from publishing.snippet_update import live_status, writable_status
             from youtube.oauth import get_youtube_service
 
-            body = {
-                "id": video,
-                "status": {"privacyStatus": "private", "selfDeclaredMadeForKids": False},
-            }
-            get_youtube_service(channel_id).videos().update(part="status", body=body).execute()
+            service = get_youtube_service(channel_id)
+            # #1306: private and unscheduled, the rest of the status as YouTube holds it.
+            status = writable_status(
+                live_status(service, video), privacyStatus="private", publishAt=None,
+                selfDeclaredMadeForKids=False,
+            )  # fmt: skip
+            body = {"id": video, "status": status}
+            service.videos().update(part="status", body=body).execute()
             log.update(row.id, {"status": "pulled", "privacy_status": "private"})
             notes.append(f"run {run_id} ({video}): now private and no longer scheduled")
         except Exception as exc:

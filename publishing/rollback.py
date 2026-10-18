@@ -112,6 +112,10 @@ def apply_rollback(
         if live is None:
             return RollbackResult("error", f"{video_id} not found on YouTube", dossier)
         body = rollback_plan(video_id, correction, live)
+        from publishing.snippet_update import live_status, writable_status
+
+        # #1306: the whole status, or YouTube switches embedding and public stats off.
+        body["status"] = writable_status(live_status(service, video_id), **body["status"])
         service.videos().update(part="status,snippet", body=body).execute()
     except Exception as exc:
         from publishing.snippet_update import edit_error_text

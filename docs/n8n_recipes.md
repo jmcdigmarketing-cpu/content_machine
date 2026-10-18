@@ -1,6 +1,6 @@
 # n8n companion recipes
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-18
 
 Practical [n8n](https://n8n.io) automations driven by Content Machine's outbound
 webhook ([`core/events.py`](../core/events.py)). Each recipe below names the

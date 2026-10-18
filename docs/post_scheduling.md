@@ -1,12 +1,27 @@
 # Post scheduling & upload queue
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-10-18
 
 ## Overview
 
 Content Machine can schedule YouTube publishes at **optimal weekly slots** (per channel and topic domain) without keeping your PC on at publish time.
 
-- **Option 4** uploads the video immediately (run worker once) and sets YouTube **`publishAt`** for the chosen slot.
+- **Option 4** uploads the video immediately (run worker once) and sets YouTube **`publishAt`** for the run's own slot (below).
+
+### The slot rule (2026-10-18, #1298)
+
+Option 4, batch-review, `requeue_upload --queue`, the shelf and `auto_generate` all take a video's slot from
+`core/spaced_queue` (`slot_for_run`, `shelf_schedule`), one rule for every path:
+
+1. **A game preview** goes before its kickoff - and when no free slot is left before it, out as it uploads
+   (`_ASAP_LEAD`, a `publishAt` 45 minutes ahead, so the unlisted review hold does not apply) (#1295).
+2. **News** goes inside its window - a 6 PM slot when noon and 10 PM would miss it (#1285).
+3. **Everything else** takes the next free noon or 10 PM in the channel's zone, one video a slot; slots other
+   uploads already hold are skipped (#1273, #1285).
+
+The Shorts cut from one long video take free noon/10 PM slots, one a day; while a `post_time` experiment
+runs, its arm still decides each run's hour (#912). The `post_schedule` below still drives the learned
+"best time" display and that experiment.
 - **Option 3** only delays the local worker; your machine must be on when the job runs.
 
 ## Upload queue (slot reservation)

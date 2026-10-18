@@ -1,6 +1,6 @@
 # MoneyPrinter vs Content OS — clip pipeline, compared
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-10-18
 
 Written 2026-08-26 after the operator's step-3 note: **unnecessary stock
 footage is often unrelated, and a hard cut from gaming to live-action reality

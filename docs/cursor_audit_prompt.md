@@ -1,6 +1,6 @@
 # Cursor audit prompt — Content Machine
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-10-18
 
 > **Historical, and stale.** This was a one-off audit prompt written against commit
 > `e6d5c9c` when the suite was far smaller. The repo-state paragraph

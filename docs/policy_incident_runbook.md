@@ -1,6 +1,6 @@
 # Policy incident runbook
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-18
 
 In-repo template for a YouTube **strike**, **Content ID** claim, or **appeal**.
 Print the path with `py -m scripts.ops policy-runbook`. Do not paste secrets.

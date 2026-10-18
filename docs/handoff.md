@@ -77,7 +77,8 @@ suite; `suite_hygiene.without_dotenv` around `ops test` (#1302).
 
 **Defects first:** none open of mine. **Next:** wave 111 in batches - the plan's "Next ten"
 (the operator answered #1303 yes, #138 a $0 compilation, #991 Picks graded, #83 holdouts 1 in 5);
-a batch that is not in `git log` was not finished. Batch A (the plan's H1/H2) is committed.
+a batch that is not in `git log` was not finished. Batch A (the plan's H1/H2) and B (#1303
+#1269 #104 #1059 #1306 #1296; seven videos' embedding restored, the operator's yes) are committed.
 Suite 6,313, forward and reversed.
 
 ## Slot — Cursor

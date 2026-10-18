@@ -255,10 +255,8 @@ def apply_schedule_public(
             run_id=run_id,
             title=title,
         )
-    body = {
-        "id": video_id,
-        "status": {"privacyStatus": "private", "publishAt": _to_publish_at_rfc3339(when)},
-    }
+    change: dict[str, Any] = {"privacyStatus": "private", "publishAt": _to_publish_at_rfc3339(when)}
+    body: dict[str, Any] = {"id": video_id, "status": change}
     if dry_run:
         return GoPublicResult("dry_run", json.dumps(body), video_id, run_id=run_id, title=title)
     if os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() not in ("1", "true", "yes"):
@@ -272,9 +270,13 @@ def apply_schedule_public(
     if problem:
         return GoPublicResult("blocked", problem, video_id, run_id=run_id, title=title)
     try:
+        from publishing.snippet_update import live_status, writable_status
         from youtube.oauth import get_youtube_service
 
-        get_youtube_service(channel_id).videos().update(part="status", body=body).execute()
+        service = get_youtube_service(channel_id)
+        # #1306: the whole status, or YouTube switches embedding and public stats off.
+        body["status"] = writable_status(live_status(service, video_id), **change)
+        service.videos().update(part="status", body=body).execute()
     except Exception as exc:
         from publishing.snippet_update import edit_error_text
 
@@ -390,9 +392,12 @@ def apply_go_public(
     if problem:
         return GoPublicResult("blocked", problem, target, run_id=run_id, title=title)
     try:
+        from publishing.snippet_update import live_status, writable_status
         from youtube.oauth import get_youtube_service
 
         service = get_youtube_service(channel_id)
+        # #1306: the whole status, or YouTube switches embedding and public stats off.
+        body["status"] = writable_status(live_status(service, target), **body["status"])
         service.videos().update(part="status", body=body).execute()
     except Exception as exc:
         from publishing.snippet_update import edit_error_text
@@ -419,3 +424,51 @@ def apply_go_public(
     except Exception as exc:
         logger.warning("go-public: crosspost skipped: %s", exc)
     return result
+
+
+def repair_status_fields(channel_id: str = "tapin", *, apply: bool = False, repo=None) -> list[str]:
+    """#1306: the videos a status-only update left with embedding or public view counts off
+    (measured 2026-10-18: 7 of 56), and with `apply` both restored - the privacy and any slot
+    as they are. Reading costs 1 quota unit per 50 videos; a dry run sends nothing."""
+    from publishing.snippet_update import fetch_statuses, status_repairs
+
+    try:
+        if repo is None:
+            from storage.repositories.publish_log import get_publish_log_repository
+
+            repo = get_publish_log_repository()
+        rows = _log_rows(repo, channel_id)
+        from youtube.oauth import get_youtube_service
+
+        service = get_youtube_service(channel_id)
+        ids = [str(getattr(r, "youtube_video_id", "") or "").strip() for r in rows]
+        fixes = status_repairs(fetch_statuses(service, [i for i in ids if i]))
+    except Exception as exc:
+        return [f"  Status fields not read: {exc}"]
+    if not fixes:
+        return ["  Every video keeps embedding and public view counts."]
+    lines = [f"  {len(fixes)} video(s) with embedding or public view counts off (#1306):"]
+    lines += [
+        f"    {video_id} ({status.get('privacyStatus')})" for video_id, status in fixes.items()
+    ]
+    if not apply:
+        return [
+            *lines,
+            "  Nothing sent. --apply restores both; privacy and any slot stay as they are.",
+        ]
+    if os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() not in ("1", "true", "yes"):
+        return [*lines, "  Not sent: YOUTUBE_UPLOAD_ENABLED is not true."]
+    from publishing.snippet_update import manage_scope_problem
+
+    problem = manage_scope_problem(channel_id)
+    if problem:
+        return [*lines, f"  Not sent: {problem}"]
+    for video_id, status in fixes.items():
+        try:
+            service.videos().update(
+                part="status", body={"id": video_id, "status": status}
+            ).execute()
+            lines.append(f"    {video_id}: restored")
+        except Exception as exc:
+            lines.append(f"    {video_id}: not restored - {exc}")
+    return lines

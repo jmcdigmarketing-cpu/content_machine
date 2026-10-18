@@ -1,6 +1,6 @@
 # Content Machine — Operating Plan (pace, cost, channels, ops)
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-10-18 · **Superseded by:** [hands_off_plan.md](hands_off_plan.md)
 
 Companion to [vision.md](vision.md) (the north-star architecture & 12-month plan).
 This doc is the **operational** layer: what to build next at the **real** pace and

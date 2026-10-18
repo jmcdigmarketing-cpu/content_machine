@@ -8411,3 +8411,18 @@ Batch A (docs): [hands_off_plan.md](hands_off_plan.md) gained the ordered next t
 quarter (H2, eleven items, each with what it needs and a command for done) and "Beyond (2027)";
 the Story's stale "Next" section became the three horizons. Committed on its own, because the
 session may stop partway.
+
+Batch B (items 1-4):
+- #1303: NFL and NBA join tapin's `extra_domains`.
+- #1269: the twelve stale cards re-read - nine re-dated, post_scheduling.md and
+  youtube_quota_increase.md corrected, two reclassed to snapshot, operating_plan.md archived.
+- The audit's two misses closed: #104 and #1059.
+- **#1306 was a defect, measured:** 7 of 56 videos had embedding and public view counts off, all
+  from status-only updates (go-public, the reschedule). Every status change now sends the live
+  status with the change (`writable_status`); `ops status-fields` repaired the seven with the
+  operator's yes, read back.
+- #1296: a heard name is corrected to the run's own ("Molot" -> "Malott").
+
+I wrote the `status-fields` print through a heredoc and it lost its backslash again - the memory
+says not to; caught by a parse check before any test ran. tests/test_wave111.py: 12 of 12 failed
+on clean HEAD. 3 corpus cases.

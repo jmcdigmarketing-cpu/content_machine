@@ -44,7 +44,6 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [analyst_intelligence.md](analyst_intelligence.md) | The analyst layer |
 | [post_scheduling.md](post_scheduling.md) | Scheduling and the upload queue |
 | [agent_collaboration.md](agent_collaboration.md) | How Cursor and Claude Code split work here |
-| [moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md) | Clip pipeline, compared |
 | [data_sourcing_strategy.md](data_sourcing_strategy.md) | Sourcing policy: APIs vs scrapers, per source |
 | [ops_commands.md](ops_commands.md) | Generated `ops` command reference (`ops command-ref`) |
 | [docs_standard.md](docs_standard.md) | The rules this index obeys |
@@ -65,7 +64,6 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [policy_incident_runbook.md](policy_incident_runbook.md) | When a policy strike lands |
 | [n8n_recipes.md](n8n_recipes.md) | n8n companion recipes |
 | [claude_code_usage.md](claude_code_usage.md) | Plan mode, subagents, memory on this repo |
-| [cursor_audit_prompt.md](cursor_audit_prompt.md) | The audit prompt handed to Cursor |
 
 ## Plans — what happens next
 
@@ -73,7 +71,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 |---|---|
 | [master_plan.md](master_plan.md) | **Canonical.** Horizons M0–M5 |
 | [roadmap.md](roadmap.md) | Item-level open/shipped ledger |
-| [operating_plan.md](operating_plan.md) | Pace, cost, channels, ops |
+| [operating_plan.md](operating_plan.md) | *archived* → hands_off_plan.md (pace, cost, channels, ops as of 2026-06) |
 | [backlog.md](backlog.md) | Full open-item inventory (roadmap.md stays short) |
 | [desktop_app.md](desktop_app.md) | The Windows application programme |
 | [hands_off_plan.md](hands_off_plan.md) | **Current.** Nothing by hand, bigger ideas, reach and money honestly, reliability, a backlog that earns its place - H0/H1/H2, each with a command for done |
@@ -93,6 +91,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 
 | Doc | Date |
 |---|---|
+| [moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md) | 2026-08-26 — the clip pipeline against MoneyPrinter's (decisions §26) |
+| [cursor_audit_prompt.md](cursor_audit_prompt.md) | the one-off audit prompt handed to Cursor at `e6d5c9c` |
 | [backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md) | 2026-10-18 — 258 open items read: 92 merged into a later entry, 83 retired, 13 shipped, 70 kept |
 | [audit_2026-10-17.md](audit_2026-10-17.md) | 2026-10-17 — **current**; CI red six days, the suite reached the real database, Cursor's commits read |
 | [audit_2026-09-26.md](audit_2026-09-26.md) | 2026-09-26 — before→after of the 09-20 findings |

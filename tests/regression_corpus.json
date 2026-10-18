@@ -5263,6 +5263,80 @@
         "equals": "GB -3.5"
       },
       "why": "the call is made against a real line"
+    },
+    {
+      "id": "status-update-keeps-embedding",
+      "item": 1306,
+      "source": "live, 2026-10-18: go-public sent the privacy alone and YouTube switched embedding and public stats off on 7 of 56 videos",
+      "call": "publishing.snippet_update:writable_status",
+      "args": [
+        {
+          "privacyStatus": "private",
+          "publishAt": "2026-10-18T22:00:00Z",
+          "license": "youtube",
+          "embeddable": true,
+          "publicStatsViewable": true,
+          "uploadStatus": "processed"
+        }
+      ],
+      "kwargs": {
+        "privacyStatus": "public"
+      },
+      "expect": {
+        "equals": {
+          "license": "youtube",
+          "embeddable": true,
+          "publicStatsViewable": true,
+          "selfDeclaredMadeForKids": false,
+          "privacyStatus": "public"
+        }
+      },
+      "why": "the whole status is sent; public drops the slot"
+    },
+    {
+      "id": "status-update-keeps-a-scheduled-slot",
+      "item": 1306,
+      "source": "wave 111: a repair of a scheduled video must not cancel its publishAt",
+      "call": "publishing.snippet_update:writable_status",
+      "args": [
+        {
+          "privacyStatus": "private",
+          "publishAt": "2026-10-18T22:00:00Z",
+          "embeddable": false
+        }
+      ],
+      "kwargs": {
+        "embeddable": true
+      },
+      "select": "publishAt",
+      "expect": {
+        "equals": "2026-10-18T22:00:00Z"
+      },
+      "why": "Perez kept its 6 PM slot through the repair"
+    },
+    {
+      "id": "voice-note-name-corrected",
+      "item": 1296,
+      "source": "live, 2026-10-18: a test memo heard Malott as Molot",
+      "call": "core.facts.voice_notes:correct_names",
+      "args": [
+        [
+          "Molot finished Buckley in the second round."
+        ],
+        [
+          "Fight",
+          "Night",
+          "Buckley",
+          "Malott"
+        ]
+      ],
+      "select": 0,
+      "expect": {
+        "equals": [
+          "Malott finished Buckley in the second round."
+        ]
+      },
+      "why": "the run's own names correct what was heard"
     }
   ]
 }

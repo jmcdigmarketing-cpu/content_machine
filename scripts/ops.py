@@ -1208,9 +1208,14 @@ def cmd_voice_facts(args: argparse.Namespace) -> int:
         print(f"Nothing to save: {why}")
         return 1
     whose = f"run {run_id}'s subject" if run_id else f'"{topic}"'
+    # #1296: a heard name close to one of the run's own is written as the run's.
+    names = voice_notes.known_names(voice_notes.run_names(run_id) if run_id else topic)
+    lines, fixes = voice_notes.correct_names(lines, names)
     print(f"Heard {len(lines)} line(s) for {whose}:")
     for line in lines:
         print(f"  - {line}")
+    if fixes:
+        print("  Names corrected to the run's: " + ", ".join(f"{a} -> {b}" for a, b in fixes))
     if not getattr(args, "apply", False):
         print("Dry run - add --apply to save them to the vault as your own facts.")
         return 0
@@ -3190,6 +3195,21 @@ def cmd_recategorize(args: argparse.Namespace) -> int:
     if getattr(args, "apply", False):
         extra.append("--apply")
     return _run_module("publishing.recategorize", *extra)
+
+
+@_register(
+    "status-fields",
+    "Videos an update left with embedding or public view counts off (#1306; dry-run default; "
+    "--apply restores)",
+)
+def cmd_status_fields(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from publishing.go_public import repair_status_fields
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    print(f"Status fields - {channel}")
+    print("\n".join(repair_status_fields(channel, apply=bool(getattr(args, "apply", False)))))
+    return 0
 
 
 @_register("publish-dry-run", "Print the YouTube videos.insert body (no upload; tokens redacted)")

@@ -30,6 +30,59 @@ def transcript_lines(path: str) -> tuple[list[str], str]:
     return (lines, "") if lines else ([], "no words were heard")
 
 
+def known_names(text: str) -> list[str]:
+    """The single words of the names `text` carries - a run's title and subject (#1296)."""
+    from apis.topic_tokens import name_phrases
+
+    words: list[str] = []
+    for phrase in name_phrases(text or "", max_words=5, connectors=True):
+        for word in phrase.split():
+            if len(word) >= 4 and word not in words:
+                words.append(word)
+    return words
+
+
+def correct_names(lines: list[str], names: list[str]) -> tuple[list[str], list[tuple[str, str]]]:
+    """#1296: a test memo was heard "Malott" as "Molot". A heard name close to one of the run's
+    own (same first letter, a close spelling) is written as the run's; other words stay."""
+    import difflib
+
+    from apis.topic_tokens import name_phrases
+
+    known = {name.lower(): name for name in names}
+    out: list[str] = []
+    fixes: list[tuple[str, str]] = []
+    for line in lines:
+        for phrase in name_phrases(line, max_words=5, connectors=True):
+            for word in phrase.split():
+                low = word.lower()
+                if len(word) < 4 or low in known:
+                    continue
+                pool = [k for k in known if k[0] == low[0]]
+                match = difflib.get_close_matches(low, pool, n=1, cutoff=0.7)
+                if match:
+                    line = re.sub(rf"\b{re.escape(word)}\b", known[match[0]], line)
+                    if (word, known[match[0]]) not in fixes:
+                        fixes.append((word, known[match[0]]))
+        out.append(line)
+    return out, fixes
+
+
+def run_names(run_id: int) -> str:
+    """The text a run's names come from: its title and subject, or "" (#1296)."""
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        run = get_content_run_repository().get(int(run_id))
+    except Exception as exc:
+        logger.debug("voice notes: run %s unread: %s", run_id, exc)
+        return ""
+    if run is None:
+        return ""
+    parts = (getattr(run, name, "") for name in ("title", "input_topic", "selected_topic"))
+    return " . ".join(str(p) for p in parts if p)
+
+
 def save_topic_facts(channel_id: str, topic: str, lines: list[str]) -> int:
     """The lines as the operator's facts for ``topic``; how many were kept."""
     from core.operator_facts import capture_facts_to_vault, clean_typed_lines

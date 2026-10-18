@@ -1,6 +1,6 @@
 # YouTube Data API quota-increase checklist
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-18
 
 Use this when remaining units cannot cover **one upload** (~1,600 units). Do not
 invent quota numbers — read the tracker (`ops reliability` / `format_uploads_left`).
@@ -11,3 +11,5 @@ invent quota numbers — read the tracker (`ops reliability` / `format_uploads_l
    request an increase. Attach recent `uploads left` figures, not guesses.
 4. Keep `YOUTUBE_DAILY_QUOTA` in `.env` aligned with the granted cap after approval.
 5. Do not raise this project's local tracker above what Google granted.
+6. The day is YouTube's: units reset at midnight Pacific, and the tracker counts by the
+   Pacific date (#1288) - an upload at 00:03 Central is still yesterday's.

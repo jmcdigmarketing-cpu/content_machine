@@ -31,7 +31,7 @@
       "audience_region": "US",
       "notification_sound": "ms-winsoundevent:Notification.IM",
       "overnight": {"renders": 2},
-      "extra_domains": ["soccer"],
+      "extra_domains": ["soccer", "nfl", "nba"],
       "persona": {
         "perspective": "a plugged-in gaming, UFC and football fan who knows the facts and says what they mean",
         "tone": "high-energy, confident, a little irreverent — never corporate",

@@ -82,3 +82,65 @@ def writable_snippet(current: dict[str, Any], **changes: Any) -> dict[str, Any]:
     if missing:
         raise ValueError(f"snippet update needs {', '.join(missing)}; refusing a partial snippet")
     return merged
+
+
+# #1306 (measured 2026-10-18): `videos.update(part="status")` replaces the whole status too.
+# go-public and reschedule sent the privacy alone, and YouTube switched embedding and public
+# view counts off on 7 of 56 videos. Every status change goes through here, like the snippet.
+_STATUS_KEPT = (
+    "privacyStatus",
+    "publishAt",
+    "license",
+    "embeddable",
+    "publicStatsViewable",
+    "selfDeclaredMadeForKids",
+    "containsSyntheticMedia",
+)
+_STATUS_DEFAULTS: dict[str, Any] = {
+    "license": "youtube",
+    "embeddable": True,
+    "publicStatsViewable": True,
+    "selfDeclaredMadeForKids": False,
+}
+
+
+def fetch_statuses(service, video_ids: list[str]) -> dict[str, dict[str, Any]]:
+    """{video_id: live status} for the ids YouTube still has (1 quota unit per 50)."""
+    out: dict[str, dict[str, Any]] = {}
+    ids = [v for v in dict.fromkeys(video_ids) if v]
+    for start in range(0, len(ids), _BATCH):
+        chunk = ids[start : start + _BATCH]
+        resp = service.videos().list(part="status", id=",".join(chunk)).execute() or {}
+        for item in resp.get("items") or []:
+            if item.get("id") and isinstance(item.get("status"), dict):
+                out[str(item["id"])] = item["status"]
+    return out
+
+
+def live_status(service, video_id: str) -> dict[str, Any]:
+    """One video's live status, or {} when it cannot be read (the upload defaults then)."""
+    try:
+        return fetch_statuses(service, [video_id]).get(video_id, {})
+    except Exception:
+        return {}
+
+
+def writable_status(current: dict[str, Any], **changes: Any) -> dict[str, Any]:
+    """The live status's writable fields with `changes` applied. `publishAt` goes with a
+    video that is not private (YouTube refuses it) or when a change sets it to None."""
+    merged = dict(_STATUS_DEFAULTS)
+    merged.update({k: current[k] for k in _STATUS_KEPT if k in current})
+    merged.update(changes)
+    if merged.get("privacyStatus") != "private" or not merged.get("publishAt"):
+        merged.pop("publishAt", None)
+    return merged
+
+
+def status_repairs(statuses: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """{video_id: status body} for each video an update left with embedding or public view
+    counts off - everything else as it is, a scheduled one still scheduled."""
+    return {
+        video_id: writable_status(status, embeddable=True, publicStatsViewable=True)
+        for video_id, status in statuses.items()
+        if status.get("embeddable") is False or status.get("publicStatsViewable") is False
+    }

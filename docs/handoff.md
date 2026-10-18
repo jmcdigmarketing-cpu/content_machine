@@ -82,7 +82,7 @@ and queued for a free slot - the operator said a $0 compilation, public at a slo
 #1307-#1310 (status reuses the doctor result, roundups dropped, the week's games called,
 the compilation's thumbnail), B (#1136 settled with the operator's yes) and C (#1311 the
 first-line rule, #1079 the gate line, #1312 attribution on outcomes; #1290 not retuned, by
-master_plan M4.5) done. Next: D #1042 the matchup card, E #1077 the menu. **Defects first:** none open of mine.
+master_plan M4.5) and D (#1042's record card, after the first sentence) done. Next: E #1077 the menu. **Defects first:** none open of mine.
 
 ## Slot — Cursor
 

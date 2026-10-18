@@ -218,6 +218,8 @@ def build_render_ffmpeg_command(
     channel_id: str | None = None,
     music_volume: float | None = None,
     caption_scrim: float = 0.0,
+    card_path: str | None = None,
+    card_window: tuple[float, float] | None = None,
 ) -> list[str]:
     """
     FFmpeg command: loop background video only (no stock audio), TTS audio only,
@@ -297,13 +299,15 @@ def build_render_ffmpeg_command(
         )
 
     # Video-only filter graph from input 0; input 1 audio mapped explicitly.
-    filter_complex = (
+    picture = (
         f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
         f"crop={width}:{height},"
         f"{grade_filter}"
         f"{look_filter}"
         f"{motion_filter}"
         f"setpts=PTS-STARTPTS,"
+    )
+    captions = (
         f"{scrim_filter}"
         f"{lower_thirds_filter}"
         f"{policy_filter}"
@@ -311,6 +315,19 @@ def build_render_ffmpeg_command(
         f"{force_style_arg}"
         f"{draft_guides}[vout]"
     )
+    card_index = 3 if music_path is not None else 2
+    if card_path and card_window:
+        # #1042: the matchup card, full frame for its window, under the captions. No card
+        # leaves the graph byte-identical.
+        start, end = card_window
+        filter_complex = (
+            f"{picture.rstrip(',')}[base];"
+            f"[{card_index}:v]scale={width}:{height},format=rgba[card];"
+            f"[base][card]overlay=0:0:enable='between(t,{start:.2f},{end:.2f})',"
+            f"{captions}"
+        )
+    else:
+        filter_complex = picture + captions
 
     cmd = [
         "ffmpeg",
@@ -341,6 +358,8 @@ def build_render_ffmpeg_command(
     elif _loudnorm_enabled():
         filter_complex += f";[1:a]{_loudnorm_filter()}[aout]"
         audio_map = "[aout]"
+    if card_path and card_window:
+        cmd += ["-loop", "1", "-i", card_path]  # #1042: input `card_index`
     cmd += [
         "-t",
         duration_str,
@@ -689,6 +708,20 @@ def render_vertical_video(
             "lightest background sampled"
         )
 
+    # #1042: a coming game's preview gets its matchup card after the opening sentence.
+    card_path: str | None = None
+    card_window: tuple[float, float] | None = None
+    try:
+        from video.matchup_card import card_for_render
+
+        card_png = os.path.splitext(output_path)[0] + ".matchup_card.png"
+        card = card_for_render(topic, channel_id, word_timings, card_png)
+        if card:
+            card_path, card_window = card
+            stage(f"Matchup card at {card_window[0]:.1f}s")
+    except Exception as exc:
+        logger.debug("matchup card skipped: %s", exc)
+
     cmd = build_render_ffmpeg_command(
         background_path=background_path,
         mp3_path=mp3_path,
@@ -706,6 +739,8 @@ def render_vertical_video(
         channel_id=channel_id,
         music_volume=music_volume,
         caption_scrim=caption_scrim,
+        card_path=card_path,
+        card_window=card_window,
     )
     if command_callback is not None:
         try:
@@ -754,12 +789,39 @@ def render_vertical_video(
             hook_motion_filter=hook_motion_filter,
             channel_id=channel_id,
             caption_scrim=caption_scrim,
+            card_path=card_path,
+            card_window=card_window,
         )
         if command_callback is not None:
             try:
                 command_callback("primary_attempt", list(cmd))
             except Exception as exc:
                 logger.debug("fallback attempt capture skipped: %s", exc)
+        process = _ffmpeg_run(cmd)
+
+    if process.returncode != 0 and card_path:
+        # #1042: the matchup card must never break a render - retry once without it.
+        logger.warning("FFmpeg failed with the matchup card - retrying without it")
+        stage("Matchup card failed - retrying without it...")
+        card_path, card_window = None, None
+        cmd = build_render_ffmpeg_command(
+            background_path=background_path,
+            mp3_path=mp3_path,
+            output_path=output_path,
+            subtitle_path=subtitle_path,
+            duration=duration,
+            music_path=music_path,
+            caption_force_style=caption_force_style(channel_id),
+            render_preset=render_preset,
+            lower_thirds_path=lower_thirds_path,
+            policy_overlays_path=policy_overlays_path,
+            color_grade=color_grade,
+            color_lut=color_lut,
+            hook_motion_filter=hook_motion_filter,
+            channel_id=channel_id,
+            music_volume=music_volume,
+            caption_scrim=caption_scrim,
+        )
         process = _ffmpeg_run(cmd)
 
     if process.returncode != 0:

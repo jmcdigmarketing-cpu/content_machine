@@ -5478,6 +5478,60 @@
         "falsy": true
       },
       "why": "JSON keys are strings; a run's outcome is looked up by its integer id - an unmatched run has no outcome, never the composite"
+    },
+    {
+      "id": "the-card-starts-after-the-first-sentence",
+      "item": 1042,
+      "source": "wave 112: the matchup card shows from the end of the opening sentence",
+      "call": "video.matchup_card:first_sentence_end",
+      "args": [
+        [
+          {
+            "word": "Dallas",
+            "end": 0.3
+          },
+          {
+            "word": "Love.",
+            "end": 1.4
+          },
+          {
+            "word": "Here's",
+            "end": 1.9
+          }
+        ]
+      ],
+      "expect": {
+        "equals": 1.4
+      },
+      "why": "the hook is said before the card covers the picture"
+    },
+    {
+      "id": "a-summary-with-one-side-draws-no-card",
+      "item": 1042,
+      "source": "wave 112: a thin ESPN summary must not draw half a matchup",
+      "call": "video.matchup_card:matchup_from_summary",
+      "args": [
+        {
+          "header": {
+            "competitions": [
+              {
+                "competitors": [
+                  {
+                    "homeAway": "home",
+                    "team": {
+                      "name": "Packers"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "fail-open: no two sides, no card"
     }
   ]
 }

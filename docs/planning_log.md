@@ -8526,3 +8526,16 @@ Batch C (items 6-8):
   took its place in the ten.
 - **Corrected:** I had written that the stored retention curves were read by nothing;
   `retention.pacing_hint` puts the drop-off in the script prompt for presets 2-3.
+
+Batch D (item 9, #1042, the operator: a 3-second card after the hook):
+- `video/matchup_card.py`: a coming NFL or NBA game's record card from ESPN's free summary
+  (records, the line, ESPN's projection, the first player out), overlaid full frame by
+  `render_video` for 3 s from the end of the first sentence, under the captions. Without a
+  card the render command is byte-identical; a failing card retries once without it.
+- Live: Cowboys at Packers drew COWBOYS 2-3 / PACKERS 3-2 / DAL -1.5 / Cowboys 52%. The
+  injury line, "Out: Benjamin St-Juste (Packers)", ran off both edges at 70 px - each line now
+  shrinks to fit. A 6 s draft on real footage showed the card at 2.5 s and not at 5.0 s.
+- Found on the way: the card was written as `matchup_card.png` in the video's folder, so two
+  renders there would share it; it is named after the video now, like its `.lower_thirds.ass`.
+- Not done: the full pipeline render (it picks assets and writes outputs); the graph was
+  checked through the builder on real media instead.

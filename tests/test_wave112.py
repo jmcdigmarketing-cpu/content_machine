@@ -13,7 +13,7 @@ import os
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 NOW = datetime(2026, 10, 18, 21, 0, tzinfo=timezone.utc)
 
@@ -291,6 +291,163 @@ class PaidSignalOutcomeTests(unittest.TestCase):
             text = psa.report_from_traces(self._traces(), channel_id="tapin")
         self.assertIn("engaged_rate", text)
         self.assertIn("disable", text)
+
+
+GAME = "Dallas Cowboys at Green Bay Packers"
+SUMMARY = {
+    "header": {"competitions": [{
+        "date": "2026-10-19T00:20Z",
+        "competitors": [
+            {"homeAway": "home", "team": {"id": "9", "name": "Packers", "displayName": "Green Bay Packers"},
+             "record": [{"type": "total", "summary": "3-2"}]},
+            {"homeAway": "away", "team": {"id": "6", "name": "Cowboys", "displayName": "Dallas Cowboys"},
+             "record": [{"type": "total", "summary": "2-3"}]},
+        ],
+    }]},
+    "pickcenter": [{"provider": {"name": "DraftKings"}, "details": "DAL -1.5", "overUnder": 53.5}],
+    "predictor": {"homeTeam": {"id": "9", "gameProjection": "61.2"},
+                  "awayTeam": {"id": "6", "gameProjection": "38.8"}},
+    "injuries": [{"team": {"displayName": "Dallas Cowboys"},
+                  "injuries": [{"status": "Out", "athlete": {"displayName": "Micah Parsons"}}]}],
+}  # fmt: skip
+WORDS = [
+    {"word": "Dallas", "start": 0.0, "end": 0.3},
+    {"word": "can't", "start": 0.32, "end": 0.6},
+    {"word": "stop", "start": 0.62, "end": 0.9},
+    {"word": "Love.", "start": 0.92, "end": 1.4},
+    {"word": "Here's", "start": 1.6, "end": 1.9},
+]
+
+
+class MatchupCardTests(unittest.TestCase):
+    """Item 9, #1042 (the operator: a 3-second card after the hook): owned visuals for previews."""
+
+    def test_the_summary_becomes_the_cards_lines(self):
+        from video.matchup_card import card_lines, matchup_from_summary
+
+        lines = card_lines(matchup_from_summary(SUMMARY))
+        self.assertEqual(lines[0], "COWBOYS 2-3")
+        self.assertEqual(lines[2], "PACKERS 3-2")
+        self.assertIn("Line: DAL -1.5", lines)
+        self.assertIn("ESPN: Packers 61% to win", lines)
+        self.assertIn("Out: Micah Parsons (Cowboys)", lines)
+
+    def test_the_card_is_drawn_full_frame(self):
+        from PIL import Image
+
+        from video.matchup_card import draw_card
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = draw_card(["COWBOYS 2-3", "at", "PACKERS 3-2", "Line: DAL -1.5"],
+                             os.path.join(tmp, "card.png"))  # fmt: skip
+            with Image.open(path) as img:
+                self.assertEqual(img.size, (1080, 1920))
+
+    def test_a_long_line_fits_the_width(self):
+        # Live 2026-10-18: "Out: Benjamin St-Juste (Packers)" ran off both edges.
+        from PIL import Image
+
+        from video.matchup_card import draw_card
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = draw_card(["COWBOYS 2-3", "at", "PACKERS 3-2",
+                              "Out: Benjamin St-Juste (Packers)"], os.path.join(tmp, "c.png"))  # fmt: skip
+            with Image.open(path) as img:
+                edge = [img.getpixel((x, y)) for x in (0, 1, 1078, 1079) for y in range(1000, 1500)]
+        self.assertTrue(all(p == (12, 16, 22) for p in edge))
+
+    def test_it_shows_after_the_first_sentence(self):
+        from video.matchup_card import first_sentence_end
+
+        self.assertEqual(first_sentence_end(WORDS), 1.4)
+        self.assertIsNone(first_sentence_end([]))
+
+    def test_only_a_coming_game_gets_one(self):
+        from video import matchup_card
+
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"MATCHUP_CARD": "true"}):
+            card = os.path.join(tmp, "out.matchup_card.png")
+            with (
+                patch.object(matchup_card, "_summary_for", return_value=SUMMARY),
+                patch.object(
+                    matchup_card,
+                    "_now",
+                    return_value=datetime(2026, 10, 18, 21, 0, tzinfo=timezone.utc),
+                ),
+            ):
+                got = matchup_card.card_for_render(GAME, "tapin", WORDS, card)
+                news = matchup_card.card_for_render(
+                    "Jets bench Justin Fields", "tapin", WORDS, card
+                )
+            with (
+                patch.object(matchup_card, "_summary_for", return_value=SUMMARY),
+                patch.object(
+                    matchup_card,
+                    "_now",
+                    return_value=datetime(2026, 10, 19, 1, 0, tzinfo=timezone.utc),
+                ),
+            ):
+                started = matchup_card.card_for_render(GAME, "tapin", WORDS, card)
+        self.assertIsNotNone(got)
+        self.assertEqual(got, (card, (1.4, 4.4)))
+        self.assertIsNone(news)
+        self.assertIsNone(started)
+
+    def test_the_render_overlays_it_before_the_captions(self):
+        from video.render_video import build_render_ffmpeg_command
+
+        base = {"background_path": "bg.mp4", "mp3_path": "vo.mp3", "output_path": "out.mp4",
+                "subtitle_path": "subs.ass", "duration": 40.0}  # fmt: skip
+        plain = build_render_ffmpeg_command(**base)
+        with_card = build_render_ffmpeg_command(**base, card_path="card.png",
+                                                card_window=(1.4, 4.4))  # fmt: skip
+        self.assertNotIn("card.png", " ".join(plain))
+        text = " ".join(with_card)
+        self.assertIn("-loop 1 -i card.png", text)
+        graph = with_card[with_card.index("-filter_complex") + 1]
+        self.assertIn("enable='between(t,1.40,4.40)'", graph)
+        self.assertLess(graph.index("overlay"), graph.index("subtitles="))
+
+    def test_the_cards_input_index_is_where_it_sits(self):
+        from video.render_video import build_render_ffmpeg_command
+
+        for music in (None, "bed.mp3"):
+            cmd = build_render_ffmpeg_command(
+                background_path="bg.mp4", mp3_path="vo.mp3", output_path="out.mp4",
+                subtitle_path="subs.ass", duration=40.0, music_path=music,
+                card_path="card.png", card_window=(1.4, 4.4),
+            )  # fmt: skip
+            inputs = [cmd[i + 1] for i, arg in enumerate(cmd) if arg == "-i"]
+            graph = cmd[cmd.index("-filter_complex") + 1]
+            self.assertIn(f"[{inputs.index('card.png')}:v]scale=", graph, music)
+
+    def test_a_failing_card_never_breaks_the_render(self):
+        from video.render_video import render_vertical_video
+
+        asset = MagicMock(path="C:/tmp/bg.mp4", provider="local", attribution="")
+        runs = [
+            MagicMock(returncode=1, stderr="overlay failed"),
+            MagicMock(returncode=0, stderr=""),
+        ]
+        with (
+            patch("video.matchup_card.card_for_render",
+                  return_value=("C:/tmp/out.matchup_card.png", (1.4, 4.4))),
+            patch("assets.manager.get_scene_matched_background", return_value=None),
+            patch("video.render_video.get_background_asset", return_value=asset),
+            patch("video.render_video.generate_subtitle_file", return_value="C:/tmp/subs.ass"),
+            patch("video.render_video._probe_video_duration", return_value=60.0),
+            patch("video.render_video._resolve_music_bed", return_value=None),
+            patch("video.render_video._ffmpeg_run", side_effect=runs) as ffmpeg_run,
+            patch("video.render_video._render_extra_formats", return_value=[]),
+            patch("video.render_video.os.makedirs"),
+            patch("video.render_video.is_render_progress_enabled", return_value=False),
+            patch("video.channel_intro.resolve_intro_path", return_value=None),
+        ):  # fmt: skip
+            render_vertical_video("C:/tmp/voice.mp3", GAME, "C:/tmp/out.mp4", "script",
+                                  channel_id="moneywise")  # fmt: skip
+        first, second = (" ".join(c.args[0]) for c in ffmpeg_run.call_args_list)
+        self.assertIn("out.matchup_card.png", first)
+        self.assertNotIn("matchup_card", second)
 
 
 if __name__ == "__main__":

@@ -109,6 +109,8 @@ os.environ["HOLDOUT_EVERY"] = "0"
 os.environ["WEEK_COMPILE"] = "false"
 # Wave 112: the first-line rule refuses openers without a call; its own tests turn it on.
 os.environ["FIRST_LINE_RULE"] = "false"
+# Wave 112 (#1042): the matchup card reads ESPN; a render test that wants it sets it.
+os.environ["MATCHUP_CARD"] = "false"
 # #771 turned the whisper aligner on by default; no test may load a model.
 os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 # #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one

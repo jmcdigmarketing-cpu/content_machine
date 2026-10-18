@@ -31,7 +31,7 @@ SCRIPT = (
 
 def _run(rid, topic, *, script="", mode="", facts=""):
     quality = {"script_mode": mode} if mode else {}
-    return SimpleNamespace(id=rid, selected_topic=topic, input_topic=topic, script=script,
+    return SimpleNamespace(id=rid, selected_topic=topic, input_topic=topic, script_preview=script,
                            quality_json=json.dumps(quality),
                            features_json=json.dumps({"grounding_text": facts}))  # fmt: skip
 

@@ -143,6 +143,8 @@ def _runs(channel_id: str) -> list[Any]:
 
 
 def check(channel_id: str) -> dict[str, Any]:
+    from core.runs.script_report import script_of
+
     runs = sorted(_runs(channel_id), key=lambda r: int(getattr(r, "id", 0) or 0))
     out: dict[str, Any] = {"runs": 0, "claims": 0, "confirmed": 0, "contradicted": 0, "open": 0,
                            "rows": []}  # fmt: skip
@@ -157,7 +159,8 @@ def check(channel_id: str) -> dict[str, Any]:
         operator = _operator_lines(_topic(run), channel_id, subject)
         corrections = _correction_text(subject)
         evidence = "\n".join(part for part in ("\n".join(f for f in later if f), operator) if part)
-        for claim in labelled_claims(str(getattr(run, "script", "") or "")):
+        # #1287: a content run has no `script` field - the stored script is `script_of`.
+        for claim in labelled_claims(script_of(run)):
             found = (
                 "contradicted"
                 if _correction_hits(claim, corrections)

@@ -4909,6 +4909,125 @@
         ]
       },
       "why": "two sides named, or the only one - a title sharing one fighter is another story"
+    },
+    {
+      "id": "quota-day-is-youtubes-pacific-day",
+      "item": 1288,
+      "source": "live, 2026-10-18: the 00:03 CDT uploads were booked to Oct 18; YouTube counted them on Oct 17",
+      "call": "apis.youtube_quota:quota_day",
+      "args": [
+        "2026-10-18T05:03:00Z"
+      ],
+      "expect": {
+        "equals": "2026-10-17"
+      },
+      "why": "the quota resets at midnight Pacific, not at this PC's midnight"
+    },
+    {
+      "id": "a-learned-note-against-the-rewrite-rules-waits",
+      "item": 1287,
+      "source": "live, 2026-10-18: 18 videos said questions held 38% vs 20% and numbers 20% vs 26%",
+      "call": "analytics.hook_learning:guidance_from",
+      "args": [
+        {
+          "ready": true,
+          "n": 18,
+          "needs": 21,
+          "traits": [
+            {
+              "trait": "a question",
+              "with": 0.375,
+              "without": 0.202,
+              "gap": 0.173
+            },
+            {
+              "trait": "stakes",
+              "with": 0.3,
+              "without": 0.22,
+              "gap": 0.08
+            },
+            {
+              "trait": "a number",
+              "with": 0.2,
+              "without": 0.258,
+              "gap": -0.058
+            }
+          ],
+          "best_hooks": [
+            [
+              "Six UFC contracts in one night.",
+              0.52
+            ]
+          ]
+        }
+      ],
+      "select": "prefer",
+      "pluck": "trait",
+      "expect": {
+        "equals": [
+          "stakes"
+        ]
+      },
+      "why": "decision 67: a note the rewrite's fixed rules contradict waits until n settles"
+    },
+    {
+      "id": "a-task-xml-without-waketorun-cannot-wake-the-pc",
+      "item": 1289,
+      "source": "live, 2026-10-18: wake timers on, the task's Settings had no WakeToRun, the PC slept through 5:00",
+      "call": "core.nightly_task:wake_to_run",
+      "args": [
+        "<Task><Settings><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StartWhenAvailable>true</StartWhenAvailable></Settings></Task>"
+      ],
+      "expect": {
+        "equals": false
+      },
+      "why": "an absent WakeToRun is false - Windows will not wake the PC for the task"
+    },
+    {
+      "id": "the-teaser-reads-no-console-and-skips-the-intro",
+      "item": 1264,
+      "source": "the 2026-10-17 audit: no -nostdin (#1228's stall) and the 5 s were the 2.15 s intro",
+      "call": "video.teaser:teaser_argv",
+      "args": [
+        "in.mp4",
+        "out.mp4"
+      ],
+      "kwargs": {
+        "seconds": 5.0,
+        "start": 2.15
+      },
+      "expect": {
+        "includes_all": [
+          "-nostdin",
+          "-ss",
+          "2.150"
+        ]
+      },
+      "why": "a console stdin can stall ffmpeg; the teaser starts after the sting"
+    },
+    {
+      "id": "run-157s-caption-band-gets-a-scrim",
+      "item": 1268,
+      "source": "live, run 157: white captions over rgb(136,130,131) read 3.8:1",
+      "call": "core.caption_contrast:scrim_alpha",
+      "args": [
+        [
+          255,
+          255,
+          255
+        ],
+        [
+          [
+            136,
+            130,
+            131
+          ]
+        ]
+      ],
+      "expect": {
+        "equals": 0.1
+      },
+      "why": "the band darkens until the lightest sampled background reaches 4.5:1"
     }
   ]
 }

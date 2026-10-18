@@ -25,7 +25,9 @@ def _features(run: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
-def _script(run: Any) -> str:
+def script_of(run: Any) -> str:
+    """A run's whole stored script: its trace file, else the row's `script_preview` - a content
+    run has no `script` field (#1287: hook learning read one and joined 0 of 41 videos)."""
     try:
         from core import run_trace
 
@@ -42,7 +44,7 @@ def check_run(run: Any) -> dict[str, Any] | None:
     stored = features.get("script_clean")
     if isinstance(stored, dict) and "ok" in stored:
         return stored
-    script = _script(run)
+    script = script_of(run)
     if not script.strip():
         return None
     from core.angle_intent import intent_of

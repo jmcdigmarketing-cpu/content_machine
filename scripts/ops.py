@@ -1206,9 +1206,12 @@ def cmd_teaser(args: argparse.Namespace) -> int:
     if not source or not os.path.isfile(source):
         print(f"Run {run_id} has no finished mp4 on disk.")
         return 1
+    from scripts.probe_sync import intro_offset_seconds
+
     stem, ext = os.path.splitext(source)
     dest = f"{stem}_teaser{ext or '.mp4'}"
-    made = create_teaser(source, dest)
+    # #1264: from 0 s the teaser was the channel intro's sting.
+    made = create_teaser(source, dest, start=intro_offset_seconds(getattr(run, "channel_id", None)))
     print(made)
     return 0
 
@@ -1892,9 +1895,12 @@ def cmd_schedule_drafts(args: argparse.Namespace) -> int:
     from core import nightly_task
 
     channel = str(getattr(args, "channel", "") or "tapin")
-    if getattr(args, "wake", False):  # #1167
-        print("\n".join(nightly_task.wake_lines()))
-        return 0
+    if getattr(args, "wake", False):
+        # #1289: this printed the PowerShell line and changed nothing - on 2026-10-18 wake
+        # timers were on and the task still could not wake the PC. It sets it now.
+        ok, said = nightly_task.set_wake()
+        print("\n".join(nightly_task.wake_report(ok, said, nightly_task.wake_timers())))
+        return 0 if ok else 1
     if getattr(args, "install", False):
         code, out = nightly_task.run_schtasks(nightly_task.install_argv(channel))
         print(out or f"schtasks exit {code}")
@@ -1903,6 +1909,12 @@ def cmd_schedule_drafts(args: argparse.Namespace) -> int:
                 f"Installed: `ops overnight --channel {channel}` daily at "
                 f"{nightly_task.DEFAULT_TIME}. Review in the morning: "
                 f"py -m scripts.ops batch-review --channel {channel}"
+            )
+            woke, _said = nightly_task.set_wake()
+            print(
+                "It may wake the PC to run."
+                if woke
+                else "It cannot wake the PC yet: py -m scripts.ops schedule-drafts --wake"
             )
         return 0 if code == 0 else 1
     if getattr(args, "remove", False):
@@ -4159,7 +4171,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--wake",
         action="store_true",
-        help="schedule-drafts: print the line that lets the nightly task wake the PC",
+        help="schedule-drafts: let the nightly task wake the PC (sets WakeToRun, reads it back)",
     )
     parser.add_argument(
         "--expired",

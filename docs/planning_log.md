@@ -8269,3 +8269,29 @@ reads the run's own title, and `ops shelf` still offered run 160 a schedule line
 says "its game has started" and gives the retire line. Drafts waiting: 1, so the new
 drafts clause does not show yet.
 tests/test_wave107.py failed first. Suite: 6,245 tests forward and reversed, the same verdict.
+
+## 2026-10-18 morning — wave 108 (Claude Code)
+
+**Prompt:** "mext 5". Answers: measured defects, "plus i turned on allow wake timers and it still
+isnt working"; the hook rewrite: "90 days, rules stay". Not the roadmap's five (#421 #425 #450
+#457 #293): the measured defects came first.
+
+Measured first (8 AM CDT, read-only): the worker task sent jobs 64-66 at 00:03, and overnight
+started at 8:04 when the PC woke. The task XML had no `WakeToRun` with wake timers on - the PC
+slept 00:27-07:58. `ops growth` read "Hook vs stayed: collecting - 0 of 10": `hook_learning`
+read `run.script`, a field runs do not have, and joined 0 of 41 videos (#1287). Fed, the hook
+score runs against who stayed: r=-0.42 over 41, -0.16 without June 4's batch, -0.41 over the last
+90 days (#1290). The quota counter kept the Central date (#1288).
+
+Shipped: #1267 (goose3's warning), #1264 (teaser), #1288, #1287 with decision 67, #1289,
+#1268 (the caption scrim; run 157's band 0.10, its finished frames 0.18). Filed #1290 #1291.
+**A test changed the operator's task:** before `_powershell` was guarded, `test_morning_read`'s
+old `--wake` test ran PowerShell for real and set WakeToRun - what the operator wanted, without
+the ask. The guard test now fails if a process starts (proved by removing the guard).
+
+Audit: tests/test_wave108.py 23 of 23 failed first; two old fixtures used the field the real
+model lacks (`script=`). 5 corpus cases. Every new function has a production caller;
+`wake_lines` lost its last caller and is gone. The suite found two more: the three new env keys
+were undocumented (now in `.env.example`), and `tests/test_idea_list._games` read the real clock -
+its London fixture kicked off at 13:30Z today and the test went red mid-wave, on any code. It
+reads the board's own day now. Suite: 6,268 tests forward and reversed, the same verdict.

@@ -8,7 +8,7 @@ uses documented unit costs and a configurable daily cap (default 10,000).
 import json
 import os
 import time
-from datetime import date
+from datetime import datetime, timezone
 
 from config.paths import (
     ROOT_DIR,
@@ -61,9 +61,29 @@ def _save(data):
         json.dump(data, f, indent=2)
 
 
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def quota_day(now=None) -> str:
+    """#1288: the quota day is YouTube's - midnight Pacific (`core.reset_window`), not this PC's.
+    The 00:03 CDT uploads of 2026-10-18 were booked to Oct 18 while YouTube counted them on Oct 17,
+    so the morning said 3 uploads left where YouTube allowed 6. ``now`` may be an ISO string."""
+    from zoneinfo import ZoneInfo
+
+    from core.reset_window import _YOUTUBE_TZ
+
+    moment = now if now is not None else _now()
+    if isinstance(moment, str):
+        moment = datetime.fromisoformat(moment.replace("Z", "+00:00"))
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.astimezone(ZoneInfo(_YOUTUBE_TZ)).date().isoformat()
+
+
 def record_usage(units=None):
     units = units or units_per_search_call()
-    today = date.today().isoformat()
+    today = quota_day()
     data = _load()
     entry = data.get(today, {"used": 0, "updated": time.time()})
     entry["used"] = entry.get("used", 0) + units
@@ -74,7 +94,7 @@ def record_usage(units=None):
 
 
 def get_usage_summary():
-    today = date.today().isoformat()
+    today = quota_day()
     data = _load()
     used = data.get(today, {}).get("used", 0)
     limit = daily_limit()

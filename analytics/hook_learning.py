@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import statistics
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -44,6 +45,26 @@ def learn_min() -> int:
         return max(3, int(os.getenv("HOOK_LEARN_MIN", "10")))
     except ValueError:
         return 10
+
+
+def learn_days() -> int:
+    """Decision 67: the last 90 days teach. All 41 videos made the three best openers June 4's
+    first batch ("Grand Theft Auto VI is on the horizon..."); `HOOK_LEARN_DAYS=0` is all."""
+    try:
+        return max(0, int(os.getenv("HOOK_LEARN_DAYS", "90")))
+    except ValueError:
+        return 90
+
+
+# Decision 67: what the rewrite's fixed rules want (the prompt asks for "a specific fact, number,
+# or contradiction, under 12 words"; the scorer rewards a name and stakes) and what they ban
+# ("never ... a question"; a weak opener). A learned note against them waits until n settles.
+_RULE_WANTS = frozenset({"a number", "a name", "12 words or fewer", "a contradiction", "stakes"})
+_RULE_BANS = frozenset({"a question", "a weak opener"})
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def _publish_repo() -> Any:
@@ -74,9 +95,12 @@ def traits_of(hook: str) -> set[str]:
 def _rows(channel_id: str) -> list[dict[str, Any]]:
     from analytics.packaging import packaging_figures
     from core.hook_score import extract_hook, score_hook
+    from core.runs.script_report import script_of
     from storage.repositories.publish_log import is_seeded
 
     runs = _run_repo()
+    days = learn_days()
+    since = _now() - timedelta(days=days) if days else None
     out: list[dict[str, Any]] = []
     for row in _publish_repo().list_uploaded_for_channel(channel_id) or []:
         if not getattr(row, "youtube_video_id", "") or is_seeded(row):
@@ -90,7 +114,10 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
         if stayed is None or not run_id:
             continue
         run = runs.get(int(run_id))
-        hook = extract_hook(str(getattr(run, "script", "") or "")) if run else ""
+        if run is None or (since is not None and not _made_since(run, since)):
+            continue
+        # #1287: `run.script` - a field no content run has - joined 0 of 41 videos.
+        hook = extract_hook(script_of(run))
         if not hook:
             continue
         out.append({
@@ -100,6 +127,20 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
             "stayed": float(stayed),
         })  # fmt: skip
     return out
+
+
+def _made_since(run: Any, since: datetime) -> bool:
+    made = getattr(run, "created_at", None)
+    if isinstance(made, str):
+        try:
+            made = datetime.fromisoformat(made.replace("Z", "+00:00"))
+        except ValueError:
+            return True
+    if not isinstance(made, datetime):
+        return True  # an unknown age is not a reason to drop the video
+    if made.tzinfo is None:
+        made = made.replace(tzinfo=timezone.utc)
+    return made >= since
 
 
 def learn(channel_id: str) -> dict[str, Any]:
@@ -152,7 +193,46 @@ def render_line(channel_id: str) -> str:
     parts.extend(_held(t) for t in up + down)
     if not up and not down:
         parts.append("no trait separates them yet")
+    waiting = _against_rules(got)
+    if waiting:
+        until = f"n={got['needs']}" if got.get("needs") else "the number settles"
+        parts.append(f"the rewrite keeps its rule on {' and '.join(waiting)} until {until}")
     return " ".join(parts[:1]) + " " + " · ".join(parts[1:])
+
+
+def _settled(got: dict[str, Any]) -> bool:
+    needs = got.get("needs")
+    return bool(needs) and int(got.get("n") or 0) >= int(needs)
+
+
+def _against_rules(got: dict[str, Any]) -> list[str]:
+    """Learned notes the rewrite's fixed rules contradict, while n has not settled them."""
+    if _settled(got):
+        return []
+    traits = got.get("traits") or []
+    return [
+        t["trait"]
+        for t in traits
+        if (t["gap"] >= _GAP and t["trait"] in _RULE_BANS)
+        or (t["gap"] <= -_GAP and t["trait"] in _RULE_WANTS)
+    ]
+
+
+def guidance_from(got: dict[str, Any]) -> dict[str, Any]:
+    """What the hook rewrite may use from `learn`'s result: {} until `learn_min` videos.
+
+    Decision 67: a learned note that contradicts the rewrite's fixed rules - questions held
+    more, numbers fewer, over 18 videos on 2026-10-18 - is left out until n reaches the n that
+    settles it (`needs`); the rest goes in as measured."""
+    if not got.get("ready"):
+        return {}
+    held_back = set(_against_rules(got))
+    traits = [t for t in got.get("traits") or [] if t["trait"] not in held_back]
+    return {
+        "examples": [hook for hook, _stayed in got.get("best_hooks") or []],
+        "prefer": [t for t in traits if t["gap"] >= _GAP][:2],
+        "avoid": [t for t in reversed(traits) if t["gap"] <= -_GAP][:2],
+    }
 
 
 def regen_guidance(channel_id: str) -> dict[str, Any]:
@@ -164,13 +244,7 @@ def regen_guidance(channel_id: str) -> dict[str, Any]:
     except Exception as exc:
         logger.debug("hook learning unavailable: %s", exc)
         return {}
-    if not got["ready"]:
-        return {}
-    return {
-        "examples": [hook for hook, _stayed in got["best_hooks"]],
-        "prefer": [t for t in got["traits"] if t["gap"] >= _GAP][:2],
-        "avoid": [t for t in reversed(got["traits"]) if t["gap"] <= -_GAP][:2],
-    }
+    return guidance_from(got)
 
 
 def rank_openers(hooks: list[str], guidance: dict[str, Any]) -> list[tuple[str, float]]:

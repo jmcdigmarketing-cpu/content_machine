@@ -53,26 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-17 late night · **HEAD at write:** the wave 107 commit (`git log -1`) ·
+**Written:** 2026-10-18 morning · **HEAD at write:** the wave 108 commit (`git log -1`) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**Wave 107:** `seasonal_calendar.event_for(title)` matches a headline to the week's games and
-UFC cards (`_EVENTS`, filled by `fetch_week_topics`; 3 days back, 14 ahead). `spaced_queue.preview_event`
-uses it when a draft has no `event_at` and the video was made before the event; `slot_for_run`
-reads the run's own title when none is passed; `stale_renders.shelf_rows` marks a started one
-`event_started` (retire line, stale) and `shelf_schedule` still lists it as skipped (#1286). `channel_health.engagement_why` (#1271).
-Menu 7's `s` calls `go_public.apply_schedule_public` - private + `publishAt`, only from
-`go_public` (the grand-audit test holds that) (#1270). `drafts_line` names the decisions left
-before overnight drafts again (#1272). The booth's `/save-facts` (#257).
+**Wave 108:** `core.runs.script_report.script_of` is the stored script (a run has no `script`
+field) - `analytics/hook_learning` and `unconfirmed_check` read it (#1287). Hook learning keeps
+the last `HOOK_LEARN_DAYS` (90) and `guidance_from` holds back notes against the rewrite's rules
+until n settles (decision 67). `apis.youtube_quota.quota_day` is the Pacific date (#1288).
+`nightly_task.set_wake` / `task_wakes` / `wake_timers`; `_powershell` refuses in the suite -
+**an old test set WakeToRun on the operator's real task before that guard existed** (#1289,
+disclosed). `video/teaser.teaser_argv` (#1264). `render_video.caption_scrim_for` +
+`caption_contrast.scrim_alpha`, a `drawbox` before `subtitles` only when needed (#1268).
 
-**Queue:** jobs 64-66 pending (156 Mon noon, 158 Mon 10 PM, 161 Tue noon EDT). Run 160 is
-listed "its game has started" - the operator's to retire.
+**Live:** jobs 64-66 sent at 00:03 (156, 158, 161 scheduled). Overnight ran 8:04 AM on wake.
+The task now may wake the PC; tomorrow's 5:00 run is the proof.
 
-**Defects first:** none open of mine.
+**Defects first:** none open of mine. #1290 (hook scorer vs stayed) waits on n=21.
 
-**Next:** the roadmap's five (#421 #425 #450 #457 #293). Suite 6,245, forward and reversed.
+**Next:** the roadmap's five (#421 #425 #450 #457 #293), #1291. Suite 6,268, forward and reversed.
 
 ## Slot — Cursor
 

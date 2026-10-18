@@ -143,12 +143,14 @@ def _clock(when: datetime) -> str:
     return when.strftime("%I:%M %p").lstrip("0")
 
 
-def missed_line(times: dict[str, Any], *, now: datetime) -> str:
+def missed_line(times: dict[str, Any], *, now: datetime, wakes: bool | None = None) -> str:
     """What the operator should know about the last run, or "" when it ran on time (#1167).
 
     The task is set for 5:00 AM. On 2026-10-13 it ran at 4:45 PM and on 10-14 it did not run:
     Task Scheduler waits for the PC to be awake. Nothing said so, and the morning's drafts and
-    renders were simply not there.
+    renders were simply not there. #1289: ``wakes`` (the task's WakeToRun) names the cause - on
+    2026-10-18 the operator had turned wake timers on and the task itself was still not allowed
+    to wake the PC.
     """
     last, start = times.get("last"), times.get("start")
     if last is None or start is None:
@@ -157,16 +159,25 @@ def missed_line(times: dict[str, Any], *, now: datetime) -> str:
     if due > now:
         due -= timedelta(days=1)
     fix = "py -m scripts.ops schedule-drafts --wake"
+    if wakes is False:
+        why = f"the PC was asleep, and the task is not allowed to wake the PC: {fix}"
+    elif wakes is True:
+        why = (
+            "the task may wake the PC and it did not wake - it was shut down, or wake timers "
+            "are off (Power Options > Sleep > Allow wake timers): py -m scripts.ops schedule-drafts"
+        )
+    else:
+        why = f"the PC was off or asleep then: {fix}"
     if last < due - timedelta(minutes=5):
         return (
             f"Overnight did not run at {_clock(due)} on {due:%b %d} - it last ran "
-            f"{last:%b %d} {_clock(last)}. The PC was off or asleep then: {fix}"
+            f"{last:%b %d} {_clock(last)}. {why[0].upper()}{why[1:]}"
         )
     late = (last - due).total_seconds() / 3600
     if late >= 1:
         return (
             f"Overnight ran at {_clock(last)} on {last:%b %d}, {round(late)} hours after its "
-            f"{_clock(due)} start - the PC was asleep at {_clock(due)}: {fix}"
+            f"{_clock(due)} start - {why}"
         )
     return ""
 
@@ -225,7 +236,10 @@ def _queried_times() -> dict[str, Any] | None:
 def overnight_timing_line(*, now: datetime | None = None) -> str:
     """`missed_line` for the installed task. `NIGHTLY_TASK_QUERY=false` (the suite) skips it."""
     times = _queried_times()
-    return missed_line(times, now=now or datetime.now()) if times else ""
+    if not times:
+        return ""
+    line = missed_line(times, now=now or datetime.now())
+    return missed_line(times, now=now or datetime.now(), wakes=task_wakes()) if line else ""
 
 
 def overnight_record_path() -> str:
@@ -327,18 +341,123 @@ def enable_crash_traceback(stream: Any = None) -> bool:
     return True
 
 
-def wake_lines() -> list[str]:
-    """`schedule-drafts --wake`: the line that lets the task wake the PC. Printed, not run -
-    it changes the operator's scheduled task."""
+def wake_command() -> str:
+    """The PowerShell that sets the task's WakeToRun."""
     folder, _, name = TASK_NAME.rpartition(chr(92))
     task_path = chr(92) + folder + chr(92)
-    return [
-        "Let the overnight task wake the PC - run this once in PowerShell:",
-        f"  $t = Get-ScheduledTask -TaskPath '{task_path}' -TaskName '{name}'; "
-        "$t.Settings.WakeToRun = $true; Set-ScheduledTask -InputObject $t",
-        "Windows also needs wake timers on: Power Options > Change plan settings > Change "
-        "advanced power settings > Sleep > Allow wake timers > Enable.",
-    ]
+    return (
+        f"$t = Get-ScheduledTask -TaskPath '{task_path}' -TaskName '{name}'; "
+        "$t.Settings.WakeToRun = $true; Set-ScheduledTask -InputObject $t"
+    )
+
+
+def wake_to_run(xml: str) -> bool | None:
+    """#1289: the task's own WakeToRun from `schtasks /Query /XML` - absent means False (the
+    2026-10-18 task: wake timers on, and the task still not allowed to wake the PC)."""
+    text = xml or ""
+    if "<Settings>" not in text and "<Settings " not in text:
+        return None
+    found = re.search(r"<WakeToRun>\s*(true|false)\s*</WakeToRun>", text, re.IGNORECASE)
+    return bool(found) and found.group(1).lower() == "true"
+
+
+def _query_enabled() -> bool:
+    return os.getenv("NIGHTLY_TASK_QUERY", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def task_wakes() -> bool | None:
+    """Whether the installed task may wake the PC; None when it cannot be read, or in the
+    suite (`NIGHTLY_TASK_QUERY=false`)."""
+    if not _query_enabled():
+        return None
+    code, out = run_schtasks([*query_argv()[:4], "/XML"])
+    return wake_to_run(out) if code == 0 else None
+
+
+_WAKE_INDEX = {0: "off", 1: "on", 2: "important only"}
+
+
+def parse_wake_timers(text: str) -> dict[str, str]:
+    """{ac, dc} from `powercfg /q SCHEME_CURRENT SUB_SLEEP RTCWAKE` - "on", "off" or
+    "important only" - {} when it cannot be read."""
+    out: dict[str, str] = {}
+    for key, raw in re.findall(
+        r"Current (AC|DC) Power Setting Index:\s*(0x[0-9a-fA-F]+)", text or ""
+    ):
+        out[key.lower()] = _WAKE_INDEX.get(int(raw, 16), raw)
+    return out
+
+
+def wake_timers() -> dict[str, str]:
+    """The power plan's "Allow wake timers" (no administrator needed to read it)."""
+    if not _query_enabled():
+        return {}
+    try:
+        proc = subprocess.run(
+            ["powercfg", "/q", "SCHEME_CURRENT", "SUB_SLEEP", "RTCWAKE"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            stdin=subprocess.DEVNULL,
+        )
+    except Exception as exc:
+        logger.debug("powercfg unread: %s", exc)
+        return {}
+    return parse_wake_timers(proc.stdout or "")
+
+
+def _powershell(command: str) -> tuple[int, str]:
+    if os.environ.get("CONTENT_SUITE") == "1" or not _query_enabled():
+        return 1, "the suite never changes the operator's scheduled task"
+    try:
+        proc = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            stdin=subprocess.DEVNULL,
+        )
+    except FileNotFoundError:
+        return 127, "PowerShell not found (Windows only)"
+    except Exception as exc:
+        return 1, f"PowerShell failed: {exc}"
+    return proc.returncode, ((proc.stdout or "") + (proc.stderr or "")).strip()
+
+
+def set_wake() -> tuple[bool, str]:
+    """#1289: set the task's WakeToRun and read it back. (True, "") when the task may now wake
+    the PC; (False, what PowerShell said) otherwise. The operator runs it - it changes their
+    scheduled task."""
+    code, out = _powershell(wake_command())
+    if task_wakes() is True:
+        return True, ""
+    return False, out or f"PowerShell exit {code}"
+
+
+def wake_report(ok: bool, said: str, timers: dict[str, str]) -> list[str]:
+    """What `schedule-drafts --wake` prints."""
+    lines: list[str] = []
+    if ok:
+        lines.append(f"Overnight can now wake the PC at {DEFAULT_TIME.lstrip('0')} AM.")
+    else:
+        lines.append(f"The task could not be changed: {said[-300:]}")
+        lines.append("Run this once in PowerShell as administrator:")
+        lines.append(f"  {wake_command()}")
+    if timers and "off" in timers.values():
+        where = " and ".join(k.upper() for k, v in timers.items() if v == "off")
+        lines.append(
+            f"Wake timers are off on {where} power: Power Options > Change plan settings > "
+            "Change advanced power settings > Sleep > Allow wake timers > Enable."
+        )
+    elif timers:
+        lines.append("Wake timers: " + ", ".join(f"{k.upper()} {v}" for k, v in timers.items()))
+    lines.append("A PC that is shut down cannot be woken - sleep it instead.")
+    return lines
 
 
 def run_schtasks(argv: list[str]) -> tuple[int, str]:

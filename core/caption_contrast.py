@@ -49,6 +49,44 @@ def contrast_ratio(fg: tuple[int, int, int], bg: tuple[int, int, int]) -> float:
     return (lighter + 0.05) / (darker + 0.05)
 
 
+SCRIM_MAX = 0.45
+
+
+def _graded(rgb: tuple[int, int, int], grade: dict[str, float] | None) -> tuple[int, int, int]:
+    """The band after the channel's `eq` grade (contrast about mid-grey, then brightness)."""
+    if not grade:
+        return rgb
+    contrast = float(grade.get("contrast", 1.0))
+    brightness = float(grade.get("brightness", 0.0))
+    out = [round(((v / 255.0 - 0.5) * contrast + 0.5 + brightness) * 255) for v in rgb]
+    r, g, b = (max(0, min(255, v)) for v in out)
+    return r, g, b
+
+
+def scrim_alpha(
+    fill: tuple[int, int, int],
+    bands: list[tuple[int, int, int]],
+    *,
+    grade: dict[str, float] | None = None,
+    target: float = AA_RATIO,
+    cap: float = SCRIM_MAX,
+) -> float:
+    """#1268: how dark a black band behind the captions must be (0-``cap``) for the lightest
+    sampled background band to reach ``target`` against the caption fill. 0 when every band
+    already passes. Run 157's band, rgb(136,130,131) under white, read 3.8:1."""
+    if not bands:
+        return 0.0
+    lightest = max((_graded(tuple(b), grade) for b in bands), key=relative_luminance)  # type: ignore[arg-type]
+    if contrast_ratio(fill, lightest) >= target:
+        return 0.0
+    for step in range(1, round(cap * 100) + 1):
+        alpha = step / 100.0
+        r, g, b = (round(v * (1.0 - alpha)) for v in lightest)
+        if contrast_ratio(fill, (r, g, b)) >= target:
+            return alpha
+    return cap
+
+
 def parse_hex(value: str, default: str = "#FFFFFF") -> tuple[int, int, int]:
     raw = (value or default).strip().lstrip("#")
     if len(raw) != 6 or any(ch not in "0123456789abcdefABCDEF" for ch in raw):

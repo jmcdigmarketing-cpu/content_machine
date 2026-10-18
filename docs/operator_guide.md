@@ -187,8 +187,9 @@ link - Studio's page while it is unlisted, so open it signed in - and its TikTok
 then the drafts waiting for you. `ops overnight-last` prints the same lines.
 
 `ops overnight-last` also says when overnight ran against its 5:00 AM start - late, or not at
-all when the PC was asleep. `py -m scripts.ops schedule-drafts --wake` prints the one line that
-lets the task wake the PC. Drafts past twice their window are set aside each night (nothing is
+all when the PC was asleep, and why. `py -m scripts.ops schedule-drafts --wake` lets the task
+wake the PC and says whether the power plan's wake timers are on; a PC that is shut down
+cannot be woken. Drafts past twice their window are set aside each night (nothing is
 deleted): `py -m scripts.ops batch-review --expired` lists them.
 `py -m scripts.ops recheck-claims` re-checks the waiting drafts' flagged claims against their
 own saved facts (`--apply` stores it).

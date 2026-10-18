@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-17 late night: a headline preview knows its event, menu 7 schedules, health says why
+# Handoff synopsis — 2026-10-18 morning: hook learning fed, the quota day is YouTube's, overnight may wake the PC
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,17 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-17 late night (Claude Code): #1286 #1271 #1270 #1272 #257
+## Last wave — 2026-10-18 morning (Claude Code): #1287 #1288 #1289 #1267 #1264 #1268
+
+Hook learning read `run.script`, a field runs do not have, and had joined 0 of 41 videos; it now
+reads the stored script and, per decision 67, learns from the last 90 days with the rewrite's
+fixed rules kept until n settles (live: 18 videos, r=-0.41, filed as #1290). The YouTube quota
+day is the Pacific date. `schedule-drafts --wake` sets the task's WakeToRun instead of printing
+a line - and an old test set it on the operator's real task before the suite guard existed
+(disclosed). goose3's date warning, the teaser's stdin and intro, and a caption scrim to 4.5:1.
+Suite: 6,268 tests forward and reversed, the same verdict.
+
+## Previous — 2026-10-17 late night (Claude Code): #1286 #1271 #1270 #1272 #257
 
 A preview whose draft has no `event_at` is matched to the week's games and UFC cards by its title
 (`seasonal_calendar.event_for`), so the shelf, menu 7 and the crosspost kickoff know run 160's
@@ -125,22 +135,6 @@ A repeated opening is dropped once. A pin waits for the next peak. A
 feed-wide RSS 404 can fill from yt-dlp.
 
 `roadmap-index` then: open 274, done 1200, numbered open 222, highest #1136.
-
-## Previous — 2026-10-16 (Claude Code): review of Cursor's eight commits (fifteen items) + wave 101
-
-**Review.** Cursor's commits passed the suite but five changed what reaches a viewer: team topics
-lost every untagged gameplay clip (Titans-Colts 0 of 13), a draft child's output (and its crash
-traceback) was thrown away, a stuck shot could hold a render seven minutes, the correction
-sentence would follow the CTA on every script, and the hook card showed "*emphasis*" marks. All
-corrected, tested, pushed with Cursor's work.
-
-**Wave 101.** NFL angles no longer get tech titles as "in-niche" pulse, and the watch follows
-MMA/NFL/NBA channels (#1236); `ops status` stops offering to requeue run 114 (#1237); health
-leaves out videos under 20 views (#1238); one question sets old drafts aside (#1239); missing
-playlists are said (#1240).
-
-**Still the operator's:** `R2_PUBLIC_BASE_URL`; run 155 waits for the worker, run 126 for
-go-public; the 11 playlists (`ops playlists --apply`); `.env` lines 35, 36, 39. Suite 6047, forward and reversed.
 
 ## Pipeline order (operator)
 

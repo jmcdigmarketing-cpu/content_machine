@@ -257,3 +257,14 @@ Overnight drafts from both, an idea then a preview. `BEST_BET_OPTIONS` (5) and
 generation, maybe expand it to 10? 5 ideas 5 previews/predictions?"; the plan's answer: "10 = 5
 ideas + 5 previews". **Consequence:** this reverses §59's "games compete like any idea" - games
 have their own five places again - and keeps its marquee rule (§59) for which games lead.
+
+## 67. Hook learning uses the last 90 days, and the rewrite's rules stay until n settles (2026-10-18)
+**Decision:** `analytics/hook_learning` learns from videos made in the last 90 days
+(`HOOK_LEARN_DAYS`). The default-on hook rewrite (#1018) gets the three recent openers that held
+viewers best and the trait gaps, except a learned note its fixed rules contradict - it asks for a
+number, a name, 12 words or fewer, a contradiction or stakes, and bans questions and weak openers
+- which waits until n reaches the n that settles the correlation. **Why:** the operator, asked
+how the rewrite should use the data once #1287 fed it: "90 days, rules stay". All 41 videos made
+the three best openers June 4's first batch; over 18 recent videos questions held 38% vs 20% and
+numbers 20% vs 26%, on 4 and 8 videos. **Consequence:** new videos' openers change - the prompt
+quotes the recent best openers. At n=21 (today's settling n) the held-back notes go in.

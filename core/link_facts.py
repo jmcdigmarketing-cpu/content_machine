@@ -16,6 +16,7 @@ from __future__ import annotations
 import base64
 import datetime as dt
 import json
+import logging
 import os
 import re
 from typing import Any
@@ -325,6 +326,9 @@ def _goose3_body_lines(url: str, html: str) -> list[str]:
     caller applies the same junk / length / dedupe filters. Returns [] when goose3 is
     unavailable or yields nothing, so the caller falls back to its BeautifulSoup scan.
     """
+    # #1267: goose3 logs "Publish date 5d could not be resolved to UTC" as a WARNING on a feed's
+    # relative age. Only the body is used here, never its date.
+    logging.getLogger("goose3.crawler").setLevel(logging.ERROR)
     try:
         from goose3 import Goose
         from goose3.configuration import Configuration

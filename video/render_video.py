@@ -217,6 +217,7 @@ def build_render_ffmpeg_command(
     hook_motion_filter: str = "",
     channel_id: str | None = None,
     music_volume: float | None = None,
+    caption_scrim: float = 0.0,
 ) -> list[str]:
     """
     FFmpeg command: loop background video only (no stock audio), TTS audio only,
@@ -284,6 +285,17 @@ def build_render_ffmpeg_command(
             ",drawbox=x=0:y=ih*0.8:w=iw:h=ih*0.2:color=yellow@0.25:t=fill"
         )
 
+    # #1268: a black band under the captions, only as dark as the lightest sampled background
+    # needs for 4.5:1 (`caption_scrim_for`). 0 leaves the command byte-identical.
+    scrim_filter = ""
+    if caption_scrim and float(caption_scrim) > 0:
+        from core.caption_contrast import CAPTION_BAND
+
+        scrim_filter = (
+            f"drawbox=x=0:y=ih*{1.0 - CAPTION_BAND:.2f}:w=iw:h=ih*{CAPTION_BAND:.2f}:"
+            f"color=black@{float(caption_scrim):.2f}:t=fill,"
+        )
+
     # Video-only filter graph from input 0; input 1 audio mapped explicitly.
     filter_complex = (
         f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
@@ -292,6 +304,7 @@ def build_render_ffmpeg_command(
         f"{look_filter}"
         f"{motion_filter}"
         f"setpts=PTS-STARTPTS,"
+        f"{scrim_filter}"
         f"{lower_thirds_filter}"
         f"{policy_filter}"
         f"subtitles='{subtitle_escaped}'"
@@ -347,6 +360,60 @@ def build_render_ffmpeg_command(
         output_path,
     ]
     return cmd
+
+
+def _sample_band_rgbs(path: str, duration: float, *, points: int = 6) -> list[tuple[int, int, int]]:
+    """The caption band's mean colour at ``points`` moments of the background, framed the way
+    the render frames it (scaled to fill, centre-cropped to 9:16). [] when nothing reads."""
+    import tempfile
+
+    from core.caption_contrast import inspect_caption_band
+
+    frame = (
+        f"scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
+        f"crop={TARGET_W}:{TARGET_H},scale=270:480"
+    )
+    out: list[tuple[int, int, int]] = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for i in range(max(1, points)):
+            at = max(0.0, float(duration)) * (i + 0.5) / max(1, points)
+            still = os.path.join(tmp, f"band{i}.png")
+            argv = ["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-ss", f"{at:.2f}",
+                    "-i", path, "-frames:v", "1", "-vf", frame, still]  # fmt: skip
+            try:
+                proc = subprocess.run(argv, capture_output=True, text=True, check=False,
+                                      timeout=30, stdin=subprocess.DEVNULL)  # fmt: skip
+            except Exception as exc:
+                logger.debug("caption band sample %s skipped: %s", i, exc)
+                continue
+            if proc.returncode == 0 and os.path.isfile(still):
+                out.append(inspect_caption_band(still).band_rgb)
+    return out
+
+
+def caption_scrim_for(
+    background_path: str,
+    duration: float,
+    channel_id: str | None,
+    render_preset: str,
+    *,
+    grade: dict[str, float] | None = None,
+) -> float:
+    """#1268: the scrim a publish render needs (`core.caption_contrast.scrim_alpha`) - run 157's
+    captions read 3.8:1 over a light grey band. 0 for a draft, a missing file, or
+    `CAPTION_SCRIM=false`."""
+    if str(render_preset).strip().lower() == "draft" or not os.path.isfile(background_path):
+        return 0.0
+    if os.getenv("CAPTION_SCRIM", "true").strip().lower() in ("0", "false", "no", "off"):
+        return 0.0
+    try:
+        from core.caption_contrast import fill_hex_for_channel, parse_hex, scrim_alpha
+
+        bands = _sample_band_rgbs(background_path, duration)
+        return scrim_alpha(parse_hex(fill_hex_for_channel(channel_id)), bands, grade=grade)
+    except Exception as exc:
+        logger.debug("caption scrim skipped: %s", exc)
+        return 0.0
 
 
 def _resolve_music_bed(duration: float, stage, *, channel_id: str | None = None) -> str | None:
@@ -612,6 +679,16 @@ def render_vertical_video(
     except Exception as exc:
         logger.warning("Hook motion skipped for channel=%s: %s", channel_id, exc)
 
+    sampled = min(float(duration), float(bg_duration)) if bg_duration else float(duration)
+    caption_scrim = caption_scrim_for(
+        background_path, sampled, channel_id, render_preset, grade=color_grade
+    )
+    if caption_scrim and progress:
+        progress.note(
+            f"Caption band darkened {caption_scrim:.0%} so the captions read 4.5:1 over the "
+            "lightest background sampled"
+        )
+
     cmd = build_render_ffmpeg_command(
         background_path=background_path,
         mp3_path=mp3_path,
@@ -628,6 +705,7 @@ def render_vertical_video(
         hook_motion_filter=hook_motion_filter,
         channel_id=channel_id,
         music_volume=music_volume,
+        caption_scrim=caption_scrim,
     )
     if command_callback is not None:
         try:
@@ -675,6 +753,7 @@ def render_vertical_video(
             color_lut=color_lut,
             hook_motion_filter=hook_motion_filter,
             channel_id=channel_id,
+            caption_scrim=caption_scrim,
         )
         if command_callback is not None:
             try:

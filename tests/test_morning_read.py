@@ -328,17 +328,24 @@ class OvernightTimingTests(unittest.TestCase):
         with patch("core.nightly_task.overnight_timing_line", return_value="Overnight did not run"):
             self.assertEqual(batch_review._timing_lines(), ["  Overnight did not run"])
 
-    def test_wake_prints_the_line_and_changes_nothing(self):
+    def test_wake_never_changes_the_real_task_from_the_suite(self):
+        # #1289 (wave 108): `--wake` used to print the line and change nothing - on 2026-10-18
+        # wake timers were on and the task still could not wake the PC. It sets WakeToRun now
+        # (tests/test_wave108.py); from the suite it refuses and prints the line instead.
         from core import nightly_task
         from scripts import ops
 
+        # 2026-10-18: before `_powershell` had its suite guard, this test's old form set
+        # WakeToRun on the operator's real task. Nothing may start a process here.
         buf = io.StringIO()
         with (
             patch.object(nightly_task, "run_schtasks", side_effect=AssertionError("ran")),
+            patch.object(nightly_task.subprocess, "run") as started,
             redirect_stdout(buf),
         ):
             code = ops.main(["schedule-drafts", "--wake"])
-        self.assertEqual(code, 0)
+        started.assert_not_called()
+        self.assertEqual(code, 1)
         self.assertIn("WakeToRun", buf.getvalue())
         self.assertIn("ContentMachine", buf.getvalue())
 

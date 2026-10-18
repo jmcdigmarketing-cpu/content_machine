@@ -46,7 +46,7 @@ def _rows(hooks=HOOKS):
             id=i, content_run_id=500 + i, youtube_video_id=f"v{i}", detail=f"Video {i}",
             published_at="2026-09-20T18:00:00+00:00",
             metrics_json=json.dumps({"views": 900, "stayed_share": stayed})))  # fmt: skip
-        runs[500 + i] = SimpleNamespace(id=500 + i, script=f"{hook} Then the rest of it.",
+        runs[500 + i] = SimpleNamespace(id=500 + i, script_preview=f"{hook} Then the rest of it.",
                                         quality_json="{}")  # fmt: skip
     return uploads, runs
 
@@ -107,7 +107,7 @@ class LearnTests(unittest.TestCase):
     def test_a_video_without_stayed_or_script_is_skipped(self):
         uploads, runs = _rows()
         uploads[0].metrics_json = json.dumps({"views": 10})
-        runs[501].script = ""
+        runs[501].script_preview = ""
         pub = SimpleNamespace(list_uploaded_for_channel=lambda c: uploads)
         with (
             patch("analytics.hook_learning._publish_repo", return_value=pub),

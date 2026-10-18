@@ -18,7 +18,7 @@ import json
 import os
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -66,8 +66,11 @@ def _games(covered=("How the chargers can still make the superbowl after startin
     topics = []
     for league, board in (("nfl", NFL_BOARD), ("college-football", CFB_BOARD)):
         topics += seasonal_calendar.topics_from_board(league, board, today=_TODAY, details=details)
+    # Wave 108: on the real clock this went red at 13:30Z on 2026-10-18, when the London game
+    # in the fixture kicked off. The board's own day is the moment it is read.
+    board_day = datetime(2026, 10, 16, 18, 0, tzinfo=timezone.utc)
     with patch.object(seasonal_calendar, "_DETAILS", details):
-        return best_bet.suggested_games(topics, covered_topics=list(covered))
+        return best_bet.suggested_games(topics, covered_topics=list(covered), now=board_day)
 
 
 # ---- #1242: only marquee NFL and NBA games -------------------------------------------------------

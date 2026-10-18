@@ -8426,3 +8426,14 @@ Batch B (items 1-4):
 I wrote the `status-fields` print through a heredoc and it lost its backslash again - the memory
 says not to; caught by a parse check before any test ran. tests/test_wave111.py: 12 of 12 failed
 on clean HEAD. 3 corpus cases.
+
+Batch C (item 5, #1305): measured with a report-only audit hook over the full suite in the real
+tree - 117 tests opened the operator's data/, all reads: `core/tts.py` scanned data/traces through
+its own path (3,600 opens), and ten stores had no redirect. The fix: tts reads the trace dir the
+runs write; tests/__init__.py redirects the ten; an audit hook refuses an open under the real
+data/ as not found and fails the test by name. A first version switched the guard off through an
+env key set in `cmd_test` - the tests that call `cmd_test` turned it off for the rest of the suite;
+it is a module flag set by the real `run_ordered` now. In the real tree: 6,329 tests, forward and
+reversed, green - the first time on the operator's PC. A clock bomb found on the way
+(`test_worker_shelf_public`, a Titans-Colts fixture that kicked off at 17:00Z today). 4 of 4 new
+tests failed on clean HEAD.

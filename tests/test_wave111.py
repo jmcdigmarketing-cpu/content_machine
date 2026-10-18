@@ -190,5 +190,86 @@ class VoiceNamesTests(unittest.TestCase):
         self.assertEqual(fixes, [])
 
 
+class DataReadGuardTests(unittest.TestCase):
+    """#1305: measured 2026-10-18 - 117 tests opened files under the operator's real data/
+    (traces, crosspost, platform metrics, the spend ledger, ...), so a verdict could change on
+    their PC only. CI has no data/; the suite now sees what CI sees."""
+
+    REPO = __import__("pathlib").Path(__file__).resolve().parents[1]
+
+    def test_an_open_under_the_real_data_is_refused_and_recorded(self):
+        import os
+        import tempfile
+
+        import tests
+
+        tests.take_data_attempts()
+        with self.assertRaises(FileNotFoundError):
+            tests._guard_data_open("open", (str(self.REPO / "data" / "x.json"), "r", 0))
+        with tempfile.TemporaryDirectory() as tmp:
+            tests._guard_data_open("open", (os.path.join(tmp, "elsewhere.json"), "r", 0))
+        named = tests.take_data_attempts()
+        self.assertEqual(len(named), 1)
+        self.assertIn("data/x.json", named[0])
+
+    def test_a_test_that_opens_the_real_data_is_failed_by_name(self):
+        import unittest as ut
+
+        repo = self.REPO
+
+        class Reads(ut.TestCase):
+            def test_reads(self):
+                try:
+                    with open(repo / "data" / "crosspost_tapin.json", encoding="utf-8"):
+                        pass
+                except OSError:
+                    pass  # fail-open code swallows it; the guard still names the test
+
+        result = ut.TestResult()
+        Reads("test_reads").run(result)
+        self.assertEqual(len(result.failures), 1)
+        self.assertIn("#1305", result.failures[0][1])
+
+    def test_the_stores_point_away_from_the_real_data(self):
+        from analytics import reach_report
+        from config import paths, seo
+        from core import angle_intent, playlists, policy_canary, topic_trajectory, ypp_readiness
+        from core.money import ledger
+        from publishing import crosspost, platform_metrics
+
+        real = str(self.REPO / "data").lower()
+        stores = {
+            "crosspost": crosspost.CROSSPOST_TEMPLATE,
+            "platform_metrics": platform_metrics.METRICS_TEMPLATE,
+            "feed_health": paths.FEED_HEALTH_FILE,
+            "spend_ledger": ledger.LEDGER_FILE,
+            "angle_picks": str(angle_intent.PICKS_FILE),
+            "playlists": playlists.store_path_for("tapin"),
+            "ypp": ypp_readiness.YPP_TEMPLATE,
+            "policy_canary": policy_canary.SNAPSHOT_FILE,
+            "topic_trajectory": topic_trajectory._TRAJECTORY_FILE,
+            "seo_hints": seo.HINTS_DIR,
+        }
+        import os
+
+        home = [k for k, v in stores.items() if os.path.abspath(str(v)).lower().startswith(real)]
+        self.assertEqual(home, [])
+
+    def test_the_tts_cache_line_reads_the_trace_dir_the_runs_write(self):
+        import json
+        import os
+        import tempfile
+        from unittest.mock import patch
+
+        from core import run_trace, tts
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "7.json"), "w", encoding="utf-8") as handle:
+                json.dump({"run_id": 7, "tts_cached": True}, handle)
+            with patch.object(run_trace, "TRACES_DIR", tmp):
+                flags = tts._tts_cached_flags_from_traces()
+        self.assertEqual(len(flags), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

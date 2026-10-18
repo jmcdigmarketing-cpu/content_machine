@@ -60,6 +60,11 @@ def run_ordered(order: str, *, seed: int | None = None, verbosity: int = 1) -> i
     label = f"order={order}" + (f" seed={seed}" if order == "shuffle" else "")
     print(f">> {len(tests)} tests, {label}")
     result = unittest.TextTestRunner(verbosity=verbosity).run(unittest.TestSuite(tests))
+    # #1305: tests/__init__.py's data/ guard stays in this process after an in-process run;
+    # the batch steps after the suite read the operator's data again.
+    suite_pkg = sys.modules.get("tests")
+    if suite_pkg is not None and hasattr(suite_pkg, "DATA_GUARD_ON"):
+        setattr(suite_pkg, "DATA_GUARD_ON", False)  # noqa: B010 - a module, not a known type
     if not result.wasSuccessful() and order == "shuffle":
         print(f"reproduce with: py -m scripts.ops test --order shuffle --seed {seed}")
     return 0 if result.wasSuccessful() and not loader.errors else 1

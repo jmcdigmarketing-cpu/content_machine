@@ -531,9 +531,11 @@ def format_tts_cache_line(status: dict[str, Any] | None = None) -> str:
 def _tts_cached_flags_from_traces() -> list[object]:
     flags: list[object] = []
     try:
-        from config.paths import DATA_DIR
+        from core import run_trace
 
-        traces = os.path.join(str(DATA_DIR), "traces")
+        # #1305: the directory runs write their traces to (data/traces), not a second copy
+        # of the path - the suite redirects this one.
+        traces = str(run_trace.TRACES_DIR)
         if not os.path.isdir(traces):
             return []
         for name in os.listdir(traces):

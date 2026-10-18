@@ -185,22 +185,31 @@ from analytics import mailbag as _mailbag
 from analytics import reach_report as _reach_report
 from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
+from config import seo as _seo
+from core import angle_intent as _angle_intent
 from core import correction_dossier as _correction_dossier
 from core import counterfactual as _counterfactual
 from core import incident_ledger as _incident_ledger
 from core import moat_backup as _moat_backup
 from core import negative_facts as _negative_facts
 from core import operator_minutes as _operator_minutes
+from core import playlists as _playlists
+from core import policy_canary as _policy_canary
 from core import quota_state as _quota_state
 from core import recommender_history as _recommender_history
 from core import retraction_watch as _retraction_watch
 from core import run_trace as _run_trace
+from core import topic_trajectory as _topic_trajectory
 from core import trace_secrets as _trace_secrets
+from core import ypp_readiness as _ypp_readiness
+from core.money import ledger as _spend_ledger
 from core.runs import signal_skips as _signal_skips
 from core.success import goals as _goals
 from core.success import review as _review
 from core.success import verdicts as _verdicts
 from publishing import buffer_api as _buffer_api
+from publishing import crosspost as _crosspost
+from publishing import platform_metrics as _platform_metrics
 from storage.repositories import channel_memory as _channel_memory
 from storage.repositories import performance_memory as _performance_memory
 from storage.repositories import publish_log as _publish_log
@@ -292,6 +301,19 @@ _SUITE_STORE_PATCHES = (
     patch.object(_verdicts, "VERDICTS_FILE", _suite_store("verdicts.json")),
     patch.object(_review, "REVIEWS_ROOT", _suite_store("output")),
     patch.object(_mailbag, "MAILBAG_TEMPLATE", _suite_store("mailbag_{channel}.json")),
+    # #1305 (wave 111): measured 2026-10-18, 117 tests read these from the operator's data/.
+    patch.object(_crosspost, "CROSSPOST_TEMPLATE", _suite_store("crosspost_{channel}.json")),
+    patch.object(
+        _platform_metrics, "METRICS_TEMPLATE", _suite_store("platform_metrics_{channel}.json")
+    ),
+    patch.object(_paths, "FEED_HEALTH_FILE", _suite_store("feed_health.json")),
+    patch.object(_spend_ledger, "LEDGER_FILE", _suite_store("spend_ledger.json")),
+    patch.object(_angle_intent, "PICKS_FILE", Path(_suite_store("angle_picks.json"))),
+    patch.object(_playlists, "store_path_for", lambda cid: _suite_store(f"playlists_{cid}.json")),
+    patch.object(_ypp_readiness, "YPP_TEMPLATE", _suite_store("ypp_{channel}.json")),
+    patch.object(_policy_canary, "SNAPSHOT_FILE", _suite_store("policy_canary.json")),
+    patch.object(_topic_trajectory, "_TRAJECTORY_FILE", _suite_store("topic_trajectory.json")),
+    patch.object(_seo, "HINTS_DIR", _SUITE_DATA_TMP),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()
@@ -421,10 +443,67 @@ _socket.socket.connect = _guarded_connect  # type: ignore[method-assign]
 _socket.socket.connect_ex = _guarded_connect_ex  # type: ignore[method-assign]
 
 
+# #1305 (wave 111): measured 2026-10-18, 117 tests opened files under the operator's real
+# data/ - traces, crosspost, platform metrics, the spend ledger - so a verdict could change on
+# their PC only. CI has no data/ (the repo tracks nothing there): an open is refused as not found,
+# so the suite sees what CI sees, and the test it happened in is failed by name, as #921 does
+# for the network. An in-process `ops test --order` switches it off afterwards (suite_order).
+_REAL_DATA = os.path.normcase(os.path.join(_REPO_ROOT, "data")) + os.sep
+_data_attempts: list[str] = []
+DATA_GUARD_ON = True  # core.suite_order turns it off after an in-process run
+
+
+def _guard_data_open(event, args):
+    if event != "open" or not args or not DATA_GUARD_ON:
+        return
+    path = args[0]
+    if isinstance(path, int):
+        return
+    try:
+        full = os.path.normcase(os.path.abspath(os.fsdecode(path)))
+    except (TypeError, ValueError):
+        return
+    if not full.startswith(_REAL_DATA):
+        return
+    rel = os.path.relpath(full, os.path.normcase(_REPO_ROOT)).replace(os.sep, "/")
+    with _network_lock:
+        _data_attempts.append(f"{rel} via {_caller()}")
+    mode = str(args[1]) if len(args) > 1 and args[1] is not None else "r"
+    error = PermissionError if any(c in mode for c in "wax+") else FileNotFoundError
+    raise error(f"#1305: the suite may not open the operator's {rel}")
+
+
+def take_data_attempts() -> list[str]:
+    """The data/ opens since the last call, cleared."""
+    with _network_lock:
+        out = list(_data_attempts)
+        _data_attempts.clear()
+    return out
+
+
+_sys_for_audit = __import__("sys")
+_sys_for_audit.addaudithook(_guard_data_open)
+
+
 def _run_with_clean_process_state(self, result=None):
     _process_state.reset_all()
     take_network_attempts()
+    take_data_attempts()
     outcome = _original_testcase_run(self, result)
+    opened = take_data_attempts()
+    if opened and result is not None:
+        named = ", ".join(sorted(set(opened))[:5])
+        result.addFailure(
+            self,
+            (
+                AssertionError,
+                AssertionError(
+                    f"#1305: this test opened the operator's data/ ({len(opened)}: {named}). "
+                    "Redirect the store in tests/__init__.py - CI has no data/."
+                ),
+                None,
+            ),
+        )
     hosts = take_network_attempts()
     if hosts and result is not None:
         named = ", ".join(sorted(set(hosts))[:5])

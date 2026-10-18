@@ -64,6 +64,10 @@ class ShelfTests(unittest.TestCase):
             patch.object(stale_renders, "_queued_runs", return_value={r: object() for r in queued}),
             patch.object(stale_renders, "_signed_out", return_value=False),
             patch.object(stale_renders, "render_age_days", side_effect=lambda run: run._age),
+            # Wave 111: run 155's title names Titans at Colts, which kicked off 17:00Z on
+            # 2026-10-18 - from then the real clock made this "its game has started". The
+            # tests here are about age and window.
+            patch.object(stale_renders, "_event_started", return_value=False),
         ):
             return stale_renders.shelf_rows("tapin")
 

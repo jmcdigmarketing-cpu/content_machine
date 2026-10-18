@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-17 evening: Buffer live, no cadence cap, ten ideas, the stranded renders scheduled
+# Handoff synopsis — 2026-10-17 night: requeue goes public at a slot, a dead worker's job is freed at once
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-17 evening (Claude Code): decisions 63-66 and wave 105
+## Last wave — 2026-10-17 night (Claude Code): #1283 #1284 #1285
+
+`requeue_upload --queue` schedules the run public at the next free noon/10 PM slot (`--private`
+keeps the old upload). The worker holds an OS lock for its life; alone, it frees a dead worker's
+"running" job at once. The shelf skips slots other uploads already hold and gives news that
+would miss its window a 6 PM slot. Correction on record: only run 156 of the queued three was
+2-day news, and inside its window. Suite green forward and reversed on the committed tree.
+
+## Previous — 2026-10-17 evening (Claude Code): decisions 63-66 and wave 105
 
 **Live.** Crossposting works: runs 126, 155 and 157 are scheduled on TikTok and Instagram. The
 angle-step crash is fixed. No spacing between crossposts and previews go before kickoff (§63);
@@ -144,23 +152,6 @@ paragraph is requested at 1.10 instead of 1.05, an asterisked word is style
 Finished output changed: one-shot voice files, TapIn captions, and the first
 spoken paragraph. Not pushed. Next: #429 #438 #489 #492 #422.
 `roadmap-index`: open 288, done 1180, numbered open 236, highest open #1136.
-
-## Previous — 2026-10-16 (Cursor): #1221 #1227 #1228 #1043 #1229
-
-The Dr Food headline stayed neutral on a gaming feed, so it is not a best bet (#1221).
-A stored URL that still contains a quote, a brace, or an image host is not fetched;
-the quoted Last.fm page that #1157 used to strip and retry is refused (#1227). A 6.8s
-fast cut no longer dies at 120s: `-nostdin`, a timeout of 204s, one `ultrafast` retry
-only after a timeout (#1228). "How the 0-4 chargers can turn it around" returns the
-Chargers clip and not the four untagged Madden files; a topic with no team keeps the
-folder (#1043). Each overnight draft is its own child; a crash names that draft and
-the set-aside pass and the renders still run (#1229).
-
-Finished output changed: a timed-out shot may finish on `ultrafast`. A team video
-with only untagged Madden gets no local folder footage. A stored quoted URL is no
-longer fetched. A neutral headline is no longer adopted by a single-domain feed.
-Not pushed. Next: #1235 #499 #1056 #1039 #1046. `roadmap-index`: open 293, done 1175,
-numbered open 241, highest open #1235.
 
 ## Pipeline order (operator)
 

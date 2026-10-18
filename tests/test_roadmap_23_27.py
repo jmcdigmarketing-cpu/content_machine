@@ -423,6 +423,7 @@ class Test27ThumbnailPick(unittest.TestCase):
             run_id=71,
             any_channel=False,
             queue=True,
+            private=True,  # #1283: the private upload is the one that carries the picked path here
             retry_failed_quota=False,
         )
         with (

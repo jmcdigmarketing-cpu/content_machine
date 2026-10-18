@@ -65,6 +65,7 @@ class ShelfScheduleTests(unittest.TestCase):
             ),  # fmt: skip
             patch.object(spaced_queue, "_window_days", side_effect=lambda rid, _c: windows[rid]),
             patch.object(spaced_queue, "_age_days", side_effect=lambda rid: ages[rid]),
+            patch.object(spaced_queue, "_taken_slots", return_value=set()),  # #1285
         ):
             return spaced_queue.shelf_schedule("tapin", now=SAT_730_PM_EDT)
 

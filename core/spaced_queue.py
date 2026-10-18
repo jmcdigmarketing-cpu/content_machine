@@ -154,6 +154,54 @@ def twice_daily_slots(
     return out
 
 
+_EVENING = (18,)  # #1285: the extra slot a news video gets to stay inside its window
+
+
+def _taken_slots(channel_id: str) -> set[datetime]:
+    """Publish times other uploads already hold: pending upload jobs' `youtube_publish_at` and
+    the scheduled rows of the publish log (#1285: a second run would have landed on run 153's
+    Sunday noon). Fail-open."""
+    taken: set[datetime] = set()
+    try:
+        from storage.repositories.jobs import get_job_repository
+
+        for job in get_job_repository().list_active_jobs() or []:
+            if str(getattr(job, "status", "")) != "pending" or job.job_type != "upload":
+                continue
+            if str(getattr(job, "channel_id", "") or "") != channel_id:
+                continue
+            payload = json.loads(getattr(job, "payload_json", "") or "{}")
+            when = _when(payload.get("youtube_publish_at"))
+            if when is not None:
+                taken.add(when.astimezone(timezone.utc))
+    except Exception as exc:
+        logger.debug("taken slots: jobs unread: %s", exc)
+    try:
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        for row in get_publish_log_repository().list_future_scheduled(channel_id) or []:
+            when = _when(getattr(row, "published_at", None))
+            if when is not None:
+                taken.add(when.astimezone(timezone.utc))
+    except Exception as exc:
+        logger.debug("taken slots: publish log unread: %s", exc)
+    return taken
+
+
+def free_slots(
+    channel_id: str,
+    count: int,
+    *,
+    now: datetime | None = None,
+    hours: tuple[int, ...] = _TWICE_DAILY,
+    taken: set[datetime] | None = None,
+) -> list[datetime]:
+    """`twice_daily_slots` without the ones other uploads already hold."""
+    held = _taken_slots(channel_id) if taken is None else set(taken)
+    candidates = twice_daily_slots(channel_id, count + len(held), now=now, hours=hours)
+    return [slot for slot in candidates if slot not in held][:count]
+
+
 def _window_days(run_id: int, channel_id: str) -> float:
     from core.stale_renders import _news_window
     from storage.repositories.content_runs import get_content_run_repository
@@ -172,6 +220,8 @@ def _age_days(run_id: int) -> float:
 
 
 def _when(raw: object) -> datetime | None:
+    if isinstance(raw, datetime):
+        return raw if raw.tzinfo else raw.replace(tzinfo=timezone.utc)
     try:
         moment = datetime.fromisoformat(str(raw or "").replace("Z", "+00:00"))
     except ValueError:
@@ -193,7 +243,7 @@ def shelf_schedule(
 
     moment = now or datetime.now(timezone.utc)
     wanted = {int(r) for r in run_ids} if run_ids else None
-    ranked: list[tuple[tuple[int, float], SpacedSlot, datetime | None]] = []
+    ranked: list[tuple[tuple[int, float], SpacedSlot, datetime | None, datetime | None]] = []
     left: list[SpacedSlot] = []
     for row in shelf_rows(channel_id):
         if row.get("state") != "rendered, never uploaded":
@@ -212,22 +262,31 @@ def shelf_schedule(
             slot.skipped = f"past its {window:.0f}-day window ({age:.1f} days old)"
             left.append(slot)
             continue
+        deadline: datetime | None = None
         if event is not None:
-            key = (0, event.timestamp())
+            key, deadline = (0, event.timestamp()), event
         elif window < 7:
-            key = (1, window - age)
+            key, deadline = (1, window - age), moment + timedelta(days=window - age)
         else:
             key = (2, float(run_id))
-        ranked.append((key, slot, event))
+        ranked.append((key, slot, event, deadline))
     ranked.sort(key=lambda item: item[0])
+    taken = _taken_slots(channel_id)
+    main = free_slots(channel_id, len(ranked), now=moment, taken=taken)
+    evening = free_slots(channel_id, len(ranked), now=moment, hours=_EVENING, taken=taken)
     out: list[SpacedSlot] = []
-    for (_key, slot, event), when in zip(
-        ranked, twice_daily_slots(channel_id, len(ranked), now=moment), strict=True
-    ):
-        if event is not None and when >= event:
-            slot.skipped = "no slot before its game"
+    for _key, slot, event, deadline in ranked:
+        when = main[0] if main else None
+        if when is not None and (deadline is None or when < deadline):
+            slot.publish_at = main.pop(0)
         else:
-            slot.publish_at = when
+            # #1285: a 6 PM slot inside the window, without using up a noon/10 PM place.
+            extra = next((e for e in evening if deadline is not None and e < deadline), None)
+            if extra is not None:
+                evening.remove(extra)
+                slot.publish_at = extra
+            else:
+                slot.skipped = "no slot before its game" if event else "would be past its window"
         out.append(slot)
     return out + left
 

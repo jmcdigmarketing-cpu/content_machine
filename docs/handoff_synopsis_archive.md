@@ -7,6 +7,23 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-16 (Cursor): #1221 #1227 #1228 #1043 #1229
+
+The Dr Food headline stayed neutral on a gaming feed, so it is not a best bet (#1221).
+A stored URL that still contains a quote, a brace, or an image host is not fetched;
+the quoted Last.fm page that #1157 used to strip and retry is refused (#1227). A 6.8s
+fast cut no longer dies at 120s: `-nostdin`, a timeout of 204s, one `ultrafast` retry
+only after a timeout (#1228). "How the 0-4 chargers can turn it around" returns the
+Chargers clip and not the four untagged Madden files; a topic with no team keeps the
+folder (#1043). Each overnight draft is its own child; a crash names that draft and
+the set-aside pass and the renders still run (#1229).
+
+Finished output changed: a timed-out shot may finish on `ultrafast`. A team video
+with only untagged Madden gets no local folder footage. A stored quoted URL is no
+longer fetched. A neutral headline is no longer adopted by a single-domain feed.
+Not pushed. Next: #1235 #499 #1056 #1039 #1046. `roadmap-index`: open 293, done 1175,
+numbered open 241, highest open #1235.
+
 ## Previous — 2026-10-16 (Cursor): #1215 #514 #418 #463 #545
 
 An untagged Contender Series headline was nba on the word "contender"; "contender series"

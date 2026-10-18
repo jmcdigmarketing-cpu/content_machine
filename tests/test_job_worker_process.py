@@ -89,6 +89,8 @@ class TestProcessOneQuotaGate(unittest.TestCase):
         with (
             patch("jobs.worker.get_job_repository", return_value=repo),
             patch("apis.youtube_quota.has_quota_for_upload", return_value=True),
+            # #1284: beside a live worker the 45 minutes stand (alone it is 0).
+            patch("jobs.worker._sole_worker", return_value=False),
         ):
             process_one()
         reclaim = call.reclaim_stuck_running(45)

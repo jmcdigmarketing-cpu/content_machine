@@ -53,29 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-17 evening · **HEAD at write:** the wave 105 docs commit (`git log -1`) ·
-**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each push.
+**Written:** 2026-10-17 night · **HEAD at write:** the #1283-#1285 commit (`git log -1`) ·
+**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**This evening (decisions 63-66 + wave 105), for whoever is next:**
-- Crossposting is live (Buffer + R2). No spacing (§63); a game preview goes before its game
-  (`crosspost._kickoff_for` reads the draft's `event_at`); the next 10 PM until a platform has
-  hours of its own; Reels to 180 s (§64). The worker crossposts a scheduled video once it is
-  public (`worker._crosspost_scheduled_live`).
-- No YouTube cadence cap unless `MAX_VIDEOS_PER_WEEK` is set (§65) - `CadenceStatus.capped`.
-- The idea menu is `best_bet.get_idea_menu` (§66): 5 ideas + 5 previews (`preview_options`,
-  UFC cards from `seasonal_calendar.ufc_cards`, ESPN's `mma/ufc` board); `same_story` keeps an
-  event an idea names out; times in the channel's zone with the label (`_kickoff`).
-- `ops shelf --schedule [--runs] [--apply]` (#1273): public slots two a day for rendered,
-  never-uploaded videos. Jobs 61-66 (runs 159 153 154 156 158 161) are queued, Sat 10 PM to Tue
-  noon EDT; job 61 was left "running" by an interrupted worker - the next worker run reclaims it.
+**Tonight:** `requeue_upload --queue` is public at the next free slot now (`--private` for the
+old upload, #1283). The worker holds `WORKER_LOCK_FILE` (`data/worker.lock`) for its life and,
+alone, reclaims every "running" job at once (#1284) - a test that drives `process_one` and wants
+the 45-minute rule patches `jobs.worker._sole_worker` to False. `spaced_queue.shelf_schedule`
+skips taken slots (`_taken_slots`, `free_slots`) and gives news a 6 PM slot inside its window
+(#1285).
 
-**Defects first:** none open of mine; #1283-#1285 filed (requeue_upload's private default, the
-45-minute reclaim, news stretched past its window by two-a-day slots).
+**Queue:** jobs 61-63 uploaded (runs 159, 153, 154); 64-66 pending (156 Mon noon, 158 Mon 10 PM,
+161 Tue noon EDT). Run 160 (tonight's UFC picks, no `event_at`) would take a slot if scheduled -
+the operator's to retire.
 
-**Next:** the roadmap's five (#421 #425 #450 #457 #257), #1270 (schedule from watch-and-publish),
-#1271 (why engagement fell). Suite green forward and reversed on the committed tree.
+**Defects first:** none open of mine. An event-less preview (a headline about a coming event,
+like run 160) is not known to be one - worth an item when the next wave is picked.
+
+**Next:** the roadmap's five (#421 #425 #450 #457 #257), #1270, #1271. Suite green forward and reversed on the committed tree.
 
 ## Slot — Cursor
 

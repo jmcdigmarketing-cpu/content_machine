@@ -160,6 +160,39 @@ def reset_failed_quota_jobs(channel_id: str) -> int:
     return count
 
 
+def _queue_at_slot(run, channel_id: str) -> int:
+    """#1283 (the operator, 2026-10-17): public at the next noon/10 PM slot, as the shelf does
+    - `--queue` uploaded private with no publish time, out of menu 7's sight and Buffer's."""
+    from analytics.post_timing import format_scheduled_local
+    from core.spaced_queue import SpacedSlot, free_slots, queue_spaced_uploads, shelf_schedule
+
+    plan = shelf_schedule(channel_id, run_ids=[int(run.id)])
+    if plan:
+        slot = plan[0]
+        if slot.publish_at is None:
+            print(f"Run {run.id}: {slot.skipped} - nothing queued.")
+            print("  To upload it private anyway: add --private")
+            return 1
+    else:
+        # Not on the shelf's list (retired, or 30+ days): the operator named it - next free slot.
+        slot = SpacedSlot(
+            run_id=int(run.id),
+            title=str(run.title or run.selected_topic or ""),
+            publish_at=free_slots(channel_id, 1)[0],
+        )
+    queued = queue_spaced_uploads([slot], channel_id=channel_id)
+    if not queued:
+        print(f"Run {run.id} was not queued (see the log).")
+        return 1
+    held = slot.privacy and slot.privacy != "public"
+    when = format_scheduled_local(slot.publish_at, channel_id) if slot.publish_at else "-"
+    print(
+        f"Queued run {run.id} public at {when}" + (" - held unlisted for a claim" if held else "")
+    )
+    print("  Run: py -m scripts.ops worker")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="List or re-queue rendered MP4s that were never uploaded"
@@ -174,7 +207,12 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--queue",
         action="store_true",
-        help="Enqueue upload job (use with --run-id)",
+        help="Queue it public at the next noon/10 PM slot (use with --run-id)",
+    )
+    parser.add_argument(
+        "--private",
+        action="store_true",
+        help="With --queue: the old private upload with no publish time (#1283)",
     )
     parser.add_argument(
         "--retry-failed-quota",
@@ -207,6 +245,8 @@ def main(argv=None) -> int:
             return 1
 
         upload_channel = run.channel_id
+        if args.queue and not getattr(args, "private", False):
+            return _queue_at_slot(run, upload_channel)
         if args.queue:
             from apis.youtube_quota import format_quota_detail, has_quota_for_upload
             from core.thumbnail_pick import ensure_thumbnail_ready

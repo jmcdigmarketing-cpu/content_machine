@@ -8241,3 +8241,16 @@ from here); job 61 sat "running" and the worker's own 45-minute reclaim frees it
 **Measured.** Each item's tests failed on unmodified code first; 679 related tests, the suite
 forward on each committed tree; CI green on the evening's pushes but `dd2a347` (UTC times, fixed in
 `f7017fd`).
+
+## 2026-10-17 night — #1283 #1284 #1285 (Claude Code)
+
+**Prompt:** "lets do theses". Answers: requeue = public at the next slot (`--private` keeps the
+old way); news that would miss its window gets a 6 PM slot that day.
+
+Measured first: the worker had run - jobs 61-63 uploaded runs 159, 153, 154. Correction to #1285:
+of the three still queued only run 156 was 2-day news, and inside its window. The shelf also
+ignored slots other uploads held. Done: `requeue_upload --queue` schedules public (#1283); the
+worker lock frees a dead worker's job at once (#1284); taken slots skipped, 6 PM for news
+(#1285). Live dry run: run 160 (an event that has passed and carries no `event_at`) would take
+Sunday 6 PM - it is the operator's to retire. tests/test_wave106.py 11 of 11 failed first.
+Suite green forward and reversed on the committed tree.

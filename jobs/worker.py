@@ -13,6 +13,7 @@ import json
 import os
 import time
 from datetime import datetime, timezone
+from typing import Any
 
 from config.channels import resolve_channel_id
 from core.logging import get_logger, setup_logging
@@ -284,9 +285,81 @@ _HANDLERS = {
 }
 
 
-def _reclaim_stuck_jobs() -> int:
+_LOCK_HANDLE: Any = None
+
+
+def _lock_path() -> str:
+    raw = (os.getenv("WORKER_LOCK_FILE") or "").strip()
+    if raw:
+        return raw
+    from config.paths import DATA_DIR
+
+    return os.path.join(DATA_DIR, "worker.lock")
+
+
+def _try_lock(path: str) -> Any:
+    """An open handle holding an exclusive lock on `path`, or None when another process holds
+    it. The OS frees the lock when its process dies - a crash included (#1284)."""
+    import sys
+
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    handle = open(path, "a+")  # noqa: SIM115 - held for the life of the worker
     try:
-        minutes = int(os.getenv("JOB_STUCK_MINUTES", "45"))
+        handle.seek(0)
+        if sys.platform == "win32":
+            import msvcrt
+
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        handle.close()
+        return None
+    return handle
+
+
+def _release_lock(handle: Any) -> None:
+    import sys
+
+    try:
+        handle.seek(0)
+        if sys.platform == "win32":
+            import msvcrt
+
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    except OSError:
+        pass
+    handle.close()
+
+
+def _sole_worker() -> bool:
+    """True while this process holds the worker lock - no other worker is alive."""
+    global _LOCK_HANDLE
+    if _LOCK_HANDLE is None:
+        try:
+            _LOCK_HANDLE = _try_lock(_lock_path())
+        except OSError as exc:
+            logger.debug("worker lock unavailable: %s", exc)
+            return False
+    return _LOCK_HANDLE is not None
+
+
+def _reclaim_stuck_jobs() -> int:
+    """#1284 (job 61 sat "running" after an interrupted worker): alone, a worker frees every
+    running job at once - whoever claimed it is gone. Beside a live worker the 45 minutes
+    (`JOB_STUCK_MINUTES`) stand."""
+    if _sole_worker():
+        return get_job_repository().reclaim_stuck_running(0)
+    try:
+        minutes = int(os.getenv("JOB_STUCK_MINUTES", "45") or 45)
     except ValueError:
         minutes = 45
     return get_job_repository().reclaim_stuck_running(minutes)

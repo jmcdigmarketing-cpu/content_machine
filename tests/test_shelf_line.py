@@ -53,7 +53,7 @@ class ShelfCountTests(unittest.TestCase):
             "tapin", {"renders": 2, "stale": 0, "queued": 1, "unlisted": 0, "claim": 0}
         )
         self.assertIn("1 queued, waiting for the worker - py -m scripts.ops worker", line)
-        self.assertIn("1 recent - py -m scripts.requeue_upload --channel tapin", line)
+        self.assertIn("1 recent - py -m scripts.ops shelf --schedule --channel tapin", line)
 
     def test_a_render_with_no_file_age_is_not_called_stale(self):
         got = self._shelf([SimpleNamespace(id=5)], {5: None}, [])
@@ -80,7 +80,7 @@ class ShelfLineTests(unittest.TestCase):
         self.assertIn("3 ready - py -m scripts.ops go-public --channel tapin", lines[0])
         self.assertIn("2 held for a claim - py -m scripts.ops verify-claim", lines[0])
         self.assertIn("Rendered, not on YouTube: 13 video(s)", lines[1])
-        self.assertIn("2 recent - py -m scripts.requeue_upload --channel tapin", lines[1])
+        self.assertIn("2 recent - py -m scripts.ops shelf --schedule --channel tapin", lines[1])
         self.assertIn("11 older than 30 days - py -m scripts.ops retire-renders", lines[1])
 
     def test_nothing_on_the_shelf_prints_nothing(self):

@@ -1037,12 +1037,26 @@ def marquee_note(topic: str, detail: dict[str, Any], covered: set[str] | list[st
 
 
 def _kickoff(raw: str) -> str:
+    """ "Sat Oct 24 9:00 PM EDT" - in the channel's zone, labelled, like the post-time line.
+    Wave 105: the machine's zone gave CI (UTC) "Sun Oct 25 1:00 AM" and the PC (CDT) 8 PM."""
     try:
-        when = datetime.fromisoformat(str(raw).replace("Z", "+00:00")).astimezone()
+        from zoneinfo import ZoneInfo
+
+        from analytics.post_timing import _load_static_post_schedule
+        from config.channels import resolve_channel_id
+
+        zone: Any = ZoneInfo(_load_static_post_schedule(resolve_channel_id(None)).timezone)
+    except Exception:
+        zone = timezone.utc
+    try:
+        when = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        when = when.astimezone(zone)
     except ValueError:
         return ""
     hour = when.strftime("%I").lstrip("0") or "12"
-    return f"{when:%a %b} {when.day} {hour}:{when:%M %p}"
+    return f"{when:%a %b} {when.day} {hour}:{when:%M %p} {when.tzname() or ''}".rstrip()
 
 
 def game_line(detail: dict[str, Any], note: str) -> str:

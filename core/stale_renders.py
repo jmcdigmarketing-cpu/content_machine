@@ -170,8 +170,10 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
                 dict(
                     base,
                     state="rendered, never uploaded",
-                    command=f"py -m scripts.requeue_upload --channel {channel_id} "
-                    f"--run-id {run.id} --queue",
+                    # Wave 105: `requeue_upload --queue` uploaded private with no publish time -
+                    # out of menu 7's sight and Buffer's. This one gives it a public slot.
+                    command=f"py -m scripts.ops shelf --schedule --channel {channel_id} "
+                    f"--runs {run.id} --apply",
                 )
             )
     for row in unlisted_holds(channel_id):
@@ -301,7 +303,7 @@ def shelf_lines(channel_id: str, counts: dict[str, int], *, days: int = STALE_DA
         if renders - stale - queued - past:
             parts.append(
                 f"{renders - stale - queued - past} recent - "
-                f"py -m scripts.requeue_upload --channel {channel_id}"
+                f"py -m scripts.ops shelf --schedule --channel {channel_id}"
             )
         if past:
             parts.append(

@@ -203,7 +203,7 @@ class ShelfRowTests(unittest.TestCase):
         by = {r["run_id"]: r for r in rows}
         self.assertEqual(by[132]["state"], "queued, waiting for the worker")
         self.assertEqual(by[132]["command"], "py -m scripts.ops worker")
-        self.assertIn("requeue_upload --channel tapin --run-id 114 --queue", by[114]["command"])
+        self.assertIn("shelf --schedule --channel tapin --runs 114 --apply", by[114]["command"])
         self.assertIn("80 days ago", by[59]["state"])
         self.assertIn("retire-renders --channel tapin --run-id 59 --apply", by[59]["command"])
         self.assertEqual(

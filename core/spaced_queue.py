@@ -126,6 +126,112 @@ def slot_privacy(requested: str | None, *, features_json: str = "") -> str:
     return privacy
 
 
+# Wave 105 (the operator, 2026-10-17: "Two a day, noon + 10 PM"): the stranded renders.
+_TWICE_DAILY = (12, 22)
+_FIRST_LEAD = timedelta(minutes=90)
+
+
+def twice_daily_slots(
+    channel_id: str,
+    count: int,
+    *,
+    now: datetime | None = None,
+    hours: tuple[int, ...] = _TWICE_DAILY,
+    lead: timedelta = _FIRST_LEAD,
+) -> list[datetime]:
+    """`count` public slots at noon and 10 PM in the channel's zone, the first one at least
+    `lead` away - an upload has to finish before its slot."""
+    tz = _channel_tz(channel_id)
+    earliest = ((now or datetime.now(timezone.utc)) + lead).astimezone(tz)
+    out: list[datetime] = []
+    day = earliest.date()
+    while len(out) < count:
+        for hour in sorted(hours):
+            slot = datetime.combine(day, time(hour, 0), tzinfo=tz)
+            if slot >= earliest and len(out) < count:
+                out.append(slot.astimezone(timezone.utc))
+        day += timedelta(days=1)
+    return out
+
+
+def _window_days(run_id: int, channel_id: str) -> float:
+    from core.stale_renders import _news_window
+    from storage.repositories.content_runs import get_content_run_repository
+
+    run = get_content_run_repository().get(int(run_id))
+    return float(_news_window(run, channel_id)) if run is not None else 7.0
+
+
+def _age_days(run_id: int) -> float:
+    from core.stale_renders import render_age_days
+    from storage.repositories.content_runs import get_content_run_repository
+
+    run = get_content_run_repository().get(int(run_id))
+    age = render_age_days(run) if run is not None else None
+    return float(age) if age is not None else 0.0
+
+
+def _when(raw: object) -> datetime | None:
+    try:
+        moment = datetime.fromisoformat(str(raw or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+
+
+def shelf_schedule(
+    channel_id: str, *, run_ids: list[int] | None = None, now: datetime | None = None
+) -> list[SpacedSlot]:
+    """Public slots for the rendered, never-uploaded videos on the shelf (wave 105).
+
+    A game first (its draft's `event_at`), then news - the one whose window ends soonest
+    first - then the rest, two a day (`twice_daily_slots`). A game that has started, a news
+    video already past its window, or a game with no slot before it is listed with why.
+    """
+    from core.batch_review import draft_meta_for_run
+    from core.stale_renders import shelf_rows
+
+    moment = now or datetime.now(timezone.utc)
+    wanted = {int(r) for r in run_ids} if run_ids else None
+    ranked: list[tuple[tuple[int, float], SpacedSlot, datetime | None]] = []
+    left: list[SpacedSlot] = []
+    for row in shelf_rows(channel_id):
+        if row.get("state") != "rendered, never uploaded":
+            continue
+        run_id = int(row.get("run_id") or 0)
+        if not run_id or (wanted is not None and run_id not in wanted):
+            continue
+        slot = SpacedSlot(run_id=run_id, title=str(row.get("title") or ""))
+        event = _when((draft_meta_for_run(channel_id, run_id) or {}).get("event_at"))
+        window, age = _window_days(run_id, channel_id), _age_days(run_id)
+        if event is not None and event <= moment:
+            slot.skipped = "its game has started"
+            left.append(slot)
+            continue
+        if event is None and age > window:
+            slot.skipped = f"past its {window:.0f}-day window ({age:.1f} days old)"
+            left.append(slot)
+            continue
+        if event is not None:
+            key = (0, event.timestamp())
+        elif window < 7:
+            key = (1, window - age)
+        else:
+            key = (2, float(run_id))
+        ranked.append((key, slot, event))
+    ranked.sort(key=lambda item: item[0])
+    out: list[SpacedSlot] = []
+    for (_key, slot, event), when in zip(
+        ranked, twice_daily_slots(channel_id, len(ranked), now=moment), strict=True
+    ):
+        if event is not None and when >= event:
+            slot.skipped = "no slot before its game"
+        else:
+            slot.publish_at = when
+        out.append(slot)
+    return out + left
+
+
 def queue_spaced_uploads(
     slots: list[SpacedSlot],
     *,

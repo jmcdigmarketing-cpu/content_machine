@@ -1849,7 +1849,41 @@ def cmd_shelf(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
     from core.stale_renders import shelf_report
 
-    print("\n".join(shelf_report(resolve_channel_id(getattr(args, "channel", None)))))
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    if getattr(args, "schedule", False):
+        return _schedule_shelf(channel, args)
+    print("\n".join(shelf_report(channel)))
+    return 0
+
+
+def _schedule_shelf(channel: str, args: argparse.Namespace) -> int:
+    """Wave 105: each rendered, never-uploaded video a public slot, two a day."""
+    from analytics.post_timing import format_scheduled_local
+    from core.spaced_queue import queue_spaced_uploads, shelf_schedule
+
+    raw = str(getattr(args, "runs", "") or "")
+    try:
+        runs = [int(part) for part in raw.replace(" ", "").split(",") if part]
+    except ValueError:
+        print(f"--runs takes run ids, e.g. --runs 159,154 - not {raw!r}")
+        return 2
+    plan = shelf_schedule(channel, run_ids=runs or None)
+    if not plan:
+        print(f"Shelf - {channel}: no rendered video waits for an upload.")
+        return 0
+    print(f"Shelf - {channel}: public slots, two a day")
+    for slot in plan:
+        when = format_scheduled_local(slot.publish_at, channel) if slot.publish_at else "-"
+        note = f" - {slot.skipped}" if slot.skipped else ""
+        print(f"  run {slot.run_id}  {when}  {slot.title[:60]}{note}")
+    ready = [slot for slot in plan if slot.publish_at is not None]
+    if not getattr(args, "apply", False):
+        print("Nothing queued. Add --apply to queue them; then: py -m scripts.ops worker")
+        return 0
+    queued = queue_spaced_uploads(ready, channel_id=channel)
+    held = [slot.run_id for slot in ready if slot.privacy and slot.privacy != "public"]
+    print(f"Queued {len(queued)} of {len(ready)}" + (f"; held unlisted: {held}" if held else ""))
+    print(f"Then: py -m scripts.ops worker --channel {channel}")
     return 0
 
 
@@ -3825,6 +3859,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     # #944: set to True by the batch runner on each step; review-week reads it.
     parser.set_defaults(_batch=False)
+    parser.add_argument(
+        "--schedule",
+        action="store_true",
+        help="shelf: give each rendered, never-uploaded video a public slot (two a day)",
+    )
+    parser.add_argument("--runs", default="", help="shelf --schedule: only these run ids (159,154)")
     parser.add_argument(
         "--list",
         dest="list_open",

@@ -526,7 +526,12 @@ def _next_due(
 
     hour, note = hour_choice(channel_id, service)
     if hour is None:
-        due = _suggested_slot(channel_id, topic)
+        # Wave 105: the note still said "uses YouTube's hour" after decision 64.
+        samples = re.search(r"\(([^)]*)\)", note or "")
+        note = f"{_LABEL[service]} posts at the 10 PM evening slot until it has hours of its own"
+        if samples:
+            note += f" ({samples.group(1)})"
+        due = _suggested_slot(channel_id, topic, now=now)
         if due.tzinfo is None:
             due = due.replace(tzinfo=timezone.utc)
         if due < now + _LEAD:
@@ -930,6 +935,29 @@ def _views_suffix(channel_id: str, run_id: Any, service: str) -> str:
     if not row.get("measured") or row.get("views") is None:
         return "  not measured yet"
     return f"  {int(row['views'])} views"
+
+
+def waiting_line(channel_id: str, *, now: datetime | None = None) -> str:
+    """Wave 105: what the round is waiting for - videos scheduled to go public on YouTube, the
+    next one's time - or "" when there are none."""
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    moment = now or datetime.now(timezone.utc)
+    times: list[datetime] = []
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        when = getattr(row, "published_at", None)
+        if str(getattr(row, "privacy_status", "") or "").lower() != "private" or not when:
+            continue
+        when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+        if when > moment:
+            times.append(when)
+    if not times:
+        return ""
+    count = len(times)
+    return (
+        f"  {count} scheduled on YouTube - each goes to TikTok and Instagram when it goes public "
+        f"(next: {_local(min(times), channel_id)})"
+    )
 
 
 def status_lines(channel_id: str, *, limit: int = 8) -> list[str]:

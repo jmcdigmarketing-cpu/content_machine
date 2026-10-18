@@ -3578,6 +3578,13 @@ def _crosspost_api(action: str, channel: str, args: argparse.Namespace, *, apply
         print("\n".join(lines or [f"Through Buffer - {channel}: nothing sent yet"]))
         if missing:
             print("  Not set up yet - " + crosspost.waits_line(missing))
+            return 0
+        waiting = crosspost.waiting_line(channel)  # wave 105: say why
+        if waiting:
+            print(waiting)
+        elif not lines:
+            print("  No video has been made public since crossposting was switched on - "
+                  "py main.py -> 7, or: py -m scripts.ops go-public")  # fmt: skip
         return 0
     if action == "cancel":
         run_id = int(getattr(args, "run_id", 0) or 0)

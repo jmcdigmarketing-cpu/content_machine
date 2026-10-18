@@ -114,6 +114,23 @@ def arc_series_name(last_topic: str, family: str) -> str:
     return base or label
 
 
+# A last topic this long was a headline; a name cut out of it has lost its story.
+_HEADLINE_WORDS = 7
+
+
+def _name_without_its_story(topic: str, last_topic: str) -> bool:
+    """One word ("All"), or a name cut out of a headline ("Bo Nickal" from "Bo Nickal says
+    scheduled UFC 335 bout ...") - not a video of its own. A series stays: "Shavkat Rakhmonov"
+    after "Shavkat Rakhmonov week 3", "UFC Contender Series" after its short title."""
+    from apis.topic_tokens import name_phrases
+
+    if len(topic.split()) <= 1:
+        return True
+    if len((last_topic or "").split()) < _HEADLINE_WORDS:
+        return False
+    return name_phrases(topic) == [topic.strip()]
+
+
 def arc_offer(last_topic: str, family: str, ordinal: int = 1) -> str:
     """The follow-up topic, or "" when it would repeat `last_topic` and no next angle exists.
 
@@ -121,6 +138,9 @@ def arc_offer(last_topic: str, family: str, ordinal: int = 1) -> str:
     """
     topic = next_arc_topic(last_topic, ordinal, family)
     if not topic.strip():
+        return ""
+    if _name_without_its_story(topic, last_topic):
+        # Wave 105 (the operator: drop them): "Bo Nickal", "Ben Affleck", "All" were offered.
         return ""
     if topic.strip().lower() != (last_topic or "").strip().lower():
         return topic

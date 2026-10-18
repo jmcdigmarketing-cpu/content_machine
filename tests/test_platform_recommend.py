@@ -54,7 +54,8 @@ class RecommendTests(unittest.TestCase):
             _save("tapin", _rows(21, 2))
             stayed, stayed_note = _next_due("tapin", "topic", "tiktok", {}, NOW)
             self.assertNotEqual(stayed.astimezone(timezone.utc).hour, 21)
-            self.assertIn("YouTube", stayed_note)
+            # Decision 64: until TikTok has its own hours it posts at the 10 PM evening slot.
+            self.assertIn("10 PM", stayed_note)
             self.assertIn("YouTube", learning_line("tapin", "tiktok"))
 
     def test_the_store_writes_the_hour_the_recommender_reads(self):

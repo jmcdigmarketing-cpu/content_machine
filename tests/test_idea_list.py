@@ -219,10 +219,10 @@ class FollowUpTests(unittest.TestCase):
         # menu can have no follow-up. It must not be the unlisted Affleck video.
         self.assertTrue(seed is None or "Affleck" not in seed.topic)
 
-    def test_once_it_is_public_it_follows_and_says_what(self):
-        seed = self._arcs("public")
-        self.assertIn("Ben Affleck", seed.topic)
-        self.assertIn("12-year-olds", seed.rationale)
+    def test_once_it_is_public_a_name_cut_from_its_headline_is_still_not_offered(self):
+        # Wave 105 (the operator: drop bare-name follow-ups): public now, but "Ben Affleck" alone
+        # is not a video - the arc no longer leads the menu with it.
+        self.assertIsNone(self._arcs("public"))
 
     def test_an_arc_saved_before_the_id_matches_its_upload_by_time(self):
         # The live row: written 00:08:23Z, three seconds after run 126's upload was logged.

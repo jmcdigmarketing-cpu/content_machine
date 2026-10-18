@@ -8214,3 +8214,30 @@ Cursor's tree before the corrections, 14 of the first 17 of mine failed. 3,568 r
 OK; corpus +3 (311). Live: the gating of four real topics, `roadmap-index` 9 lines, explain run
 157, the cap against 21 waiting drafts, watch-and-publish listing run 126, the CI line quiet on
 a green `main` (CI on `da4a4ed`: every job green, the first time since 10-10). Suite 6175 forward and reversed on the committed tree.
+
+## 2026-10-17 evening — crossposting, the cadence cap, ten ideas, wave 105 (Claude Code)
+
+**Prompts:** "and cross post, is it automatically going through buffer ..."; "now lets get all
+videos queued for yt queued for buffer"; "need to work on idea generation, maybe expand it to 10?
+5 ideas 5 previews/predictions? The one-a-day spacing ... lets actually just erase this rule";
+then "next 5 plz, anything for me? im gonna queue some vids tn".
+
+**What the live run showed.** `py main.py` crashed at the angle step (#1278, since `3ef604d`).
+Crossposting was blocked only by `R2_PUBLIC_BASE_URL`; once set, run 126 went to Buffer, then
+runs 155 and 157 when the operator made them public. The one-a-day spacing put the Titans
+preview after its kickoff; YouTube's learned UFC slot gave run 157's TikTok post Thursday 3 AM;
+Instagram skipped it at 90 s. The cadence cap had blocked uploads, and that afternoon it left
+seven batch-reviewed renders on disk with a shelf command that uploads private.
+
+**Decisions.** §63 no crosspost spacing; §64 the 10 PM evening slot within a day, Reels to 3
+minutes; §65 no YouTube cadence cap unless set; §66 ten ideas, five of them previews.
+
+**Wave 105.** `ops shelf --schedule` (#1273) queued runs 159 153 154 156 158 161 public, Sat 10 PM
+to Tue noon EDT, Jets-Patriots first and before Sunday's kickoff; times in EDT (#1274); the worker
+crossposts scheduled videos when they go live (#1275); no bare-name follow-up, series kept
+(#1276); crosspost status says why (#1277). The worker run was the operator's to start (stopped
+from here); job 61 sat "running" and the worker's own 45-minute reclaim frees it (#1284).
+
+**Measured.** Each item's tests failed on unmodified code first; 679 related tests, the suite
+forward on each committed tree; CI green on the evening's pushes but `dd2a347` (UTC times, fixed in
+`f7017fd`).

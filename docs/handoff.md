@@ -53,31 +53,29 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-17 · **HEAD at write:** the wave 104 docs commit (`git log -1`) ·
-**Tree:** clean of mine; leave `.agents/` and `.codex/`. **Pushed** at the operator's word ("commit and push"); CI read once after.
+**Written:** 2026-10-17 evening · **HEAD at write:** the wave 105 docs commit (`git log -1`) ·
+**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each push.
 
-**Cursor is out of usage for the month** (the operator, 2026-10-17). Claude committed its wave
-103 with wave 104 and owns the queue until it is back: next #421 #425 #450 #457 #257 (roadmap).
+**Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**Cursor - when you are back, what wave 104 changed in your wave 103:**
-- `apis/register_signals._gated_signal_names` (#1249): a neutral topic skips only the groups
-  none of the channel's domains cover - `extra_domains` included. Primary-only cut every
-  sports signal from "Payton Pritchard signed a two-year extension" on TapIn (run 98 again).
-- `core/llm_router._resolve_chain` (#1252): a cooling provider waits at the end of the chain;
-  dropped, an empty chain fell back to a paid OpenAI call. Your test now clears its cooldown.
-- `core/overnight` (#1253): expiry runs before the cap counts.
-- `publishing/go_public.watch_and_publish` (#1248): no "at its slot" (the operator) - #1270.
-- `desktop/review._go_public` (#1064): asks first, No the default; Cut reloads the claims.
-- `core/run_trace.explain_trace` (#1250): seconds only via `why_slow.phase_seconds`; run 157
-  printed `angle_frames` and `intent_read` as timings.
-- `tests/test_wave103.py`: the roadmap test no longer pins one open number (#1255 closed);
-  the undated-row test asks the #1261 behaviour.
+**This evening (decisions 63-66 + wave 105), for whoever is next:**
+- Crossposting is live (Buffer + R2). No spacing (§63); a game preview goes before its game
+  (`crosspost._kickoff_for` reads the draft's `event_at`); the next 10 PM until a platform has
+  hours of its own; Reels to 180 s (§64). The worker crossposts a scheduled video once it is
+  public (`worker._crosspost_scheduled_live`).
+- No YouTube cadence cap unless `MAX_VIDEOS_PER_WEEK` is set (§65) - `CadenceStatus.capped`.
+- The idea menu is `best_bet.get_idea_menu` (§66): 5 ideas + 5 previews (`preview_options`,
+  UFC cards from `seasonal_calendar.ufc_cards`, ESPN's `mma/ufc` board); `same_story` keeps an
+  event an idea names out; times in the channel's zone with the label (`_kickoff`).
+- `ops shelf --schedule [--runs] [--apply]` (#1273): public slots two a day for rendered,
+  never-uploaded videos. Jobs 61-66 (runs 159 153 154 156 158 161) are queued, Sat 10 PM to Tue
+  noon EDT; job 61 was left "running" by an interrupted worker - the next worker run reclaims it.
 
-**Defects first:** none open of mine. Overnight drafts none while 21 drafts wait (the cap of
-8; #1272 files the morning line). Runs 155 and 157 wait for the worker; run 126 for go-public.
+**Defects first:** none open of mine; #1283-#1285 filed (requeue_upload's private default, the
+45-minute reclaim, news stretched past its window by two-a-day slots).
 
-**Shipped:** wave 103 (Cursor) + wave 104 (#1261 #1262 #1263 #1265 #1266). Filed #1270-#1272.
-Suite 6175 forward and reversed on the committed tree.
+**Next:** the roadmap's five (#421 #425 #450 #457 #257), #1270 (schedule from watch-and-publish),
+#1271 (why engagement fell). Suite green forward and reversed on the committed tree.
 
 ## Slot — Cursor
 

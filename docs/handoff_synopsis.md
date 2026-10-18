@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-17: wave 104; Cursor's wave 103 committed with six corrections; CI green
+# Handoff synopsis — 2026-10-17 evening: Buffer live, no cadence cap, ten ideas, the stranded renders scheduled
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-17 (Claude Code): wave 104, Cursor's wave 103 finished
+## Last wave — 2026-10-17 evening (Claude Code): decisions 63-66 and wave 105
+
+**Live.** Crossposting works: runs 126, 155 and 157 are scheduled on TikTok and Instagram. The
+angle-step crash is fixed. No spacing between crossposts and previews go before kickoff (§63);
+the 10 PM evening slot and 3-minute Reels (§64); no YouTube cadence cap (§65); ten ideas, five
+of them previews (§66).
+
+**Wave 105.** `ops shelf --schedule` gave the seven stranded renders public slots two a day - six
+queued (jobs 61-66, Sat 10 PM to Tue noon EDT); run 160 (tonight's UFC picks) left. Times in
+EDT; scheduled videos crossposted as they go live; no bare-name follow-up; crosspost status says
+why. The worker run is the operator's - job 61 waits for it (its stuck "running" is reclaimed).
+Filed #1283-#1285. Suite green forward and reversed on the committed trees.
+
+## Previous — 2026-10-17 (Claude Code): wave 104, Cursor's wave 103 finished
 
 **Cursor is out of usage for the month.** Its wave 103 (my order of fifteen) was done and
 uncommitted. Claude re-audited every diff, corrected six - a neutral topic on TapIn lost its
@@ -148,21 +161,6 @@ with only untagged Madden gets no local folder footage. A stored quoted URL is n
 longer fetched. A neutral headline is no longer adopted by a single-domain feed.
 Not pushed. Next: #1235 #499 #1056 #1039 #1046. `roadmap-index`: open 293, done 1175,
 numbered open 241, highest open #1235.
-
-## Previous — 2026-10-16 (Cursor): #1215 #514 #418 #463 #545
-
-An untagged Contender Series headline was nba on the word "contender"; "contender series"
-is ufc, and a Lakers contender stays nba (#1215). The duration and caption benches printed
-a miss and exited 0; past 5% or past 150ms they exit 1, and no sidecars exits 0 (#463).
-A 1.08 zoom enlarged a frame that was already 1080x1920; the filter pre-scales first
-(#418). The intro sting met the first caption at full volume; intro audio fades out over
-its last 0.25s (#514). A franchise with a correction now says what it got wrong, and that
-sentence is not a veto (#545).
-
-Finished output changed: hook-motion frames, and an intro that has audio. Not pushed.
-Next: #1221 #1227 #1228 #1229 #1043. #1215 left the old corpus case expecting nba;
-Claude retargeted it to ufc in `ab9677f`. Claude's wave 99 is `0e4582c`. #1233 and
-#1234 were still uncommitted when this was written.
 
 ## Pipeline order (operator)
 

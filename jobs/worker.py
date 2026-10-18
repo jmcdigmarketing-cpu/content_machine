@@ -347,11 +347,64 @@ def _post_due_pins() -> None:
         logger.debug("due pin comments skipped: %s", exc)
 
 
+def _crosspost_channels() -> list[str]:
+    """Channels whose videos go to TikTok and Instagram through Buffer."""
+    from config.channels import get_channel_profiles
+    from publishing import buffer_api, crosspost
+
+    if not crosspost.auto_enabled() or not buffer_api.configured():
+        return []
+    return [cid for cid in get_channel_profiles() if crosspost.buffer_channel_ids(cid)]
+
+
+_LIVE_LOOKBACK_DAYS = 3
+
+
+def _crosspost_scheduled_live(now: datetime | None = None) -> int:
+    """Wave 105: a scheduled upload turns public at its slot on YouTube, and the publish log
+    learned it in the morning sync - so Buffer waited until then. Each pass: when a private row's
+    time has passed, its privacy is read back (1 unit per 50 videos) and the crosspost round
+    runs for a channel where one turned public. Returns how many rounds ran."""
+    from datetime import timedelta
+
+    moment = now or datetime.now(timezone.utc)
+    rounds = 0
+    try:
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        for channel_id in _crosspost_channels():
+            rows = get_publish_log_repository().list_uploaded_for_channel(channel_id) or []
+            due = []
+            for row in rows:
+                when = getattr(row, "published_at", None)
+                if str(getattr(row, "privacy_status", "") or "").lower() != "private" or not when:
+                    continue
+                when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+                if moment - timedelta(days=_LIVE_LOOKBACK_DAYS) <= when <= moment:
+                    due.append(row)
+            if not due:
+                continue
+            from analytics.privacy_sync import sync_privacy
+
+            report = sync_privacy(channel_id)
+            if not any(str(c.get("now") or "") == "public" for c in report.get("changed") or []):
+                continue
+            from publishing.crosspost import step
+
+            for line in step(channel_id):
+                print(line)
+            rounds += 1
+    except Exception as exc:
+        logger.debug("scheduled-live crosspost skipped: %s", exc)
+    return rounds
+
+
 def drain_due(cap: int = PASS_CAP) -> int:
     """Every job that is due, in one pass. 2026-10-16: `ops worker` uploaded job 58 and stopped;
     job 59 (run 155), due since 5:10 PM, stayed pending. Each job keeps its own scheduled time
     and the quota check in `process_one`."""
     _post_due_pins()
+    _crosspost_scheduled_live()
     done = 0
     while done < cap and process_one():
         done += 1

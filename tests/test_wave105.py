@@ -124,6 +124,108 @@ class KickoffZoneTests(unittest.TestCase):
         self.assertEqual(_kickoff("2026-10-25T01:00Z"), "Sat Oct 24 9:00 PM EDT")
 
 
+# ---- 3: a scheduled video reaches Buffer when it goes live --------------------------------------
+
+
+def _log_row(run_id, privacy, published_at):
+    return SimpleNamespace(content_run_id=run_id, youtube_video_id=f"yt{run_id}",
+                           privacy_status=privacy, published_at=published_at)  # fmt: skip
+
+
+class ScheduledLiveTests(unittest.TestCase):
+    def _pass(self, rows, changed):
+        from jobs import worker
+
+        repo = SimpleNamespace(list_uploaded_for_channel=lambda _c: rows)
+        with (
+            patch.object(worker, "_crosspost_channels", return_value=["tapin"]),
+            patch("storage.repositories.publish_log.get_publish_log_repository", return_value=repo),
+            patch(
+                "analytics.privacy_sync.sync_privacy", return_value={"changed": changed}
+            ) as sync,  # fmt: skip
+            patch(
+                "publishing.crosspost.step", return_value=["  run 159 TikTok: scheduled"]
+            ) as step,
+        ):
+            worker._crosspost_scheduled_live(now=SAT_730_PM_EDT)
+        return sync, step
+
+    def test_a_slot_that_passed_is_read_back_and_sent(self):
+        passed = SAT_730_PM_EDT - timedelta(minutes=20)
+        sync, step = self._pass(
+            [_log_row(159, "private", passed)],
+            [{"run_id": 159, "was": "private", "now": "public"}],
+        )
+        sync.assert_called_once()
+        step.assert_called_once_with("tapin")
+
+    def test_nothing_due_asks_youtube_nothing(self):
+        later = SAT_730_PM_EDT + timedelta(hours=3)
+        sync, step = self._pass(
+            [_log_row(159, "private", later), _log_row(126, "public", None)], []
+        )
+        sync.assert_not_called()
+        step.assert_not_called()
+
+    def test_still_private_on_youtube_sends_nothing(self):
+        passed = SAT_730_PM_EDT - timedelta(minutes=5)
+        _sync, step = self._pass([_log_row(159, "private", passed)], [])
+        step.assert_not_called()
+
+
+# ---- 4: a follow-up that is only a name ---------------------------------------------------------
+
+
+class BareFollowUpTests(unittest.TestCase):
+    def test_a_name_alone_is_not_a_follow_up(self):
+        from core.topic_graph import arc_offer
+
+        nickal = "Bo Nickal says scheduled UFC 335 bout with Joe Pyfer moved to main event"
+        self.assertEqual(arc_offer(nickal, "ufc", 5), "")
+        affleck = "Ben Affleck admits he gets into arguments with 12-year-olds in Fortnite"
+        self.assertEqual(arc_offer(affleck, "fortnite", 1), "")
+        self.assertEqual(arc_offer("All angles GTA 6 video", "gta", 2), "")
+
+    def test_a_topic_with_its_subject_stays(self):
+        from core.topic_graph import arc_offer
+
+        self.assertEqual(arc_offer("GTA 6 leak week 1", "gta", 1), "GTA 6 leak")
+
+
+# ---- 5: crosspost says why ----------------------------------------------------------------------
+
+
+class CrosspostWhyTests(unittest.TestCase):
+    def test_scheduled_videos_are_named_with_the_next_time(self):
+        from publishing import crosspost
+
+        rows = [_log_row(159, "private", datetime(2026, 10, 18, 2, 0, tzinfo=timezone.utc)),
+                _log_row(153, "private", datetime(2026, 10, 18, 16, 0, tzinfo=timezone.utc)),
+                _log_row(126, "public", None)]  # fmt: skip
+        from analytics.post_timing import _load_static_post_schedule
+
+        repo = SimpleNamespace(list_uploaded_for_channel=lambda _c: rows)
+        with (
+            patch("storage.repositories.publish_log.get_publish_log_repository", return_value=repo),
+            # The learned schedule reads the same log; the zone is the static schedule's.
+            patch(
+                "analytics.post_timing.get_post_schedule", side_effect=_load_static_post_schedule
+            ),
+        ):
+            line = crosspost.waiting_line("tapin", now=SAT_730_PM_EDT)
+        self.assertIn("2 scheduled", line)
+        self.assertIn("Sat 10:00 PM EDT", line)
+
+    def test_the_round_note_names_the_evening_slot(self):
+        from publishing import crosspost
+
+        with patch("publishing.platform_recommend.hour_choice",
+                   return_value=(None, "TikTok uses YouTube's hour (0 samples, need 4)")):  # fmt: skip
+            _due, note = crosspost._next_due("tapin", "topic", "tiktok", {}, SAT_730_PM_EDT)
+        self.assertNotIn("YouTube's hour", note)
+        self.assertIn("10 PM", note)
+
+
 _ = (os, timedelta)
 
 if __name__ == "__main__":

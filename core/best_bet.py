@@ -968,10 +968,13 @@ def idea_feeds(channel_id: str, allowed: set[str] | None) -> list[dict]:
     Fighting, Dexerto, IGN, Polygon), so no story could be seen on more than one outlet."""
     from config.data_sources import _dedupe_feeds, domain_rss_feeds, rss_feeds_for_channel
 
-    feeds = list(rss_feeds_for_channel(channel_id))
+    feeds: list[dict[str, Any]] = list(rss_feeds_for_channel(channel_id))
     for domain in sorted(d for d in (allowed or ()) if d and d != "neutral"):
         for feed in domain_rss_feeds(domain):
-            feeds.append(feed if feed.get("domains") else {**feed, "domains": [domain]})
+            entry: dict[str, Any] = dict(feed)
+            if not entry.get("domains"):
+                entry["domains"] = [domain]
+            feeds.append(entry)
     return _dedupe_feeds(feeds)[:_IDEA_FEED_CAP]
 
 

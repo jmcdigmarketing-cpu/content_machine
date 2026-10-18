@@ -922,6 +922,10 @@ def _run_new_video_flow_body(
         angle=str(best_topic),
     )
     key_facts = fact_selection.facts
+    # #991: a "Picks, graded" pick is written from its scored calls.
+    from core.batch_generation import pick_facts
+
+    key_facts = [*pick_facts(best_bet_pick), *(key_facts or [])]
 
     section("Content")
     print_bonus_art(key="mario")

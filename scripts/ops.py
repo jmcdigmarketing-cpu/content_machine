@@ -714,6 +714,11 @@ def cmd_predictions(args: argparse.Namespace) -> int:
     line = calls.calls_line()
     if line:
         print(line)
+    from core.predictions.holdouts import holdout_line
+
+    held = holdout_line(resolve_channel_id(getattr(args, "channel", None)))  # #83
+    if held:
+        print(held)
     return 0
 
 

@@ -133,19 +133,66 @@ def collect_topics(
 
         # Decision 66: an idea, then a preview, in turn.
         ideas, previews = get_idea_menu(channel_id)
-        bets = []
+        bets: list[Any] = []
         for pair in zip(ideas, previews, strict=False):
             bets.extend(pair)
         longer = ideas if len(ideas) > len(previews) else previews
         bets.extend(longer[min(len(ideas), len(previews)) :])
-        bets = bets[:count]
+        candidates = list(bets)
+        chosen = candidates[:count]
+        held = _swap_holdouts(chosen, candidates)
         if picks is not None:
-            for rank, bet in enumerate(bets, 1):
-                picks[bet.topic] = pick_record(bets, rank, by="batch")
-        return [b.topic for b in bets]
+            for rank, bet in enumerate(chosen, 1):
+                if bet.topic in held:  # #83: recorded at its rank in the top ten it came from
+                    record = pick_record(candidates, candidates.index(bet) + 1, by="batch")
+                    record["holdout"] = True
+                else:
+                    record = pick_record(chosen, rank, by="batch")
+                picks[bet.topic] = record
+        return [b.topic for b in chosen]
     except Exception as exc:
         logger.warning("No topics given and best bets unavailable: %s", exc)
         return []
+
+
+def _swap_holdouts(chosen: list, candidates: list) -> set[str]:
+    """#83: the night's holdout slots each take another of the top ten; their topics."""
+    try:
+        from core.predictions.holdouts import holdout_choice, next_slots
+
+        slots = next_slots(len(chosen))
+    except Exception as exc:
+        logger.debug("holdouts skipped: %s", exc)
+        return set()
+    held: set[str] = set()
+    day = datetime.now().strftime("%Y-%m-%d")
+    for index, is_holdout in enumerate(slots):
+        if not is_holdout:
+            continue
+        other = holdout_choice(candidates, {b.topic for b in chosen}, seed=f"{day}:{index}")
+        if other is not None:
+            chosen[index] = other
+            held.add(other.topic)
+    return held
+
+
+def pick_facts(best_bet: dict | None) -> list[str]:
+    """The lines a series pick is written from (#991), or []."""
+    return [str(f) for f in ((best_bet or {}).get("facts") or []) if str(f).strip()]
+
+
+def series_drafted(channel_id: str, topic: str) -> bool:
+    """This week's series topic is already a draft or a run (#991): it is made once a week."""
+    try:
+        from core.channel_context import recent_input_topics
+
+        key = topic.strip().lower()
+        if any(str(t).strip().lower() == key for t in recent_input_topics(channel_id, limit=60)):
+            return True
+        return unreviewed_draft(channel_id, topic) is not None
+    except Exception as exc:
+        logger.debug("series lookup skipped: %s", exc)
+        return False
 
 
 def _length_choice(channel_id: str, topic: str) -> str:
@@ -192,6 +239,7 @@ def generate_draft(
     out = DraftOutcome(topic=topic)
     started = time.time()
 
+    key_facts = [*pick_facts(best_bet), *(key_facts or [])] or None  # #991: a series pick's
     # #1151 / #1169: a schedule pick knows when its game is; ahead of it, the angles and the
     # script are written as a preview.
     event_at = _game_start(topic, best_bet) or _named_event_start(topic)

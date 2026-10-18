@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import random
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -76,6 +76,7 @@ class BestBetResult:
     supporting_runs: int
     rationale: str
     call: str = ""  # #1301: a preview's prediction, "Packers win - Dallas allows deep balls"
+    facts: list[str] = field(default_factory=list)  # #991: the lines a series idea is written from
 
 
 # ---------------------------------------------------------------------------
@@ -1090,12 +1091,17 @@ def pick_record(options: list[Any], picked: int | None, *, by: str = "operator")
     ]
     rank = picked if isinstance(picked, int) and 1 <= picked <= len(offered) else None
     # #938: what "expected" is measured in, so the ledger scores it on the same scale.
-    return {
+    record: dict[str, Any] = {
         "offered": offered,
         "picked": rank,
         "by": str(by or "operator"),
         "target": _target.target(),
     }
+    chosen = list(options or [])[rank - 1] if rank else None
+    facts = [str(f) for f in (getattr(chosen, "facts", None) or []) if str(f).strip()]
+    if facts:  # #991: a series pick carries the lines it is written from
+        record["facts"] = facts
+    return record
 
 
 # #1242 (the operator, 2026-10-16: "NFL + NBA, marquee games only"). A game becomes an idea
@@ -1637,6 +1643,12 @@ def get_idea_menu(
     idea_list = get_best_bets(
         channel_id, ideas or best_bet_option_count(), games=False, scheduled=scheduled
     )
+    try:  # #991: "Picks, graded" leads the week it is due, in place of the last idea
+        series = _series_idea(channel_id)
+        if series is not None:
+            idea_list = [series, *idea_list][: max(len(idea_list), 1)]
+    except Exception as exc:
+        logger.debug("series idea skipped: %s", exc)
     want = best_bet_preview_count() if previews is None else previews
     if want <= 0:
         return idea_list, []
@@ -1666,6 +1678,28 @@ def get_idea_menu(
     except Exception as exc:
         logger.debug("preview calls skipped: %s", exc)
     return idea_list, preview_list
+
+
+def _series_idea(channel_id: str) -> BestBetResult | None:
+    """This week's "Picks, graded", once its calls are scored and it is not drafted yet (#991)."""
+    from core.batch_generation import series_drafted
+    from core.predictions.calls import picks_graded
+
+    series = picks_graded()
+    if series is None:
+        return None
+    topic, facts, rationale = series
+    if series_drafted(channel_id, topic):
+        return None
+    return BestBetResult(
+        topic=topic,
+        domain="nfl",
+        avg_engaged_rate=0.0,
+        source="series",
+        supporting_runs=0,
+        rationale=rationale,
+        facts=list(facts),
+    )
 
 
 def with_calls(previews: list[BestBetResult], made: dict[str, dict]) -> list[BestBetResult]:

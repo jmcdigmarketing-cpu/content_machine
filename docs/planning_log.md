@@ -8451,3 +8451,13 @@ live defects on the way, each with a corpus case:
 I removed data/preview_calls.json once, the ledger my own live check had made minutes before
 under the old rules (five entries, 17:36Z); the next build remade them. 9 of 9 new tests failed on
 clean HEAD.
+
+Batch E (items 8-9):
+- #991: "Picks, graded: the week of Oct 19" is made once three calls are scored. Its facts are
+  the ledger's lines; it leads the menu and overnight until drafted, and the pick record carries
+  the facts into the draft.
+- #83: every 5th overnight draft is a holdout, counted across nights. `ops predictions` prints
+  "Holdouts: none yet - every 5th overnight draft is one" until there are some.
+- The calls line says "none scored yet" rather than "0 of 0".
+
+6 of 6 new tests failed on clean HEAD.

@@ -81,7 +81,8 @@ a batch that is not in `git log` was not finished. Batch A (the plan's H1/H2) an
 #1269 #104 #1059 #1306 #1296; seven videos' embedding restored, the operator's yes) and C
 (#1305: a test may not open the real data/ - the suite is green in the real tree too) and D
 (#1304: calls from ESPN's summary, kept in data/preview_calls.json, scored; `names_any`
-now names the 49ers) are committed.
+now names the 49ers) and E (#991 Picks, graded; #83 holdouts in data/holdouts.json) are
+committed. Left: F, #138 the weekly compilation.
 Suite 6,313, forward and reversed.
 
 ## Slot — Cursor

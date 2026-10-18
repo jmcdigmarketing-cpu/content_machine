@@ -103,6 +103,8 @@ os.environ["WEB_SEARCH_FALLBACK"] = "false"
 os.environ["LEARNED_GAME_NAMES"] = "false"
 # Wave 110 (#1301): a preview's call is a model call over this week's headlines.
 os.environ["PREVIEW_CALLS"] = "false"
+# Wave 111 (#83): no overnight pick is a holdout in a test that does not ask for one.
+os.environ["HOLDOUT_EVERY"] = "0"
 # #771 turned the whisper aligner on by default; no test may load a model.
 os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 # #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one
@@ -204,6 +206,7 @@ from core import trace_secrets as _trace_secrets
 from core import ypp_readiness as _ypp_readiness
 from core.money import ledger as _spend_ledger
 from core.predictions import calls as _preview_calls
+from core.predictions import holdouts as _holdouts
 from core.runs import signal_skips as _signal_skips
 from core.success import goals as _goals
 from core.success import review as _review
@@ -317,6 +320,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_seo, "HINTS_DIR", _SUITE_DATA_TMP),
     # #1304: the calls ledger.
     patch.object(_preview_calls, "CALLS_FILE", _suite_store("preview_calls.json")),
+    # #83: the holdout count.
+    patch.object(_holdouts, "HOLDOUT_FILE", _suite_store("holdouts.json")),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

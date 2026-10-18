@@ -455,5 +455,144 @@ class CallsLedgerTests(unittest.TestCase):
         self.assertIn("Calls: 7 of 10 right", printed)
 
 
+def _ledger_entry(topic, call, winner, right, made="2026-10-19T03:00:00+00:00"):
+    return {"call": call, "why": "", "line": "", "topic": topic, "league": "nfl", "event_id": topic,
+            "date": "2026-10-18T20:25Z", "made": made,
+            "result": {"winner": winner, "right": right, "scored": made} if winner else None}  # fmt: skip
+
+
+class PicksGradedTests(unittest.TestCase):
+    """#991 (the operator: "Picks, graded" first) - one Short a week from the scored calls."""
+
+    NOW = __import__("datetime").datetime(
+        2026, 10, 20, 12, 0, tzinfo=__import__("datetime").timezone.utc
+    )
+
+    def _with(self, entries):
+        import json
+        import os
+        import tempfile
+        from unittest.mock import patch
+
+        from core.predictions import calls
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = os.path.join(tmp.name, "calls.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump({"calls": {str(i): e for i, e in enumerate(entries)}}, handle)
+        p = patch.object(calls, "CALLS_FILE", path)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_three_scored_calls_make_the_weeks_topic_and_its_facts(self):
+        from core.predictions.calls import picks_graded
+
+        self._with([
+            _ledger_entry(RAMS, "Los Angeles Rams win", "Los Angeles Rams", True),
+            _ledger_entry("Dallas Cowboys at Green Bay Packers", "Packers win", "Dallas Cowboys", False),
+            _ledger_entry("Washington Commanders at San Francisco 49ers", "49ers win",
+                          "San Francisco 49ers", True),
+            _ledger_entry("Philadelphia 76ers at New York Knicks", "Knicks win", None, None),
+        ])  # fmt: skip
+        series = picks_graded(now=self.NOW)
+        self.assertIsNotNone(series)
+        topic, facts, rationale = series
+        self.assertEqual(topic, "Picks, graded: the week of Oct 19")
+        self.assertIn("2 of 3 right", rationale)
+        joined = "\n".join(facts)
+        self.assertIn("Result: Dallas Cowboys won - wrong", joined)
+        self.assertIn("This week's pick: Knicks win", joined)
+
+    def test_fewer_than_three_scored_is_not_a_video_yet(self):
+        from core.predictions.calls import picks_graded
+
+        self._with([_ledger_entry(RAMS, "Los Angeles Rams win", "Los Angeles Rams", True)])
+        self.assertIsNone(picks_graded(now=self.NOW))
+
+    def test_the_series_reaches_the_menu_and_the_draft_facts(self):
+        from unittest.mock import patch
+
+        from core import best_bet
+        from core.batch_generation import pick_facts
+
+        ideas = [best_bet.BestBetResult(topic=f"idea {i}", domain="ufc", avg_engaged_rate=0.0,
+                                        source="trending", supporting_runs=0, rationale="")
+                 for i in range(5)]  # fmt: skip
+        series = ("Picks, graded: the week of Oct 19", ["My call: Rams win. Result: right."],
+                  "series · 2 of 3 right")  # fmt: skip
+        with (
+            patch.object(best_bet, "get_best_bets", return_value=list(ideas)),
+            patch.object(best_bet, "preview_options", return_value=[]),
+            patch("core.seasonal_calendar.fetch_week_topics", return_value=[]),
+            patch("core.predictions.calls.picks_graded", return_value=series),
+            patch("core.batch_generation.series_drafted", return_value=False),
+        ):
+            got, _previews = best_bet.get_idea_menu("tapin", previews=0)
+        self.assertEqual(got[0].topic, series[0])
+        self.assertEqual(len(got), 5)
+        record = best_bet.pick_record(got, 1)
+        self.assertEqual(pick_facts(record), series[1])
+        self.assertEqual(pick_facts(best_bet.pick_record(got, 2)), [])
+
+
+class HoldoutTests(unittest.TestCase):
+    """#83 (the operator: yes, 1 in 5) - the ranking checked against chance."""
+
+    def setUp(self):
+        import os
+        import tempfile
+        from unittest.mock import patch
+
+        from core.predictions import holdouts
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        for p in (
+            patch.object(holdouts, "HOLDOUT_FILE", os.path.join(tmp.name, "holdouts.json")),
+            patch.dict(os.environ, {"HOLDOUT_EVERY": "5"}),
+        ):
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_every_fifth_overnight_draft_is_a_holdout(self):
+        from core.predictions import holdouts
+
+        self.assertEqual(holdouts.next_slots(3), [False, False, False])  # drafts 1-3
+        self.assertEqual(holdouts.next_slots(3), [False, True, False])  # drafts 4-6: the 5th
+
+    def test_a_holdout_takes_another_of_the_top_ten_and_is_recorded(self):
+        from unittest.mock import patch
+
+        from core import batch_generation, best_bet
+        from core.predictions import holdouts
+
+        ideas = [best_bet.BestBetResult(topic=f"idea {i}", domain="ufc", avg_engaged_rate=0.0,
+                                        source="trending", supporting_runs=0, rationale="")
+                 for i in range(6)]  # fmt: skip
+        holdouts.next_slots(4)  # four drafted before tonight
+        picks: dict = {}
+        with patch.object(best_bet, "get_idea_menu", return_value=(ideas, [])):
+            topics = batch_generation.collect_topics("tapin", count=2, picks=picks)
+        self.assertNotEqual(topics[0], "idea 0")  # the 5th draft: not the top pick
+        self.assertTrue(picks[topics[0]]["holdout"])
+        self.assertEqual(topics[1], "idea 1")  # the 6th: ranked as before
+        self.assertFalse(picks[topics[1]].get("holdout"))
+
+    def test_the_line_says_how_many_and_what_they_held(self):
+        from unittest.mock import patch
+
+        from core.predictions import holdouts
+
+        runs = {1: True, 2: False, 3: False}
+        with (
+            patch.object(holdouts, "_batch_runs", return_value=runs),
+            patch("core.engagement_predictor.run_engagement_map", return_value={1: 0.30, 2: 0.20}),
+        ):
+            line = holdouts.holdout_line("tapin")
+        self.assertIn("Holdouts: 1 measured", line)
+        self.assertIn("ranked overnight picks: 1 measured", line)
+
+
 if __name__ == "__main__":
     unittest.main()

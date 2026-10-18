@@ -353,13 +353,50 @@ def calls_line(*, days: int = 30, now: datetime | None = None) -> str:
         1 for r in rows if not r.get("result") and str(r.get("league") or "") in _SUMMARY_PATHS
     )
     unscored = len(rows) - len(done) - waiting
-    line = f"Calls: {right} of {len(done)} right in the last {days} days"
+    line = (
+        f"Calls: {right} of {len(done)} right in the last {days} days"
+        if done
+        else f"Calls: none scored yet in the last {days} days"
+    )
     extra = []
     if waiting:
         extra.append(f"{waiting} waiting on a result")
     if unscored:
         extra.append(f"{unscored} UFC or other, not scored")
     return line + (f" ({'; '.join(extra)})" if extra else "")
+
+
+SERIES_MIN = 3  # scored calls in a week before "Picks, graded" is a video (#991)
+
+
+def picks_graded(
+    *, now: datetime | None = None, days: int = 7
+) -> tuple[str, list[str], str] | None:
+    """#991 (the operator, 2026-10-18: "Picks, graded" first): (topic, facts, rationale) for this
+    week's video once SERIES_MIN calls are scored - each call and how it went, then this week's
+    open picks, all from the ledger, so the script is grounded in it - or None."""
+    moment = _now(now)
+    rows = scored_calls(days=days, now=moment)
+    done = [r for r in rows if r.get("result")]
+    if len(done) < SERIES_MIN:
+        return None
+    right = sum(1 for r in done if (r.get("result") or {}).get("right"))
+    monday = (moment - timedelta(days=moment.weekday())).date()
+    topic = f"Picks, graded: the week of {monday.strftime('%b %d').replace(' 0', ' ')}"
+    facts = []
+    for r in done:
+        result = r.get("result") or {}
+        verdict = "right" if result.get("right") else "wrong"
+        facts.append(
+            f"My call for {r.get('topic')}: {r.get('call')}. "
+            f"Result: {result.get('winner')} won - {verdict}."
+        )
+    upcoming = [
+        r for r in rows if not r.get("result") and str(r.get("league") or "") in _SUMMARY_PATHS
+    ]
+    facts += [f"This week's pick: {r.get('call')} ({r.get('topic')})." for r in upcoming[:3]]
+    rationale = f"series · Picks, graded - {right} of {len(done)} right this week"
+    return topic, facts, rationale
 
 
 def call_text(call: dict[str, str]) -> str:

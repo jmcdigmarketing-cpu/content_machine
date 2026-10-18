@@ -371,7 +371,7 @@ Operator product
   *(2026-08-26: `channel` / `run_id` / `grade` / `published` via real parser)*
 - [x] 137. Wiki-links between related `_runs/` dossiers `[S]`
   *(2026-08-26: previous same-franchise stem `[[…]]` on write)*
-- [ ] 138. Long-form length preset that is **not** a Short (16:9 sibling already exists) `[M]`
+- [x] 138. Long-form length preset that is **not** a Short (16:9 sibling already exists) `[M]` **Done (2026-10-18, Claude, wave 111; the operator: "Shorts compilation, $0"):** `video/week_compile.py` - the Shorts public in the last seven days, each centred on a blurred fill of itself at 1920x1080 with its channel intro trimmed, joined with a chapter each in the description; `ops week-compile [--apply [--schedule]]`; overnight makes and queues it on Monday mornings (`WEEK_COMPILE`). Live: this week is 7 Shorts, 9:50; a render to the scratchpad took 5.6 minutes and came out 590.4 s against 590.2 s planned. Long-form hours were 10 of 4,000.
 - [x] 139. Channel trailer / handle / banner checklist inside `channel-go-live` `[S]`
   *(2026-08-20: banner file + `youtube_handle` + trailer id/file; MoneyWise banner
   passes, handle/trailer still FAIL)*

@@ -86,11 +86,11 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 **2026-10-18 (Claude, wave 110).** The plan is now [hands_off_plan.md](hands_off_plan.md); the
 backlog audit closed 188 of 258 ([backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md)),
 which retired or merged four of the last five (#421, #425, #293) and shipped #1295. Next, from
-the plan's H1 (the operator's answers 2026-10-18, wave 111 - the ordered ten are in the
-plan): **#1303** NFL/NBA news in ideas, **#1269** the stale doc cards, **#1306**, **#1296**,
-**#1305**, **#1304** (a why from the game, a calls ledger scored), **#991** Picks, graded,
-**#83** holdouts 1 in 5, **#138** the $0 weekly compilation. The quarter after (H2) is listed
-there too. Four steps are yours, in the plan's "This week".
+the plan's quarter (H2) - wave 111 shipped all ten of H1 the same day. Next: **#1042** stat
+cards and score bugs drawn from the facts, **#356** the retention curve stored (what #1057's
+re-cuts and #83's holdouts read), **#1071** the two Apify actors replaced where quality holds,
+**#457** a lockfile, **#1058** click-through into learning once the Reporting API is on (yours).
+Four steps are yours, in the plan's "This week".
 **2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
 push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
 the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
@@ -101,6 +101,7 @@ read in full; three corrections. Filed #1263-#1269. The audit:
 **2026-10-18 (Claude, wave 108).** Measured defects first, the roadmap's five unchanged: hook learning had joined 0 of 41 videos (#1287; decision 67 - the last 90 days, the rewrite's rules stay until n settles), the quota day is YouTube's Pacific date (#1288), the overnight task may wake the PC (#1289), goose3's date warning (#1267), the teaser (#1264), a caption scrim to 4.5:1 (#1268). Filed #1290 (the hook scorer runs against who stays) and #1291. `roadmap-index`: open 258, done 1266, numbered open 206, highest #1291.
 **2026-10-18 (Claude, wave 109).** Volume blockers: takes the detector missed (#1292 - run 164 renders tonight), a preview's hook cut at "vs." (#1293), when a game preview must be decided (#1294), today's quota entry corrected, health names its runs (#1291), facts from a voice note (#450). Filed #1295 #1296. `roadmap-index`: open 258, done 1271, numbered open 206, highest #1296.
 **2026-10-18 (Claude, wave 110).** Nothing by hand: prompts visible again (#1297), one slot rule and the Buffer round as the bare `crosspost` (#1298), scheduled videos changeable and sent at their slot (#1299), ideas ranked by outlets (#1300), previews with a call (#1301), `ops all` without the suite and `ops test` without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM. Filed #1303-#1306. `roadmap-index`: open 74, done 1465, numbered open 65, highest #1306.
+**2026-10-18 (Claude, wave 111).** The plan's next ten, in six batches: NFL/NBA news in ideas (#1303), the twelve stale cards (#1269) and two audit misses (#104 #1059), status updates that switched embedding off on 7 videos (#1306, repaired), voice-note names (#1296), no test reads the real data/ (#1305), calls from ESPN's summary kept and scored (#1304), Picks graded (#991), holdouts (#83), the weekly compilation (#138). `roadmap-index`: open 63, done 1476, numbered open 54.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

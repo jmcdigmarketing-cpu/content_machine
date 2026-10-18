@@ -8461,3 +8461,23 @@ Batch E (items 8-9):
 - The calls line says "none scored yet" rather than "0 of 0".
 
 6 of 6 new tests failed on clean HEAD.
+
+Batch F (item 10, #138): `video/week_compile.py` and `ops week-compile`. The week's public
+Shorts are each centred on a blurred fill of itself at 1920x1080, with the channel intro trimmed
+so it plays once a video, not once a chapter. They are joined with a chapter each, and overnight
+makes and queues the video on Monday mornings. Live: this week is 7 Shorts, 9:50. A render to
+my scratchpad took 5.6 minutes - 590.4 s against 590.2 s planned, 1920x1080 at 30 fps - and a
+frame looked right. 6 of 6 new tests failed on clean HEAD.
+
+Not done: the first compilation's upload is the operator's to watch for (overnight queues it
+Monday morning); a UFC call has no result source, so it is kept and not scored; a vague reason
+with no number ("a form advantage") passes the grounding check.
+
+The wave's audit:
+- 45 tests in tests/test_wave111.py, every one observed failing on clean HEAD.
+- 9 corpus cases.
+- The suite in the real tree (data/ present) passed both ways, for the first time.
+- mypy clean on every touched file.
+- Commits: one a batch, each pushed and its CI read.
+
+`roadmap-index`: open 63, done 1476, numbered open 54. Filed nothing new; closed 15.

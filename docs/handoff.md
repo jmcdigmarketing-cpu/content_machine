@@ -53,37 +53,33 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-18 afternoon · **HEAD at write:** the wave 110 commit (`git log -1`) ·
-**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
+**Written:** 2026-10-18 evening · **HEAD at write:** the wave 111 batch F commit (`git log -1`) ·
+**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**The plan is [hands_off_plan.md](hands_off_plan.md)** (themes A-E, H0/H1/H2); it supersedes
-optimization_plan_2026-10.md. The backlog audit closed 188 of 258 - read
-[backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md) before reopening anything;
-`test_docs_lint` holds the backlog at or under 130.
+**The plan is [hands_off_plan.md](hands_off_plan.md)**; wave 111 shipped all ten of its H1, so
+the roadmap's next five come from its quarter (H2). The backlog audit's table:
+[backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md); `test_docs_lint` holds it at <= 130.
 
-**Wave 110:** `menu_line` flushes (#1297). One slot rule - `batch_review.plan_review_slots`,
-`slot_for_run` in the menu and `auto_generate`, `plan_spaced_uploads` on `free_slots`,
-`_ASAP_LEAD` for a game with no slot (#1295); bare `ops crosspost` is the round, `pack` packs
-public only (#1298). `go_public._log_rows`, a reschedule logs "public", `waiting_line` and the
-worker's scheduled-live pass read the real row shape (#1299). `best_bet.idea_feeds` /
-`rank_by_coverage` / `coverage_note` (#1300). `core/predictions/calls.py`, `game_detail` line,
-`with_calls`, `batch_generation.draft_brief` (main.py too), `PREVIEW_CALLS` (#1301). `all` has no
-suite; `suite_hygiene.without_dotenv` around `ops test` (#1302).
+**Wave 111 (six batches, A-F):**
+- `extra_domains` gains nfl and nba (#1303).
+- `snippet_update.writable_status` for every status change, plus `ops status-fields` (#1306;
+  seven videos repaired, the operator's yes).
+- `voice_notes.correct_names` (#1296).
+- tests/__init__.py refuses opens under the real data/ and fails the test by name; `tts` reads
+  `run_trace.TRACES_DIR` (#1305).
+- `core/predictions/calls.py`: ESPN summary lines, the ledger in data/preview_calls.json,
+  `score_calls`, `calls_line`, `picks_graded` (#1304 #991).
+- `topic_tokens.names_any` spaces the marker too (49ers).
+- `core/predictions/holdouts.py` (#83).
+- `video/week_compile.py` and `ops week-compile`; overnight `_week_compile` on Mondays (#138).
 
-**Live:** 52tS6g1fu_k public (Buffer 11:45); 3nlkdFTjxe0 public 22:00Z - its log row says
-"private" (a hand edit was refused), so the worker's read-back sends it.
+**Live:** the first compilation is made by overnight on Monday morning (7 Shorts, 9:50 this week)
+and queued for a free slot - the operator said a $0 compilation, public at a slot.
 
-**Defects first:** none open of mine. **Next:** wave 111 in batches - the plan's "Next ten"
-(the operator answered #1303 yes, #138 a $0 compilation, #991 Picks graded, #83 holdouts 1 in 5);
-a batch that is not in `git log` was not finished. Batch A (the plan's H1/H2) and B (#1303
-#1269 #104 #1059 #1306 #1296; seven videos' embedding restored, the operator's yes) and C
-(#1305: a test may not open the real data/ - the suite is green in the real tree too) and D
-(#1304: calls from ESPN's summary, kept in data/preview_calls.json, scored; `names_any`
-now names the 49ers) and E (#991 Picks, graded; #83 holdouts in data/holdouts.json) are
-committed. Left: F, #138 the weekly compilation.
-Suite 6,313, forward and reversed.
+**Defects first:** none open of mine. **Next:** #1042 #356 #1071 #457; #1058 waits on the
+Reporting API (the operator's click). Suite: see the planning log - green in the real tree too.
 
 ## Slot — Cursor
 

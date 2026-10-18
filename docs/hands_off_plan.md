@@ -133,9 +133,9 @@ Answered 2026-10-18: NFL and NBA news join the ideas (B3); the weekly long-form 
 compilation (C); the first series is "Picks, graded" (B7); 1 in 5 overnight drafts is a holdout
 (#83).
 
-## Next ten (H1, wave 111)
+## Next ten (H1, wave 111) - all ten shipped 2026-10-18
 
-In order, cheapest and safest first; each batch is committed on its own.
+In order, cheapest and safest first; each batch was committed on its own (A-F).
 
 | # | Item | Exit |
 |---|---|---|
@@ -148,7 +148,7 @@ In order, cheapest and safest first; each batch is committed on its own.
 | 7 | The calls ledger, scored (#1304) | `ops predictions` prints "Calls: N of M right"; the second menu build is fast |
 | 8 | Picks, graded (#991) | the menu offers it once 3 calls are scored in a week |
 | 9 | Holdouts, 1 in 5 overnight drafts (#83) | `ops predictions` compares holdouts with ranked picks |
-| 10 | The weekly $0 compilation (#138) | one command renders the week's Shorts as one video; it goes public at a slot |
+| 10 | The weekly $0 compilation (#138) | `ops week-compile` renders the week's Shorts as one video; overnight queues it for a slot on Mondays |
 
 ## The quarter (H2, November-December 2026)
 

@@ -195,6 +195,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `verify-claim` | List, confirm (--claim N --source URL) or reject (--claim N --reject) a held run's flagged claims - no re-render; dry-run default, --apply writes (#1013) |
 | `voice-facts` | Facts from a voice note: --path memo.m4a --run-id N\|--topic, --apply |
 | `voices` | List TTS voices — ElevenLabs account + local Piper — and what each channel uses |
+| `week-compile` | The week's public Shorts as one 16:9 video, a chapter each, $0 (#138; dry run; --apply renders; --apply --schedule also queues it for a slot) |
 | `weekly-report` | Rules-based weekly intelligence (winners/losers by feature) |
 | `weights` | Print learned signal weights for channel |
 | `why-slow` | Rank last-run phase timings (slowest first) |

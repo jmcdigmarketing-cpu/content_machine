@@ -5381,6 +5381,40 @@
         "equals": ""
       },
       "why": "grounding: words a line did not say"
+    },
+    {
+      "id": "week-compile-trims-the-intro-and-centres-the-short",
+      "item": 138,
+      "source": "wave 111: each Short opens on the 2.15 s channel intro; a compilation would repeat it once a chapter",
+      "call": "video.week_compile:segment_argv",
+      "args": [
+        "in.mp4",
+        "out.mp4"
+      ],
+      "kwargs": {
+        "offset": 2.15
+      },
+      "expect": {
+        "includes_all": [
+          "-nostdin",
+          "-ss",
+          "2.15"
+        ]
+      },
+      "why": "past the intro, no stdin wait"
+    },
+    {
+      "id": "week-compile-chapter-clock",
+      "item": 138,
+      "source": "wave 111: YouTube reads chapters from m:ss lines starting at 0:00",
+      "call": "video.week_compile:_clock",
+      "args": [
+        590.2
+      ],
+      "expect": {
+        "equals": "9:50"
+      },
+      "why": "the description's chapters"
     }
   ]
 }

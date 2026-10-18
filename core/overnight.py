@@ -23,7 +23,9 @@ the same way as `auto_generate --facts-file` and passed through
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -73,6 +75,7 @@ class OvernightResult:
     expired: int = 0
     # #1190: what went to TikTok and Instagram through Buffer.
     crosspost_line: str = ""
+    week_line: str = ""  # #138: the Monday compilation
     # #1253: how many drafts were already waiting, when that cut tonight's count.
     draft_line: str = ""
 
@@ -155,6 +158,7 @@ def run_overnight(
         _post_publish(result)
         _crosspost(result)
         _score_calls()
+        _week_compile(result)
 
 
 def _crosspost(result: OvernightResult) -> None:
@@ -165,6 +169,26 @@ def _crosspost(result: OvernightResult) -> None:
         result.crosspost_line = "\n".join(step(result.channel_id))
     except Exception as exc:
         logger.debug("overnight crosspost skipped: %s", exc)
+
+
+def _week_compile(result: Any, now: datetime | None = None) -> None:
+    """#138 (the operator: a $0 compilation, public at a slot): on Monday mornings in the
+    channel's zone, last week's public Shorts become one long video, queued for a slot."""
+    if os.getenv("WEEK_COMPILE", "true").strip().lower() in ("0", "false", "no", "off"):
+        return
+    moment = now or datetime.now(timezone.utc)
+    try:
+        from core.spaced_queue import _channel_tz
+
+        if moment.astimezone(_channel_tz(result.channel_id)).weekday() != 0:
+            return
+        from video.week_compile import compile_week
+
+        result.week_line = "\n".join(
+            compile_week(result.channel_id, apply=True, queue=True, now=moment)
+        )
+    except Exception as exc:
+        logger.warning("overnight week compilation skipped: %s", exc)
 
 
 def _score_calls() -> None:
@@ -425,6 +449,8 @@ def render_overnight(result: OvernightResult) -> str:
             lines.append(result.post_publish_line)
         if result.crosspost_line:
             lines.append(result.crosspost_line)
+        if result.week_line:
+            lines.append(result.week_line)
         _append_tts_cache_line(lines)
         _append_retention_line(lines)
         return "\n".join(lines)
@@ -452,6 +478,8 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(result.post_publish_line)
     if result.crosspost_line:
         lines.append(result.crosspost_line)
+    if result.week_line:
+        lines.append(result.week_line)
     _append_tts_cache_line(lines)
     _append_retention_line(lines)
     lines.append(

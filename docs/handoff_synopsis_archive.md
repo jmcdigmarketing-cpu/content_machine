@@ -7,6 +7,16 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-18 morning (Claude Code): #1287 #1288 #1289 #1267 #1264 #1268
+
+Hook learning read `run.script`, a field runs do not have, and had joined 0 of 41 videos; it now
+reads the stored script and, per decision 67, learns from the last 90 days with the rewrite's
+fixed rules kept until n settles (live: 18 videos, r=-0.41, filed as #1290). The YouTube quota
+day is the Pacific date. `schedule-drafts --wake` sets the task's WakeToRun instead of printing
+a line - and an old test set it on the operator's real task before the suite guard existed
+(disclosed). goose3's date warning, the teaser's stdin and intro, and a caption scrim to 4.5:1.
+Suite: 6,268 tests forward and reversed, the same verdict.
+
 ## Previous — 2026-10-17 late night (Claude Code): #1286 #1271 #1270 #1272 #257
 
 A preview whose draft has no `event_at` is matched to the week's games and UFC cards by its title

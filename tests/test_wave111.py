@@ -594,5 +594,132 @@ class HoldoutTests(unittest.TestCase):
         self.assertIn("ranked overnight picks: 1 measured", line)
 
 
+WEEK_NOW = __import__("datetime").datetime(
+    2026, 10, 19, 10, 0, tzinfo=__import__("datetime").timezone.utc
+)
+
+
+def _pub(rid, run_id, days_ago, privacy="public", video="v"):
+    from datetime import timedelta
+    from types import SimpleNamespace
+
+    return SimpleNamespace(id=rid, content_run_id=run_id, youtube_video_id=f"{video}{run_id}",
+                           privacy_status=privacy, status="uploaded",
+                           published_at=WEEK_NOW - timedelta(days=days_ago), notes="")  # fmt: skip
+
+
+def _short(run_id, title, features="{}"):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(id=run_id, title=title, mp4_path=f"C:/out/run{run_id}.mp4",
+                           features_json=features)  # fmt: skip
+
+
+class WeekCompileTests(unittest.TestCase):
+    """#138 (the operator: "Shorts compilation, $0"): long-form hours were 10 of 4,000. The week's
+    public Shorts become one 16:9 video, a chapter each - no new script, no new voice."""
+
+    def _patches(self, rows, runs, durations):
+        from contextlib import ExitStack
+        from unittest.mock import MagicMock, patch
+
+        from video import week_compile
+
+        repo = MagicMock()
+        repo.list_uploaded_for_channel.return_value = rows
+        stack = ExitStack()
+        stack.enter_context(patch("storage.repositories.publish_log.get_publish_log_repository",
+                                  return_value=repo))  # fmt: skip
+        stack.enter_context(
+            patch.object(week_compile, "_run", side_effect=lambda rid: runs.get(rid))
+        )
+        stack.enter_context(patch("os.path.isfile", return_value=True))
+        stack.enter_context(patch.object(week_compile, "_duration",
+                                         side_effect=lambda p: durations.get(p)))  # fmt: skip
+        stack.enter_context(patch.object(week_compile, "_intro_offset", return_value=2.0))
+        return stack
+
+    def _week(self, n=5):
+        rows = [_pub(i, 100 + i, 6 - i) for i in range(n)]
+        runs = {100 + i: _short(100 + i, f"Short {i}") for i in range(n)}
+        durations = {f"C:/out/run{100 + i}.mp4": 52.0 for i in range(n)}
+        return rows, runs, durations
+
+    def test_the_weeks_public_shorts_in_order(self):
+        from video.week_compile import week_shorts
+
+        rows, runs, durations = self._week(5)
+        rows += [_pub(20, 120, 3, privacy="unlisted"), _pub(21, 121, 9)]  # held, and last week
+        runs[122] = _short(122, "An earlier compilation", '{"compilation": {"week": "2026-10-12"}}')
+        rows.append(_pub(22, 122, 2))
+        with self._patches(rows, runs, durations):
+            got = week_shorts("tapin", now=WEEK_NOW)
+        self.assertEqual([s["run_id"] for s in got], [100, 101, 102, 103, 104])
+
+    def test_the_plan_has_a_chapter_each_and_no_intro_repeats(self):
+        from video.week_compile import plan_week
+
+        rows, runs, durations = self._week(5)
+        with self._patches(rows, runs, durations):
+            plan = plan_week("tapin", now=WEEK_NOW)
+        self.assertIsNotNone(plan)
+        self.assertIn("0:00 Short 0", plan.description)
+        self.assertIn("0:50 Short 1", plan.description)  # 52 s less the 2 s intro
+        self.assertIn("3:20 Short 4", plan.description)
+        self.assertEqual(plan.week, "2026-10-19")
+
+    def test_four_shorts_are_not_a_week_yet(self):
+        from video.week_compile import plan_week
+
+        rows, runs, durations = self._week(4)
+        with self._patches(rows, runs, durations):
+            self.assertIsNone(plan_week("tapin", now=WEEK_NOW))
+
+    def test_a_segment_is_the_short_centred_on_its_own_blur(self):
+        from video.week_compile import segment_argv
+
+        argv = segment_argv("C:/out/run100.mp4", "C:/tmp/seg0.mp4", offset=2.0)
+        text = " ".join(argv)
+        self.assertIn("-nostdin", argv)
+        self.assertIn("-ss 2.0", text)
+        self.assertIn("scale=1920:1080:force_original_aspect_ratio=increase", text)
+        self.assertIn("boxblur", text)
+        self.assertIn("overlay=(W-w)/2:0", text)
+
+    def test_a_dry_run_renders_nothing(self):
+        from unittest.mock import patch
+
+        from video.week_compile import compile_week
+
+        rows, runs, durations = self._week(5)
+        with (
+            self._patches(rows, runs, durations),
+            patch("subprocess.run") as run,
+            patch("video.week_compile.week_done", return_value=False),
+        ):
+            lines = compile_week("tapin", apply=False, now=WEEK_NOW)
+        run.assert_not_called()
+        self.assertTrue(any("0:50 Short 1" in line for line in lines), lines)
+
+    def test_overnight_compiles_on_monday_only(self):
+        import os
+        from types import SimpleNamespace
+        from unittest.mock import patch
+
+        from core import overnight
+
+        result = SimpleNamespace(channel_id="tapin", week_line="")
+        monday = WEEK_NOW  # 2026-10-19 is a Monday
+        with (
+            patch.dict(os.environ, {"WEEK_COMPILE": "true"}),
+            patch("video.week_compile.compile_week", return_value=["  queued"]) as compile_,
+        ):
+            overnight._week_compile(result, now=monday)
+            overnight._week_compile(result, now=monday.replace(day=20))
+        self.assertEqual(compile_.call_count, 1)
+        self.assertEqual(compile_.call_args.kwargs, {"apply": True, "queue": True, "now": monday})
+        self.assertIn("queued", result.week_line)
+
+
 if __name__ == "__main__":
     unittest.main()

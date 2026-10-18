@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-18 afternoon: nothing by hand, the hands-off plan, the backlog audit
+# Handoff synopsis — 2026-10-18 evening: the plan's next ten, in six batches
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,17 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-18 afternoon (Claude Code): #1297-#1302, the plan, the audit
+## Last wave — 2026-10-18 evening (Claude Code): wave 111, the plan's next ten
+
+The long-term plan is written (hands_off_plan.md: this week, the next ten, the quarter), then
+all ten in six batches, each pushed and green: NFL/NBA news in ideas; two audit misses and the
+twelve stale doc cards; status-only updates had switched embedding off on 7 videos (repaired);
+voice-note names; no test reads the real data/ (the suite now passes on the operator's PC);
+a call's why from ESPN's summary, every call kept and scored (`names_any` names the 49ers now);
+Picks, graded; holdouts 1 in 5; the weekly $0 compilation (`ops week-compile`, overnight on
+Mondays). Open 63.
+
+## Previous — 2026-10-18 afternoon (Claude Code): #1297-#1302, the plan, the audit
 
 Nothing by hand: one-key menus show their prompt again (#1297). Batch-review, the menu's slot
 and auto_generate use one slot rule - a game before kickoff or as it uploads (#1295), news in
@@ -31,16 +41,6 @@ is no longer cut at "vs.". The soonest waiting game preview says when it must be
 no slot is left before kickoff (the Chargers preview today: none - #1295 is the operator's call).
 Health names the runs it reads. `ops voice-facts` turns a memo into operator facts. Today's quota
 entry corrected (5,561 -> 761). Suite: 6,284 tests forward and reversed, the same verdict.
-
-## Previous — 2026-10-18 morning (Claude Code): #1287 #1288 #1289 #1267 #1264 #1268
-
-Hook learning read `run.script`, a field runs do not have, and had joined 0 of 41 videos; it now
-reads the stored script and, per decision 67, learns from the last 90 days with the rewrite's
-fixed rules kept until n settles (live: 18 videos, r=-0.41, filed as #1290). The YouTube quota
-day is the Pacific date. `schedule-drafts --wake` sets the task's WakeToRun instead of printing
-a line - and an old test set it on the operator's real task before the suite guard existed
-(disclosed). goose3's date warning, the teaser's stdin and intro, and a caption scrim to 4.5:1.
-Suite: 6,268 tests forward and reversed, the same verdict.
 
 ## Pipeline order (operator)
 

@@ -105,6 +105,8 @@ os.environ["LEARNED_GAME_NAMES"] = "false"
 os.environ["PREVIEW_CALLS"] = "false"
 # Wave 111 (#83): no overnight pick is a holdout in a test that does not ask for one.
 os.environ["HOLDOUT_EVERY"] = "0"
+# Wave 111 (#138): overnight's Monday compilation runs ffmpeg and queues an upload.
+os.environ["WEEK_COMPILE"] = "false"
 # #771 turned the whisper aligner on by default; no test may load a model.
 os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 # #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one

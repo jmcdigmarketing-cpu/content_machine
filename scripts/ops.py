@@ -1240,6 +1240,25 @@ def cmd_voice_facts(args: argparse.Namespace) -> int:
     return 0 if kept else 1
 
 
+@_register(
+    "week-compile",
+    "The week's public Shorts as one 16:9 video, a chapter each, $0 (#138; dry run; --apply "
+    "renders; --apply --schedule also queues it for a slot)",
+)
+def cmd_week_compile(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from video.week_compile import compile_week
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    for line in compile_week(
+        channel,
+        apply=bool(getattr(args, "apply", False)),
+        queue=bool(getattr(args, "schedule", False)),
+    ):
+        print(line)
+    return 0
+
+
 @_register("teaser", "Cut a 5s teaser from a finished vertical render (--run-id) (#511)")
 def cmd_teaser(args: argparse.Namespace) -> int:
     run_id = int(getattr(args, "run_id", 0) or 0)

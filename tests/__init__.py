@@ -197,6 +197,7 @@ from core import incident_ledger as _incident_ledger
 from core import moat_backup as _moat_backup
 from core import negative_facts as _negative_facts
 from core import operator_minutes as _operator_minutes
+from core import ops_doctor as _ops_doctor
 from core import playlists as _playlists
 from core import policy_canary as _policy_canary
 from core import quota_state as _quota_state
@@ -324,6 +325,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_preview_calls, "CALLS_FILE", _suite_store("preview_calls.json")),
     # #83: the holdout count.
     patch.object(_holdouts, "HOLDOUT_FILE", _suite_store("holdouts.json")),
+    # Wave 112: the doctor's last result.
+    patch.object(_ops_doctor, "DOCTOR_LAST_FILE", _suite_store("doctor_last.json")),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

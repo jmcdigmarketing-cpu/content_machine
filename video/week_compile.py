@@ -209,8 +209,60 @@ def _render(plan: WeekPlan, dst: str) -> str:
     return ""
 
 
-def _record(plan: WeekPlan, path: str) -> int:
+def make_thumbnail(plan: WeekPlan, video_path: str) -> str:
+    """Wave 112: the compilation's own thumbnail - a frame 40% into its first chapter with "Week
+    in Review" and the dates painted on (`compose_thumbnail`, its contrast rules). "" when none."""
+    if not plan.items:
+        return ""
+    first = plan.items[0]
+    at = round(float(first.get("start") or 0.0) + 0.4 * float(first.get("seconds") or 0.0), 1)
+    stem = os.path.splitext(video_path)[0]
+    frame, thumb = f"{stem}_frame.png", f"{stem}_thumb.png"
+    subprocess.run(
+        ["ffmpeg", "-nostdin", "-y", "-ss", str(at), "-i", video_path, "-frames:v", "1",
+         "-vf", "scale=1280:720", frame],
+        capture_output=True, stdin=subprocess.DEVNULL, timeout=120, check=False,
+    )  # fmt: skip
+    if not os.path.isfile(frame):
+        return ""
+    # "Oct 15-18": the headline keeps five words, and "Oct 15 - Oct 18" lost its end to that.
+    began, ended = plan.items[0].get("published_at"), plan.items[-1].get("published_at")
+    span = ""
+    if isinstance(began, datetime) and isinstance(ended, datetime):
+        span = (
+            f"{began:%b} {began.day}-{ended.day}"
+            if began.month == ended.month
+            else f"{began:%b} {began.day}-{ended:%b} {ended.day}"
+        )
+    try:
+        from PIL import Image
+
+        from assets.thumbnail_compose import compose_thumbnail
+
+        compose_thumbnail(
+            Image.open(frame).convert("RGB"),
+            f"Week in Review {span}".strip(),
+            thumb,
+            channel_id=plan.channel_id,
+        )
+    except Exception as exc:
+        logger.warning("week compile thumbnail skipped: %s", exc)
+        return ""
+    return thumb if os.path.isfile(thumb) else ""
+
+
+def _record(plan: WeekPlan, path: str, *, thumbnail: str = "") -> int:
     from core.run_recorder import record_content_run
+
+    features: dict[str, Any] = {
+        "compilation": {
+            "week": plan.week,
+            "runs": [i["run_id"] for i in plan.items],
+            "seconds": round(plan.seconds, 1),
+        }
+    }
+    if thumbnail:  # the upload takes it through thumbnail_pick.ensure_thumbnail_ready
+        features["thumbnail_pick"] = {"path": thumbnail, "arm": "compilation"}
 
     return record_content_run(
         channel_id=plan.channel_id,
@@ -224,13 +276,7 @@ def _record(plan: WeekPlan, path: str) -> int:
         description=plan.description,
         tags_json=json.dumps(["week in review", "compilation"]),
         mp4_path=path,
-        features={
-            "compilation": {
-                "week": plan.week,
-                "runs": [i["run_id"] for i in plan.items],
-                "seconds": round(plan.seconds, 1),
-            }
-        },
+        features=features,
     )
 
 
@@ -253,8 +299,9 @@ def compile_week(
     why = _render(plan, dst)
     if why:
         return [*lines, f"  Not made: {why}."]
-    run_id = _record(plan, dst)
-    lines.append(f"  Rendered: {dst} (run {run_id})")
+    thumb = make_thumbnail(plan, dst)
+    run_id = _record(plan, dst, thumbnail=thumb)
+    lines.append(f"  Rendered: {dst} (run {run_id})" + (f", thumbnail {thumb}" if thumb else ""))
     if not queue:
         return [
             *lines,

@@ -5415,6 +5415,19 @@
         "equals": "9:50"
       },
       "why": "the description's chapters"
+    },
+    {
+      "id": "a-betting-roundup-is-not-an-idea",
+      "item": 1308,
+      "source": "live, 2026-10-18: the idea list carried 'NFL Week 6 odds, predictions, expert picks: Cowboys roll into Lambeau Field'",
+      "call": "core.best_bet:_is_roundup_headline",
+      "args": [
+        "NFL Week 6 odds, predictions, expert picks: Cowboys roll into Lambeau Field to face Packers"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "another outlet's picks are not a story"
     }
   ]
 }

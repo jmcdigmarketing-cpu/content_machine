@@ -19,6 +19,8 @@ SECRETS = {"required_missing": 1, "placeholder": 2, "present": 9}
 def _patches(**over):
     base = {
         "core.ops_doctor.gather": DOCTOR,
+        # Wave 112: the status line reuses a kept doctor result; these tests feed gather's.
+        "core.ops_doctor.last_checks": None,
         "core.secrets_doctor.gather": SECRETS,
         "core.channel_health.build_health": SimpleNamespace(),
         "core.channel_health.health_line": "Health: GREEN (engagement ok, cadence ok)",

@@ -731,6 +731,34 @@ def _is_commerce_headline(title: str) -> bool:
     return any(m in t for m in _COMMERCE_MARKERS)
 
 
+# Wave 112: live 2026-10-18 an idea was "NFL Week 6 odds, predictions, expert picks: Cowboys roll
+# into Lambeau Field..." - another outlet's betting roundup, not a story. The channel makes its own
+# calls (#1301).
+_ROUNDUP_MARKERS = (
+    "expert picks",
+    "odds, predictions",
+    "odds and predictions",
+    "picks and predictions",
+    "predictions and picks",
+    "picks against the spread",
+    "best bets",
+    "betting odds",
+    "betting picks",
+    "player props",
+    "parlay",
+    "fantasy rankings",
+    "start 'em",
+    "start em, sit em",
+    "dfs picks",
+)
+
+
+def _is_roundup_headline(title: str) -> bool:
+    """True for a betting or fantasy roundup headline (another outlet's picks, not a story)."""
+    t = (title or "").lower()
+    return any(m in t for m in _ROUNDUP_MARKERS)
+
+
 def _domain_for_feed(word_domain: str, feed_domains: list[str] | None) -> str:
     """A single-domain feed wins when the headline's words name something else.
 
@@ -786,6 +814,8 @@ def _consider_candidate(
         return None
     # Drop product/deal/affiliate headlines — commerce, not video topics.
     if _commerce_filter_enabled() and _is_commerce_headline(t):
+        return None
+    if _is_roundup_headline(t):  # wave 112: another outlet's picks
         return None
     seen_local.add(key)
     return {"topic": t, "domain": domain, "source": source, "published": published}

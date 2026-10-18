@@ -76,6 +76,7 @@ class OvernightResult:
     # #1190: what went to TikTok and Instagram through Buffer.
     crosspost_line: str = ""
     week_line: str = ""  # #138: the Monday compilation
+    calls_line: str = ""  # wave 112: the week's marquee games called
     # #1253: how many drafts were already waiting, when that cut tonight's count.
     draft_line: str = ""
 
@@ -158,6 +159,7 @@ def run_overnight(
         _post_publish(result)
         _crosspost(result)
         _score_calls()
+        _call_week(result)
         _week_compile(result)
 
 
@@ -189,6 +191,27 @@ def _week_compile(result: Any, now: datetime | None = None) -> None:
         )
     except Exception as exc:
         logger.warning("overnight week compilation skipped: %s", exc)
+
+
+def _call_week(result: Any) -> None:
+    """Wave 112: a call for every marquee game of the week, not only the menu's five previews -
+    the ledger keeps each one (made once) and "Picks, graded" counts them."""
+    try:
+        from core.best_bet import suggested_games
+        from core.predictions import calls
+        from core.seasonal_calendar import fetch_week_topics
+
+        games = suggested_games(fetch_week_topics(), covered_topics=[])
+        if not games:
+            return
+        made = calls.preview_calls(games, headlines=lambda: calls.headlines_for(games))
+        if made:
+            result.calls_line = (
+                f"Calls: {len(made)} of this week's {len(games)} marquee games called "
+                "(py -m scripts.ops predictions)"
+            )
+    except Exception as exc:
+        logger.debug("overnight week calls skipped: %s", exc)
 
 
 def _score_calls() -> None:
@@ -451,6 +474,8 @@ def render_overnight(result: OvernightResult) -> str:
             lines.append(result.crosspost_line)
         if result.week_line:
             lines.append(result.week_line)
+        if result.calls_line:
+            lines.append(result.calls_line)
         _append_tts_cache_line(lines)
         _append_retention_line(lines)
         return "\n".join(lines)
@@ -480,6 +505,8 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(result.crosspost_line)
     if result.week_line:
         lines.append(result.week_line)
+    if result.calls_line:
+        lines.append(result.calls_line)
     _append_tts_cache_line(lines)
     _append_retention_line(lines)
     lines.append(

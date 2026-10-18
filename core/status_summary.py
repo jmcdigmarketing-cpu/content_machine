@@ -16,9 +16,13 @@ logger = get_logger("core.status_summary")
 
 
 def _doctor(channel_id: str) -> str:
-    from core.ops_doctor import gather
+    from core.ops_doctor import gather, last_checks, save_last
 
-    checks = gather(channel_id).get("checks") or []
+    # Wave 112: a doctor result under 12 hours old - the checks cost 5 s of a 7.9 s status.
+    checks = last_checks(channel_id)
+    if checks is None:
+        checks = gather(channel_id).get("checks") or []
+        save_last(channel_id, checks)
     failing = [str(c.get("name")) for c in checks if not c.get("ok")]
     passed = len(checks) - len(failing)
     head = f"Doctor: {passed} of {len(checks)} checks pass"

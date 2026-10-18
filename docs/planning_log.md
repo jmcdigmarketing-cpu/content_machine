@@ -8481,3 +8481,28 @@ The wave's audit:
 - Commits: one a batch, each pushed and its CI read.
 
 `roadmap-index`: open 63, done 1476, numbered open 54. Filed nothing new; closed 15.
+
+## 2026-10-18 evening — wave 112, the next ten (Claude Code)
+
+**Prompt:** "next 10". Answers, all four the recommended option: the matchup card is a 3-second
+card after the hook (#1042); the stake and the call go in the first sentence after the intro, as
+a script rule; the tenth item is the main menu with fewer prompts (#1077); I research the two
+public videos' unconfirmed claims and bring sources (#1136).
+
+Measured first (read-only):
+- `ops status` took 7.9 s, 5.0 of it the doctor's probes for a line that counts passes.
+- `ops list` took 0.1 s, so #610 has no measured need.
+- Retention curves were already stored on 24 videos (100 points each) - #356 shipped - and read
+  by nothing. On average half the viewers are gone by 20% of the video, the steepest drops at
+  5-15%.
+- `ops paid-signals` measures its "keep" on the composite score the signals feed, which does not
+  predict engagement.
+- A live idea was a betting roundup.
+- Calls came only from the menu's five previews.
+- The Monday compilation had no thumbnail.
+
+Batch A (items 1-4): #1307 the status reuses a doctor result under 12 h (7.9 -> 3.4 s; the gh
+call for the CI line stays), #1308 betting roundups are not ideas, #1309 overnight calls the
+week's marquee games, #1310 the compilation's thumbnail. A first version saved inside `gather`;
+the callers save now, so `gather` stays pure. test_status_machine read a doctor result an
+earlier test had kept - it pins `last_checks` now. 8 of 8 new tests failed on clean HEAD.

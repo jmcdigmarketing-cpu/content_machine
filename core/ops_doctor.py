@@ -8,9 +8,12 @@ extra HTTP call (#392); everything else stays on cached probes.
 
 from __future__ import annotations
 
+import json
 import os
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from config.paths import DATA_DIR
 from core.logging import get_logger
 
 logger = get_logger("core.ops_doctor")
@@ -67,6 +70,58 @@ def _local_signal_failures(channel_id: str) -> set[str]:
         logger.debug("vendor status local failures skipped: %s", type(exc).__name__)
         return set()
     return {row.name for row in rows if row.kind == "signal"}
+
+
+# Wave 112: `ops status` re-ran every check for a line that counts passes - 5.0 of its 7.9 s
+# (torch's import for the CUDA probe, a timed-out localhost connect for Ollama). Each gather is
+# kept; the status line reads one under FRESH_HOURS old.
+DOCTOR_LAST_FILE = os.path.join(DATA_DIR, "doctor_last.json")
+FRESH_HOURS = 12
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _read_last() -> dict[str, Any]:
+    try:
+        with open(DOCTOR_LAST_FILE, encoding="utf-8") as handle:
+            data = json.load(handle)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_last(
+    channel_id: str, checks: list[dict[str, Any]], *, now: datetime | None = None
+) -> None:
+    """Keep this channel's latest checks (name and pass only)."""
+    data = _read_last()
+    data[channel_id] = {
+        "at": (now or _now()).isoformat(timespec="seconds"),
+        "checks": [{"name": str(c.get("name")), "ok": bool(c.get("ok"))} for c in checks],
+    }
+    try:
+        os.makedirs(os.path.dirname(DOCTOR_LAST_FILE) or ".", exist_ok=True)
+        with open(DOCTOR_LAST_FILE, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=1)
+    except OSError as exc:
+        logger.debug("doctor result not kept: %s", exc)
+
+
+def last_checks(channel_id: str, *, max_age_hours: float = FRESH_HOURS) -> list[dict] | None:
+    """The kept checks when under `max_age_hours` old, else None."""
+    entry = _read_last().get(channel_id) or {}
+    try:
+        at = datetime.fromisoformat(str(entry.get("at") or ""))
+    except ValueError:
+        return None
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=timezone.utc)
+    if _now() - at > timedelta(hours=max_age_hours):
+        return None
+    checks = entry.get("checks")
+    return list(checks) if isinstance(checks, list) else None
 
 
 def gather(
@@ -302,7 +357,9 @@ def gather(
 
 
 def render(data: dict[str, Any] | None = None, *, channel_id: str = "tapin") -> str:
-    data = data or gather(channel_id)
+    if data is None:
+        data = gather(channel_id)
+        save_last(channel_id, data.get("checks") or [])  # the status line reads it
     lines = [f"ops doctor - {data.get('channel_id') or channel_id}", "=" * 48]
     for c in data.get("checks") or []:
         mark = "PASS" if c.get("ok") else "FAIL"

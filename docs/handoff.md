@@ -78,8 +78,11 @@ the roadmap's next five come from its quarter (H2). The backlog audit's table:
 **Live:** the first compilation is made by overnight on Monday morning (7 Shorts, 9:50 this week)
 and queued for a free slot - the operator said a $0 compilation, public at a slot.
 
-**Defects first:** none open of mine. **Next:** #1042 #356 #1071 #457; #1058 waits on the
-Reporting API (the operator's click). Suite: see the planning log - green in the real tree too.
+**Wave 112 in progress (batches A-E; a batch not in `git log` was not finished):** A done -
+#1307-#1310 (status reuses the doctor result, roundups dropped, the week's games called,
+the compilation's thumbnail). Next: B #1136 claims (sources for the operator's yes), C the
+first-line rule, #1290 retune at n>=21, paid-signal attribution on outcomes, D #1042 the
+matchup card, E #1077 the menu. **Defects first:** none open of mine.
 
 ## Slot — Cursor
 

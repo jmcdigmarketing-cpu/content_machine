@@ -5028,6 +5028,71 @@
         "equals": 0.1
       },
       "why": "the band darkens until the lightest sampled background reaches 4.5:1"
+    },
+    {
+      "id": "a-preview-hook-is-not-cut-at-vs",
+      "item": 1293,
+      "source": "wave 109: extract_hook gave \"Jets vs.\" for a preview opener; the hook rewrite replaced only that",
+      "call": "core.hook_score:extract_hook",
+      "args": [
+        "Jets vs. Patriots in London is a trap game. Then more."
+      ],
+      "expect": {
+        "equals": "Jets vs. Patriots in London is a trap game."
+      },
+      "why": "an abbreviation does not end the first sentence"
+    },
+    {
+      "id": "run15-hook-is-not-cut-at-jr",
+      "item": 1293,
+      "source": "live, run 15: the hook read \"Darius Acuff Jr.\"",
+      "call": "core.hook_score:extract_hook",
+      "args": [
+        "Darius Acuff Jr. is a name that deserves more spotlight. Known for his handle."
+      ],
+      "expect": {
+        "equals": "Darius Acuff Jr. is a name that deserves more spotlight."
+      },
+      "why": "the sibling abbreviation - Jr., Dr., St. - in the same splitter"
+    },
+    {
+      "id": "run164-what-to-watch-is-a-take",
+      "item": 1292,
+      "source": "live, run 164: held for no take found, so overnight rendered none on 2026-10-18",
+      "call": "core.authenticity:has_insight",
+      "args": [
+        "Cristian Perez knocked out Kyle Nelson in 27 seconds at UFC Edmonton. Watch who the UFC pairs him with next - that's the real test."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the operator: calls and what to watch count as a take"
+    },
+    {
+      "id": "run160-a-conditional-call-is-a-take",
+      "item": 1292,
+      "source": "live, run 160: \"If Malott wins, I'll eat it\" was held for no take found",
+      "call": "core.authenticity:has_insight",
+      "args": [
+        "Two outlets picked Mike Malott to KO Joaquin Buckley. If Malott wins, I'll eat it - but the odds are mispriced on the underdogs."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the operator: calls and what to watch count as a take"
+    },
+    {
+      "id": "run159-a-stake-line-alone-is-not-a-take",
+      "item": 1292,
+      "source": "live, run 159: closes on a stake, with no call or watch shape",
+      "call": "core.authenticity:has_insight",
+      "args": [
+        "New England is 3-2 and can go 3-0 at home. A Jets win flips the AFC East race and ends a Foxborough drought."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the widened detector still holds a plain recap"
     }
   ]
 }

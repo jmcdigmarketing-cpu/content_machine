@@ -7,6 +7,17 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-16 (Cursor): fifteen from the backlog
+
+Claude had not queued a fifteen. Menus take one key. The last topic is
+recalled. `--quiet` keeps gates. A gate rings once on a TTY. URLs, paths and
+run ids are links. Reading grade is measured. Upload language is the
+channel's. A moat backup restores into a temp directory. Thumbnails wrap.
+A repeated opening is dropped once. A pin waits for the next peak. A
+feed-wide RSS 404 can fill from yt-dlp.
+
+`roadmap-index` then: open 274, done 1200, numbered open 222, highest #1136.
+
 ## Previous — 2026-10-16 (Claude Code): review of Cursor's eight commits (fifteen items) + wave 101
 
 **Review.** Cursor's commits passed the suite but five changed what reaches a viewer: team topics

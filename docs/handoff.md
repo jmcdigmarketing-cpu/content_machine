@@ -53,26 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-18 morning · **HEAD at write:** the wave 108 commit (`git log -1`) ·
+**Written:** 2026-10-18 late morning · **HEAD at write:** the wave 109 commit (`git log -1`) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**Wave 108:** `core.runs.script_report.script_of` is the stored script (a run has no `script`
-field) - `analytics/hook_learning` and `unconfirmed_check` read it (#1287). Hook learning keeps
-the last `HOOK_LEARN_DAYS` (90) and `guidance_from` holds back notes against the rewrite's rules
-until n settles (decision 67). `apis.youtube_quota.quota_day` is the Pacific date (#1288).
-`nightly_task.set_wake` / `task_wakes` / `wake_timers`; `_powershell` refuses in the suite -
-**an old test set WakeToRun on the operator's real task before that guard existed** (#1289,
-disclosed). `video/teaser.teaser_argv` (#1264). `render_video.caption_scrim_for` +
-`caption_contrast.scrim_alpha`, a `drawbox` before `subtitles` only when needed (#1268).
+**Wave 109:** `authenticity._STANCE_PATTERNS` gained what-to-watch and conditional calls;
+`batch_review.authenticity_now` re-reads a draft held only for `original_insight` (its meta is
+not rewritten) - `unattended_block_reason` and the review card use it (#1292).
+`hook_score.extract_hook` uses `operator_facts.sentences` (public now) (#1293).
+`batch_review.deadline_line` / `review_order`, printed in status, the overnight report and
+batch-review (#1294). `channel_health._unmeasured_recent` (#1291). `core/facts/voice_notes.py` +
+`ops voice-facts`; `apply_booth_facts(origin=)` (#450). Data: `data/youtube_quota.json`
+2026-10-18 used 5,561 -> 761, the operator's yes (copy in my scratchpad).
 
-**Live:** jobs 64-66 sent at 00:03 (156, 158, 161 scheduled). Overnight ran 8:04 AM on wake.
-The task now may wake the PC; tomorrow's 5:00 run is the proof.
+**Live:** run 165 (Chargers at Chiefs, 20:25Z) has no slot before kickoff - noon is run 153's.
+The operator has the by-hand route; #1295 is their call.
 
-**Defects first:** none open of mine. #1290 (hook scorer vs stayed) waits on n=21.
+**Defects first:** none open of mine.
 
-**Next:** the roadmap's five (#421 #425 #450 #457 #293), #1291. Suite 6,268, forward and reversed.
+**Next:** #1295 (a question first), the roadmap's five (#421 #425 #457 #293), #1296. Suite 6,284, forward and reversed.
 
 ## Slot — Cursor
 

@@ -8295,3 +8295,20 @@ model lacks (`script=`). 5 corpus cases. Every new function has a production cal
 were undocumented (now in `.env.example`), and `tests/test_idea_list._games` read the real clock -
 its London fixture kicked off at 13:30Z today and the test went red mid-wave, on any code. It
 reads the board's own day now. Suite: 6,268 tests forward and reversed, the same verdict.
+
+## 2026-10-18 late morning — wave 109 (Claude Code)
+
+**Prompt:** "mext 5". Answers: volume blockers; takes = "calls + what to watch"; yes, correct
+today's quota entry. #450 from the roadmap's five; the rest of the five stay.
+
+Measured first: overnight ran at 8:04 and saved runs 164-166, all held for "no take found" -
+rendered none. **Corrections, to the operator:** the closing lines I quoted for 164-166 were from
+their descriptions, and 156/161 were not plain recaps (161 ends on a what-to-watch line). On the
+scripts' own lines the detector now passes 7 of the 10 held drafts (#1292). The Chargers preview
+(run 165, kickoff 20:25Z) had no slot at all: noon was run 153's and 6 PM is after kickoff - I had
+first told the operator "by 10:30", then "by 9:30"; the deadline line now says so plainly
+(#1294), and the slot rule is theirs (#1295). `extract_hook` cut "Jets vs." (#1293). Health's six
+"left out" were old runs, not newer (#1291 corrected). The quota entry: 5,561 -> 761.
+
+Audit: tests/test_wave109.py 14 of 16 failed first (two are "still holds" guards). 5 corpus
+cases. The new `voice-facts` needed `docs/ops_commands.md` regenerated. Suite: 6,284 tests forward and reversed, the same verdict.

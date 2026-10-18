@@ -21,7 +21,7 @@ import os
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -333,12 +333,12 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     if meta.get("own_idea"):  # #1159
         print_fn("    your own idea, written as angle 1")
     hook = meta.get("hook_score")
+    verdict, reasons = authenticity_now(draft)
     print_fn(
         f"    hook {hook if hook is not None else 'n/a'} ({meta.get('hook_verdict') or 'n/a'})"
-        f" - authenticity {meta.get('authenticity_verdict') or 'n/a'}"
-        + (f" ({authenticity_reasons(meta)})" if authenticity_reasons(meta) else "")
-        + ""
-        f" - {len(draft.script.split())} words"
+        f" - authenticity {verdict if meta.get('authenticity_verdict') else 'n/a'}"
+        + (f" ({reasons})" if reasons else "")
+        + f" - {len(draft.script.split())} words"
     )
     voice = _projected_voice(draft)
     if voice is not None:
@@ -382,7 +382,10 @@ def review_drafts(
 ) -> ReviewSummary:
     """One pass: decide every waiting draft, then render the yeses and space them out."""
     summary = ReviewSummary()
-    drafts = pending_drafts(channel_id, root=root)
+    drafts = review_order(pending_drafts(channel_id, root=root))  # wave 109: games first
+    deadline = deadline_line(channel_id, root=root)
+    if deadline:
+        print_fn(f"  {deadline}")
     if not drafts:
         print_fn(
             "  No drafts waiting. Make some: py -m scripts.ops batch-drafts --channel", channel_id
@@ -544,6 +547,83 @@ def drafts_line(channel_id: str, *, root: str | None = None) -> str:
     return (
         f"Drafts waiting: {total} - {', '.join(parts)}: "
         f"py -m scripts.ops batch-review --channel {channel_id}"
+    )
+
+
+def _event_ahead(meta: dict[str, Any], now: datetime) -> datetime | None:
+    raw = str(meta.get("event_at") or "")
+    if not raw:
+        return None
+    try:
+        when = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return when if when > now else None
+
+
+def review_order(drafts: list[PendingDraft], *, now: datetime | None = None) -> list[PendingDraft]:
+    """Wave 109: a preview whose game is ahead first, soonest kickoff first; the rest as they
+    came. Run 165, the Chargers at Chiefs preview, sat behind a day-old Pistons draft."""
+    moment = now or datetime.now(timezone.utc)
+    games = [d for d in drafts if _event_ahead(d.meta, moment) is not None]
+    games.sort(key=lambda d: _event_ahead(d.meta, moment) or moment)
+    first = {id(d) for d in games}
+    return games + [d for d in drafts if id(d) not in first]
+
+
+def _zone_clock(when: datetime, channel_id: str, *, day: bool = False) -> str:
+    """ "10:30 AM EDT" (or "Sun Oct 18 4:25 PM EDT") in the channel's zone, as the slots are."""
+    try:
+        from zoneinfo import ZoneInfo
+
+        from analytics.post_timing import _load_static_post_schedule
+
+        local = when.astimezone(ZoneInfo(_load_static_post_schedule(channel_id).timezone))
+    except Exception:
+        local = when.astimezone(timezone.utc)
+    hour = local.strftime("%I").lstrip("0") or "12"
+    clock = f"{hour}:{local:%M %p} {local.tzname() or ''}".rstrip()
+    return f"{local:%a %b} {local.day} {clock}" if day else clock
+
+
+def deadline_line(channel_id: str, *, root: str | None = None, now: datetime | None = None) -> str:
+    """Wave 109: the waiting preview with the soonest kickoff, and when it must be decided - the
+    last free slot before kickoff, less the upload lead (`spaced_queue`). "" when no game waits.
+    On 2026-10-18 nothing said the Chargers preview had to be reviewed that morning."""
+    moment = now or datetime.now(timezone.utc)
+    games = [
+        (event, draft)
+        for draft in pending_drafts(channel_id, root=root)
+        if not draft.decision and (event := _event_ahead(draft.meta, moment)) is not None
+    ]
+    if not games:
+        return ""
+    event, draft = min(games, key=lambda pair: pair[0])
+    kickoff = _zone_clock(event, channel_id, day=True)
+    try:
+        from core.spaced_queue import _EVENING, _FIRST_LEAD, _taken_slots, free_slots
+
+        taken = _taken_slots(channel_id)
+        slots = [
+            *free_slots(channel_id, 4, now=moment, taken=taken),
+            *free_slots(channel_id, 2, now=moment, hours=_EVENING, taken=taken),
+        ]
+    except Exception as exc:
+        logger.debug("deadline slots unread: %s", exc)
+        return f"Decide first: {draft.title} - kicks off {kickoff}"
+    before = sorted(slot for slot in slots if slot < event)
+    if not before:
+        return (
+            f"Decide first: {draft.title} - kicks off {kickoff}, and no upload slot is left "
+            f"before kickoff. To post it anyway: review it, then py -m scripts.requeue_upload "
+            f"--run-id {draft.run_id} --queue --private, then go-public with its video id"
+        )
+    slot = before[-1]
+    return (
+        f"Decide first: {draft.title} - kicks off {kickoff}; review it by "
+        f"{_zone_clock(slot - _FIRST_LEAD, channel_id)} for the {_zone_clock(slot, channel_id)} slot"
     )
 
 
@@ -716,6 +796,25 @@ def authenticity_reasons(meta: dict[str, Any]) -> str:
     return ", ".join(_CHECK_WORDS.get(str(name), str(name)) for name in failed)
 
 
+def authenticity_now(draft: PendingDraft) -> tuple[str, str]:
+    """(verdict, reasons) - the stored verdict, except a draft held only for "no take found" is
+    read again with today's take detector. Wave 109: overnight's 3 drafts of 2026-10-18 all
+    waited on a verdict written before the detector knew "Watch who the UFC pairs him with next".
+    Nothing in the draft's own record is rewritten."""
+    meta = draft.meta
+    verdict = str(meta.get("authenticity_verdict") or "ok").strip().lower()
+    failed = [str(name) for name in meta.get("authenticity_failed") or []]
+    if verdict != "ok" and failed == ["original_insight"]:
+        try:
+            from core.authenticity import has_insight
+
+            if has_insight(draft.script):
+                return "ok", ""
+        except Exception as exc:
+            logger.debug("take re-read skipped for run %s: %s", draft.run_id, exc)
+    return verdict, authenticity_reasons(meta)
+
+
 def arc_counter_reason(meta: dict[str, Any]) -> str:
     """#1211: a draft written from an arc seed that still carried the arc's counter ("Shavkat
     Rakhmonov week 4", before #1205) - its script reads the counter as the subject's. "" else."""
@@ -748,9 +847,8 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
         return dead
     if _blocking_claims(draft):
         return "a claim is not supported"
-    verdict = str(meta.get("authenticity_verdict") or "ok").strip().lower()
+    verdict, why = authenticity_now(draft)
     if verdict != "ok":
-        why = authenticity_reasons(meta)
         return f"authenticity check says {verdict}" + (f" ({why})" if why else "")
     if meta.get("fact_conflicts"):
         return "its facts conflict"
@@ -999,7 +1097,7 @@ def overnight_rendered_lines(
         waiting = drafts_line(channel_id, root=root)
         if waiting:
             lines.append(f"  {waiting}")
-        return [*lines, *_timing_lines()]
+        return [*lines, *_deadline_lines(channel_id, root), *_timing_lines()]
     shelf: dict[int, dict[str, Any]] = {}
     try:
         from core.stale_renders import shelf_rows
@@ -1028,7 +1126,16 @@ def overnight_rendered_lines(
 
             gone = gone_reason(row["run_id"], channel_id)  # #1166
             lines.append(f"      {gone or 'not on the shelf: already public, or retired'}")
-    return [*lines, *_timing_lines()]
+    return [*lines, *_deadline_lines(channel_id, root), *_timing_lines()]
+
+
+def _deadline_lines(channel_id: str, root: str | None) -> list[str]:
+    try:
+        line = deadline_line(channel_id, root=root)
+    except Exception as exc:
+        logger.debug("deadline line skipped: %s", exc)
+        return []
+    return [f"  {line}"] if line else []
 
 
 def _timing_lines() -> list[str]:

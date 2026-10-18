@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-18 morning: hook learning fed, the quota day is YouTube's, overnight may wake the PC
+# Handoff synopsis — 2026-10-18 late morning: takes the detector missed, a game preview's deadline, voice-note facts
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-18 morning (Claude Code): #1287 #1288 #1289 #1267 #1264 #1268
+## Last wave — 2026-10-18 late morning (Claude Code): #1292 #1293 #1294 #1291 #450
+
+The take detector knows what-to-watch and conditional calls, and a waiting draft held only for
+"no take found" is read again - 7 of 10 held drafts pass; run 164 renders tonight. A preview's hook
+is no longer cut at "vs.". The soonest waiting game preview says when it must be decided, or that
+no slot is left before kickoff (the Chargers preview today: none - #1295 is the operator's call).
+Health names the runs it reads. `ops voice-facts` turns a memo into operator facts. Today's quota
+entry corrected (5,561 -> 761). Suite: 6,284 tests forward and reversed, the same verdict.
+
+## Previous — 2026-10-18 morning (Claude Code): #1287 #1288 #1289 #1267 #1264 #1268
 
 Hook learning read `run.script`, a field runs do not have, and had joined 0 of 41 videos; it now
 reads the stored script and, per decision 67, learns from the last 90 days with the rewrite's
@@ -124,17 +133,6 @@ LLM calls store latency; reliability reports it without tripping a breaker.
 
 `roadmap-index`: open 259, done 1215, numbered open 207, highest open #1136.
 Next: #421 #425 #449 #450 #457.
-
-## Previous — 2026-10-16 (Cursor): fifteen from the backlog
-
-Claude had not queued a fifteen. Menus take one key. The last topic is
-recalled. `--quiet` keeps gates. A gate rings once on a TTY. URLs, paths and
-run ids are links. Reading grade is measured. Upload language is the
-channel's. A moat backup restores into a temp directory. Thumbnails wrap.
-A repeated opening is dropped once. A pin waits for the next peak. A
-feed-wide RSS 404 can fill from yt-dlp.
-
-`roadmap-index` then: open 274, done 1200, numbered open 222, highest #1136.
 
 ## Pipeline order (operator)
 

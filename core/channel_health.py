@@ -59,7 +59,8 @@ def _engagement_sub(channel_id: str) -> HealthSub:
     from core.engagement_predictor import run_engagement_map
 
     rates = run_engagement_map(channel_id, min_views=HEALTH_MIN_VIEWS)  # {run_id: engaged_rate}
-    left = len(run_engagement_map(channel_id)) - len(rates)
+    everything = run_engagement_map(channel_id)
+    left = len(everything) - len(rates)
     if len(rates) < 3:
         return HealthSub("engagement", YELLOW, f"collecting ({len(rates)} measured)")
     ordered = [rates[rid] for rid in sorted(rates)]
@@ -67,17 +68,57 @@ def _engagement_sub(channel_id: str) -> HealthSub:
     recent = ordered[-5:]
     recent_mean = sum(recent) / len(recent)
     delta = recent_mean - baseline
+    span = sorted(rates)[-5:]
+    # #1291: "recent" was runs 109-133 (Oct 1-10) while four newer videos had no rate yet.
     detail = (
-        f"recent {recent_mean * 100:.1f}% vs baseline {baseline * 100:.1f}% ({delta * 100:+.1f}pp)"
+        f"recent {recent_mean * 100:.1f}% (runs {span[0]}-{span[-1]}) vs baseline "
+        f"{baseline * 100:.1f}% ({delta * 100:+.1f}pp)"
     )
     if left > 0:
         plural = "video" if left == 1 else "videos"
         detail += f"; {left} {plural} under {HEALTH_MIN_VIEWS} views left out"
+    unmeasured = _unmeasured_recent(channel_id, measured=set(everything))
+    if unmeasured:
+        plural = "video" if len(unmeasured) == 1 else "videos"
+        detail += (
+            f"; {len(unmeasured)} newer {plural} not measured yet "
+            f"(runs {', '.join(str(r) for r in unmeasured)})"
+        )
     if delta < -0.01:
         why = engagement_why(rates, _engagement_info(list(rates)))
         status, word = (RED, "declining") if delta < -0.05 else (YELLOW, "softening")
         return HealthSub("engagement", status, f"{word} - " + detail, why=why)
     return HealthSub("engagement", GREEN, "steady/up - " + detail)
+
+
+def _unmeasured_recent(channel_id: str, *, measured: set[int], days: float = 7.0) -> list[int]:
+    """Public videos of the last ``days`` with no engaged rate yet - YouTube's numbers lag."""
+    from datetime import datetime, timedelta, timezone
+
+    try:
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        rows = get_publish_log_repository().list_uploaded_for_channel(channel_id) or []
+    except Exception as exc:
+        logger.debug("unmeasured videos unread: %s", exc)
+        return []
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    out: set[int] = set()
+    for row in rows:
+        run_id = getattr(row, "content_run_id", None)
+        when = getattr(row, "published_at", None)
+        if isinstance(when, str):
+            try:
+                when = datetime.fromisoformat(when.replace("Z", "+00:00"))
+            except ValueError:
+                when = None
+        if not run_id or int(run_id) in measured or not isinstance(when, datetime):
+            continue
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        if when >= since:
+            out.add(int(run_id))
+    return sorted(out)
 
 
 def _engagement_info(run_ids: list[int]) -> dict[int, dict[str, object]]:

@@ -165,7 +165,9 @@ def _ends_on_an_abbreviation(chunk: str) -> bool:
     return last in _ABBREVIATIONS or (len(last) == 1 and last.isalpha())
 
 
-def _sentences(text: str) -> list[str]:
+def sentences(text: str) -> list[str]:
+    """Sentences, not split at an abbreviation ("vs.", "Jr.", "Dr.", a middle initial).
+    Wave 109: `hook_score.extract_hook` read "Jets vs." as the first sentence of a preview."""
     out: list[str] = []
     start = 0
     for match in _SENTENCE_BOUNDARY.finditer(text):
@@ -223,7 +225,7 @@ def split_at_sentences(text: str, limit: int) -> list[str]:
 
     out: list[str] = []
     current = ""
-    for sentence in _sentences(flat):
+    for sentence in sentences(flat):
         if len(sentence) > limit * _HARD_SPLIT_FACTOR:
             if current:
                 out.append(current)

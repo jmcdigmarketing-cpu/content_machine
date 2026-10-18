@@ -165,6 +165,19 @@ _STANCE_PATTERNS = (
         r"\bif (?:this|that|it|he|she|they) (?:sells|works|lands|hits|holds|sticks|pays off)\b"
     ),
     re.compile(r"\bthat'?s the difference between\b"),
+    # Wave 109 (the operator: "calls + what to watch"): held for "no take found", overnight
+    # rendered none on 2026-10-18. The scripts' own closing lines - "Watch who the UFC pairs him
+    # with next - that's the real test" (run 164), "Watch for the first community clears" (161),
+    # "If Malott wins, I'll eat it" (160), "If they win, the hope is real" (150) - and the shapes
+    # their descriptions used.
+    re.compile(r"\bwatch (?:who|what|where|when|for)\b"),
+    re.compile(r"\bthat'?s the real (?:test|question|story)\b"),
+    re.compile(r"\bif (?:\w+\s){0,3}(?:wins?|loses?|can'?t|cannot|won'?t)\b"),
+    re.compile(r"\bwill (?:reveal|tell us|show|decide|prove|settle) (?:if|whether)\b"),
+    re.compile(r"\bwon'?t matter (?:if|unless)\b"),
+    re.compile(r"\bthat'?s the (?:stat|number|sign|tell|detail) that\b"),
+    re.compile(r"\bthere for the taking\b"),
+    re.compile(r"\bwatch (?:the|his|her|their)\b[^!?]{0,80}?\bwhether\b"),  # "vs." inside
 )
 
 # Deliberately absent: "hot take". `title_generator` bans "my hot take" as slop

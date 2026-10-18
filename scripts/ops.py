@@ -1189,6 +1189,41 @@ def cmd_footage_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("voice-facts", "Facts from a voice note: --path memo.m4a --run-id N|--topic, --apply")
+def cmd_voice_facts(args: argparse.Namespace) -> int:
+    """#450: a memo recorded on a phone, transcribed; one fact a sentence, saved with --apply."""
+    path = str(getattr(args, "path", "") or "").strip()
+    run_id = int(getattr(args, "run_id", 0) or 0)
+    topic = str(getattr(args, "topic", "") or "").strip()
+    if not path or not os.path.isfile(path):
+        print("voice-facts needs --path to a memo on disk (m4a, mp3, wav)")
+        return 2
+    if not run_id and not topic:
+        print('voice-facts needs --run-id N (that run\'s subject) or --topic "..."')
+        return 2
+    from core.facts import voice_notes
+
+    lines, why = voice_notes.transcript_lines(path)
+    if not lines:
+        print(f"Nothing to save: {why}")
+        return 1
+    whose = f"run {run_id}'s subject" if run_id else f'"{topic}"'
+    print(f"Heard {len(lines)} line(s) for {whose}:")
+    for line in lines:
+        print(f"  - {line}")
+    if not getattr(args, "apply", False):
+        print("Dry run - add --apply to save them to the vault as your own facts.")
+        return 0
+    if run_id:
+        from core.review_booth import apply_booth_facts
+
+        kept = apply_booth_facts(run_id, "\n".join(lines), origin="voice")
+    else:
+        kept = voice_notes.save_topic_facts(args.channel, topic, lines)
+    print(f"Saved {kept} fact(s) as yours." if kept else "Nothing was saved (no usable lines).")
+    return 0 if kept else 1
+
+
 @_register("teaser", "Cut a 5s teaser from a finished vertical render (--run-id) (#511)")
 def cmd_teaser(args: argparse.Namespace) -> int:
     run_id = int(getattr(args, "run_id", 0) or 0)
@@ -1657,7 +1692,7 @@ def cmd_studio_deleted(args: argparse.Namespace) -> int:
 
 @_register("batch-review", "Review waiting drafts in one pass; render the yeses; space them (#760)")
 def cmd_batch_review(args: argparse.Namespace) -> int:
-    from core.batch_review import drafts_line, review_drafts
+    from core.batch_review import deadline_line, drafts_line, review_drafts
 
     if getattr(args, "expired", False):  # #1168
         from core.batch_review import expired_lines
@@ -1673,6 +1708,9 @@ def cmd_batch_review(args: argparse.Namespace) -> int:
         waiting = drafts_line(args.channel)
         if waiting:
             print(f"  {waiting}")
+        deadline = deadline_line(args.channel)  # wave 109
+        if deadline:
+            print(f"  {deadline}")
         return 0
 
     batch = bool(getattr(args, "_batch", False))

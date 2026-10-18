@@ -87,7 +87,7 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 committed its wave 103 (my order of fifteen, #449 with menu option 7) after a re-audit with
 six corrections, and shipped #1261 #1262 #1263 #1265 #1266. Filed #1270-#1272. Cursor's
 queue is Claude's now. Next: **#421** a render time budget that degrades the preset,
-**#425** vertical-crop scoring for 16:9 sources, **#450** voice-note fact intake,
+**#425** vertical-crop scoring for 16:9 sources, **#1295** a slot before kickoff for a game preview (the operator's call first; #450 was done in wave 109),
 **#457** a lockfile so the environment cannot silently disagree with
 `pyproject.toml`, **#293** a `content-os://open-last` protocol handler (the
 lowest-numbered open `[S]` that is not waiting on a run, a clip, or a decision; #257 was done
@@ -100,6 +100,7 @@ read in full; three corrections. Filed #1263-#1269. The audit:
 [audit_2026-10-17.md](audit_2026-10-17.md).
 **2026-10-17 evening (Claude).** The angle-step crash fixed (#1278); crossposts unspaced, previews before kickoff, the evening slot and 3-minute Reels (§63-§64); no YouTube cadence cap (§65); ten ideas, five of them previews (§66). Wave 105: the seven stranded renders on public slots two a day (#1273), times in EDT (#1274), scheduled videos crossposted when they go live (#1275), no bare-name follow-up (#1276), crosspost status says why (#1277). Filed #1283-#1285, then did them: `requeue_upload --queue` public at a slot (#1283), a dead worker's job freed at once (#1284), taken slots skipped and a 6 PM slot for news (#1285). Wave 107: a preview from a headline knows its event (#1286), why engagement fell in `ops health` (#1271), menu 7 schedules a video for its slot (#1270), the morning says how many drafts to decide (#1272), facts dropped on the booth (#257). `roadmap-index`: open 259, done 1260, numbered open 207, highest #1269.
 **2026-10-18 (Claude, wave 108).** Measured defects first, the roadmap's five unchanged: hook learning had joined 0 of 41 videos (#1287; decision 67 - the last 90 days, the rewrite's rules stay until n settles), the quota day is YouTube's Pacific date (#1288), the overnight task may wake the PC (#1289), goose3's date warning (#1267), the teaser (#1264), a caption scrim to 4.5:1 (#1268). Filed #1290 (the hook scorer runs against who stays) and #1291. `roadmap-index`: open 258, done 1266, numbered open 206, highest #1291.
+**2026-10-18 (Claude, wave 109).** Volume blockers: takes the detector missed (#1292 - run 164 renders tonight), a preview's hook cut at "vs." (#1293), when a game preview must be decided (#1294), today's quota entry corrected, health names its runs (#1291), facts from a voice note (#450). Filed #1295 #1296. `roadmap-index`: open 258, done 1271, numbered open 206, highest #1296.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

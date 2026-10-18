@@ -70,7 +70,8 @@ py -m scripts.ops verify-claim --run-id 120 --claim 1 --reject
 ```
 
 Or drop a `.txt` on the booth page's facts box (`ops booth`), one fact a line: it is saved to
-the vault as yours for that run's subject.
+the vault as yours for that run's subject. Or say them: `py -m scripts.ops voice-facts --path
+memo.m4a --run-id 165` prints what it heard, and `--apply` saves it - check the names first.
 The vault the facts are saved to and read from: [vault.md](vault.md).
 
 ## 4. Render and footage

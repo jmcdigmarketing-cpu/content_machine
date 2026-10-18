@@ -112,9 +112,11 @@ def extract_hook(script: str) -> str:
         return ""
     # First line wins if the script is line-broken.
     first_line = text.splitlines()[0].strip()
-    # Otherwise split on sentence terminators.
-    match = re.split(r"(?<=[.!?])\s", first_line, maxsplit=1)
-    return match[0].strip()
+    # Otherwise the first sentence - wave 109: never ended by "vs." or "Jr." ("Jets vs." was a
+    # preview's whole hook, and the default-on rewrite replaced just that).
+    from core.operator_facts import sentences
+
+    return (sentences(first_line) or [first_line])[0].strip()
 
 
 def score_hook(hook: str) -> HookScore:

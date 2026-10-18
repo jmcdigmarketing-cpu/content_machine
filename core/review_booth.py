@@ -499,9 +499,10 @@ def parse_booth_facts_post(body: bytes, *, expected_run_id: int) -> tuple[int, s
     return run_id, text
 
 
-def apply_booth_facts(run_id: int, text: str) -> int:
+def apply_booth_facts(run_id: int, text: str, *, origin: str = "booth") -> int:
     """#257: the facts go to the vault as the operator's for the run's topic - the next draft
-    on it reads them (the path `verify-claim` takes). Returns how many lines were kept."""
+    on it reads them (the path `verify-claim` takes). Returns how many lines were kept.
+    ``origin`` is where they came from ("voice" for `ops voice-facts`, #450)."""
     from core.facts.claim_confirm import _run_subject
     from core.operator_facts import capture_facts_to_vault, clean_typed_lines
 
@@ -512,7 +513,7 @@ def apply_booth_facts(run_id: int, text: str) -> int:
     facts, _dropped = clean_typed_lines([(line, False) for line in lines])
     if not channel or not topic or not facts:
         return 0
-    path = capture_facts_to_vault(channel, topic, facts, tier="operator", origin="booth")
+    path = capture_facts_to_vault(channel, topic, facts, tier="operator", origin=origin)
     return len(facts) if path else 0
 
 

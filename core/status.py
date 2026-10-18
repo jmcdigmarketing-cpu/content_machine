@@ -137,11 +137,14 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("Pending-jobs count unavailable: %s", exc)
 
     try:
-        from core.batch_review import drafts_line
+        from core.batch_review import deadline_line, drafts_line
 
         waiting = drafts_line(channel_id)  # #1132
         if waiting:
             lines.append(waiting)
+        deadline = deadline_line(channel_id)  # wave 109: a game preview waiting
+        if deadline:
+            lines.append(deadline)
     except Exception as exc:
         logger.debug("drafts line skipped: %s", exc)
 

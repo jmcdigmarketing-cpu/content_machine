@@ -7,6 +7,111 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-17 late night (Claude Code): #1286 #1271 #1270 #1272 #257
+
+A preview whose draft has no `event_at` is matched to the week's games and UFC cards by its title
+(`seasonal_calendar.event_for`), so the shelf, menu 7 and the crosspost kickoff know run 160's
+card has started. `ops health` gives a `why:` line under a soft engagement - a trait the last five
+share, else the weakest of them (live: run 120, NBA, 406 s, at 11%). Menu 7's `s` sets YouTube's
+`publishAt` at the next free noon/10 PM slot. The drafts line says how many to decide before
+overnight drafts again. The booth takes a dropped facts `.txt`. Suite: 6,245 tests forward and reversed, the same verdict.
+
+## Previous — 2026-10-17 night (Claude Code): #1283 #1284 #1285
+
+`requeue_upload --queue` schedules the run public at the next free noon/10 PM slot (`--private`
+keeps the old upload). The worker holds an OS lock for its life; alone, it frees a dead worker's
+"running" job at once. The shelf skips slots other uploads already hold and gives news that
+would miss its window a 6 PM slot. Correction on record: only run 156 of the queued three was
+2-day news, and inside its window. Suite green forward and reversed on the committed tree.
+
+## Previous — 2026-10-17 evening (Claude Code): decisions 63-66 and wave 105
+
+**Live.** Crossposting works: runs 126, 155 and 157 are scheduled on TikTok and Instagram. The
+angle-step crash is fixed. No spacing between crossposts and previews go before kickoff (§63);
+the 10 PM evening slot and 3-minute Reels (§64); no YouTube cadence cap (§65); ten ideas, five
+of them previews (§66).
+
+**Wave 105.** `ops shelf --schedule` gave the seven stranded renders public slots two a day - six
+queued (jobs 61-66, Sat 10 PM to Tue noon EDT); run 160 (tonight's UFC picks) left. Times in
+EDT; scheduled videos crossposted as they go live; no bare-name follow-up; crosspost status says
+why. The worker run is the operator's - job 61 waits for it (its stuck "running" is reclaimed).
+Filed #1283-#1285. Suite green forward and reversed on the committed trees.
+
+## Previous — 2026-10-17 (Claude Code): wave 104, Cursor's wave 103 finished
+
+**Cursor is out of usage for the month.** Its wave 103 (my order of fifteen) was done and
+uncommitted. Claude re-audited every diff, corrected six - a neutral topic on TapIn lost its
+sports signals (run 98 again), a cooling LLM provider could fall back to a paid model, the
+draft cap counted drafts the night sets aside, "at its slot" did nothing, Go public was one
+click, explain printed lists as timings - and committed it.
+
+**Wave 104.** `ops status` says when CI on `main` is red (#1263); a confirmed claim is not
+listed again (#1262); an undated run is not "this week" (#1261); the `.env` warning once a run
+(#1265); "Give" is not a name (#1266). Filed #1270-#1272. CI on `da4a4ed` was green on every
+job, the first time since 10-10. Suite 6175 forward and reversed on the committed tree.
+
+## Previous — 2026-10-17 (Claude Code): the grand audit
+
+**Found and fixed.** CI on `main` had failed the type check on every push since 10-11 (Linux
+plus old bs4 stubs counted 25 errors this PC never saw) - mypy now checks the Windows build
+everywhere (§62). A bare test run could reach the real Postgres (#1247) - the suite refuses to
+load after settings, and the database layer refuses a network database while tests run.
+
+**The operator's calls.** Overnight renders wait for the operator (§60); TapIn keeps its colour
+grade, which Cursor's `bef5a56` had swapped for a near-flat file (§61).
+
+**Reviewed.** `29c280c` and `bef5a56` in full: the menu Enter, the colour, the Home changelog,
+and a test that deleted `data/launch_state.json`. Filed #1263-#1269. Record:
+`docs/audit_2026-10-17.md`. Suite 6128 forward and reversed; CI's type check green (90 < 92).
+
+## Previous — 2026-10-17 (Cursor): wave 103, the fifteen from the mailbox
+
+`ops roadmap-index` prints counts unless `--list`. `ops explain` prints `Words: N`
+on its own line. The seven-day opening window sees `created_at` (an undated row
+still counts, #1261). Ballon d'Or says Wed Oct 28. The Dubois weigh-in is boxing
+and an MMA feed does not rename it to ufc. A follow-up that would repeat the last
+topic is not offered. A neutral topic on tapin runs gaming signals only. A 429
+cools that provider in-process. Stale vault lines are judged once per day.
+Overnight drafts `min(requested, 8 - waiting)` and says when it drafted fewer.
+Menu option 7 is one pass over unlisted videos; nothing goes public without a
+choice. The review room lists each flagged claim, confirms with a source, cuts,
+and keeps Go public off until the claim is settled. #1255 and #1247 stayed open.
+
+`roadmap-index`: open 260, done 1235, numbered open 208, highest #1262.
+Next: #421 #425 #450 #457 #257.
+
+## Previous — 2026-10-16/17 (Claude Code): wave 102 + the review of 29c280c
+
+**Wave 102.** Ideas stopped being bare game names: only marquee NFL and NBA games, each with its
+kickoff, network and records, competing for their league's place with no reserved slots
+(decision §59); a follow-up waits until its video is public; a news story is never replayed.
+
+**Review.** One correction to Cursor's `29c280c`: the Enter typed after a one-key menu answered
+the next prompt. `bef5a56` is unreviewed and holds the push until the grand audit.
+
+**Filed #1247-#1260**, among them #1247 (a bare unittest from the repo root reached the real
+database - cleaned), menu option 7 "watch and publish" (#1248), the operator's auto-public call
+(#1255). Cursor has an order of fifteen in the mailbox. Suite green forward and reversed on the committed tree.
+
+## Previous — 2026-10-17 (Cursor): fifteen from the backlog
+
+Claude had not queued a fifteen; wave 102 idea-menu files stayed unstaged.
+This wave is the roadmap five plus ten unblocked backlog items.
+
+TapIn and MoneyWise toasts use distinct sounds. The booth switches burned /
+retext / proportional captions, edits tag chips onto the run and the queued
+package, and fits a phone-width viewport. Home shows `git log` since last
+launch. Copy panel puts the active Qt page on the clipboard. A tall portrait
+thumbnail keeps the upper focal area. Dual thumbs can vary only the headline.
+Shipped `.cube` LUTs replace the eq scalars (finished colour changes).
+`ops teaser` cuts five seconds. `ops footage-ledger` names licence, expiry
+and runs. Unit sanity flags "80 hours" from "80 minutes". `normalize_signal`
+always fills the contract. Golden ffmpeg argv covers LUT/no-LUT paths.
+LLM calls store latency; reliability reports it without tripping a breaker.
+
+`roadmap-index`: open 259, done 1215, numbered open 207, highest open #1136.
+Next: #421 #425 #449 #450 #457.
+
 ## Previous — 2026-10-16 (Cursor): fifteen from the backlog
 
 Claude had not queued a fifteen. Menus take one key. The last topic is

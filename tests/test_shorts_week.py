@@ -28,9 +28,9 @@ SLOTS = [
 ]
 
 
-def _next_slot(channel_id, topic="", *, run_id=None, after=None):
-    floor = after or datetime(2026, 10, 16, 12, 0, tzinfo=timezone.utc)
-    return next(s.astimezone(timezone.utc) for s in SLOTS if s.astimezone(timezone.utc) > floor)
+def _free_slots(channel_id, count, **_kw):
+    # Wave 110 (#1298): the planner takes the free slots, not `planned_post_time`'s.
+    return [s.astimezone(timezone.utc) for s in SLOTS][:count]
 
 
 class OnePerDayTests(unittest.TestCase):
@@ -44,7 +44,8 @@ class OnePerDayTests(unittest.TestCase):
                 "cadence_status",
                 return_value=CadenceStatus(recent=0, upcoming=0, cap=5, window_days=7),
             ),
-            patch.object(spaced_queue, "planned_post_time", side_effect=_next_slot),
+            patch.object(spaced_queue, "free_slots", side_effect=_free_slots),
+            patch.object(spaced_queue, "_post_time_running", return_value=False),
             patch.object(spaced_queue, "_channel_tz", return_value=NY),
         ):
             items = [(200 + i, f"Short {i + 1}") for i in range(count)]
@@ -75,7 +76,8 @@ class OnePerDayTests(unittest.TestCase):
                 "cadence_status",
                 return_value=CadenceStatus(recent=3, upcoming=0, cap=5, window_days=7),
             ),
-            patch.object(spaced_queue, "planned_post_time", side_effect=_next_slot),
+            patch.object(spaced_queue, "free_slots", side_effect=_free_slots),
+            patch.object(spaced_queue, "_post_time_running", return_value=False),
             patch.object(spaced_queue, "_channel_tz", return_value=NY),
         ):
             plan = spaced_queue.plan_spaced_uploads(

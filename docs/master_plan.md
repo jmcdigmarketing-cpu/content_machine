@@ -200,6 +200,9 @@ one commit per rule family), then `core/` seams (#834), then the broad-except in
 
 ## M4 — The volume problem (product; gated on M0)
 
+*Worked now through [hands_off_plan.md](hands_off_plan.md) (2026-10-18): nothing by hand,
+bigger ideas, reach and money honestly.*
+
 **Why now.** The learning loop is the moat and it is starved, not broken. June recorded
 recommenders firing on 2–3 samples; August recorded 10 measured run-linked videos against
 a 15-sample predictor gate. Every intelligence feature built on top of it inherits that

@@ -122,7 +122,11 @@ def game_detail(league: str, event: dict[str, Any]) -> dict[str, Any]:
         )
         name = str(team.get("shortDisplayName") or team.get("displayName") or "")
         sides[str(side.get("homeAway") or "")] = {"name": name, "record": record}
+    # #1301: the board's own line ("GB -3.5") - free, where the odds signal lists only sports.
+    odds = next((o for o in comp.get("odds") or [] if isinstance(o, dict)), {})
     return {
+        "line": str(odds.get("details") or ""),
+        "total": str(odds.get("overUnder") or ""),
         "league": league,
         "date": str(event.get("date") or ""),
         "broadcasts": [

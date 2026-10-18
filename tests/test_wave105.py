@@ -200,12 +200,16 @@ class CrosspostWhyTests(unittest.TestCase):
     def test_scheduled_videos_are_named_with_the_next_time(self):
         from publishing import crosspost
 
-        rows = [_log_row(159, "private", datetime(2026, 10, 18, 2, 0, tzinfo=timezone.utc)),
-                _log_row(153, "private", datetime(2026, 10, 18, 16, 0, tzinfo=timezone.utc)),
-                _log_row(126, "public", None)]  # fmt: skip
+        # Wave 110 (#1299): the scheduled rows as the repository returns them - from
+        # list_future_scheduled, logged with the privacy they go public with.
+        rows = [_log_row(159, "public", datetime(2026, 10, 18, 2, 0, tzinfo=timezone.utc)),
+                _log_row(153, "public", datetime(2026, 10, 18, 16, 0, tzinfo=timezone.utc))]  # fmt: skip
         from analytics.post_timing import _load_static_post_schedule
 
-        repo = SimpleNamespace(list_uploaded_for_channel=lambda _c: rows)
+        repo = SimpleNamespace(
+            list_uploaded_for_channel=lambda _c: [_log_row(126, "public", None)],
+            list_future_scheduled=lambda _c: rows,
+        )
         with (
             patch("storage.repositories.publish_log.get_publish_log_repository", return_value=repo),
             # The learned schedule reads the same log; the zone is the static schedule's.

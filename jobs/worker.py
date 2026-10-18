@@ -443,25 +443,38 @@ def _crosspost_scheduled_live(now: datetime | None = None) -> int:
     moment = now or datetime.now(timezone.utc)
     rounds = 0
     try:
+        from publishing import crosspost
         from storage.repositories.publish_log import get_publish_log_repository
 
         for channel_id in _crosspost_channels():
             rows = get_publish_log_repository().list_uploaded_for_channel(channel_id) or []
-            due = []
+            posts = crosspost._load(channel_id).get("posts") or {}
+            private, public = [], []
             for row in rows:
                 when = getattr(row, "published_at", None)
-                if str(getattr(row, "privacy_status", "") or "").lower() != "private" or not when:
+                privacy = str(getattr(row, "privacy_status", "") or "").lower()
+                if not when or privacy not in ("private", "public"):
                     continue
                 when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
-                if moment - timedelta(days=_LIVE_LOOKBACK_DAYS) <= when <= moment:
-                    due.append(row)
-            if not due:
+                if not moment - timedelta(days=_LIVE_LOOKBACK_DAYS) <= when <= moment:
+                    continue
+                if privacy == "private":
+                    private.append(row)
+                # #1299: the uploader logs a scheduled video with the privacy it goes public
+                # with, so its slot passing is the signal - unless the round has it already.
+                elif str(getattr(row, "status", "") or "") == "scheduled" and not posts.get(
+                    str(getattr(row, "content_run_id", "") or "")
+                ):
+                    public.append(row)
+            if not private and not public:
                 continue
-            from analytics.privacy_sync import sync_privacy
+            if not public:
+                from analytics.privacy_sync import sync_privacy
 
-            report = sync_privacy(channel_id)
-            if not any(str(c.get("now") or "") == "public" for c in report.get("changed") or []):
-                continue
+                report = sync_privacy(channel_id)
+                changed = report.get("changed") or []
+                if not any(str(c.get("now") or "") == "public" for c in changed):
+                    continue
             from publishing.crosspost import step
 
             for line in step(channel_id):

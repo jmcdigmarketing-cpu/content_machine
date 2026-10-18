@@ -195,10 +195,11 @@ def generate_draft(
     # #1151 / #1169: a schedule pick knows when its game is; ahead of it, the angles and the
     # script are written as a preview.
     event_at = _game_start(topic, best_bet) or _named_event_start(topic)
-    from core.facts.event_dates import game_started, preview_brief
+    from core.facts.event_dates import game_started
 
     upcoming = bool(event_at) and game_started(event_at) is False
-    preview = preview_brief(event_at) if upcoming else ""
+    # #1301: the brief carries the call the preview was offered with.
+    preview = draft_brief(topic, best_bet) if upcoming else ""
 
     if own_idea:
         discovery = run_discovery(topic, channel_id=channel_id, brief=topic)
@@ -391,6 +392,26 @@ def _named_event_start(text: str, *, now: datetime | None = None) -> str:
     if when is None or when <= (now or datetime.now(timezone.utc)):
         return ""
     return start
+
+
+def draft_brief(topic: str, best_bet: dict | None) -> str:
+    """The preview brief for a coming game or card - with the call it was offered with (#1301)
+    - or "". main.py and overnight both write a preview from it; main.py wrote none."""
+    from core.facts.event_dates import game_started, preview_brief
+
+    event_at = _game_start(topic, best_bet) or _named_event_start(topic)
+    if not event_at or game_started(event_at) is not False:
+        return ""
+    offered = (best_bet or {}).get("offered") or []
+    call = next(
+        (
+            str(option.get("call") or "")
+            for option in offered
+            if isinstance(option, dict) and option.get("topic") == topic
+        ),
+        "",
+    )
+    return preview_brief(event_at, call=call)
 
 
 def _game_start(topic: str, best_bet: dict | None) -> str:

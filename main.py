@@ -744,6 +744,10 @@ def _run_new_video_flow_body(
                 print(f"  Using: {topic}")
                 best_bet_pick = pick_record(options, int(sel))
                 from_best_bet = True
+                # #1301: a picked preview is written as a preview, with its call.
+                from core.batch_generation import draft_brief
+
+                creative_brief = draft_brief(topic, best_bet_pick) or creative_brief
             else:
                 topic, creative_brief = _ask_topic_or_thoughts(creative_brief, channel_id)
                 best_bet_pick = pick_record(options, None)

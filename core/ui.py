@@ -2604,8 +2604,22 @@ def prompt_upload_plan(
 
     display_upload_queue(channel_id, print_fn=print_fn)
 
-    optimal_at = next_optimal_post_time(channel_id or "default", topic)
-    optimal_label = format_scheduled_local(optimal_at, channel_id or "default")
+    optimal_at: datetime | None = next_optimal_post_time(channel_id or "default", topic)
+    slot_why = ""
+    if run_id:
+        # #1298: the run's own slot - before its game (or as it uploads, #1295), inside its
+        # news window, the free noon/10 PM. `planned_post_time` knew none of them.
+        try:
+            from core.spaced_queue import slot_for_run
+
+            optimal_at, slot_why = slot_for_run(channel_id or "default", int(run_id), title=topic)
+        except Exception as exc:
+            logger.debug("run slot unread for run %s: %s", run_id, exc)
+    optimal_label = (
+        format_scheduled_local(optimal_at, channel_id or "default")
+        if optimal_at is not None
+        else f"no slot ({slot_why})"
+    )
 
     subsection("Upload", print_fn)
     print_fn("  1) Skip — do not upload")
@@ -2690,7 +2704,14 @@ def prompt_upload_plan(
 
     if timing == "4":
         # #912: the run's slot - moved off it only while the post_time experiment runs.
-        publish_at = planned_post_time(channel_id or "default", topic, run_id=run_id, after=now)
+        if run_id and optimal_at is None:
+            print_fn(f"  Not scheduled: {slot_why}. The render is kept; option 5 re-queues it.")
+            return UploadPlan(mode="skip")
+        publish_at = (
+            optimal_at
+            if run_id and optimal_at is not None
+            else planned_post_time(channel_id or "default", topic, run_id=run_id, after=now)
+        )
         label = format_scheduled_local(publish_at, channel_id or "default")
         if grounding_override:
             # #1000: YouTube turns a scheduled `publishAt` public at the slot - run 120 went

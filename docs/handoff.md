@@ -53,26 +53,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-18 late morning · **HEAD at write:** the wave 109 commit (`git log -1`) ·
+**Written:** 2026-10-18 afternoon · **HEAD at write:** the wave 110 commit (`git log -1`) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**Wave 109:** `authenticity._STANCE_PATTERNS` gained what-to-watch and conditional calls;
-`batch_review.authenticity_now` re-reads a draft held only for `original_insight` (its meta is
-not rewritten) - `unattended_block_reason` and the review card use it (#1292).
-`hook_score.extract_hook` uses `operator_facts.sentences` (public now) (#1293).
-`batch_review.deadline_line` / `review_order`, printed in status, the overnight report and
-batch-review (#1294). `channel_health._unmeasured_recent` (#1291). `core/facts/voice_notes.py` +
-`ops voice-facts`; `apply_booth_facts(origin=)` (#450). Data: `data/youtube_quota.json`
-2026-10-18 used 5,561 -> 761, the operator's yes (copy in my scratchpad).
+**The plan is [hands_off_plan.md](hands_off_plan.md)** (themes A-E, H0/H1/H2); it supersedes
+optimization_plan_2026-10.md. The backlog audit closed 188 of 258 - read
+[backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md) before reopening anything;
+`test_docs_lint` holds the backlog at or under 130.
 
-**Live:** run 165 (Chargers at Chiefs, 20:25Z) has no slot before kickoff - noon is run 153's.
-The operator has the by-hand route; #1295 is their call.
+**Wave 110:** `menu_line` flushes (#1297). One slot rule - `batch_review.plan_review_slots`,
+`slot_for_run` in the menu and `auto_generate`, `plan_spaced_uploads` on `free_slots`,
+`_ASAP_LEAD` for a game with no slot (#1295); bare `ops crosspost` is the round, `pack` packs
+public only (#1298). `go_public._log_rows`, a reschedule logs "public", `waiting_line` and the
+worker's scheduled-live pass read the real row shape (#1299). `best_bet.idea_feeds` /
+`rank_by_coverage` / `coverage_note` (#1300). `core/predictions/calls.py`, `game_detail` line,
+`with_calls`, `batch_generation.draft_brief` (main.py too), `PREVIEW_CALLS` (#1301). `all` has no
+suite; `suite_hygiene.without_dotenv` around `ops test` (#1302).
 
-**Defects first:** none open of mine.
+**Live:** 52tS6g1fu_k public (Buffer 11:45); 3nlkdFTjxe0 public 22:00Z - its log row says
+"private" (a hand edit was refused), so the worker's read-back sends it.
 
-**Next:** #1295 (a question first), the roadmap's five (#421 #425 #457 #293), #1296. Suite 6,284, forward and reversed.
+**Defects first:** none open of mine. **Next:** #1304 #1305 #1306 #138 #991; #1303 is the operator's.
+Suite 6,313, forward and reversed.
 
 ## Slot — Cursor
 

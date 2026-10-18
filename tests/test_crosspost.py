@@ -62,6 +62,11 @@ class PackCase(unittest.TestCase):
             patch("publishing.crosspost._rendered_runs", side_effect=lambda c: list(self.runs)),
             patch("publishing.crosspost._duration", return_value=81.7),
             patch("publishing.crosspost._suggested_slot", return_value=SLOT),
+            # #1298: only a video public on YouTube is packed.
+            patch(
+                "publishing.crosspost._public_runs",
+                side_effect=lambda c: [(int(r.id), f"yt{r.id}") for r in self.runs],
+            ),
         ):
             p.start()
             self.addCleanup(p.stop)
@@ -120,7 +125,8 @@ class CommandTests(PackCase):
         return code, buf.getvalue()
 
     def test_the_verb_packs_lists_and_marks(self):
-        code, out = self._ops()
+        # #1298: the bare verb is the Buffer round wherever Buffer is set up; `pack` packs.
+        code, out = self._ops("pack")
         self.assertEqual(code, 0)
         self.assertIn(self.root, out)
         _code, listed = self._ops("list")

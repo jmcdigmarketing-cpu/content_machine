@@ -2294,19 +2294,21 @@ def cmd_worker(args: argparse.Namespace) -> int:
 def cmd_test(args: argparse.Namespace) -> int:
     # #892: the suite may not write the operator's data/ or output/; a run that did fails.
     from core.logging import detach_log_file
-    from core.suite_hygiene import WATCHED, changed, snapshot
+    from core.suite_hygiene import WATCHED, changed, snapshot, without_dotenv
 
     detach_log_file()  # #986: this process's log file must not collect the suite's records
     os.environ["CONTENT_LOG_FILE"] = ""
     before = snapshot(WATCHED)
     order = getattr(args, "order", "default")
-    if order == "default":
-        code = _run_module("unittest", "discover", "-s", "tests", "-t", ".", "-v")
-    else:
-        # #828: in-process so tests/__init__.py loads exactly as `-t .` loads it.
-        from core.suite_order import run_ordered
+    # #1302: the suite sees what CI sees - not the settings `.env` loaded into this process.
+    with without_dotenv():
+        if order == "default":
+            code = _run_module("unittest", "discover", "-s", "tests", "-t", ".", "-v")
+        else:
+            # #828: in-process so tests/__init__.py loads exactly as `-t .` loads it.
+            from core.suite_order import run_ordered
 
-        code = run_ordered(order, seed=getattr(args, "seed", None))
+            code = run_ordered(order, seed=getattr(args, "seed", None))
     wrote = changed(before, snapshot(WATCHED))
     if wrote:
         print(f"\nThe suite wrote {len(wrote)} file(s) under data/ or output/ (#892):")
@@ -3334,9 +3336,12 @@ BATCHES: dict[str, tuple[str, tuple[BatchStep, ...], bool]] = {
     ),
     # #1204 (operator, 2026-10-15: "is morning ... included in script ops all??? that is what
     # i want"): `all` ends with the morning, each step once - the draft review last.
+    # #1302 (operator, 2026-10-18: "ops all is slow"): the suite took 259 s of every run. It
+    # stays in all-checks and `ops test`; CI runs it on every push.
     "all": (
-        "Everything: all-checks + all-analytics + all-review + the morning, each step once",
-        ("all-checks", "all-analytics", "all-review", "morning"),
+        "Everything: all-checks + all-analytics + all-review + the morning, each step once - "
+        "the suite is left to CI and `ops test`",
+        ("validate", "feeds", "all-analytics", "all-review", "morning"),
         False,
     ),
 }
@@ -3538,11 +3543,12 @@ for _batch_name, (_batch_help, _steps, _stop) in BATCHES.items():
 
 @_register(
     "crosspost",
-    "TikTok + Instagram through Buffer: [channels | send | status | cancel | selftest | "
-    "buffer-check | public-url ADDRESS | list | done] (#968, #1188, #1214, #1232)",
+    "TikTok + Instagram through Buffer: the round, or [pack | channels | send | status | cancel | "
+    "selftest | buffer-check | public-url ADDRESS | list | done] (#968, #1188, #1214, #1298)",
 )
 def cmd_crosspost(args: argparse.Namespace) -> int:
-    """`ops crosspost` packs the newest rendered videos for Buffer's app; `channels`,
+    """`ops crosspost` runs the Buffer round when Buffer is set up (#1298), else - and with
+    `pack` - packs the newest public videos for Buffer's app; `channels`,
     `send`, `status`, `cancel --run-id N` and `selftest` go through Buffer's API (#1188);
     `buffer-check` makes and deletes one Buffer draft (#1214); `list`; `done --run-id N` marks
     a hand-posted one."""
@@ -3578,6 +3584,28 @@ def cmd_crosspost(args: argparse.Namespace) -> int:
             return 0
         print(f"Run {run_id} was never packed - run: py -m scripts.ops crosspost")
         return 1
+    from publishing import buffer_api
+
+    if (
+        action != "pack"
+        and crosspost.auto_enabled()
+        and buffer_api.configured()
+        and crosspost.buffer_channel_ids(channel)
+    ):
+        # #1298 (the operator, 2026-10-18: "no damn way am i posting these manually"): with
+        # Buffer set up, the bare verb is the automatic round, not folders to post by hand.
+        lines = crosspost.step(channel)
+        print(f"Crosspost - {channel}: the Buffer round for TikTok and Instagram")
+        print(
+            "\n".join(lines)
+            if lines
+            else "  Nothing new to send - each video goes once it is public on YouTube."
+        )
+        waiting = crosspost.waiting_line(channel)
+        if waiting:
+            print(waiting)
+        print("  Folders to post by hand instead: py -m scripts.ops crosspost pack")
+        return 0
     packed = crosspost.pack_new(channel)
     if not packed:
         print(f"Crosspost - {channel}: no new rendered video to pack.")

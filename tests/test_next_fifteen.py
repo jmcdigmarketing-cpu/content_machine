@@ -319,10 +319,12 @@ class OpenIndexTests(unittest.TestCase):
         self.assertEqual(open_numbered(lines), [])
 
     def test_the_index_prints_the_open_numbers(self):
-        from core.roadmap_index import render
+        from core.roadmap_index import _lines, open_numbered, render
 
         text = render(list_open=True)
-        self.assertIn("reprint a past run", text)
+        # Wave 110: it named #494, which the 2026-10-18 audit retired - the live file moves.
+        number, _title = open_numbered(_lines("backlog.md"))[0]
+        self.assertIn(f"#{number} ", text)
 
 
 class ThumbnailFitTests(unittest.TestCase):

@@ -8312,3 +8312,80 @@ first told the operator "by 10:30", then "by 9:30"; the deadline line now says s
 
 Audit: tests/test_wave109.py 14 of 16 failed first (two are "still holds" guards). 5 corpus
 cases. The new `voice-facts` needed `docs/ops_commands.md` regenerated. Suite: 6,284 tests forward and reversed, the same verdict.
+
+## 2026-10-18 afternoon — wave 110, the hands-off plan and the backlog audit (Claude Code)
+
+**Prompts:** "videos crashing or taking too long, no visual input on menu anymore, predictions are
+still lazy and ideas are small small boring stories/news, are drafts not posting or rendering?"
+Answers: make the Chargers preview public now and the Perez KO 6 PM today; "ops all needs a
+couple enter inputs ... the menu will just not have a visual input anymore ... ops all is slow";
+fix all four; predictions are "a call + the why". Then, pasting `ops crosspost`'s "Open each
+folder ... into Buffer" and the Story's list: "no damn way am i posting these manually. plan for
+improvement on these items, big big plan ... go through the backlog as well and make sure
+everything needs to be there, adds value to the project, and wont be replaced or altered by a
+later entry." Then "follow through with the past 2 prompts ... go for it".
+
+Measured first (read-only, 10:20 AM CDT): the drafts did render (about 30 s each) and upload, but
+batch-review planned them with `plan_spaced_uploads` -> `planned_post_time`, which knows no
+kickoff, window or taken slot: run 165 (Chargers at Chiefs, kickoff 20:25Z) public Wednesday 10 PM,
+run 164 (two-day news) Friday. The invisible prompt is `menu_line`'s unflushed `print(prompt,
+end="")` since 29c280c. The six `ops all` failures are `.env` inherited by the suite `ops` starts -
+not `data/`, as I first said: with `.env` loaded they fail, without it they pass.
+
+**Live, the operator's yes:** 52tS6g1fu_k public at 11:31 AM EDT (Buffer: TikTok and Instagram at
+11:45); 3nlkdFTjxe0 `publishAt` 22:00Z. Both read back from YouTube. go-public could not see the
+scheduled rows at first (#1299); fixed before it was sent. A hand edit of the Perez log row was
+refused by the permission layer; not needed - the worker's read-back path sends it at 6 PM.
+
+Shipped:
+- #1297, the prompt flushed before the key.
+- #1298:
+  - batch-review plans with the shelf's rules (`plan_review_slots`);
+  - the menu's slot and `auto_generate` take `slot_for_run`;
+  - the cut Shorts take the free noon/10 PM slots (the `post_time` experiment, when on, still
+    decides);
+  - #1295 answered: a game preview with no free slot before kickoff goes out as it uploads
+    (`_ASAP_LEAD` 45 min, a scheduled publishAt, so no unlisted hold);
+  - bare `ops crosspost` is the Buffer round, and `pack` packs only public videos.
+- #1299: go-public and reschedule find a scheduled row. A reschedule logs "public", as the
+  uploader does. `waiting_line` reads the scheduled rows ("" -> "6 scheduled ... next Sun 12:00
+  PM"). The worker sends a passed slot within 15 minutes; it had waited for "private" rows the
+  uploader never writes, and wave 105's test fed that shape.
+- #1300: every configured feed for the on-brand domains (4 -> 17, fetched side by side, 1.4 s),
+  ranked by outlets carrying the story. The first wording counted every "UFC" headline as one
+  story, and Title Case "names" ("Utah Sports Commission Partner ...") marked by their single
+  words; a one-subject or long name now matches whole.
+- #1301: one cheap call per preview over the matchup, ESPN's line (`game_detail` reads `odds`)
+  and this week's headlines, grounded (a why with an unsupplied number is dropped). It reaches the
+  menu, the brief and the pick record, in main.py too, which gave a picked preview no preview
+  brief. The first wording gave "Experts backing Giants" and "5-0 at home"; corrected.
+- #1302: `all` drops the suite; `ops test` runs inside `without_dotenv` (74 keys held back,
+  restored after).
+
+**The plan:** [hands_off_plan.md](hands_off_plan.md), five themes, one section per line of the
+Story, each with who acts and a command for done; it supersedes optimization_plan_2026-10.md
+(archived). Five steps are the operator's, one line each:
+- WakeToRun is off again since the 10-18 undo: `schedule-drafts --wake`;
+- publish the OAuth app;
+- turn on the Reporting API;
+- NFL/NBA news in ideas (#1303);
+- whether the ads continue.
+
+**The audit:** 258 open -> 70 kept. Of the 188 closed, 92 were merged into a later or more
+precise entry, 83 retired with a reason, and 13 were found already shipped. The table is in
+[backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md). Four of the last recommended five were
+retired, merged or shipped by it. `test_docs_lint` now holds the backlog at or under 130; it had
+required more than 200.
+
+Not done: #1303 (the operator's call), #1304-#1306 (filed, H1). The ranking still puts one UFC.com
+press release second today; the menu's one-per-franchise rule keeps it from crowding.
+
+Audit: tests/test_wave110.py 25 of 29 failed on clean HEAD (the editable finder removed); the four
+that passed are guards (newest row, an already-sent slot, `pack`, packing without Buffer). 6 corpus
+cases. Updated old tests that fed shapes the code no longer reads: wave 105's waiting line (a
+shape the real repository never returned), test_crosspost (the bare verb would reach the real
+Buffer on this PC - it uses `pack`), test_shorts_week and test_post_slot_arm (the slot source),
+test_wave18 (the seam's name), test_ops_batches and test_signin_health (no suite in `all`),
+test_best_bet (the domain feeds - the network guard caught it), test_next_fifteen (it named
+#494, which the audit retired). Suite: 6,313 tests forward and reversed, the same verdict
+(was 6,284).

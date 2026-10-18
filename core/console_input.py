@@ -205,7 +205,12 @@ def menu_line(
         print_fn(prompt, end="")
     else:
         sys.stdout.write(prompt)
+    # #1297: a prompt with no newline stays in the buffer, so every one-key menu read its key
+    # with nothing on the screen - "the menu will just not have a visual input anymore".
+    try:
         sys.stdout.flush()
+    except Exception as exc:
+        logger.debug("prompt not flushed: %s", exc)
     ch = (read_char or _read_one_key)()
     if ch == "\x03":
         raise KeyboardInterrupt

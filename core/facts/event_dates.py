@@ -245,7 +245,7 @@ _SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
 PREVIEW_PREFIX = "This game has not been played yet"
 
 
-def preview_brief(event_at: str) -> str:
+def preview_brief(event_at: str, *, call: str = "") -> str:
     """The brief a scheduled game's draft is written to (#1169).
 
     Overnight on 2026-10-14 drafted three NFL games two to four days ahead and all three came
@@ -257,11 +257,14 @@ def preview_brief(event_at: str) -> str:
         when = datetime.date.fromisoformat(day).strftime("%b %d").replace(" 0", " ")
     except ValueError:
         when = "soon"
-    return (
+    brief = (
         f"{PREVIEW_PREFIX} - it is on {when}. Write a preview: the matchup, who is in form or "
         "hurt, what to watch and what is at stake. Never describe plays, a score or a result "
         "as if the game happened."
     )
+    if call:  # #1301: a preview is a prediction
+        brief += f" Make this call and argue it from the facts: {call}."
+    return brief
 
 
 def fixture_sides(topic: str) -> tuple[str, str] | None:

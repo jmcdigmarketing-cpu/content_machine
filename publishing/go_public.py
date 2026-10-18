@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -57,6 +57,24 @@ def override_held(run_id: int | None) -> bool:
         return bool(parent and load_features(int(parent)).get("grounding_override"))
     except (TypeError, ValueError):
         return False
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _log_rows(repo, channel_id: str) -> list:
+    """Live uploads plus the ones YouTube holds for a later publishAt (#1299).
+
+    `list_uploaded_for_channel` leaves out a row whose `published_at` is still ahead, so a
+    scheduled video changed on YouTube and its log row kept the old time.
+    """
+    rows = list(repo.list_uploaded_for_channel(channel_id) or [])
+    try:
+        rows += list(repo.list_future_scheduled(channel_id) or [])
+    except Exception as exc:
+        logger.debug("go-public: scheduled rows unreadable: %s", exc)
+    return rows
 
 
 def _run_title(run_id: int | None) -> str:
@@ -220,7 +238,7 @@ def apply_schedule_public(
             from storage.repositories.publish_log import get_publish_log_repository
 
             repo = get_publish_log_repository()
-        rows = repo.list_uploaded_for_channel(channel_id)
+        rows = _log_rows(repo, channel_id)
     except Exception as exc:
         logger.warning("schedule-public: publish log unreadable: %s", exc)
         rows = []
@@ -268,7 +286,9 @@ def apply_schedule_public(
         try:
             repo.update(
                 record.id,
-                {"privacy_status": "private", "status": "scheduled", "published_at": when},
+                # The privacy it goes public with, as the uploader logs a scheduled video -
+                # crosspost._public_runs reads "public" once published_at passes (#1299).
+                {"privacy_status": "public", "status": "scheduled", "published_at": when},
             )
         except Exception as exc:
             logger.warning("schedule-public: publish log not updated: %s", exc)
@@ -311,7 +331,7 @@ def apply_go_public(
             from storage.repositories.publish_log import get_publish_log_repository
 
             repo = get_publish_log_repository()
-        rows = repo.list_uploaded_for_channel(channel_id)
+        rows = _log_rows(repo, channel_id)
     except Exception as exc:
         logger.warning("go-public: publish log unreadable: %s", exc)
         rows = []
@@ -383,7 +403,11 @@ def apply_go_public(
         )
     if record is not None:
         try:
-            repo.update(record.id, {"privacy_status": "public"})
+            fields: dict[str, Any] = {"privacy_status": "public"}
+            if str(getattr(record, "status", "") or "") == "scheduled":
+                # A scheduled row is live from its published_at - now, not the old slot (#1299).
+                fields["published_at"] = _now()
+            repo.update(record.id, fields)
         except Exception as exc:
             logger.warning("go-public: publish log not updated: %s", exc)
     result = GoPublicResult("updated", "", target, run_id=run_id, title=title)

@@ -421,6 +421,8 @@ class TestBreadth(unittest.TestCase):
         with (
             patch.dict(os.environ, {"BEST_BET_SIGNALS": "rss"}, clear=False),
             patch("config.data_sources.rss_feeds_for_channel", return_value=[]),
+            # Wave 110 (#1300): the pool reads the on-brand domains' feeds too.
+            patch("config.data_sources.domain_rss_feeds", return_value=[]),
             patch("apis.free_backends.fetch_reddit_free") as rf,
             patch("apis.free_backends.fetch_youtube_free") as yf,
         ):

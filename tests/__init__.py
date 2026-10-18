@@ -101,6 +101,8 @@ os.environ["AUTO_RESEARCH_NEWS_FALLBACK"] = "false"
 os.environ["WEB_SEARCH_FALLBACK"] = "false"
 # #876: game names learned from the operator's runs must not change a test's verdict.
 os.environ["LEARNED_GAME_NAMES"] = "false"
+# Wave 110 (#1301): a preview's call is a model call over this week's headlines.
+os.environ["PREVIEW_CALLS"] = "false"
 # #771 turned the whisper aligner on by default; no test may load a model.
 os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 # #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one

@@ -5093,6 +5093,176 @@
         "falsy": true
       },
       "why": "the widened detector still holds a plain recap"
+    },
+    {
+      "id": "ufc-press-conference-is-one-outlet",
+      "item": 1300,
+      "source": "live, 2026-10-18: 'UFC Edmonton Post-Fight Press Conference' led the ideas on '6 outlets' - every headline saying UFC counted",
+      "call": "core.best_bet:rank_by_coverage",
+      "args": [
+        [
+          {
+            "topic": "UFC Edmonton Post-Fight Press Conference",
+            "domain": "ufc",
+            "source": "MMA Weekly",
+            "published": null
+          },
+          {
+            "topic": "UFC 330 adds a lightweight bout",
+            "domain": "ufc",
+            "source": "MMA Fighting",
+            "published": null
+          },
+          {
+            "topic": "Dana White talks UFC Paramount deal",
+            "domain": "ufc",
+            "source": "Bloody Elbow",
+            "published": null
+          }
+        ]
+      ],
+      "pluck": "outlets",
+      "expect": {
+        "equals": [
+          [
+            "MMA Weekly"
+          ],
+          [
+            "MMA Fighting"
+          ],
+          [
+            "Bloody Elbow"
+          ]
+        ]
+      },
+      "why": "a one-subject headline matches only on its whole name"
+    },
+    {
+      "id": "one-story-on-three-outlets-is-one-idea",
+      "item": 1300,
+      "source": "live, 2026-10-18: the idea pool was a date shuffle of four feeds; nothing counted outlets",
+      "call": "core.best_bet:rank_by_coverage",
+      "args": [
+        [
+          {
+            "topic": "Dexerto ranks every Fortnite season",
+            "domain": "ufc",
+            "source": "Dexerto",
+            "published": null
+          },
+          {
+            "topic": "Cristian Perez knocks out Kyle Nelson in 27 seconds",
+            "domain": "ufc",
+            "source": "MMA Fighting",
+            "published": null
+          },
+          {
+            "topic": "Kyle Nelson finished by Cristian Perez in 27 seconds at UFC Edmonton",
+            "domain": "ufc",
+            "source": "MMA Weekly",
+            "published": null
+          },
+          {
+            "topic": "Cristian Perez stuns Kyle Nelson with a 27-second knockout",
+            "domain": "ufc",
+            "source": "BBC Sport",
+            "published": null
+          }
+        ]
+      ],
+      "pluck": "outlets",
+      "expect": {
+        "equals": [
+          [
+            "BBC Sport",
+            "MMA Fighting",
+            "MMA Weekly"
+          ],
+          [
+            "Dexerto"
+          ]
+        ]
+      },
+      "why": "the story on most outlets leads, once"
+    },
+    {
+      "id": "coverage-note-names-the-outlets",
+      "item": 1300,
+      "source": "live, 2026-10-18: every fresh idea read 'trending on <one feed> now'",
+      "call": "core.best_bet:coverage_note",
+      "args": [
+        {
+          "source": "MMA Fighting",
+          "outlets": [
+            "BBC Sport",
+            "MMA Fighting",
+            "MMA Weekly"
+          ]
+        }
+      ],
+      "expect": {
+        "equals": "on 3 outlets (BBC Sport, MMA Fighting, MMA Weekly)"
+      },
+      "why": "the menu says why an idea is big"
+    },
+    {
+      "id": "a-call-why-with-an-invented-number-is-dropped",
+      "item": 1301,
+      "source": "wave 110: a preview's why may only use the lines it was given",
+      "call": "core.predictions.calls:_grounded",
+      "args": [
+        "Love has 14 touchdowns",
+        "Event: Dallas Cowboys at Green Bay Packers\nWhen and records: Cowboys 2-3 at Packers 3-2"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "grounding: a number no supplied line carries"
+    },
+    {
+      "id": "preview-brief-carries-the-call",
+      "item": 1301,
+      "source": "live, 2026-10-18: 'predictions are still lazy' - the brief asked for a preview, not a call",
+      "call": "core.facts.event_dates:preview_brief",
+      "args": [
+        "2026-10-19T00:20Z"
+      ],
+      "kwargs": {
+        "call": "Packers win - Dallas allows deep balls"
+      },
+      "expect": {
+        "contains": "Make this call and argue it from the facts: Packers win"
+      },
+      "why": "the script argues the menu's call"
+    },
+    {
+      "id": "board-line-is-read",
+      "item": 1301,
+      "source": "live, 2026-10-18: ESPN's board carries the spread; the odds signal lists only sports",
+      "call": "core.seasonal_calendar:game_detail",
+      "args": [
+        "nfl",
+        {
+          "name": "Dallas Cowboys at Green Bay Packers",
+          "date": "2026-10-19T00:20Z",
+          "competitions": [
+            {
+              "competitors": [],
+              "odds": [
+                {
+                  "details": "GB -3.5",
+                  "overUnder": 47.5
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "select": "line",
+      "expect": {
+        "equals": "GB -3.5"
+      },
+      "why": "the call is made against a real line"
     }
   ]
 }

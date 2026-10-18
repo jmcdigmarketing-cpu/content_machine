@@ -228,6 +228,9 @@ class CallerTests(unittest.TestCase):
 
         with (
             patch.object(spaced_queue, "cadence_status", return_value=CadenceStatus(0, 0, 5, 7)),
+            # Wave 110 (#1298): the arm decides only while the experiment runs; otherwise the
+            # free noon/10 PM slots do.
+            patch.object(spaced_queue, "_post_time_running", return_value=True),
             patch.object(spaced_queue, "planned_post_time", return_value=SLOT) as planned,
         ):
             spaced_queue.plan_spaced_uploads([(11, "a"), (12, "b")], channel_id="tapin")
@@ -243,6 +246,7 @@ class CallerTests(unittest.TestCase):
         call = "planned_post_time(channel_id, topic, run_id=result.run_id)"
         self.assertTrue(call in auto, "auto_generate does not plan its slot per run")
         self.assertTrue("planned_post_time(" in ui, "the upload menu does not plan its slot")
+        self.assertTrue("slot_for_run(" in auto, "auto_generate does not take the run's slot")
         menu_call = main.split("prompt_upload_plan(")[1][:600]
         self.assertTrue("run_id=result.run_id" in menu_call, "main.py does not pass the run")
 

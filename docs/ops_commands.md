@@ -8,7 +8,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | Command | What it does |
 | --- | --- |
 | `agents` | Agent hand-off: who signed what, and whether the mailbox is stale |
-| `all` | Everything: all-checks + all-analytics + all-review + the morning, each step once |
+| `all` | Everything: all-checks + all-analytics + all-review + the morning, each step once - the suite is left to CI and `ops test` |
 | `all-analytics` | Seed, schedules, weights, sync metrics, views by day, scoreboard, predictions |
 | `all-checks` | Validate channels + unit tests + feed health |
 | `all-review` | The weekly review: sync, mailbag, scoreboard, reports, then rate the week |
@@ -50,7 +50,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `corrections-open` | Open correction notes on published videos, one line each (#1175) |
 | `cost-panel` | Cost Control Tower panel (#158; requires pip install -e ".[app]") |
 | `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
-| `crosspost` | TikTok + Instagram through Buffer: [channels \| send \| status \| cancel \| selftest \| buffer-check \| public-url ADDRESS \| list \| done] (#968, #1188, #1214, #1232) |
+| `crosspost` | TikTok + Instagram through Buffer: the round, or [pack \| channels \| send \| status \| cancel \| selftest \| buffer-check \| public-url ADDRESS \| list \| done] (#968, #1188, #1214, #1298) |
 | `crosspost-send` | Send each video made public on YouTube to TikTok and Instagram through Buffer (#1190) |
 | `daily-brief` | The day's numbers: scoreboard, fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |

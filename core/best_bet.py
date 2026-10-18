@@ -75,6 +75,7 @@ class BestBetResult:
     source: str  # "analytics" | "score" | "continuity" | "arc" | "calendar" | "trending"
     supporting_runs: int
     rationale: str
+    call: str = ""  # #1301: a preview's prediction, "Packers win - Dallas allows deep balls"
 
 
 # ---------------------------------------------------------------------------
@@ -909,15 +910,8 @@ def _fresh_candidates(
 
     if "rss" in sources:
         try:
-            from apis.rss_feeds import _fetch_feed
-            from config.data_sources import rss_feeds_for_channel
-
-            for feed in list(rss_feeds_for_channel(channel_id))[:8]:
-                try:
-                    rows = _fetch_feed(feed["url"])
-                except Exception as exc:
-                    logger.debug("_fetch_feed skipped: %s", exc)
-                    continue
+            feeds = idea_feeds(channel_id, allowed)
+            for feed, rows in zip(feeds, _fetch_feeds(feeds), strict=True):
                 for row in rows[:20]:
                     cand = _consider_candidate(
                         row.get("title", ""),
@@ -959,9 +953,118 @@ def _fresh_candidates(
     recent = [c for c in pool if c["published"] and c["published"] >= horizon]
     base = recent if len(recent) >= limit else pool
 
-    # Daily rotation: same picks all session, but a new mix each day.
+    # Daily rotation breaks ties only (#1300): the story on the most outlets leads.
     random.Random(datetime.now(timezone.utc).strftime("%Y-%m-%d")).shuffle(base)
-    return base[:limit]
+    return rank_by_coverage(base)[:limit]
+
+
+_IDEA_FEED_CAP = 24
+_COVERAGE_HOURS = 48
+
+
+def idea_feeds(channel_id: str, allowed: set[str] | None) -> list[dict]:
+    """#1300: the feeds the idea pool reads - the channel's own and every configured feed for
+    its on-brand domains. It read the channel's first 8, which for TapIn were four (MMA
+    Fighting, Dexerto, IGN, Polygon), so no story could be seen on more than one outlet."""
+    from config.data_sources import _dedupe_feeds, domain_rss_feeds, rss_feeds_for_channel
+
+    feeds = list(rss_feeds_for_channel(channel_id))
+    for domain in sorted(d for d in (allowed or ()) if d and d != "neutral"):
+        for feed in domain_rss_feeds(domain):
+            feeds.append(feed if feed.get("domains") else {**feed, "domains": [domain]})
+    return _dedupe_feeds(feeds)[:_IDEA_FEED_CAP]
+
+
+def _fetch_feeds(feeds: list[dict]) -> list[list[dict]]:
+    """Each feed's rows, fetched side by side; [] for one that fails."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from apis.rss_feeds import _fetch_feed
+
+    def one(feed: dict) -> list[dict]:
+        try:
+            return list(_fetch_feed(feed["url"]) or [])
+        except Exception as exc:
+            logger.debug("_fetch_feed skipped: %s", exc)
+            return []
+
+    if not feeds:
+        return []
+    with ThreadPoolExecutor(max_workers=min(8, len(feeds))) as pool:
+        return list(pool.map(one, feeds))
+
+
+def rank_by_coverage(pool: list[dict], *, now: datetime | None = None) -> list[dict]:
+    """#1300 (the operator, 2026-10-18: "ideas are small small boring stories/news"): each
+    candidate gets `outlets` - the distinct sources carrying the same story in the last 48 h,
+    by `same_story`'s rule (two of its subjects named, or its only one) - and the pool is
+    ordered by that count, then recency. The other headlines of a story leave the pool, so
+    one story is one idea. The incoming order breaks ties (the daily rotation)."""
+    from apis.topic_tokens import content_tokens, names_any, subject_markers, subject_terms
+
+    moment = now or datetime.now(timezone.utc)
+    horizon = moment - timedelta(hours=_COVERAGE_HOURS)
+
+    def groups_of(topic: str) -> list[list[str]]:
+        terms = subject_terms(topic, limit=6)
+        # A headline with one subject matches on its whole name, and so does a "name" longer
+        # than three words: a Title Case headline reads as one long name, and its single
+        # words ("Fight", "Press", "Week") named every UFC story.
+        if len(terms) == 1:
+            return [[terms[0]]]
+        return [[term] if len(term.split()) > 3 else subject_markers([term]) for term in terms]
+
+    marks = [groups_of(str(c.get("topic") or "")) for c in pool]
+    words = [set(content_tokens(str(c.get("topic") or ""))) for c in pool]
+
+    def recent(c: dict) -> bool:
+        published = c.get("published")
+        return not isinstance(published, datetime) or published >= horizon
+
+    def covers(i: int, j: int) -> bool:
+        shared = len(words[i] & words[j])
+        # The same words: "Call Of Duty: MW4's Campaign Launches Today" and "Call Of Duty: MW4
+        # Is Not On Xbox Game Pass" name no subject the same way.
+        if shared >= 3 and shared >= 0.4 * (min(len(words[i]), len(words[j])) or 1):
+            return True
+        groups = marks[i]
+        if not groups or shared < min(2, len(words[i])):
+            return False
+        need = min(2, len(groups))
+        topic = str(pool[j].get("topic") or "")
+        return sum(1 for group in groups if names_any(topic, group)) >= need
+
+    members: list[set[int]] = []
+    for i, cand in enumerate(pool):
+        story = {j for j in range(len(pool)) if j != i and recent(pool[j]) and covers(i, j)}
+        members.append(story)
+        outlets = {str(pool[j].get("source") or "") for j in story} | {
+            str(cand.get("source") or "")
+        }
+        cand["outlets"] = sorted(o for o in outlets if o)
+
+    def stamp(c: dict) -> float:
+        published = c.get("published")
+        return published.timestamp() if isinstance(published, datetime) else 0.0
+
+    order = sorted(range(len(pool)), key=lambda i: (-len(pool[i]["outlets"]), -stamp(pool[i])))
+    kept: list[dict] = []
+    gone: set[int] = set()
+    for i in order:
+        if i in gone:
+            continue
+        kept.append(pool[i])
+        gone |= members[i]
+    return kept
+
+
+def coverage_note(cand: dict) -> str:
+    """ "on 3 outlets (BBC Sport, MMA Fighting, MMA Weekly)", or the one source (#1300)."""
+    outlets = [o for o in cand.get("outlets") or [] if o]
+    if len(outlets) < 2:
+        return f"trending on {cand.get('source')} now"
+    shown = ", ".join(outlets[:3]) + (", ..." if len(outlets) > 3 else "")
+    return f"on {len(outlets)} outlets ({shown})"
 
 
 def pick_record(options: list[Any], picked: int | None, *, by: str = "operator") -> dict[str, Any]:
@@ -977,6 +1080,8 @@ def pick_record(options: list[Any], picked: int | None, *, by: str = "operator")
             "domain": str(getattr(o, "domain", "") or ""),
             "expected": float(getattr(o, "avg_engaged_rate", 0.0) or 0.0),
             "source": str(getattr(o, "source", "") or ""),
+            # #1301: the call a preview made, so the result can score it.
+            **({"call": str(o.call)} if getattr(o, "call", "") else {}),
         }
         for o in options or []
     ]
@@ -1282,7 +1387,7 @@ def get_best_bets(
         if anchor:
             used_anchors.add(anchor)
         rate = domain_rates.get(c["domain"])
-        rationale = f"trending on {c['source']} now"
+        rationale = coverage_note(c)
         if rate is not None:
             rationale += f" · {c['domain']} averages {_target.show(rate, places=0)}"
             rationale += _ranked_on_note(rate, adjusted.get(c["domain"]), places=0)
@@ -1546,7 +1651,32 @@ def get_idea_menu(
         n=want,
         now=now,
     )
+    try:  # #1301: each preview with its call - fail-open
+        from core.predictions import calls
+
+        if preview_list and calls.enabled():
+            made = calls.preview_calls(preview_list, headlines=calls.headlines_for(preview_list))
+            preview_list = with_calls(preview_list, made)
+    except Exception as exc:
+        logger.debug("preview calls skipped: %s", exc)
     return idea_list, preview_list
+
+
+def with_calls(previews: list[BestBetResult], made: dict[str, dict]) -> list[BestBetResult]:
+    """The previews with their calls in the menu line and on the result (#1301)."""
+    from dataclasses import replace
+
+    from core.predictions.calls import call_line, call_text
+
+    out: list[BestBetResult] = []
+    for bet in previews:
+        call = made.get(bet.topic)
+        if not call:
+            out.append(bet)
+            continue
+        rationale = f"{bet.rationale} · {call_line(call)}" if bet.rationale else call_line(call)
+        out.append(replace(bet, rationale=rationale, call=call_text(call)))
+    return out
 
 
 def display_idea_menu(

@@ -241,14 +241,18 @@ def pack_run(channel_id: str, run: Any) -> Packed:
 
 
 def pack_new(channel_id: str, *, limit: int = _PACK_LIMIT) -> list[Packed]:
-    """Pack the newest rendered runs not packed before (at most `limit`)."""
+    """Pack the newest rendered runs not packed before (at most `limit`) - only the ones public
+    on YouTube (#1298: runs 162, 156 and 155 were packed unlisted or still scheduled)."""
     data = _load(channel_id)
     done = data.setdefault("runs", {})
+    public = {run_id for run_id, _video in _public_runs(channel_id)}
     packed: list[Packed] = []
     for run in _rendered_runs(channel_id):
         if len(packed) >= limit:
             break
         path = str(getattr(run, "mp4_path", "") or "")
+        if int(run.id or 0) not in public:
+            continue
         if str(run.id) in done or not path or not os.path.isfile(path):
             continue
         result = pack_run(channel_id, run)
@@ -962,9 +966,11 @@ def waiting_line(channel_id: str, *, now: datetime | None = None) -> str:
 
     moment = now or datetime.now(timezone.utc)
     times: list[datetime] = []
-    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+    # #1299: the scheduled rows themselves - the live rows leave a future published_at out,
+    # and a scheduled upload is logged with the privacy it goes public with.
+    for row in get_publish_log_repository().list_future_scheduled(channel_id) or []:
         when = getattr(row, "published_at", None)
-        if str(getattr(row, "privacy_status", "") or "").lower() != "private" or not when:
+        if not when:
             continue
         when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
         if when > moment:

@@ -383,7 +383,7 @@ class TestBatchReview(unittest.TestCase):
                     "core.batch_review._render",
                     side_effect=lambda draft, override: rendered.append(draft.run_id) or True,
                 ),
-                patch("core.batch_review.plan_spaced_uploads", return_value=[slot]) as plan,
+                patch("core.batch_review.plan_review_slots", return_value=[slot]) as plan,
                 patch("core.batch_review.queue_spaced_uploads", return_value=[11]) as queue,
             ):
                 summary = review_drafts(
@@ -397,7 +397,7 @@ class TestBatchReview(unittest.TestCase):
                 for p in root.glob("*/meta.json")
             }
         self.assertEqual(rendered, [11])
-        self.assertEqual(plan.call_args.args[0], [(11, "Title 11")])
+        self.assertEqual(plan.call_args.args[1], [(11, "Title 11")])
         queue.assert_called_once()
         self.assertEqual(summary.queued, [11])
         self.assertEqual(metas["1-a"]["review"]["decision"], "rendered")
@@ -419,7 +419,7 @@ class TestBatchReview(unittest.TestCase):
                     "core.batch_review._render",
                     side_effect=lambda draft, override: overrides.append(override) or True,
                 ),
-                patch("core.batch_review.plan_spaced_uploads", return_value=[]),
+                patch("core.batch_review.plan_review_slots", return_value=[]),
                 patch("core.batch_review.queue_spaced_uploads", return_value=[]),
             ):
                 review_drafts(

@@ -79,6 +79,11 @@ def plan_spaced_uploads(
     tz = _channel_tz(channel_id) if one_per_day else None
     if tz is not None and not_on is not None:
         after = _end_of_local_day(not_on, tz)
+    # #1298: the free noon/10 PM slots, the ones other uploads hold left out - the
+    # `planned_post_time` this used knew neither, and gave two Shorts 7 PM and a Friday.
+    # While a post_time experiment runs (#912), each run's arm decides its hour instead.
+    experiment = _post_time_running(channel_id)
+    pool = [] if experiment else free_slots(channel_id, 2 * len(items) + 6, now=_now())
     for index, (run_id, title) in enumerate(items):
         if index >= room:
             out.append(
@@ -89,10 +94,40 @@ def plan_spaced_uploads(
                 )
             )
             continue
-        when = planned_post_time(channel_id, topic, run_id=int(run_id), after=after)
+        if experiment:
+            when = planned_post_time(channel_id, topic, run_id=int(run_id), after=after)
+        else:
+            free = next((slot for slot in pool if after is None or slot > after), None)
+            if free is None:
+                out.append(SpacedSlot(run_id=int(run_id), title=str(title), skipped="no free slot"))
+                continue
+            pool.remove(free)
+            when = free
         after = _end_of_local_day(when, tz) if tz is not None else when
         out.append(SpacedSlot(run_id=int(run_id), title=str(title), publish_at=when))
     return out
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _post_time_running(channel_id: str) -> bool:
+    try:
+        from config.channels import resolve_channel_id
+        from core.experiments import active_experiment
+
+        return bool(active_experiment(resolve_channel_id(channel_id), "post_time"))
+    except Exception as exc:
+        logger.debug("post_time experiment unread: %s", exc)
+        return False
+
+
+# #1295 (2026-10-18): the Chargers preview had no slot before kickoff - noon was run 153's and
+# 6 PM was after the game. A game preview with none goes public as it uploads: a `publishAt`
+# this far ahead (the worker runs every 15 minutes), so the unlisted review hold does not apply.
+_ASAP_LEAD = timedelta(minutes=45)
+_ASAP_GAP = timedelta(minutes=30)
 
 
 def _override_held(features_json: str) -> bool:
@@ -286,6 +321,8 @@ def slot_for_run(
     extra = next((e for e in evening if deadline is not None and e < deadline), None)
     if extra is not None:
         return extra, ""
+    if event is not None and moment + _ASAP_LEAD < event:
+        return moment + _ASAP_LEAD, ""
     return None, "no slot before its game" if event else "no slot inside its window"
 
 
@@ -334,6 +371,7 @@ def shelf_schedule(
     main = free_slots(channel_id, len(ranked), now=moment, taken=taken)
     evening = free_slots(channel_id, len(ranked), now=moment, hours=_EVENING, taken=taken)
     out: list[SpacedSlot] = []
+    asap = moment + _ASAP_LEAD
     for _key, slot, event, deadline in ranked:
         when = main[0] if main else None
         if when is not None and (deadline is None or when < deadline):
@@ -344,6 +382,8 @@ def shelf_schedule(
             if extra is not None:
                 evening.remove(extra)
                 slot.publish_at = extra
+            elif event is not None and asap < event:
+                slot.publish_at, asap = asap, asap + _ASAP_GAP  # #1295: as it uploads
             else:
                 slot.skipped = "no slot before its game" if event else "would be past its window"
         out.append(slot)

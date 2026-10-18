@@ -76,7 +76,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [operating_plan.md](operating_plan.md) | Pace, cost, channels, ops |
 | [backlog.md](backlog.md) | Full open-item inventory (roadmap.md stays short) |
 | [desktop_app.md](desktop_app.md) | The Windows application programme |
-| [optimization_plan_2026-10.md](optimization_plan_2026-10.md) | The next 100: fourteen epics, owners and horizons (backlog epic E7) |
+| [hands_off_plan.md](hands_off_plan.md) | **Current.** Nothing by hand, bigger ideas, reach and money honestly, reliability, a backlog that earns its place - H0/H1/H2, each with a command for done |
+| [optimization_plan_2026-10.md](optimization_plan_2026-10.md) | *archived* → hands_off_plan.md (the next 100; backlog epic E7) |
 | [cursor_brief_2026-10.md](cursor_brief_2026-10.md) | Cursor's run: media first (footage, thumbnails, voice, Shorts), then the app |
 | [initiative_cross_platform.md](initiative_cross_platform.md) | Offered to Cursor (2026-10-14): learn per platform from TikTok and Instagram results (#1194-#1199) |
 | [content_quality_plan.md](content_quality_plan.md) | Five quality issues, traced and planned |
@@ -92,6 +93,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 
 | Doc | Date |
 |---|---|
+| [backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md) | 2026-10-18 — 258 open items read: 92 merged into a later entry, 83 retired, 13 shipped, 70 kept |
 | [audit_2026-10-17.md](audit_2026-10-17.md) | 2026-10-17 — **current**; CI red six days, the suite reached the real database, Cursor's commits read |
 | [audit_2026-09-26.md](audit_2026-09-26.md) | 2026-09-26 — before→after of the 09-20 findings |
 | [review_2026-09-26.md](review_2026-09-26.md) | 2026-09-26 — own review: fixes erased by later work, fixes that reached one copy, the regression corpus |

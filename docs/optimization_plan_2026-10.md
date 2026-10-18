@@ -1,6 +1,6 @@
 # The next 100 — optimization plan, October 2026
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-09
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-10-18 · **Superseded by:** [hands_off_plan.md](hands_off_plan.md)
 
 The operator, 2026-10-08: *"plan out the next 100 optimizations, be it within documentation,
 ui, color, inner working, long term strategy, big and small, but not so small next 5's

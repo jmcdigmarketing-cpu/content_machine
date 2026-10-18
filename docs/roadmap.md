@@ -83,15 +83,14 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-17 (Claude, wave 104).** Cursor is out of usage for the month; Claude
-committed its wave 103 (my order of fifteen, #449 with menu option 7) after a re-audit with
-six corrections, and shipped #1261 #1262 #1263 #1265 #1266. Filed #1270-#1272. Cursor's
-queue is Claude's now. Next: **#421** a render time budget that degrades the preset,
-**#425** vertical-crop scoring for 16:9 sources, **#1295** a slot before kickoff for a game preview (the operator's call first; #450 was done in wave 109),
-**#457** a lockfile so the environment cannot silently disagree with
-`pyproject.toml`, **#293** a `content-os://open-last` protocol handler (the
-lowest-numbered open `[S]` that is not waiting on a run, a clip, or a decision; #257 was done
-in wave 107).
+**2026-10-18 (Claude, wave 110).** The plan is now [hands_off_plan.md](hands_off_plan.md); the
+backlog audit closed 188 of 258 ([backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md)),
+which retired or merged four of the last five (#421, #425, #293) and shipped #1295. Next, from
+the plan's H0/H1: **#1304** a preview's call fed the matchup research and scored after the game,
+**#1305** a test that reads the real `data/` fails, **#1306** what a status-only update leaves on
+YouTube, **#138** a weekly long-form compilation (the only path to watch hours at this size),
+**#991** a series format. #457 (a lockfile) stays next after them. Five are yours, one line each,
+in the plan's "This week".
 **2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
 push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
 the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
@@ -101,14 +100,14 @@ read in full; three corrections. Filed #1263-#1269. The audit:
 **2026-10-17 evening (Claude).** The angle-step crash fixed (#1278); crossposts unspaced, previews before kickoff, the evening slot and 3-minute Reels (§63-§64); no YouTube cadence cap (§65); ten ideas, five of them previews (§66). Wave 105: the seven stranded renders on public slots two a day (#1273), times in EDT (#1274), scheduled videos crossposted when they go live (#1275), no bare-name follow-up (#1276), crosspost status says why (#1277). Filed #1283-#1285, then did them: `requeue_upload --queue` public at a slot (#1283), a dead worker's job freed at once (#1284), taken slots skipped and a 6 PM slot for news (#1285). Wave 107: a preview from a headline knows its event (#1286), why engagement fell in `ops health` (#1271), menu 7 schedules a video for its slot (#1270), the morning says how many drafts to decide (#1272), facts dropped on the booth (#257). `roadmap-index`: open 259, done 1260, numbered open 207, highest #1269.
 **2026-10-18 (Claude, wave 108).** Measured defects first, the roadmap's five unchanged: hook learning had joined 0 of 41 videos (#1287; decision 67 - the last 90 days, the rewrite's rules stay until n settles), the quota day is YouTube's Pacific date (#1288), the overnight task may wake the PC (#1289), goose3's date warning (#1267), the teaser (#1264), a caption scrim to 4.5:1 (#1268). Filed #1290 (the hook scorer runs against who stays) and #1291. `roadmap-index`: open 258, done 1266, numbered open 206, highest #1291.
 **2026-10-18 (Claude, wave 109).** Volume blockers: takes the detector missed (#1292 - run 164 renders tonight), a preview's hook cut at "vs." (#1293), when a game preview must be decided (#1294), today's quota entry corrected, health names its runs (#1291), facts from a voice note (#450). Filed #1295 #1296. `roadmap-index`: open 258, done 1271, numbered open 206, highest #1296.
+**2026-10-18 (Claude, wave 110).** Nothing by hand: prompts visible again (#1297), one slot rule and the Buffer round as the bare `crosspost` (#1298), scheduled videos changeable and sent at their slot (#1299), ideas ranked by outlets (#1300), previews with a call (#1301), `ops all` without the suite and `ops test` without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM. Filed #1303-#1306. `roadmap-index`: open 74, done 1465, numbered open 65, highest #1306.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
-#1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),
+#1025 (Later), #1038 (the operator's blind listen),
 #1015 (waits on PySide), #975 (waiting on a boosted video). Next app item is #161. #1067, #1064 and #1068 are done.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
-**#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863's call prints itself at ten; #963-#965
 (does a settled topic still get a paste?) needs ten runs in `ops auto-research`.

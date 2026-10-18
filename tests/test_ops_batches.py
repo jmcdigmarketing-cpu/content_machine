@@ -100,7 +100,8 @@ class BatchTableTests(unittest.TestCase):
 
         leaves = set(ops.batch_leaves("all"))
         for batch in ("all-checks", "all-analytics", "all-review"):
-            self.assertLessEqual(set(ops.batch_leaves(batch)), leaves, batch)
+            # Wave 110 (#1302): all of each, but the suite - CI and `ops test` run it.
+            self.assertLessEqual(set(ops.batch_leaves(batch)) - {"test"}, leaves, batch)
 
     def test_ops_list_prints_the_table(self):
         from scripts.ops import COMMANDS
@@ -109,7 +110,7 @@ class BatchTableTests(unittest.TestCase):
             COMMANDS["list"][1](_args())
         text = out.getvalue()
         self.assertRegex(text, r"all-review\s+sync-metrics, mailbag, scoreboard")
-        self.assertRegex(text, r"all\s+all-checks \+ all-analytics \+ all-review")
+        self.assertRegex(text, r"all\s+validate, feeds, all-analytics, all-review, morning")
 
 
 class BatchRunTests(unittest.TestCase):
@@ -129,7 +130,7 @@ class BatchRunTests(unittest.TestCase):
         self.assertEqual(rec.names.count("sync-metrics"), 1)
         self.assertEqual(rec.names.count("scoreboard"), 1)
         self.assertIn("review-week", rec.names)
-        self.assertIn("test", rec.names)
+        self.assertNotIn("test", rec.names)  # wave 110 (#1302): CI and `ops test` run it
 
     def test_a_report_batch_keeps_going_and_names_what_failed(self):
         from scripts.ops import COMMANDS

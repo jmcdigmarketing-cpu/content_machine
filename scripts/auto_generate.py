@@ -478,7 +478,17 @@ def main(argv=None) -> int:
         # save has no id, and the job would point at nothing.
         print("  Not queued: the run was not saved, so there is nothing to link the upload to.")
         return 1
-    pub_at = planned_post_time(channel_id, topic, run_id=result.run_id)
+    # #1298: the run's own slot - before its game, inside its news window, the free noon/10 PM.
+    try:
+        from core.spaced_queue import slot_for_run
+
+        slot, slot_why = slot_for_run(channel_id, result.run_id, title=result.title or topic)
+    except Exception:
+        slot, slot_why = planned_post_time(channel_id, topic, run_id=result.run_id), ""
+    if slot is None:
+        print(f"  Not queued: {slot_why}. The render is kept.")
+        return 0
+    pub_at = slot
     repurpose = enqueue_repurpose_jobs(
         channel_id=channel_id,
         content_run_id=result.run_id,

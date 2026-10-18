@@ -89,7 +89,7 @@ class AllBatchTests(unittest.TestCase):
         self.assertNotIn("sync-metrics", ran)
         self.assertNotIn("backfill", ran)
         self.assertIn("scoreboard", ran)
-        self.assertIn("test", ran)
+        self.assertIn("validate", ran)  # wave 110 (#1302): `all` leaves the suite to CI
         self.assertEqual(out.count("py -m youtube.oauth_setup --channel tapin"), 2)  # top + end
         self.assertIn("skipped", out)
         self.assertNotEqual(code, 0)

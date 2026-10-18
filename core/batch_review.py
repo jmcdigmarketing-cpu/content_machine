@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from core.logging import get_logger
-from core.spaced_queue import plan_spaced_uploads, queue_spaced_uploads
+from core.spaced_queue import queue_spaced_uploads
 
 logger = get_logger("core.batch_review")
 
@@ -489,7 +489,7 @@ def review_drafts(
     if not items:
         return summary
 
-    plan = plan_spaced_uploads(items, channel_id=channel_id, topic=items[0][1])
+    plan = plan_review_slots(channel_id, items)
     summary.queued = queue_spaced_uploads(plan, channel_id=channel_id)
     print_fn("\n  Upload slots")
     for slot in plan:
@@ -503,6 +503,39 @@ def review_drafts(
             _write_review(slotted, publish_at=str(slot.publish_at), privacy=privacy)
     print_fn(f"  Queued {len(summary.queued)}. Run the worker: py -m jobs.worker --loop 30")
     return summary
+
+
+def plan_review_slots(channel_id: str, items: list[tuple[int, str]]) -> list:
+    """#1298: the slots for what this pass rendered, by the shelf's rules - a game before its
+    kickoff (or as it uploads, #1295), news inside its window, the free noon/10 PM. The
+    `planned_post_time` this used sent run 165, the Chargers preview, out three days after its
+    game and run 164's two-day news on Friday. A cadence cap still holds (decision 65)."""
+    from core import spaced_queue
+    from core.cadence import cadence_status
+
+    run_ids = [int(run_id) for run_id, _title in items]
+    planned = {
+        int(slot.run_id): slot for slot in spaced_queue.shelf_schedule(channel_id, run_ids=run_ids)
+    }
+    out = [
+        planned.get(int(run_id))
+        or spaced_queue.SpacedSlot(
+            run_id=int(run_id),
+            title=str(title),
+            skipped="not on the shelf - py -m scripts.ops shelf says why",
+        )
+        for run_id, title in items
+    ]
+    try:
+        status = cadence_status(channel_id)
+        if status.capped:
+            room = max(0, status.cap - status.total)
+            for slot in [s for s in out if s.publish_at is not None][room:]:
+                slot.publish_at = None
+                slot.skipped = f"cadence cap {status.cap}/{status.window_days}d reached"
+    except Exception as exc:
+        logger.debug("batch-review: cadence unread: %s", exc)
+    return out
 
 
 # ---- #1078: a render nobody is watching (operator, 2026-10-11: "yes, up to 2 a night") ------

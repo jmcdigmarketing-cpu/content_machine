@@ -53,36 +53,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-18 evening · **HEAD at write:** the wave 111 batch F commit (`git log -1`) ·
+**Written:** 2026-10-18 night · **HEAD at write:** the wave 112 batch E commit (`git log -1`) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**The plan is [hands_off_plan.md](hands_off_plan.md)**; wave 111 shipped all ten of its H1, so
-the roadmap's next five come from its quarter (H2). The backlog audit's table:
-[backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md); `test_docs_lint` holds it at <= 130.
+**The plan is [hands_off_plan.md](hands_off_plan.md)**; its H1 shipped in wave 111, so the next
+five come from its quarter (H2): #1057 re-cuts, the rest of #1042, #354 a stop rule, #457 a
+lockfile, #1058 (the operator's Reporting API). `test_docs_lint` holds the backlog at <= 130.
 
-**Wave 111 (six batches, A-F):**
-- `extra_domains` gains nfl and nba (#1303).
-- `snippet_update.writable_status` for every status change, plus `ops status-fields` (#1306;
-  seven videos repaired, the operator's yes).
-- `voice_notes.correct_names` (#1296).
-- tests/__init__.py refuses opens under the real data/ and fails the test by name; `tts` reads
-  `run_trace.TRACES_DIR` (#1305).
-- `core/predictions/calls.py`: ESPN summary lines, the ledger in data/preview_calls.json,
-  `score_calls`, `calls_line`, `picks_graded` (#1304 #991).
-- `topic_tokens.names_any` spaces the marker too (49ers).
-- `core/predictions/holdouts.py` (#83).
-- `video/week_compile.py` and `ops week-compile`; overnight `_week_compile` on Mondays (#138).
+**Wave 112 (five batches, A-E, each pushed):**
+- `ops_doctor.save_last` / `last_checks`: `ops status` reuses a result under 12 h (#1307).
+- `best_bet._is_roundup_headline` (#1308); overnight `_call_week` (#1309);
+  `week_compile.make_thumbnail` (#1310).
+- #1136 settled (the operator's yes); a correction line on q6_QBAUrtiQ.
+- `authenticity.first_line_take` and the first-line rule in both prompts (#1311;
+  FIRST_LINE_RULE pinned off in the suite); `retention.cliff_line`,
+  `growth.third_channel_line` (#1079).
+- `paid_signal_attribution` on measured outcomes (#1312; the finding is on #1071).
+- `video/matchup_card.py`, overlaid by `render_video` (#1042; MATCHUP_CARD pinned off).
+- `main._ask_length_and_voices`, `prompt_upload_plan(privacy_kept=)` (#1077);
+  `length_recommender` reads the newest 40 measured runs (#1313).
 
-**Live:** the first compilation is made by overnight on Monday morning (7 Shorts, 9:50 this week)
-and queued for a free slot - the operator said a $0 compilation, public at a slot.
-
-**Wave 112 in progress (batches A-E; a batch not in `git log` was not finished):** A done -
-#1307-#1310 (status reuses the doctor result, roundups dropped, the week's games called,
-the compilation's thumbnail), B (#1136 settled with the operator's yes) and C (#1311 the
-first-line rule, #1079 the gate line, #1312 attribution on outcomes; #1290 not retuned, by
-master_plan M4.5) and D (#1042's record card, after the first sentence) done. Next: E #1077 the menu. **Defects first:** none open of mine.
+**Live:** Monday's compilation is overnight's (wave 111); the matchup card shows on the next
+preview render. **Defects first:** none open of mine.
 
 ## Slot — Cursor
 

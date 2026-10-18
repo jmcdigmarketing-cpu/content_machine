@@ -75,27 +75,26 @@ def _collect_length_samples(channel_id: str, *, exclude_run_id: int | None = Non
     run_repo = get_content_run_repository()
     log_repo = get_publish_log_repository()
 
-    runs = run_repo.list_for_channel(channel_id)[:_TOP_N]
+    runs = run_repo.list_for_channel(channel_id)
     if not runs:
         return []
 
     rate_by_run: dict[int, float] = {}
     for log in log_repo.list_timed_outcomes(channel_id):
         rate = _target.outcome(log.metrics_json, getattr(log, "published_at", None))  # #938
-        if rate is not None and rate > 0:
+        if rate is not None and rate > 0 and log.content_run_id:
             rate_by_run[log.content_run_id] = rate
 
+    # Wave 112 (#1313): the newest _TOP_N runs, measured or not, held no measured video on tapin
+    # (drafts and runs under 7 days), so 35 measured videos were never read and the length said
+    # "no engagement analytics yet". The newest _TOP_N *measured* runs.
+    skip = int(exclude_run_id) if exclude_run_id else None
+    measured = [run for run in runs if run.id in rate_by_run and run.id != skip][:_TOP_N]
     samples: list[dict] = []
-    for run in runs:
-        if exclude_run_id and run.id == int(exclude_run_id):
-            continue
+    for run in measured:
         choice = _length_choice_from_run(run.timings_json)
-        if not choice:
-            continue
-        rate = rate_by_run.get(run.id)
-        if rate is None:
-            continue
-        samples.append({"length_choice": choice, "engaged_rate": rate})
+        if choice:
+            samples.append({"length_choice": choice, "engaged_rate": rate_by_run[run.id]})
     return samples
 
 

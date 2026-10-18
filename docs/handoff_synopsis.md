@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-18 evening: the plan's next ten, in six batches
+# Handoff synopsis — 2026-10-18 night: wave 112, the next ten in five batches
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,19 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-18 evening (Claude Code): wave 111, the plan's next ten
+## Last wave — 2026-10-18 night (Claude Code): wave 112, the next ten
+
+Five batches, each pushed and green: `ops status` reuses a doctor result under 12 h (7.9 ->
+3.4 s); betting roundups are not ideas; overnight calls every marquee game of the week; the
+Monday compilation draws its own thumbnail; runs 92 and 119's claims settled with sources
+(one rejected, a correction line on the video); the stake and the call in the first sentence
+(half the viewers are gone by a quarter of the video); the third-channel gate printed (24%
+stayed against 35%); paid-signal attribution on measured outcomes ("wait" - 3-4 runs
+without); a 3-second matchup card after a preview's first sentence; one Settings line in
+the menu (9 prompts instead of 11), and the length recommendation reads its 35 measured
+videos. Open 59.
+
+## Previous — 2026-10-18 evening (Claude Code): wave 111, the plan's next ten
 
 The long-term plan is written (hands_off_plan.md: this week, the next ten, the quarter), then
 all ten in six batches, each pushed and green: NFL/NBA news in ideas; two audit misses and the
@@ -32,15 +44,6 @@ runs without `.env` (#1302). Live: the Chargers preview public before kickoff, P
 The plan is [hands_off_plan.md](hands_off_plan.md) (five steps are the operator's); the backlog
 audit kept 70 of 258 ([backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md)). Filed
 #1303-#1306.
-
-## Previous — 2026-10-18 late morning (Claude Code): #1292 #1293 #1294 #1291 #450
-
-The take detector knows what-to-watch and conditional calls, and a waiting draft held only for
-"no take found" is read again - 7 of 10 held drafts pass; run 164 renders tonight. A preview's hook
-is no longer cut at "vs.". The soonest waiting game preview says when it must be decided, or that
-no slot is left before kickoff (the Chargers preview today: none - #1295 is the operator's call).
-Health names the runs it reads. `ops voice-facts` turns a memo into operator facts. Today's quota
-entry corrected (5,561 -> 761). Suite: 6,284 tests forward and reversed, the same verdict.
 
 ## Pipeline order (operator)
 
@@ -116,7 +119,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #421 #425 #450 #457 #257 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1057 #1042 #354 #457 #1058 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

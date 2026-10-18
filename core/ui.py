@@ -2584,8 +2584,12 @@ def prompt_upload_plan(
     grounding_override: bool = False,
     title_warnings: list[str] | None = None,
     run_id: int | None = None,
+    privacy_kept: bool = False,
 ) -> UploadPlan:
     """Interactive upload timing and privacy (no CLI flags).
+
+    `privacy_kept` (#1077): the operator kept the settings line before the script, which
+    showed the channel's default privacy - it is used without asking (what Enter picked).
 
     `grounding_override` (#754): the operator rendered past the grounding gate, so public
     is not on the menu - the upload stays unlisted until the claim is fixed.
@@ -2650,7 +2654,6 @@ def prompt_upload_plan(
         (k for k, v in privacy_map.items() if v == default_priv),
         "1",
     )
-    subsection("Privacy", print_fn)
     fallback_priv = default_priv
     if grounding_override:
         privacy_map = {"1": "private", "2": "unlisted", "3": "unlisted"}
@@ -2658,16 +2661,23 @@ def prompt_upload_plan(
             default_key = "2"
         if fallback_priv == "public":
             fallback_priv = "unlisted"
-        print_fn("  1) Private  2) Unlisted  (public not offered)")
-        print_fn(
-            "  You rendered past the grounding gate, so this upload stays unlisted "
-            "until the flagged claim is fixed."
-        )
+    if privacy_kept:
+        privacy_status = privacy_map.get(default_key, fallback_priv)
+        held = " - you rendered past the grounding gate" if grounding_override else ""
+        print_fn(f"  Privacy: {privacy_status} (kept from the settings){held}")
     else:
-        print_fn(f"  1) Private  2) Unlisted  3) Public  (channel default: {default_priv})")
-        print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
-    priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
-    privacy_status = privacy_map.get(priv, fallback_priv)
+        subsection("Privacy", print_fn)
+        if grounding_override:
+            print_fn("  1) Private  2) Unlisted  (public not offered)")
+            print_fn(
+                "  You rendered past the grounding gate, so this upload stays unlisted "
+                "until the flagged claim is fixed."
+            )
+        else:
+            print_fn(f"  1) Private  2) Unlisted  3) Public  (channel default: {default_priv})")
+            print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
+        priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
+        privacy_status = privacy_map.get(priv, fallback_priv)
     if privacy_status == "public" and (channel_id or _GENERIC_CHANNEL) == _GENERIC_CHANNEL:
         # #970: run 113 went public on 'default' because Enter picked it.
         print_fn(f"  'Default' is {_GENERIC_NOTE}: a public upload goes to that account.")

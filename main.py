@@ -117,7 +117,10 @@ def _run_intelligence_report_flow_body(channel_id: str) -> None:
 
 
 def _print_startup(channel_id: str) -> None:
-    """#986: one header line; a line of its own only for something to act on."""
+    """#986: one header line; a line of its own only for something to act on - in the
+    warning colour (#1077), so it is not read past as part of the header."""
+    from core.ui_theme import accent, warn
+
     try:
         from core.status import header_line
 
@@ -129,18 +132,18 @@ def _print_startup(channel_id: str) -> None:
 
         _sign_in = sign_in_status(channel_id)
         if _sign_in:
-            print(f"  ! {_sign_in}")
+            print(f"  {warn('! ' + _sign_in)}")
         else:
             _reminder = sign_in_reminder(channel_id)  # #974
             if _reminder:
-                print(f"  ~ {_reminder}")
+                print(f"  {accent('~ ' + _reminder)}")
     except Exception as exc:
         logger.debug("sign-in check skipped: %s", exc)
     try:
         from apis.youtube_quota import format_uploads_left, uploads_remaining
 
         if uploads_remaining() < 1:
-            print(f"  ! YouTube: {format_uploads_left()}")
+            print(f"  {warn('! YouTube: ' + format_uploads_left())}")
     except Exception as exc:
         logger.debug("uploads-left startup line skipped: %s", exc)
     try:  # #1193: .env lines python-dotenv skips, by number
@@ -148,14 +151,14 @@ def _print_startup(channel_id: str) -> None:
 
         _env_line = env_file_line(env_file_problems())
         if _env_line:
-            print(f"  ! {_env_line}")
+            print(f"  {warn('! ' + _env_line)}")
     except Exception as exc:
         logger.debug("env-file startup line skipped: %s", exc)
     try:  # #996: only when this month's ads reached ADS_MONTHLY_CAP
         from core.money.ledger import ads_budget_line, ads_over_cap
 
         if ads_over_cap():
-            print(f"  ! {ads_budget_line()}")
+            print(f"  {warn('! ' + ads_budget_line())}")
     except Exception as exc:
         logger.debug("ads cap startup line skipped: %s", exc)
 
@@ -452,6 +455,66 @@ def _ask_angle(discovery, prompt: str) -> str:
 
     meta = getattr(discovery, "meta", None) or {}
     return ask_choice(prompt, payload=meta.get("intent_read"))
+
+
+def _ask_length_and_voices(
+    channel_id: str, best_topic: str, all_angles: list[str], *, ask=None
+) -> tuple[str, str, bool]:
+    """#1077: one line of recommended defaults - Enter keeps them, c opens the two menus.
+
+    (length choice, voice mode, kept). Kept settings keep the upload's privacy at the channel's
+    default too, so the upload step does not ask it again (Enter there picked it anyway).
+    """
+    from core.console_input import menu_line
+    from core.length_recommender import get_recommended_length
+    from core.script_length import capped_choice
+
+    # #883-#886: who reads it. A debate changes the script, so it is asked before writing.
+    from core.voice.plan import voice_menu_lines, voice_mode_from_choice
+
+    read = ask or ask_choice
+    length_default, reason, flip = "2", "the default", ""
+    if all_angles:
+        length_default, reason = "4", "room for every angle as its own 1-2 minute chapter"
+    else:
+        try:
+            rec = get_recommended_length(channel_id, best_topic)
+            length_default, reason = rec.length_choice, rec.rationale
+            if rec.channel_id:
+                from core.recommender_history import note_week_flip
+
+                flip = note_week_flip(rec.channel_id, "length", rec.length_choice)
+        except Exception as exc:
+            logger.debug("get_recommended_length skipped: %s", exc)
+    kept_length = capped_choice(length_default)
+    preset = PRESETS[kept_length]
+    voice_lines = voice_menu_lines(all_angles=bool(all_angles))
+    privacy = get_channel_profile(channel_id).privacy_status_default or "private"
+
+    subsection("Settings")
+    capped = "  (your cost cap)" if kept_length != length_default else ""
+    print(f"  Length : {preset.label} ({preset.duration_hint()}) - {reason}{capped}")
+    if flip:
+        print(f"  Note   : {flip}")
+    print(f"  Voices : {voice_lines[0].split(') ', 1)[-1]}")
+    print(f"  Privacy: {privacy} (the channel's default), if you upload after the render")
+    if menu_line("  Enter keeps them, c changes: ", ask).strip().lower() != "c":
+        return kept_length, voice_mode_from_choice("", all_angles=bool(all_angles)), True
+
+    subsection("Length")
+    for key in ("1", "2", "3", "4"):
+        p = PRESETS[key]
+        over = "  (over your cost cap)" if capped_choice(key) != key else ""
+        print(f"  {key}) {p.label} ({p.duration_hint()}, {p.min_words}-{p.max_words} words){over}")
+    print(f"  Recommended: option {length_default} - {reason}")
+    picked = read(f"  Select 1-4 [{length_default}]: ").strip()
+    length_choice = capped_choice(picked if picked in ("1", "2", "3", "4") else length_default)
+
+    subsection("Voices")
+    for line in voice_lines:
+        print(line)
+    voice_mode = voice_mode_from_choice(read("  Select [1]: "), all_angles=bool(all_angles))
+    return length_choice, voice_mode, False
 
 
 def _change_angle_mode(discovery, intent_read):
@@ -878,42 +941,9 @@ def _run_new_video_flow_body(
         print(f"  Score: {best_score}")
     display_signal_breakdown(best_signals)
 
-    subsection("Length")
-    from core.script_length import capped_choice
-
-    for key in ("1", "2", "3", "4"):
-        p = PRESETS[key]
-        over = "  (over your cost cap)" if capped_choice(key) != key else ""
-        print(f"  {key}) {p.label} ({p.duration_hint()}, {p.min_words}-{p.max_words} words){over}")
-
-    from core.length_recommender import (
-        display_recommended_length,
-        get_recommended_length,
+    length_choice, voice_mode, settings_kept = _ask_length_and_voices(
+        channel_id, str(best_topic), all_angles
     )
-
-    length_default = "2"
-    if all_angles:
-        length_default = "4"
-        print("\n  Recommended length (default): Extended (option 4)")
-        print("  Reason : room for every angle as its own 1-2 minute chapter")
-    else:
-        try:
-            length_rec = get_recommended_length(channel_id, best_topic)
-            display_recommended_length(length_rec)
-            length_default = length_rec.length_choice
-        except Exception as exc:
-            logger.debug("get_recommended_length skipped: %s", exc)
-
-    _len_in = ask_choice(f"  Select 1-4 [{length_default}]: ")
-    length_choice = capped_choice(_len_in if _len_in in ("1", "2", "3", "4") else length_default)
-
-    # #883-#886: who reads it. A debate changes the script, so it is asked before writing.
-    from core.voice.plan import voice_menu_lines, voice_mode_from_choice
-
-    subsection("Voices")
-    for line in voice_menu_lines(all_angles=bool(all_angles)):
-        print(line)
-    voice_mode = voice_mode_from_choice(ask_choice("  Select [1]: "), all_angles=bool(all_angles))
 
     fact_selection = prompt_key_facts_result(
         topic,
@@ -1274,6 +1304,7 @@ def _run_new_video_flow_body(
         topic=best_topic,
         run_id=result.run_id,
         grounding_override=grounding_override,
+        privacy_kept=settings_kept,  # #1077
         title_warnings=(
             list(_tsc.get("warnings") or [])
             if isinstance(_tsc, dict) and _tsc.get("status") == "failed"

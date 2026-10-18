@@ -8539,3 +8539,34 @@ Batch D (item 9, #1042, the operator: a 3-second card after the hook):
   renders there would share it; it is named after the video now, like its `.lower_thirds.ass`.
 - Not done: the full pipeline render (it picks assets and writes outputs); the graph was
   checked through the builder on real media instead.
+
+Batch E (item 10, #1077, the operator: the main menu with fewer prompts):
+- Measured on the Enter path: a video asked Length, Voices, Upload and Privacy, and Enter at
+  each picked the recommendation, one voice, skip and the channel's default.
+- One Settings line before the script shows the length and why, the voice and the privacy;
+  "Enter keeps them, c changes" is a one-key read, and kept settings mean the upload step
+  does not ask the privacy again. 9 prompts instead of 11 when the video uploads, 9 instead
+  of 10 when it does not; what Enter picks is unchanged. `c` opens the two menus as before.
+- The start screen's lines to act on are in the warning colour. The header line (#986) was
+  already the one-line status the plan named.
+- Found on the live settings line: "default Medium for gaming (no engagement analytics yet)".
+  `length_recommender` took the newest 40 runs before joining outcomes, and none of them was
+  measured, so 35 measured videos were never read (#1313). It reads the newest 40 measured
+  runs: Medium, from 24 videos at about 78 views in 7 days. Same pick, true reason.
+
+Audit (wave 112):
+- 30 tests in tests/test_wave112.py; every one failed on clean HEAD before its fix (the
+  editable finder removed). 6 corpus cases (337 -> 343).
+- Defects caught on the way: the doctor result saved inside `gather` (the callers save it);
+  test_status_machine reading a kept result; the card's injury line off both edges; the
+  card's shared file name; the length recommender's starved join (#1313).
+- ruff clean; mypy 92, the baseline; the suite leaves data/ and output/ untouched.
+- Not done: a full pipeline render with the card (the builder ran on real footage); #1290's
+  retune, by master_plan M4.5; #1071's switch, which waits on runs without the signals.
+
+Proof: `ops status` 7.9 -> 3.4 s. `ops growth`: half gone by 25%, the gate 24% against 35%.
+Paid signals: 28.7% engaged with tiktok_trends against 31.7% without (3-4 runs without). The
+card at 2.5 s in a 6 s draft and gone at 5.0 s. The settings line live, one prompt.
+
+`roadmap-index`: open 59, done 1487, numbered open 50, highest open #1290. Suite 6,380,
+forward and reversed.

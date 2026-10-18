@@ -3,8 +3,8 @@
 Measured first: `ops status` took 7.9 s, 5.0 of them `ops_doctor.gather` (torch's import for the
 CUDA probe, a timed-out localhost connect for Ollama) for a line that only counts passes; a live
 idea was another outlet's betting roundup; calls were made only for the menu's five previews; the
-Monday compilation had no thumbnail of its own; retention curves were stored on 24 videos and
-read by nothing - half the viewers were gone by 20% of the video.
+Monday compilation had no thumbnail of its own; the retention curves stored on 24 videos said
+half the viewers were gone by 20% of the video, and nothing asked the first sentence for the call.
 """
 
 from __future__ import annotations
@@ -448,6 +448,127 @@ class MatchupCardTests(unittest.TestCase):
         first, second = (" ".join(c.args[0]) for c in ffmpeg_run.call_args_list)
         self.assertIn("out.matchup_card.png", first)
         self.assertNotIn("matchup_card", second)
+
+
+def _scripted(answers: list[str]):
+    asked: list[str] = []
+
+    def ask(prompt: str = "") -> str:
+        asked.append(prompt)
+        return answers.pop(0) if answers else ""
+
+    return ask, asked
+
+
+class MenuPromptTests(unittest.TestCase):
+    """Item 10, #1077 (the operator: the main menu with fewer prompts). Measured: a video that
+    uploads asked Length, Voices, Upload and Privacy - four prompts whose Enter answers were
+    the recommendation, one voice, skip and the channel's default."""
+
+    def _settings(self, answers):
+        import main
+        from core.length_recommender import LengthRecommendation
+
+        rec = LengthRecommendation(length_choice="3", label="Long", source="analytics",
+                                   avg_engaged_rate=0.31, supporting_runs=5,
+                                   rationale="held 31% over 5 runs")  # fmt: skip
+        ask, asked = _scripted(answers)
+        with (
+            patch("core.length_recommender.get_recommended_length", return_value=rec),
+            patch("core.script_length.capped_choice", side_effect=lambda key: key),
+            patch("builtins.print"),
+        ):
+            got = main._ask_length_and_voices("tapin", "Packers win this one", [], ask=ask)
+        return got, asked
+
+    def test_enter_keeps_length_and_voices_in_one_prompt(self):
+        got, asked = self._settings([""])
+        self.assertEqual(got, ("3", "single", True))
+        self.assertEqual(len(asked), 1)
+
+    def test_c_opens_the_two_menus(self):
+        got, asked = self._settings(["c", "1", "4"])
+        self.assertEqual(got, ("1", "debate", False))
+        self.assertEqual(len(asked), 3)
+
+    def _upload(self, answers, **kwargs):
+        from core import ui
+
+        ask, asked = _scripted(answers)
+        with (
+            patch.object(ui, "display_upload_queue"),
+            patch(
+                "analytics.post_timing.next_optimal_post_time", return_value=NOW + timedelta(days=1)
+            ),
+        ):
+            plan = ui.prompt_upload_plan(channel_id="tapin", topic="Packers win this one",
+                                         print_fn=lambda *a, **k: None, input_fn=ask, **kwargs)  # fmt: skip
+        return plan, asked
+
+    def test_kept_settings_do_not_ask_the_privacy_again(self):
+        plan, asked = self._upload(["2"], privacy_kept=True)
+        self.assertEqual((plan.mode, plan.privacy_status), ("queue", "private"))
+        self.assertEqual(len(asked), 1)
+        plan, asked = self._upload(["2", "2"])
+        self.assertEqual(plan.privacy_status, "unlisted")
+        self.assertEqual(len(asked), 2)
+
+    def test_a_kept_public_default_stays_unlisted_past_the_grounding_gate(self):
+        with patch(
+            "core.ui.get_channel_profile", return_value=MagicMock(privacy_status_default="public")
+        ):
+            plan, asked = self._upload(["2"], privacy_kept=True, grounding_override=True)
+        self.assertEqual(plan.privacy_status, "unlisted")
+        self.assertEqual(len(asked), 1)
+
+    def test_a_startup_warning_is_in_colour(self):
+        import main
+
+        printed: list[str] = []
+        with (
+            patch("core.status.header_line", return_value="tapin"),
+            patch("youtube.oauth.sign_in_status", return_value="YouTube sign-in expired"),
+            patch("apis.youtube_quota.uploads_remaining", return_value=5),
+            patch("core.secrets_doctor.env_file_problems", return_value=[]),
+            patch("core.money.ledger.ads_over_cap", return_value=False),
+            patch("core.ui_theme.ui_color_enabled", return_value=True),
+            patch(
+                "builtins.print", side_effect=lambda *a, **k: printed.append(" ".join(map(str, a)))
+            ),
+        ):
+            main._print_startup("tapin")
+        line = next(p for p in printed if "sign-in expired" in p)
+        self.assertIn("\x1b[", line)
+
+    def test_measured_runs_behind_the_newest_forty_are_read(self):
+        # Live 2026-10-18, the settings line: "default Medium for gaming (no engagement analytics
+        # yet)" - the newest 40 tapin runs held no measured video; 35 older ones did.
+        from types import SimpleNamespace
+
+        from core import length_recommender as lr
+
+        runs = [
+            SimpleNamespace(id=i, timings_json='{"length_preset": "2"}') for i in range(100, 54, -1)
+        ]
+        logs = [
+            SimpleNamespace(content_run_id=i, metrics_json="{}", published_at=None)
+            for i in range(55, 61)
+        ]
+        run_repo, log_repo = MagicMock(), MagicMock()
+        run_repo.list_for_channel.return_value = runs
+        log_repo.list_timed_outcomes.return_value = logs
+        with (
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository",
+                return_value=run_repo,
+            ),
+            patch(
+                "storage.repositories.publish_log.get_publish_log_repository", return_value=log_repo
+            ),
+            patch.object(lr._target, "outcome", return_value=0.3),
+        ):
+            samples = lr._collect_length_samples("tapin")
+        self.assertEqual(len(samples), 6)
 
 
 if __name__ == "__main__":

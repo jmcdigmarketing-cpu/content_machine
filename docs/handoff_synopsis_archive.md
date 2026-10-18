@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-18 late morning (Claude Code): #1292 #1293 #1294 #1291 #450
+
+The take detector knows what-to-watch and conditional calls, and a waiting draft held only for
+"no take found" is read again - 7 of 10 held drafts pass; run 164 renders tonight. A preview's hook
+is no longer cut at "vs.". The soonest waiting game preview says when it must be decided, or that
+no slot is left before kickoff (the Chargers preview today: none - #1295 is the operator's call).
+Health names the runs it reads. `ops voice-facts` turns a memo into operator facts. Today's quota
+entry corrected (5,561 -> 761). Suite: 6,284 tests forward and reversed, the same verdict.
+
 ## Previous — 2026-10-18 morning (Claude Code): #1287 #1288 #1289 #1267 #1264 #1268
 
 Hook learning read `run.script`, a field runs do not have, and had joined 0 of 41 videos; it now

@@ -412,12 +412,18 @@ def subject_markers(terms: list[str]) -> list[str]:
     return markers
 
 
+def _spaced(text: str) -> str:
+    """Lower case, dashes and underscores as spaces, a space between letters and digits."""
+    low = re.sub(r"[-_]+", " ", (text or "").lower())
+    return re.sub(r"(?<=[a-z])(?=\d)|(?<=\d)(?=[a-z])", " ", low)
+
+
 def names_any(text: str, markers: list[str]) -> bool:
     """Whether `text` names any marker, as whole words. A file stem counts:
-    "gta6-subpoenas" names GTA."""
-    low = re.sub(r"[-_]+", " ", (text or "").lower())
-    low = re.sub(r"(?<=[a-z])(?=\d)|(?<=\d)(?=[a-z])", " ", low)
-    return any(re.search(rf"\b{re.escape(m.lower())}\b", low) for m in markers if m)
+    "gta6-subpoenas" names GTA. The marker is spaced the same way as the text (wave 111: "49ers"
+    became "49 ers" in the text only, so no team with a number in its name was ever named)."""
+    low = _spaced(text)
+    return any(re.search(rf"\b{re.escape(_spaced(m))}\b", low) for m in markers if m)
 
 
 _NUMBER_AFTER = r"\s+((?:\d+|[IVX]+)\b)"

@@ -708,6 +708,12 @@ def cmd_predictions(args: argparse.Namespace) -> int:
 
     for line in report_lines(resolve_channel_id(getattr(args, "channel", None))):
         print(line)
+    from core.predictions import calls
+
+    calls.score_calls()  # #1304: each final game scores its preview's call, once
+    line = calls.calls_line()
+    if line:
+        print(line)
     return 0
 
 

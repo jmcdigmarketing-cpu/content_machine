@@ -79,8 +79,9 @@ suite; `suite_hygiene.without_dotenv` around `ops test` (#1302).
 (the operator answered #1303 yes, #138 a $0 compilation, #991 Picks graded, #83 holdouts 1 in 5);
 a batch that is not in `git log` was not finished. Batch A (the plan's H1/H2) and B (#1303
 #1269 #104 #1059 #1306 #1296; seven videos' embedding restored, the operator's yes) and C
-(#1305: a test may not open the real data/ - the suite is green in the real tree too) are
-committed.
+(#1305: a test may not open the real data/ - the suite is green in the real tree too) and D
+(#1304: calls from ESPN's summary, kept in data/preview_calls.json, scored; `names_any`
+now names the 49ers) are committed.
 Suite 6,313, forward and reversed.
 
 ## Slot — Cursor

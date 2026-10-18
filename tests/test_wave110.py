@@ -364,6 +364,18 @@ HEADLINES = [
 class PredictionTests(unittest.TestCase):
     """#1301: "predictions are still lazy" - a preview was the matchup and the records."""
 
+    def setUp(self):
+        # Wave 111 (#1304): calls are kept per event; each test starts with an empty ledger.
+        import tempfile
+
+        from core.predictions import calls
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        ledger = patch.object(calls, "CALLS_FILE", os.path.join(tmp.name, "calls.json"))
+        ledger.start()
+        self.addCleanup(ledger.stop)
+
     def test_the_board_line_is_read(self):
         from core.seasonal_calendar import game_detail
 

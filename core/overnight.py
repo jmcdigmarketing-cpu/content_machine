@@ -154,6 +154,7 @@ def run_overnight(
         _probe_signals(result)
         _post_publish(result)
         _crosspost(result)
+        _score_calls()
 
 
 def _crosspost(result: OvernightResult) -> None:
@@ -164,6 +165,16 @@ def _crosspost(result: OvernightResult) -> None:
         result.crosspost_line = "\n".join(step(result.channel_id))
     except Exception as exc:
         logger.debug("overnight crosspost skipped: %s", exc)
+
+
+def _score_calls() -> None:
+    """#1304: last night's games score their preview calls (ops predictions prints them)."""
+    try:
+        from core.predictions.calls import score_calls
+
+        score_calls()
+    except Exception as exc:
+        logger.debug("overnight call scoring skipped: %s", exc)
 
 
 def _post_publish(result: OvernightResult) -> None:

@@ -8437,3 +8437,17 @@ it is a module flag set by the real `run_ordered` now. In the real tree: 6,329 t
 reversed, green - the first time on the operator's PC. A clock bomb found on the way
 (`test_worker_shelf_public`, a Titans-Colts fixture that kicked off at 17:00Z today). 4 of 4 new
 tests failed on clean HEAD.
+
+Batch D (items 6-7, #1304): a call's reason from ESPN's game summary (predictor, injuries,
+leaders, last five), and a calls ledger - made once per event, scored when the game is final,
+"Calls: N of M right" in `ops predictions`. The menu's second build: 1.6 s against 15.4 s. Three
+live defects on the way, each with a corpus case:
+- the Moicano card was kept with the call "No prediction available";
+- "Rams are 2-3 at home" was said with no home line;
+- `names_any` could not name the 49ers or the 76ers - it spaced "49ers" to "49 ers" in the text
+  and not in the marker. That one is shared (story clustering, preview dedupe, the take checks)
+  and every dependent test held after the fix.
+
+I removed data/preview_calls.json once, the ledger my own live check had made minutes before
+under the old rules (five entries, 17:36Z); the next build remade them. 9 of 9 new tests failed on
+clean HEAD.

@@ -203,6 +203,7 @@ from core import topic_trajectory as _topic_trajectory
 from core import trace_secrets as _trace_secrets
 from core import ypp_readiness as _ypp_readiness
 from core.money import ledger as _spend_ledger
+from core.predictions import calls as _preview_calls
 from core.runs import signal_skips as _signal_skips
 from core.success import goals as _goals
 from core.success import review as _review
@@ -314,6 +315,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_policy_canary, "SNAPSHOT_FILE", _suite_store("policy_canary.json")),
     patch.object(_topic_trajectory, "_TRAJECTORY_FILE", _suite_store("topic_trajectory.json")),
     patch.object(_seo, "HINTS_DIR", _SUITE_DATA_TMP),
+    # #1304: the calls ledger.
+    patch.object(_preview_calls, "CALLS_FILE", _suite_store("preview_calls.json")),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

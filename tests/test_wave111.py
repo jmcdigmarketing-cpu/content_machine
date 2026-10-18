@@ -271,5 +271,189 @@ class DataReadGuardTests(unittest.TestCase):
         self.assertEqual(len(flags), 1)
 
 
+RAMS = "Arizona Cardinals at Los Angeles Rams"
+SUMMARY = {
+    "header": {"competitions": [{
+        "status": {"type": {"completed": False}},
+        "competitors": [
+            {"homeAway": "home", "team": {"id": "14", "displayName": "Los Angeles Rams"}},
+            {"homeAway": "away", "team": {"id": "22", "displayName": "Arizona Cardinals"}},
+        ],
+    }]},
+    "predictor": {"homeTeam": {"id": "14", "gameProjection": "87.3"},
+                  "awayTeam": {"id": "22", "gameProjection": "12.6"}},
+    "injuries": [{"team": {"displayName": "Los Angeles Rams"},
+                  "injuries": [{"status": "Questionable", "athlete": {"displayName": "Trent McDuffie"}},
+                               {"status": "Active", "athlete": {"displayName": "Someone Fine"}}]}],
+    "leaders": [{"team": {"displayName": "Los Angeles Rams"},
+                 "leaders": [{"displayName": "Passing Yards",
+                              "leaders": [{"athlete": {"displayName": "Matthew Stafford"},
+                                           "displayValue": "139/216, 1,572 YDS, 9 TD, 6 INT"}]}]}],
+    "lastFiveGames": [{"team": {"displayName": "Los Angeles Rams"},
+                       "events": [{"gameResult": r} for r in "LWLWL"]}],
+}  # fmt: skip
+
+
+def _final(winner_home: bool):
+    import copy
+
+    final = copy.deepcopy(SUMMARY)
+    comp = final["header"]["competitions"][0]
+    comp["status"]["type"]["completed"] = True
+    comp["competitors"][0]["winner"] = winner_home
+    comp["competitors"][1]["winner"] = not winner_home
+    return final
+
+
+class GameReasonTests(unittest.TestCase):
+    """#1304: a call's why was the season records - ESPN's game summary has more."""
+
+    def test_the_board_keeps_the_event_id(self):
+        from core.seasonal_calendar import game_detail
+
+        detail = game_detail("nfl", {"id": "401872999", "name": RAMS, "competitions": [{}]})
+        self.assertEqual(detail["event_id"], "401872999")
+
+    def test_the_summary_becomes_supplied_lines(self):
+        from core.predictions.calls import game_lines
+
+        text = "\n".join(game_lines(SUMMARY))
+        self.assertIn("Los Angeles Rams 87.3% to win", text)
+        self.assertIn("Trent McDuffie (Questionable)", text)
+        self.assertNotIn("Someone Fine", text)
+        self.assertIn("Matthew Stafford", text)
+        self.assertIn("last five: L W L W L", text)
+
+
+class NumberedNamesTests(unittest.TestCase):
+    """Live 2026-10-18: the 49ers' call was dropped as naming no side - `names_any` split
+    "49ers" into "49 ers" in the text but not in the marker, so no team with a number in its
+    name (49ers, 76ers) was ever named, in story clustering or anywhere else."""
+
+    def test_a_numbered_team_is_named(self):
+        from apis.topic_tokens import names_any
+
+        self.assertTrue(names_any("San Francisco 49ers win", ["49ers"]))
+        self.assertTrue(names_any("Philadelphia 76ers at New York Knicks", ["76ers"]))
+        self.assertTrue(names_any("gta6-subpoenas", ["GTA"]))  # the stem case still holds
+        self.assertFalse(names_any("Fortnite comes to Linux", ["49ers"]))
+
+
+class CallsLedgerTests(unittest.TestCase):
+    """#1304: every call kept, made once per event, and scored after the game."""
+
+    def setUp(self):
+        import os
+        import tempfile
+        from unittest.mock import patch
+
+        from core.predictions import calls
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        for p in (
+            patch.object(calls, "CALLS_FILE", os.path.join(tmp.name, "preview_calls.json")),
+            patch.dict(os.environ, {"PREVIEW_CALLS": "true"}),
+            patch(
+                "core.seasonal_calendar.game_details",
+                return_value={
+                    "league": "nfl",
+                    "event_id": "9",
+                    "date": "2026-10-18T20:25Z",
+                    "line": "LAR -9.5",
+                },
+            ),
+            patch.object(calls, "_summary", return_value=SUMMARY),
+        ):
+            p.start()
+            self.addCleanup(p.stop)
+
+    def _bet(self):
+        from core.best_bet import BestBetResult
+
+        return BestBetResult(topic=RAMS, domain="nfl", avg_engaged_rate=0.0, source="schedule",
+                             supporting_runs=0, rationale="Sun 4:05 PM · Cardinals 1-5 at Rams 4-2")  # fmt: skip
+
+    def test_the_prompt_carries_the_game_lines_and_a_call_is_made_once(self):
+        from unittest.mock import patch
+
+        from core.predictions import calls
+
+        model = {"call": "Rams win", "why": "ESPN gives the Rams 87.3%"}
+        with patch("core.llm_router.complete_json", return_value=model) as llm:
+            first = calls.preview_calls([self._bet()], headlines=[])
+            second = calls.preview_calls([self._bet()], headlines=[])
+        self.assertEqual(llm.call_count, 1)  # the second menu build reused it
+        self.assertIn("Trent McDuffie", llm.call_args.args[0])
+        self.assertEqual(first, second)
+        self.assertEqual(first[RAMS]["why"], "ESPN gives the Rams 87.3%")
+
+    def test_a_finished_game_scores_the_call(self):
+        from datetime import datetime, timezone
+        from unittest.mock import patch
+
+        from core.predictions import calls
+
+        with patch("core.llm_router.complete_json", return_value={"call": "Rams win", "why": ""}):
+            calls.preview_calls([self._bet()], headlines=[])
+        later = datetime(2026, 10, 19, 3, 0, tzinfo=timezone.utc)
+        with patch.object(calls, "_summary", return_value=_final(winner_home=True)):
+            self.assertEqual(calls.score_calls(now=later), 1)
+        self.assertIn("Calls: 1 of 1 right", calls.calls_line(now=later))
+
+    def test_a_wrong_call_is_scored_wrong(self):
+        from datetime import datetime, timezone
+        from unittest.mock import patch
+
+        from core.predictions import calls
+
+        with patch("core.llm_router.complete_json", return_value={"call": "Rams win", "why": ""}):
+            calls.preview_calls([self._bet()], headlines=[])
+        later = datetime(2026, 10, 19, 3, 0, tzinfo=timezone.utc)
+        with patch.object(calls, "_summary", return_value=_final(winner_home=False)):
+            calls.score_calls(now=later)
+        self.assertIn("Calls: 0 of 1 right", calls.calls_line(now=later))
+
+    def test_a_non_call_is_not_kept(self):
+        # Live 2026-10-18: "UFC Fight Night: Moicano vs. Nolan | No prediction available".
+        from unittest.mock import patch
+
+        from core.predictions import calls
+
+        with patch("core.llm_router.complete_json",
+                   return_value={"call": "No prediction available", "why": ""}):  # fmt: skip
+            self.assertEqual(calls.preview_calls([self._bet()], headlines=[]), {})
+
+    def test_home_or_road_that_no_line_says_drops_the_why(self):
+        # Live: "Rams are 2-3 at home against Cardinals 1-4 on road" - no line said home or road.
+        from unittest.mock import patch
+
+        from core.predictions import calls
+
+        model = {"call": "Rams win", "why": "Rams are 4-2 at home"}
+        with patch("core.llm_router.complete_json", return_value=model):
+            got = calls.preview_calls([self._bet()], headlines=[])
+        self.assertEqual(got[RAMS]["call"], "Rams win")
+        self.assertEqual(got[RAMS]["why"], "")
+
+    def test_ops_predictions_prints_the_calls_line(self):
+        from argparse import Namespace
+        from unittest.mock import patch
+
+        from scripts import ops
+
+        printed: list[str] = []
+        with (
+            patch("core.predictions.ledger.report_lines", return_value=[]),
+            patch("core.predictions.calls.score_calls", return_value=0),
+            patch("core.predictions.calls.calls_line", return_value="Calls: 7 of 10 right"),
+            patch(
+                "builtins.print", side_effect=lambda *a, **k: printed.append(" ".join(map(str, a)))
+            ),
+        ):
+            ops.cmd_predictions(Namespace(channel="tapin"))
+        self.assertIn("Calls: 7 of 10 right", printed)
+
+
 if __name__ == "__main__":
     unittest.main()

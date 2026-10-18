@@ -1658,7 +1658,10 @@ def get_idea_menu(
         from core.predictions import calls
 
         if preview_list and calls.enabled():
-            made = calls.preview_calls(preview_list, headlines=calls.headlines_for(preview_list))
+            previews_now = list(preview_list)
+            made = calls.preview_calls(
+                previews_now, headlines=lambda: calls.headlines_for(previews_now)
+            )
             preview_list = with_calls(preview_list, made)
     except Exception as exc:
         logger.debug("preview calls skipped: %s", exc)

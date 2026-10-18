@@ -5337,6 +5337,50 @@
         ]
       },
       "why": "the run's own names correct what was heard"
+    },
+    {
+      "id": "a-numbered-team-is-named",
+      "item": 1304,
+      "source": "live, 2026-10-18: the 49ers' preview call was dropped as naming no side - names_any spaced '49ers' in the text, not in the marker",
+      "call": "apis.topic_tokens:names_any",
+      "args": [
+        "San Francisco 49ers win",
+        [
+          "49ers"
+        ]
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "no team with a number in its name was ever named, in clustering or anywhere"
+    },
+    {
+      "id": "a-non-call-names-no-side",
+      "item": 1304,
+      "source": "live, 2026-10-18: the Moicano card was kept with the call 'No prediction available'",
+      "call": "core.predictions.calls:_names_a_side",
+      "args": [
+        "No prediction available",
+        "UFC Fight Night: Moicano vs. Nolan"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a call names a side of the event"
+    },
+    {
+      "id": "a-home-record-no-line-gave-is-dropped",
+      "item": 1304,
+      "source": "live, 2026-10-18: 'Rams are 2-3 at home against Cardinals 1-4 on road' with no home or road line supplied",
+      "call": "core.predictions.calls:_grounded",
+      "args": [
+        "Rams are 2-3 at home",
+        "Event: Arizona Cardinals at Los Angeles Rams\nWhen and records: Cardinals 1-4 at Rams 2-3"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "grounding: words a line did not say"
     }
   ]
 }

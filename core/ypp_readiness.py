@@ -177,6 +177,50 @@ def _bought_pace_line(
     )
 
 
+def compilation_line(channel_id: str) -> str:
+    """#1314 (wave 114): what the weekly compilations (#138) add to the 4,000 long-form hours -
+    the only long-form the channel makes. Their minutes are each video's synced 28-day window."""
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        made = []
+        for run in get_content_run_repository().list_for_channel(channel_id):
+            try:
+                features = json.loads(getattr(run, "features_json", "") or "{}")
+            except (TypeError, ValueError):
+                continue
+            if isinstance(features, dict) and features.get("compilation"):
+                made.append(int(run.id))
+        minutes = 0.0
+        measured = 0
+        for row in get_publish_log_repository().list_uploaded_for_channel(channel_id):
+            if getattr(row, "content_run_id", None) not in made:
+                continue
+            try:
+                metrics = json.loads(getattr(row, "metrics_json", "") or "{}")
+            except (TypeError, ValueError):
+                continue
+            if isinstance(metrics, dict) and metrics.get("estimated_minutes_watched") is not None:
+                minutes += float(metrics["estimated_minutes_watched"] or 0)
+                measured += 1
+    except Exception as exc:
+        logger.debug("compilation line skipped: %s", exc)
+        return ""
+    if not made:
+        return "Compilations: none made yet - overnight makes the first on Monday (#138)."
+    if not measured:
+        return (
+            f"Compilations: {len(made)} made, none measured yet - their hours count from the sync."
+        )
+    hours = minutes / 60.0
+    per_week = hours / max(1, measured)  # one a week, each read over its first 28 days
+    weeks = WATCH_HOURS_TARGET / per_week if per_week > 0 else 0
+    tail = f"; at that rate 4,000 hours is {_span(weeks)} away" if per_week > 0 else ""
+    return (f"Compilations: {len(made)} made, {hours:.1f} long-form hours from {measured} measured "
+            f"(about {per_week:.1f} a week){tail}.")  # fmt: skip
+
+
 def path_lines(numbers: dict[str, Any], *, from_videos: dict[str, Any] | None = None) -> list[str]:
     """How far each bar is at the pace of the last four weeks (#1144), or [].
 
@@ -292,13 +336,18 @@ def inspect_ypp(
     report = YppReport(channel_id=cid)
 
     from_videos: dict[str, Any] | None = None
-    if numbers is None and metrics_rows is None:
+    stored = numbers is None and metrics_rows is None
+    if stored:
         numbers = load_ypp_numbers(cid)
         # Read beside the stored numbers only: a caller passing its own numbers is a test.
         from_videos = _video_subscribers(cid) if numbers else None
     if numbers:
         report.checks.append(threshold_from_numbers(numbers))
         report.path = path_lines(numbers, from_videos=from_videos)
+        if stored:  # a caller passing its own numbers is a test
+            line = compilation_line(cid)
+            if line:
+                report.path.append(line)
     else:
         report.checks.append(_estimated_threshold(cid, metrics_rows))
 

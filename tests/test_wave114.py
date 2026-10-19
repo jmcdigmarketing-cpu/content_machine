@@ -8,6 +8,7 @@ posts for a day before YouTube publishes it, and the privacy sync then wrote "pr
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import unittest
@@ -124,13 +125,79 @@ class ScheduledHoldTests(unittest.TestCase):
         with patch("analytics.privacy_sync._service", side_effect=RuntimeError("no sign-in")):
             self.assertEqual(crosspost._held_by_youtube("tapin", {154: "e7G"}), {})
 
-
     def test_a_removed_copy_is_hosted_again(self):
         from publishing.crosspost import _needs_hosting
 
         self.assertTrue(_needs_hosting({}))
         self.assertFalse(_needs_hosting({"object_key": "tapin/run154.mp4", "url": "https://x"}))
-        self.assertTrue(_needs_hosting({"object_key": "tapin/run154.mp4", "object_removed": "2026-10-19"}))
+        self.assertTrue(
+            _needs_hosting({"object_key": "tapin/run154.mp4", "object_removed": "2026-10-19"})
+        )
+
+
+class FormatTests(unittest.TestCase):
+    """B: #1491 Shorts against Shorts, #1323 which content converts, #1314 compilation hours."""
+
+    def test_a_long_video_is_read_apart(self):
+        from core import channel_health
+
+        rates = {98: 0.31, 99: 0.33, 109: 0.30, 110: 0.32, 111: 0.29, 120: 0.11}
+        info = {rid: {"seconds": 406.0 if rid == 120 else 40.0} for rid in rates}
+        with (
+            patch("core.engagement_predictor.run_engagement_map", return_value=rates),
+            patch.object(channel_health, "_engagement_info", return_value=info),
+            patch.object(channel_health, "_unmeasured_recent", return_value=[]),
+        ):
+            sub = channel_health._engagement_sub("tapin")
+        self.assertEqual(sub.status, channel_health.GREEN, sub.detail)
+        self.assertIn("(runs 98-111)", sub.detail)
+        self.assertIn("1 long video read apart (median 11%", sub.detail)
+
+    def test_subscribers_per_1000_by_domain_and_format(self):
+        from analytics import growth
+
+        rows = [{"run_id": 1, "subs": 1, "views": 500, "paid": 0}, {"run_id": 2, "subs": 0, "views": 300, "paid": 0},
+                {"run_id": 3, "subs": 1, "views": 250, "paid": 0}, {"run_id": 4, "subs": 0, "views": 50, "paid": 0}]  # fmt: skip
+        kinds = {
+            1: ("gaming", "Shorts"),
+            2: ("gaming", "Shorts"),
+            3: ("nfl", "Shorts"),
+            4: ("ufc", "long"),
+        }
+        with patch.object(growth, "_kind", side_effect=lambda rid: kinds[rid]):
+            got = growth.conversion(rows)
+        self.assertEqual([(g["domain"], g["format"], g["per_1k"]) for g in got],
+                         [("gaming", "Shorts", 1.25), ("nfl", "Shorts", 4.0)])  # fmt: skip
+        line = growth.conversion_line({"subscribers": {"by": got}})
+        self.assertTrue(
+            line.startswith("subscribers per 1,000 organic views: gaming Shorts 1.2"), line
+        )
+
+    def _compilations(self, runs, logs):
+        from core import ypp_readiness
+
+        with (
+            patch("storage.repositories.content_runs.get_content_run_repository",
+                  return_value=SimpleNamespace(list_for_channel=lambda c: runs)),
+            patch("storage.repositories.publish_log.get_publish_log_repository",
+                  return_value=SimpleNamespace(list_uploaded_for_channel=lambda c: logs)),
+        ):  # fmt: skip
+            return ypp_readiness.compilation_line("tapin")
+
+    def test_what_the_compilations_add(self):
+        week = SimpleNamespace(
+            id=200, features_json=json.dumps({"compilation": {"week": "2026-10-19"}})
+        )
+        short = SimpleNamespace(id=150, features_json="{}")
+        log = SimpleNamespace(
+            content_run_id=200, metrics_json=json.dumps({"estimated_minutes_watched": 120})
+        )
+        self.assertIn("none made yet", self._compilations([short], []))
+        self.assertIn("1 made, none measured yet", self._compilations([week, short], []))
+        line = self._compilations([week, short], [log])
+        self.assertIn("1 made, 2.0 long-form hours from 1 measured", line)
+        self.assertIn("4,000 hours is", line)
+
 
 if __name__ == "__main__":
     unittest.main()

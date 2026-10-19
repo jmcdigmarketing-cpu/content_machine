@@ -53,14 +53,28 @@ def _worst(statuses: list[str]) -> str:
 
 # #1238: run 119 - 3 views, 0% engaged - turned engagement RED on its own.
 HEALTH_MIN_VIEWS = 20
+LONG_VIDEO_SECONDS = 180.0  # #1491: past a Short's limit
+
+
+def _seconds(info: dict[str, object] | None) -> float:
+    try:
+        return float((info or {}).get("seconds") or 0)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _engagement_sub(channel_id: str) -> HealthSub:
     from core.engagement_predictor import run_engagement_map
 
-    rates = run_engagement_map(channel_id, min_views=HEALTH_MIN_VIEWS)  # {run_id: engaged_rate}
+    measured = run_engagement_map(channel_id, min_views=HEALTH_MIN_VIEWS)  # {run_id: rate}
     everything = run_engagement_map(channel_id)
-    left = len(everything) - len(rates)
+    left = len(everything) - len(measured)
+    # #1491 (wave 114): the engaged rate is the average view % (#920), which falls with length;
+    # run 120, a 406 s NBA video at 11%, sat in the same baseline as 40 s Shorts. Shorts are read
+    # against Shorts; long videos are counted apart.
+    info = _engagement_info(list(measured))
+    long_ids = {rid for rid in measured if _seconds(info.get(rid)) > LONG_VIDEO_SECONDS}
+    rates = {rid: rate for rid, rate in measured.items() if rid not in long_ids}
     if len(rates) < 3:
         return HealthSub("engagement", YELLOW, f"collecting ({len(rates)} measured)")
     ordered = [rates[rid] for rid in sorted(rates)]
@@ -74,6 +88,13 @@ def _engagement_sub(channel_id: str) -> HealthSub:
         f"recent {recent_mean * 100:.1f}% (runs {span[0]}-{span[-1]}) vs baseline "
         f"{baseline * 100:.1f}% ({delta * 100:+.1f}pp)"
     )
+    if long_ids:
+        held = sorted(measured[rid] for rid in long_ids)
+        plural = "video" if len(long_ids) == 1 else "videos"
+        detail += (
+            f"; {len(long_ids)} long {plural} read apart (median {held[len(held) // 2] * 100:.0f}% - "
+            "a long video holds a smaller share)"
+        )
     if left > 0:
         plural = "video" if left == 1 else "videos"
         detail += f"; {left} {plural} under {HEALTH_MIN_VIEWS} views left out"
@@ -91,7 +112,7 @@ def _engagement_sub(channel_id: str) -> HealthSub:
         except Exception as exc:
             logger.debug("sync note skipped: %s", exc)
     if delta < -0.01:
-        why = engagement_why(rates, _engagement_info(list(rates)))
+        why = engagement_why(rates, {rid: info[rid] for rid in rates if rid in info})
         status, word = (RED, "declining") if delta < -0.05 else (YELLOW, "softening")
         return HealthSub("engagement", status, f"{word} - " + detail, why=why)
     return HealthSub("engagement", GREEN, "steady/up - " + detail)

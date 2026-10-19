@@ -329,6 +329,7 @@ def report(channel_id: str) -> dict[str, Any]:
         "videos_with": len(brought),
         "videos": len(rows),
         "top": [{"title": r["title"], "subs": r["subs"], "views": r["views"]} for r in brought[:3]],
+        "by": conversion(rows),  # #1323
     }
     try:
         out["intro_split"] = intro_split(channel_id)  # #988
@@ -339,6 +340,54 @@ def report(channel_id: str) -> dict[str, Any]:
     except Exception as exc:
         logger.debug("shorts split skipped: %s", exc)
     return out
+
+
+_LONG_SECONDS = 180.0
+
+
+def _kind(run_id: Any) -> tuple[str, str]:
+    """(domain, "Shorts" or "long") of a run, from its stored features; ("", "") without one."""
+    features = _features(run_id)
+    if not features:
+        return "", ""
+    stored = features.get("domains")
+    domain = str(stored.get("effective") if isinstance(stored, dict) and stored.get("effective")
+                 else features.get("domain") or "")  # fmt: skip
+    try:
+        seconds = float((features.get("technical_qc") or {}).get("video_duration") or 0)
+    except (TypeError, ValueError):
+        seconds = 0.0
+    return domain, "long" if seconds > _LONG_SECONDS else "Shorts"
+
+
+def conversion(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """#1323 (wave 114): subscribers per 1,000 organic views by domain and format - which
+    content converts. 2 of 64 new subscribers came from the videos; the total said nothing
+    about which kind. Biggest view count first; a group under 100 views is left out."""
+    groups: dict[tuple[str, str], dict[str, float]] = {}
+    for row in rows:
+        domain, kind = _kind(row.get("run_id"))
+        if not domain:
+            continue
+        group = groups.setdefault((domain, kind), {"subs": 0, "views": 0, "videos": 0})
+        group["subs"] += int(row.get("subs") or 0)
+        group["views"] += max(0, int(row.get("views") or 0) - int(row.get("paid") or 0))
+        group["videos"] += 1
+    out = [
+        {"domain": d, "format": k, "subs": int(g["subs"]), "views": int(g["views"]),
+         "videos": int(g["videos"]), "per_1k": round(1000.0 * g["subs"] / g["views"], 2)}
+        for (d, k), g in groups.items() if g["views"] >= 100
+    ]  # fmt: skip
+    return sorted(out, key=lambda g: -g["views"])
+
+
+def conversion_line(rep: dict[str, Any]) -> str:
+    groups = (rep.get("subscribers") or {}).get("by") or []
+    if not groups:
+        return ""
+    parts = [f"{g['domain']} {g['format']} {g['per_1k']:.1f} ({g['subs']} from {g['views']:,})"
+             for g in groups[:5]]  # fmt: skip
+    return "subscribers per 1,000 organic views: " + "; ".join(parts)
 
 
 def _channel_paid(channel_id: str) -> int | None:
@@ -508,6 +557,9 @@ def render(channel_id: str) -> str:
     told = subscriber_line(rep)
     if told:
         lines.append(f"  {told}")
+    converts = conversion_line(rep)
+    if converts:
+        lines.append(f"  {converts}")
     try:
         from analytics.promotions import status_line
 

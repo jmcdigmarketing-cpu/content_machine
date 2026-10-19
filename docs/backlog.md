@@ -1741,7 +1741,7 @@ its heading rather than filed twice. Decision 68 holds the backlog under 300.
 
 ### S01 Monetization is far
 
-- [ ] 1314. **`ops ypp` counts what each weekly compilation added to long-form hours, and the weeks to 4,000 at that rate** *(S01.1, filed 2026-10-18)* `[S]`
+- [x] 1314. **`ops ypp` counts what each weekly compilation added to long-form hours, and the weeks to 4,000 at that rate** *(S01.1, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114):** `ypp_readiness.compilation_line` in `ops ypp`: compilations made, their measured long-form hours, and the weeks to 4,000 at that rate. Live: "none made yet - overnight makes the first on Monday".
 - [ ] 1315. **A written long-form format: a 6-8 minute "Week in UFC / NFL" scripted from the week's facts, not only the Shorts stitched together** *(S01.2, filed 2026-10-18)* `[L]`
 - [ ] 1316. **Compilation titles and chapters written for search ("UFC Week in Review: Pereira, Topuria ...") - long videos are found by search, Shorts by the feed** *(S01.3, filed 2026-10-18)* `[S]`
 - [ ] 1317. **Each Short's description links the week's compilation, so a Shorts viewer can reach the long video** *(S01.4, filed 2026-10-18)* `[S]`
@@ -1755,7 +1755,7 @@ Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content
 ### S02 Subscribers came from ads, not videos
 
 - [x] 1322. **The earned follow line: a preview with a call ends "I grade this call after the game - follow to see if I was right"** *(S02.1, filed 2026-10-18)* `[M]` **Done (2026-10-18, Claude, wave 113; the operator: previews with a call):** `event_dates.preview_brief` asks a preview with a call to end on why to follow - the call is graded after the game (`calls.score_calls`, "Picks, graded") - for example "I grade this call after the game - follow to see if I was right." A preview without a call is unchanged, and the line is not taken for a generic CTA (`script_craft`). The first overnight preview with a call carries it.
-- [ ] 1323. **Subscribers per 1,000 organic views by domain and format in `ops growth` - which content converts** *(S02.2, filed 2026-10-18)* `[S]`
+- [x] 1323. **Subscribers per 1,000 organic views by domain and format in `ops growth` - which content converts** *(S02.2, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114):** `growth.conversion` - subscribers per 1,000 organic views by domain and format, in `ops growth`. Live: gaming Shorts 0.6 (2 from 3,128), UFC Shorts 0.0 (0 from 1,595), NBA Shorts 0.0 (0 from 356).
 - [ ] 1324. **[You] Enter the campaign that ran to Oct 8 (`ops spend add --kind ads`) so `ops promotions` splits paid from organic subscribers** *(S02.3, filed 2026-10-18)* `[S]`
 - [ ] 1325. **A video that brings 2 or more subscribers is flagged in the morning as a follow-up candidate** *(S02.4, filed 2026-10-18)* `[S]`
 - [ ] 1326. **"Picks, graded" as a named weekly series: one title stem, one playlist, the same opener** *(S02.5, filed 2026-10-18)* `[M]`
@@ -1995,7 +1995,7 @@ Already open for S19: #334 (entity disambiguation ledger); #553 (entity-role che
 
 - [x] 1489. **Overnight and the upload worker sync metrics once a day** *(S20.1, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** `sync_metrics.maybe_sync` - overnight and the upload worker's pass (every 15 minutes) sync when the last sync is over 20 h old; a failed sync waits 2 h. `sync_channel` stamps `data/metrics_synced.json`.
 - [x] 1490. **Health says when the last sync ran and that YouTube's numbers lag 2-3 days** *(S20.2, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** health's unmeasured line ends "last sync N h ago; YouTube's numbers lag 2-3 days" (live, before the first stamp: "no unattended sync recorded yet").
-- [ ] 1491. **Engagement per format: a long video against a long-video baseline** *(S20.3, filed 2026-10-18)* `[S]`
+- [x] 1491. **Engagement per format: a long video against a long-video baseline** *(S20.3, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114):** `channel_health._engagement_sub` reads Shorts against Shorts; a video over 180 s is counted apart with its own median. Live: with run 120 (406 s, 11%) apart, recent is 32.1% (runs 99-133) against a 32.9% baseline, -0.7pp - **GREEN**. The "softening" of 10-17 (27.4% against 32.3%) was that one long video.
 - [ ] 1492. **Stayed share by domain over time** *(S20.4, filed 2026-10-18)* `[S]`
 - [ ] 1493. **A video's first-hour views against its stayed share** *(S20.5, filed 2026-10-18)* `[S]`
 - [ ] 1494. **Each video's drop-off second in the weekly review** *(S20.6, filed 2026-10-18)* `[S]`

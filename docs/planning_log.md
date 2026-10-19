@@ -8696,3 +8696,12 @@ Batch A:
 - Live: run 154 moved to 10-21 02:00Z; its Buffer posts were deleted and cleared to resend.
 - 7 new tests failed on clean HEAD. test_wave113's worker test passed only because this PC has a
   tapin sign-in; it gives itself one now, as CI has none.
+
+Batch B:
+- #1491: health reads Shorts against Shorts. The 10-17 "softening" (27.4% against 32.3%) was
+  one long video; with run 120 apart it reads 32.1% against 32.9%, GREEN.
+- #1323: subscribers per 1,000 organic views by domain and format. Gaming Shorts 0.6 (2 from
+  3,128); UFC and NBA none.
+- #1314: what each compilation adds to long-form hours, in `ops ypp`.
+- 3 new tests failed on clean HEAD.
+- **S07 confirmed:** overnight started at 05:00:02 on 10-19 - the wake works.

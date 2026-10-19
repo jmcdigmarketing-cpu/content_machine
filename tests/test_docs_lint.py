@@ -37,15 +37,15 @@ class TestDocsLint(unittest.TestCase):
 
     def test_the_backlog_holds_the_open_items(self):
         # Wave 110: the 2026-10-18 audit closed 188 of 258 (backlog_audit_2026-10-18.md). Every
-        # open item is in the backlog, and hands_off_plan.md's ceiling holds - it may not grow
-        # back past 130.
+        # open item is in the backlog. Decision 68 (wave 113, the operator: "All 220 as numbered
+        # items"): the ceiling is 300, for the 22 shortfalls' ideas.
         from core.roadmap_index import counts
 
         data = counts()
         backlog_open = data["per_file"]["backlog.md"]["open"]
         self.assertEqual(backlog_open, data["open_total"])
         self.assertGreater(backlog_open, 0)
-        self.assertLessEqual(backlog_open, 130, "a wave closes at least as many as it files")
+        self.assertLessEqual(backlog_open, 300, "decision 68: the ceiling is 300")
 
     def test_the_archive_holds_no_open_work(self):
         """History is never edited again. An open checkbox in here is work that

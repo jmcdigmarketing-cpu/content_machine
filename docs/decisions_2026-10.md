@@ -268,3 +268,13 @@ how the rewrite should use the data once #1287 fed it: "90 days, rules stay". Al
 the three best openers June 4's first batch; over 18 recent videos questions held 38% vs 20% and
 numbers 20% vs 26%, on 4 and 8 videos. **Consequence:** new videos' openers change - the prompt
 quotes the recent best openers. At n=21 (today's settling n) the held-back notes go in.
+
+## 68. The backlog ceiling is 300, for the 22 shortfalls' ideas (2026-10-18)
+**Decision:** the backlog may hold up to 300 open items (`tests/test_docs_lint.py`), and wave
+113 files ten ideas for each of the Content OS Story's 22 shortfalls as numbered items
+(#1314-#1517; 16 slots cite an item already open). The 2026-10-18 audit rule
+"a wave closes at least as many items as it files" is waived for wave 113 only; rules 1, 3, 4
+and 5 stand. **Why:** the operator, asked where 220 ideas should go when the ceiling was 130:
+"All 220 as numbered items" (the idea bank outside the ceiling was the other choice).
+**Consequence:** open items rise from 59 to about 250; an idea with no measurement after 90
+days is retired with the reason (#1509), and a merge sweep runs past 250 (#1514).

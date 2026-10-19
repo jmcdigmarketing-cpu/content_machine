@@ -1,6 +1,6 @@
 # Backlog — the full inventory
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-18
 
 > Every open item, plus the shipped ones that carry evidence worth keeping. Read
 > [roadmap.md](roadmap.md) for what to do now and [desktop_app.md](desktop_app.md)
@@ -1730,3 +1730,303 @@ Review 4 - what the four waves shipped green but inert (2026-09-08)
 - [x] 1312. **Paid-signal attribution read the composite score the signals feed** *(measured 2026-10-18)* `[M]` **Done (2026-10-18, Claude, wave 112):** `paid_signal_attribution` joins each run's measured engaged rate and 7-day views by run id and never falls back to the composite; `ops paid-signals` reads every trace (the last 50 held 5 measured runs). The finding is on #1071.
 
 - [x] 1313. **The length recommendation read none of the measured videos** *(found on #1077's live settings line, 2026-10-18: "default Medium for gaming (no engagement analytics yet)")* `[S]` **Done (2026-10-18, Claude, wave 112):** `length_recommender._collect_length_samples` took the newest 40 runs and then joined outcomes; on tapin the newest 40 were drafts and runs under 7 days, so 35 measured videos with a length were never read. It takes the newest 40 measured runs: Medium from analytics, 78 views in 7 days across 24 videos (Long: about 49 across 10). The pick is the same; the reason is now true. No sibling join slices before joining (checked every `list_timed_outcomes` caller).
+
+## The 22 shortfalls (filed 2026-10-18)
+
+The operator, 2026-10-18: *"a written description on how we will adress each one of these
+alongside 10 ideas per bullet to go in the backlog"*. Each heading is one of the Content OS
+Story's shortfalls; how each is addressed, with today's number and the command that says it is
+fixed, is [hands_off_plan.md](hands_off_plan.md). An idea that was already open is cited under
+its heading rather than filed twice. Decision 68 holds the backlog under 300.
+
+### S01 Monetization is far
+
+- [ ] 1314. **`ops ypp` counts what each weekly compilation added to long-form hours, and the weeks to 4,000 at that rate** *(S01.1, filed 2026-10-18)* `[S]`
+- [ ] 1315. **A written long-form format: a 6-8 minute "Week in UFC / NFL" scripted from the week's facts, not only the Shorts stitched together** *(S01.2, filed 2026-10-18)* `[L]`
+- [ ] 1316. **Compilation titles and chapters written for search ("UFC Week in Review: Pereira, Topuria ...") - long videos are found by search, Shorts by the feed** *(S01.3, filed 2026-10-18)* `[S]`
+- [ ] 1317. **Each Short's description links the week's compilation, so a Shorts viewer can reach the long video** *(S01.4, filed 2026-10-18)* `[S]`
+- [ ] 1318. **The 11 playlists made on YouTube (550 quota units; your yes) - a playlist keeps a long-form session going** *(S01.5, filed 2026-10-18)* `[S]`
+- [ ] 1319. **Advertiser-safe titles and first lines: a draft whose title, thumbnail text or first sentence would limit ads waits for you** *(S01.6, filed 2026-10-18)* `[S]`
+- [ ] 1320. **A monthly YPP card: the four numbers against last month, organic only, on the Story page** *(S01.9, filed 2026-10-18)* `[S]`
+- [ ] 1321. **A day-one YPP checklist in operator_guide.md: what to switch on when the threshold is met (ads, Super Thanks, memberships)** *(S01.10, filed 2026-10-18)* `[S]`
+
+Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content-ID pre-check).
+
+### S02 Subscribers came from ads, not videos
+
+- [ ] 1322. **The earned follow line: a preview with a call ends "I grade this call after the game - follow to see if I was right"** *(S02.1, filed 2026-10-18)* `[M]`
+- [ ] 1323. **Subscribers per 1,000 organic views by domain and format in `ops growth` - which content converts** *(S02.2, filed 2026-10-18)* `[S]`
+- [ ] 1324. **[You] Enter the campaign that ran to Oct 8 (`ops spend add --kind ads`) so `ops promotions` splits paid from organic subscribers** *(S02.3, filed 2026-10-18)* `[S]`
+- [ ] 1325. **A video that brings 2 or more subscribers is flagged in the morning as a follow-up candidate** *(S02.4, filed 2026-10-18)* `[S]`
+- [ ] 1326. **"Picks, graded" as a named weekly series: one title stem, one playlist, the same opener** *(S02.5, filed 2026-10-18)* `[M]`
+- [ ] 1327. **A first comment on each preview asking for the viewer's call (commentThreads.insert; pinning is Studio-only, so the morning reminds you)** *(S02.6, filed 2026-10-18)* `[M]`
+- [ ] 1328. **The follow line's effect read: subscribers per 1,000 views on previews with it against before, once n reaches 10** *(S02.7, filed 2026-10-18)* `[M]`
+- [ ] 1329. **Instagram follows read from Buffer, with the other unmapped metrics** *(S02.8, filed 2026-10-18)* `[S]`
+- [ ] 1330. **Subscribers by the hour they came (Analytics), against what was public then - which video earned them** *(S02.9, filed 2026-10-18)* `[M]`
+- [ ] 1331. **The channel trailer for non-subscribers set to the best-held long video, refreshed monthly** *(S02.10, filed 2026-10-18)* `[S]`
+
+### S03 Overnight rendered two wrong videos (Oct 13)
+
+- [ ] 1332. **A "pulled before public" count in the weekly report - each pull is a gate that missed** *(S03.1, filed 2026-10-18)* `[S]`
+- [ ] 1333. **Post-render transcript check: the render's audio transcribed and compared with the script (the garbled ending)** *(S03.2, filed 2026-10-18)* `[M]`
+- [ ] 1334. **The final sentence must be complete and on the topic before a render** *(S03.3, filed 2026-10-18)* `[S]`
+- [ ] 1335. **At render time the facts' dates are re-checked against the event (a fact older than the game it previews)** *(S03.4, filed 2026-10-18)* `[S]`
+- [ ] 1336. **A frame check of the finished video's first and last 3 seconds (black, frozen, the wrong clip) - #1044 checks stretches, not the ends** *(S03.5, filed 2026-10-18)* `[M]`
+- [ ] 1337. **The evening line says what overnight would render** *(S03.6, filed 2026-10-18)* `[S]`
+- [ ] 1338. **`ops overnight --pause-until DATE` - one line to stop it while you are away** *(S03.7, filed 2026-10-18)* `[S]`
+- [ ] 1339. **The two Oct 13 drafts kept as regression fixtures** *(S03.8, filed 2026-10-18)* `[S]`
+- [ ] 1340. **A render whose game is under 6 hours away goes up unlisted for a look** *(S03.9, filed 2026-10-18)* `[S]`
+- [ ] 1341. **A cheap second read of the title and first sentence on overnight renders only** *(S03.10, filed 2026-10-18)* `[M]`
+
+### S04 The proof of "your own idea" was wrong (Oct 13)
+
+- [ ] 1342. **Idea fidelity: the share of the typed idea's content words in the first two sentences, printed at review** *(S04.1, filed 2026-10-18)* `[S]`
+- [ ] 1343. **The review shows "you typed / it wrote" side by side** *(S04.2, filed 2026-10-18)* `[S]`
+- [ ] 1344. **Own-idea runs tagged and compared with menu picks in `ops growth`** *(S04.3, filed 2026-10-18)* `[S]`
+- [ ] 1345. **An idea inbox file overnight drafts from first** *(S04.4, filed 2026-10-18)* `[M]`
+- [ ] 1346. **Each claim a typed idea makes becomes a fact to check before the script** *(S04.5, filed 2026-10-18)* `[M]`
+- [ ] 1347. **Your exact phrasing kept as the hook when it reads as a take** *(S04.6, filed 2026-10-18)* `[S]`
+- [ ] 1348. **Paste five ideas, get five drafts overnight** *(S04.7, filed 2026-10-18)* `[M]`
+- [ ] 1349. **Voice-note ideas measured on the same fidelity line** *(S04.8, filed 2026-10-18)* `[S]`
+- [ ] 1350. **An own-idea report in the weekly review** *(S04.9, filed 2026-10-18)* `[S]`
+- [ ] 1351. **Own ideas against best bets over 4 weeks, on stayed share** *(S04.10, filed 2026-10-18)* `[M]`
+
+### S05 Clean is not the same as good (Oct 14)
+
+- [ ] 1352. **An opener that runs into the next sentence (no stop between two capitals) fails the script check** *(S05.1, filed 2026-10-18)* `[S]`
+- [ ] 1353. **A sentence said twice across the hook rewrite fails the script check** *(S05.2, filed 2026-10-18)* `[S]`
+- [ ] 1354. **A title score in the grade: a named subject, under 60 characters, no broken names** *(S05.3, filed 2026-10-18)* `[M]`
+- [ ] 1355. **The captions burned into the render compared with the script (typos on screen)** *(S05.4, filed 2026-10-18)* `[S]`
+- [ ] 1356. **A coherence pass: does each sentence follow from the last (cheap tier)** *(S05.5, filed 2026-10-18)* `[M]`
+- [ ] 1357. **"Clean but dull": no number, no name and no call in the first three sentences is a problem** *(S05.6, filed 2026-10-18)* `[S]`
+- [ ] 1358. **Your verdicts against the grade, printed in `ops verdicts`** *(S05.8, filed 2026-10-18)* `[S]`
+- [ ] 1359. **Filler phrases learned from your edits** *(S05.9, filed 2026-10-18)* `[M]`
+- [ ] 1360. **Sentences over 25 words flagged** *(S05.10, filed 2026-10-18)* `[S]`
+
+Already open for S05: #537 (per-section regeneration).
+
+### S06 Every overnight draft was a game written as a recap (Oct 11-14)
+
+- [ ] 1361. **A finished preview read for recap tense and result words before render** *(S06.1, filed 2026-10-18)* `[S]`
+- [ ] 1362. **A finished game becomes a "what it means" angle, never a play-by-play** *(S06.2, filed 2026-10-18)* `[S]`
+- [ ] 1363. **A recap's facts must postdate the final whistle** *(S06.3, filed 2026-10-18)* `[S]`
+- [ ] 1364. **A game in progress is neither preview nor recap - skipped** *(S06.4, filed 2026-10-18)* `[S]`
+- [ ] 1365. **Overnight's weekly mix (games, news, gaming) in the weekly report** *(S06.5, filed 2026-10-18)* `[S]`
+- [ ] 1366. **Three preview structures rotated: the stakes, the matchup, the X-factor** *(S06.6, filed 2026-10-18)* `[M]`
+- [ ] 1367. **No call, no preview** *(S06.7, filed 2026-10-18)* `[S]`
+- [ ] 1368. **A scored call becomes a 20-second "I was right / wrong" Short** *(S06.8, filed 2026-10-18)* `[M]`
+- [ ] 1369. **Season context in previews: the last meeting and the streaks, from ESPN** *(S06.9, filed 2026-10-18)* `[M]`
+- [ ] 1370. **Which signals ran per domain, in `ops signal-audit`** *(S06.10, filed 2026-10-18)* `[S]`
+
+### S07 Overnight runs when the PC wakes, not at 5:00 AM
+
+- [ ] 1371. **`ops doctor` checks the wake: the task's WakeToRun, wake timers allowed, the last start time** *(S07.1, filed 2026-10-18)* `[S]`
+- [ ] 1372. **A toast when overnight has not run for 26 hours** *(S07.2, filed 2026-10-18)* `[S]`
+- [ ] 1373. **A late start drafts, and renders only if there is time before the first slot** *(S07.3, filed 2026-10-18)* `[S]`
+- [ ] 1374. **Drafts at 5:00, renders at 5:30, so a slow draft does not push renders past breakfast** *(S07.4, filed 2026-10-18)* `[S]`
+- [ ] 1375. **A second wake at 17:00 for the evening slot's render** *(S07.5, filed 2026-10-18)* `[S]`
+- [ ] 1376. **Renders skipped on battery** *(S07.6, filed 2026-10-18)* `[S]`
+- [ ] 1377. **Overnight's duration trend in the weekly report** *(S07.7, filed 2026-10-18)* `[S]`
+- [ ] 1378. **The PC sleeps again after overnight (the power plan's idle sleep checked)** *(S07.8, filed 2026-10-18)* `[S]`
+- [ ] 1379. **Drafting in the cloud when the PC is off; renders stay on the PC** *(S07.9, filed 2026-10-18)* `[L]`
+- [ ] 1380. **The morning says when overnight started and why it was late** *(S07.10, filed 2026-10-18)* `[S]`
+
+### S08 Good research blocked good drafts
+
+- [ ] 1381. **The weekly rate of drafts held for unsupported claims, with five replayed** *(S08.1, filed 2026-10-18)* `[S]`
+- [ ] 1382. **Claims labelled "from research" or "from facts"** *(S08.3, filed 2026-10-18)* `[S]`
+- [ ] 1383. **Which claim kinds fail most (dates, records, quotes) in `ops auto-research`** *(S08.4, filed 2026-10-18)* `[S]`
+- [ ] 1384. **One targeted search for an unsupported claim before it holds the draft** *(S08.5, filed 2026-10-18)* `[M]`
+- [ ] 1385. **A quote needs its words on the linked page (the Brady line)** *(S08.6, filed 2026-10-18)* `[S]`
+- [ ] 1386. **A claim you confirmed once is trusted in later runs** *(S08.7, filed 2026-10-18)* `[S]`
+- [ ] 1387. **The 5-of-5 replay kept as regression cases** *(S08.8, filed 2026-10-18)* `[S]`
+- [ ] 1388. **The research brief capped and deduplicated before the prompt** *(S08.10, filed 2026-10-18)* `[S]`
+
+Already open for S08: #547 (inline provenance); #555 (vault deduplication).
+
+### S09 The record drifted from YouTube
+
+- [ ] 1389. **Each sync prints how many records it corrected** *(S09.1, filed 2026-10-18)* `[S]`
+- [ ] 1390. **Titles and descriptions edited in Studio read back** *(S09.2, filed 2026-10-18)* `[S]`
+- [ ] 1391. **Thumbnails read back** *(S09.3, filed 2026-10-18)* `[S]`
+- [ ] 1392. **A scheduled publishAt read back after scheduling** *(S09.4, filed 2026-10-18)* `[S]`
+- [ ] 1393. **A weekly full reconcile of every video; the daily sync keeps to the recent ones** *(S09.5, filed 2026-10-18)* `[S]`
+- [ ] 1394. **Playlist membership read back once playlists exist** *(S09.6, filed 2026-10-18)* `[S]`
+- [ ] 1395. **Every public video has a run id (a check)** *(S09.7, filed 2026-10-18)* `[S]`
+- [ ] 1396. **Buffer's real post state read back** *(S09.8, filed 2026-10-18)* `[S]`
+- [ ] 1397. **Videos made outside the pipeline imported so the learning sees them** *(S09.9, filed 2026-10-18)* `[M]`
+
+Already open for S09: #464 (recorded API fixtures).
+
+### S10 The last mile was manual
+
+- [ ] 1398. **`ops status`'s Buffer line counts Buffer's sends - no "mark each with ops crosspost done"** *(S10.1, filed 2026-10-18)* `[S]`
+- [ ] 1399. **A toast when a Buffer send fails** *(S10.2, filed 2026-10-18)* `[S]`
+- [ ] 1400. **A failed Buffer send retried once** *(S10.3, filed 2026-10-18)* `[S]`
+- [ ] 1401. **The pack-folder path retired after 30 Buffer sends in a row** *(S10.4, filed 2026-10-18)* `[S]`
+- [ ] 1402. **The upload worker's last loop in the morning line** *(S10.5, filed 2026-10-18)* `[S]`
+- [ ] 1403. **A thumbnail upload that failed is retried** *(S10.6, filed 2026-10-18)* `[S]`
+- [ ] 1404. **A toast with the watch link when a video goes public** *(S10.7, filed 2026-10-18)* `[S]`
+- [ ] 1405. **A count of commands you typed that the system should have run** *(S10.8, filed 2026-10-18)* `[M]`
+- [ ] 1406. **Approve a draft from the Back-Home page** *(S10.9, filed 2026-10-18)* `[L]`
+- [ ] 1407. **The morning says "nothing by hand today" only when every step ran** *(S10.10, filed 2026-10-18)* `[S]`
+
+### S11 Clicks are unmeasured
+
+- [ ] 1408. **[You] Turn on the Reporting API (the link in `ops doctor`)** *(S11.1, filed 2026-10-18)* `[S]`
+- [ ] 1409. **Shorts: stayed share used as the feed's "click" in title learning** *(S11.3, filed 2026-10-18)* `[M]`
+- [ ] 1410. **Long-form click-through per thumbnail** *(S11.4, filed 2026-10-18)* `[M]`
+- [ ] 1411. **Impressions by traffic source** *(S11.5, filed 2026-10-18)* `[S]`
+- [ ] 1412. **Long-form titles rotated after 48 hours when click-through is low** *(S11.6, filed 2026-10-18)* `[M]`
+- [ ] 1413. **A long video under 2% after 1,000 impressions gets a new thumbnail** *(S11.7, filed 2026-10-18)* `[M]`
+- [ ] 1414. **The compilation's thumbnail picked on click-through once it is measured** *(S11.8, filed 2026-10-18)* `[S]`
+- [ ] 1415. **`ops doctor` checks that the Reporting jobs exist and a report arrived** *(S11.9, filed 2026-10-18)* `[S]`
+- [ ] 1416. **The packaging score in the grade calibrated on click-through** *(S11.10, filed 2026-10-18)* `[M]`
+
+Already open for S11: #1058 (CTR into the learning loop).
+
+### S12 The first second
+
+- [ ] 1417. **Cross-post copies start at the first word: the TikTok and Instagram copy is cut at the run's intro** *(S12.1, filed 2026-10-18)* `[S]`
+- [ ] 1418. **TikTok average watch time per post read from Buffer** *(S12.2, filed 2026-10-18)* `[S]`
+- [ ] 1419. **The trim reads each run's own intro flag - week_compile cut 2.15 s from every Short, the hook of one rendered without the intro** *(S12.3, filed 2026-10-18)* `[S]`
+- [ ] 1420. **A 0.5 s sonic logo variant instead of the 2.15 s intro** *(S12.4, filed 2026-10-18)* `[S]`
+- [ ] 1421. **The intro as a corner logo, not a cut-in** *(S12.5, filed 2026-10-18)* `[S]`
+- [ ] 1422. **The first frame shows the hook's words** *(S12.6, filed 2026-10-18)* `[S]`
+- [ ] 1423. **INTRO_TEST read with a stop rule (#354) at 3 each** *(S12.7, filed 2026-10-18)* `[S]`
+- [ ] 1424. **Open on the clip's most moving frame** *(S12.8, filed 2026-10-18)* `[M]`
+- [ ] 1425. **No silence at t=0** *(S12.9, filed 2026-10-18)* `[S]`
+- [ ] 1426. **Retention at seconds 1-3 per video in `ops retention`** *(S12.10, filed 2026-10-18)* `[S]`
+
+### S13 Volume
+
+- [ ] 1427. **The quota by caller, and searches stop early enough to leave one upload's units** *(S13.1, filed 2026-10-18)* `[M]`
+- [ ] 1428. **If nothing is scheduled for tomorrow by 21:00, overnight renders one more** *(S13.2, filed 2026-10-18)* `[S]`
+- [ ] 1429. **The two-week schedule in the morning line** *(S13.3, filed 2026-10-18)* `[S]`
+- [ ] 1430. **Shorts cut from chapters fill empty slots** *(S13.4, filed 2026-10-18)* `[S]`
+- [ ] 1431. **YouTube search units capped per signal per day** *(S13.6, filed 2026-10-18)* `[S]`
+- [ ] 1432. **Shorts skip the custom thumbnail upload (50 units) - measured first** *(S13.7, filed 2026-10-18)* `[S]`
+- [ ] 1433. **[You] A YouTube quota increase request** *(S13.8, filed 2026-10-18)* `[S]`
+- [ ] 1434. **The draft-waiting cap rises when slots are empty** *(S13.9, filed 2026-10-18)* `[S]`
+- [ ] 1435. **Health's cadence: 7 a week green, under 5 yellow** *(S13.10, filed 2026-10-18)* `[S]`
+
+Already open for S13: #1057 (re-cuts of past winners).
+
+### S14 The sign-in ends every 7 days until the Google app is published
+
+- [ ] 1436. **[You] Publish the Google OAuth app (consent screen -> Publish app)** *(S14.1, filed 2026-10-18)* `[S]`
+- [ ] 1437. **The sign-in's expiry date in the morning line** *(S14.2, filed 2026-10-18)* `[S]`
+- [ ] 1438. **A toast 24 hours before the sign-in expires** *(S14.3, filed 2026-10-18)* `[S]`
+- [ ] 1439. **The worker holds uploads cleanly on an expired sign-in and resumes after** *(S14.4, filed 2026-10-18)* `[S]`
+- [ ] 1440. **The policy site's links checked live before you publish the app** *(S14.5, filed 2026-10-18)* `[S]`
+- [ ] 1441. **Scopes reduced to what is used, for a faster verification** *(S14.6, filed 2026-10-18)* `[S]`
+- [ ] 1442. **Separate tokens for uploads and analytics** *(S14.7, filed 2026-10-18)* `[M]`
+- [ ] 1443. **`ops doctor` tells Testing from In production by the token's lifetime** *(S14.8, filed 2026-10-18)* `[S]`
+- [ ] 1444. **A sign-in line in the weekly review** *(S14.9, filed 2026-10-18)* `[S]`
+- [ ] 1445. **`ops check-youtube` prints the exact console page for the publish click** *(S14.10, filed 2026-10-18)* `[S]`
+
+### S15 Every best bet was a game (Oct 14)
+
+- [ ] 1446. **The menu's domain mix and the picked domain in `ops predictions`** *(S15.1, filed 2026-10-18)* `[S]`
+- [ ] 1447. **At least two gaming ideas while gaming holds the channel's best** *(S15.2, filed 2026-10-18)* `[S]`
+- [ ] 1448. **Domain weights from organic views in the menu order** *(S15.3, filed 2026-10-18)* `[M]`
+- [ ] 1449. **The five previews rotate across leagues** *(S15.6, filed 2026-10-18)* `[S]`
+- [ ] 1450. **A domain rests after three weak videos in a row** *(S15.7, filed 2026-10-18)* `[M]`
+- [ ] 1451. **"More like this" on an idea seeds the next ideas** *(S15.8, filed 2026-10-18)* `[M]`
+- [ ] 1452. **A sequel idea from the week's best video** *(S15.9, filed 2026-10-18)* `[S]`
+- [ ] 1453. **Freshness, outlets and our past views per domain in one score** *(S15.10, filed 2026-10-18)* `[M]`
+
+Already open for S15: #475 (competitor gap map); #473 (forward franchise calendar).
+
+### S16 Clean drafts read as recaps (Oct 15)
+
+- [ ] 1454. **The first-line rule's effect read: stayed share before and after #1311** *(S16.1, filed 2026-10-18)* `[S]`
+- [ ] 1455. **Take strength: hedged against committed** *(S16.2, filed 2026-10-18)* `[M]`
+- [ ] 1456. **Takes that predict ("Pereira fights again by March") kept and scored like game calls** *(S16.3, filed 2026-10-18)* `[M]`
+- [ ] 1457. **The same stance twice in a week is flagged** *(S16.5, filed 2026-10-18)* `[S]`
+- [ ] 1458. **The take in the title** *(S16.6, filed 2026-10-18)* `[S]`
+- [ ] 1459. **News plus reaction with no stake is refused** *(S16.7, filed 2026-10-18)* `[S]`
+- [ ] 1460. **A takes leaderboard by stayed share** *(S16.8, filed 2026-10-18)* `[S]`
+- [ ] 1461. **Comments that disagree counted per take** *(S16.9, filed 2026-10-18)* `[M]`
+- [ ] 1462. **Take presence weighted in the grade by what it held** *(S16.10, filed 2026-10-18)* `[M]`
+
+Already open for S16: #50 (learned insight markers).
+
+### S17 Overnight crashed, and the morning said it ran (Oct 16)
+
+- [ ] 1463. **Crashes counted in the weekly report** *(S17.1, filed 2026-10-18)* `[S]`
+- [ ] 1464. **Each render in its own process** *(S17.2, filed 2026-10-18)* `[M]`
+- [ ] 1465. **A memory check between renders** *(S17.5, filed 2026-10-18)* `[S]`
+- [ ] 1466. **The last 200 log lines kept with a crash** *(S17.6, filed 2026-10-18)* `[S]`
+- [ ] 1467. **A 2-second smoke render before the run** *(S17.7, filed 2026-10-18)* `[S]`
+- [ ] 1468. **A heartbeat file each minute; the morning reads the gap** *(S17.8, filed 2026-10-18)* `[S]`
+- [ ] 1469. **The crash's Python line in the morning line** *(S17.9, filed 2026-10-18)* `[S]`
+- [ ] 1470. **The GPU driver version in `ops doctor`** *(S17.10, filed 2026-10-18)* `[S]`
+
+Already open for S17: #457 (lockfile and reproducible install); #445 (resume an interrupted run from the ledger).
+
+### S18 Health read RED on a number nobody stored (Oct 16)
+
+- [ ] 1471. **Each health line names its source and its age** *(S18.1, filed 2026-10-18)* `[S]`
+- [ ] 1472. **"Unknown" instead of RED when an input is missing** *(S18.2, filed 2026-10-18)* `[S]`
+- [ ] 1473. **A test per health line that some production path writes the field it reads** *(S18.3, filed 2026-10-18)* `[M]`
+- [ ] 1474. **Data quality lists the missing fields per run** *(S18.4, filed 2026-10-18)* `[S]`
+- [ ] 1475. **Health history, one line a day** *(S18.5, filed 2026-10-18)* `[S]`
+- [ ] 1476. **Engagement's window printed with its dates and the newest measured video** *(S18.6, filed 2026-10-18)* `[S]`
+- [ ] 1477. **Health per format (Shorts and long videos)** *(S18.7, filed 2026-10-18)* `[S]`
+- [ ] 1478. **Cost uses the spend you entered** *(S18.8, filed 2026-10-18)* `[S]`
+- [ ] 1479. **The thresholds in one place, versioned** *(S18.9, filed 2026-10-18)* `[S]`
+- [ ] 1480. **A weekly fields-written-against-read audit** *(S18.10, filed 2026-10-18)* `[M]`
+
+### S19 "New England" lost its "New" (Oct 16)
+
+- [ ] 1481. **A team gazetteer (NFL, NBA, NHL, MLB, EPL) for the title check** *(S19.1, filed 2026-10-18)* `[S]`
+- [ ] 1482. **Names checked in the burned captions** *(S19.3, filed 2026-10-18)* `[S]`
+- [ ] 1483. **Names checked in the thumbnail text** *(S19.4, filed 2026-10-18)* `[S]`
+- [ ] 1484. **Player names spelled from ESPN rosters** *(S19.5, filed 2026-10-18)* `[M]`
+- [ ] 1485. **City and state collisions audited in topic_tokens** *(S19.6, filed 2026-10-18)* `[S]`
+- [ ] 1486. **Broken-name regression cases for every league** *(S19.7, filed 2026-10-18)* `[S]`
+- [ ] 1487. **Abbreviations expanded (NE -> New England)** *(S19.8, filed 2026-10-18)* `[S]`
+- [ ] 1488. **A pronunciation list for names in the voice** *(S19.10, filed 2026-10-18)* `[M]`
+
+Already open for S19: #334 (entity disambiguation ledger); #553 (entity-role check).
+
+### S20 Engagement is softening (Oct 17)
+
+- [ ] 1489. **Overnight and the upload worker sync metrics once a day** *(S20.1, filed 2026-10-18)* `[S]`
+- [ ] 1490. **Health says when the last sync ran and that YouTube's numbers lag 2-3 days** *(S20.2, filed 2026-10-18)* `[S]`
+- [ ] 1491. **Engagement per format: a long video against a long-video baseline** *(S20.3, filed 2026-10-18)* `[S]`
+- [ ] 1492. **Stayed share by domain over time** *(S20.4, filed 2026-10-18)* `[S]`
+- [ ] 1493. **A video's first-hour views against its stayed share** *(S20.5, filed 2026-10-18)* `[S]`
+- [ ] 1494. **Each video's drop-off second in the weekly review** *(S20.6, filed 2026-10-18)* `[S]`
+- [ ] 1495. **What changed this week: prompt version, presets, voices** *(S20.7, filed 2026-10-18)* `[M]`
+- [ ] 1496. **A toast after three videos under 20% in a row** *(S20.8, filed 2026-10-18)* `[S]`
+- [ ] 1497. **Holdouts against ranked picks in health** *(S20.9, filed 2026-10-18)* `[S]`
+- [ ] 1498. **Length against stayed share per domain, now that length learns (#1313)** *(S20.10, filed 2026-10-18)* `[S]`
+
+### S21 The hook score is backwards (Oct 18)
+
+- [ ] 1499. **The fixed hook score leaves the grade until it correlates at or above 0 (a GRADE_VERSION stamp; your call)** *(S21.1, filed 2026-10-18)* `[M]`
+- [ ] 1500. **Each hook feature (question, number, name, call) against stayed share** *(S21.2, filed 2026-10-18)* `[S]`
+- [ ] 1501. **First-3-second retention per hook type** *(S21.3, filed 2026-10-18)* `[S]`
+- [ ] 1502. **Hooks A/B through holdout drafts** *(S21.4, filed 2026-10-18)* `[M]`
+- [ ] 1503. **At review, pick one of three hooks; the pick is recorded** *(S21.5, filed 2026-10-18)* `[S]`
+- [ ] 1504. **The ten best-held openers as examples in the hook prompt** *(S21.6, filed 2026-10-18)* `[S]`
+- [ ] 1505. **Hook length in words against stayed share** *(S21.7, filed 2026-10-18)* `[S]`
+- [ ] 1506. **TikTok watch time per hook type** *(S21.9, filed 2026-10-18)* `[S]`
+- [ ] 1507. **`ops growth` says the score's retune waits on n of about 85 (it says n=21, which is the rewrite's)** *(S21.10, filed 2026-10-18)* `[S]`
+
+Already open for S21: #1290 (the hook scorer against who stays).
+
+### S22 It grew faster than it shipped
+
+- [x] 1508. **The ceiling at 300 (decision 68); "close as many as filed" waived for this wave** *(S22.1, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** decision 68; `tests/test_docs_lint.py` holds the backlog at 300.
+- [ ] 1509. **An idea expires after 90 days without a measurement, retired with the reason** *(S22.2, filed 2026-10-18)* `[S]`
+- [ ] 1510. **`roadmap-index` counts open items per shortfall** *(S22.3, filed 2026-10-18)* `[S]`
+- [ ] 1511. **The Story charts filed against shipped per week** *(S22.4, filed 2026-10-18)* `[S]`
+- [ ] 1512. **A duplicate check for new items** *(S22.5, filed 2026-10-18)* `[M]`
+- [ ] 1513. **Each month a wave takes at least one item from each of the five most pressing shortfalls** *(S22.6, filed 2026-10-18)* `[S]`
+- [ ] 1514. **A merge sweep when open passes 250** *(S22.7, filed 2026-10-18)* `[S]`
+- [ ] 1515. **Open items per public video tracked** *(S22.8, filed 2026-10-18)* `[S]`
+- [ ] 1516. **The next backlog audit on 2027-01-18** *(S22.9, filed 2026-10-18)* `[S]`
+- [ ] 1517. **Each shortfall's exit command run weekly in `ops all-review`** *(S22.10, filed 2026-10-18)* `[S]`

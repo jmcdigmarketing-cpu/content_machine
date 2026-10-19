@@ -1761,7 +1761,7 @@ Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content
 - [ ] 1326. **"Picks, graded" as a named weekly series: one title stem, one playlist, the same opener** *(S02.5, filed 2026-10-18)* `[M]`
 - [ ] 1327. **A first comment on each preview asking for the viewer's call (commentThreads.insert; pinning is Studio-only, so the morning reminds you)** *(S02.6, filed 2026-10-18)* `[M]`
 - [ ] 1328. **The follow line's effect read: subscribers per 1,000 views on previews with it against before, once n reaches 10** *(S02.7, filed 2026-10-18)* `[M]`
-- [ ] 1329. **Instagram follows read from Buffer, with the other unmapped metrics** *(S02.8, filed 2026-10-18)* `[S]`
+- [x] 1329. **Instagram follows read from Buffer, with the other unmapped metrics** *(S02.8, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113, with #1418):** Instagram's "Follows" and "Reactions" are read (0 follows on all six so far).
 - [ ] 1330. **Subscribers by the hour they came (Analytics), against what was public then - which video earned them** *(S02.9, filed 2026-10-18)* `[M]`
 - [ ] 1331. **The channel trailer for non-subscribers set to the best-held long video, refreshed monthly** *(S02.10, filed 2026-10-18)* `[S]`
 
@@ -1860,7 +1860,7 @@ Already open for S09: #464 (recorded API fixtures).
 
 ### S10 The last mile was manual
 
-- [ ] 1398. **`ops status`'s Buffer line counts Buffer's sends - no "mark each with ops crosspost done"** *(S10.1, filed 2026-10-18)* `[S]`
+- [x] 1398. **`ops status`'s Buffer line counts Buffer's sends - no "mark each with ops crosspost done"** *(S10.1, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** `crosspost.week_line` counts what reached TikTok or Instagram and what Buffer holds - live: "TikTok + Instagram this week: 7 posted, 1 scheduled in Buffer" - no "mark each with ops crosspost done".
 - [ ] 1399. **A toast when a Buffer send fails** *(S10.2, filed 2026-10-18)* `[S]`
 - [ ] 1400. **A failed Buffer send retried once** *(S10.3, filed 2026-10-18)* `[S]`
 - [ ] 1401. **The pack-folder path retired after 30 Buffer sends in a row** *(S10.4, filed 2026-10-18)* `[S]`
@@ -1888,7 +1888,7 @@ Already open for S11: #1058 (CTR into the learning loop).
 ### S12 The first second
 
 - [ ] 1417. **Cross-post copies start at the first word: the TikTok and Instagram copy is cut at the run's intro** *(S12.1, filed 2026-10-18)* `[S]`
-- [ ] 1418. **TikTok average watch time per post read from Buffer** *(S12.2, filed 2026-10-18)* `[S]`
+- [x] 1418. **TikTok average watch time per post read from Buffer** *(S12.2, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** `buffer_api.map_metrics` reads every name Buffer uses - TikTok's "Video Views", "Reactions", "Avg. Watch Time (sec)", "Reach"; stored rows are read again from their raw metrics on load. Live: run 157 TikTok 79 views, run 155 76; `ops growth`: "TikTok: 169 views ... Viewers watch 1.4 s on average - less than the 2.15 s intro". With 5 measured rows TikTok's own send hour now applies (02:00 UTC, 10 PM EDT; #1196's 4-sample bar).
 - [ ] 1419. **The trim reads each run's own intro flag - week_compile cut 2.15 s from every Short, the hook of one rendered without the intro** *(S12.3, filed 2026-10-18)* `[S]`
 - [ ] 1420. **A 0.5 s sonic logo variant instead of the 2.15 s intro** *(S12.4, filed 2026-10-18)* `[S]`
 - [ ] 1421. **The intro as a corner logo, not a cut-in** *(S12.5, filed 2026-10-18)* `[S]`
@@ -1993,8 +1993,8 @@ Already open for S19: #334 (entity disambiguation ledger); #553 (entity-role che
 
 ### S20 Engagement is softening (Oct 17)
 
-- [ ] 1489. **Overnight and the upload worker sync metrics once a day** *(S20.1, filed 2026-10-18)* `[S]`
-- [ ] 1490. **Health says when the last sync ran and that YouTube's numbers lag 2-3 days** *(S20.2, filed 2026-10-18)* `[S]`
+- [x] 1489. **Overnight and the upload worker sync metrics once a day** *(S20.1, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** `sync_metrics.maybe_sync` - overnight and the upload worker's pass (every 15 minutes) sync when the last sync is over 20 h old; a failed sync waits 2 h. `sync_channel` stamps `data/metrics_synced.json`.
+- [x] 1490. **Health says when the last sync ran and that YouTube's numbers lag 2-3 days** *(S20.2, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** health's unmeasured line ends "last sync N h ago; YouTube's numbers lag 2-3 days" (live, before the first stamp: "no unattended sync recorded yet").
 - [ ] 1491. **Engagement per format: a long video against a long-video baseline** *(S20.3, filed 2026-10-18)* `[S]`
 - [ ] 1492. **Stayed share by domain over time** *(S20.4, filed 2026-10-18)* `[S]`
 - [ ] 1493. **A video's first-hour views against its stayed share** *(S20.5, filed 2026-10-18)* `[S]`

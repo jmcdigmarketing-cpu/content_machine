@@ -39,13 +39,15 @@ class CountTests(unittest.TestCase):
             self.assertEqual(week_counts("tapin", now=NOW), (3, 2))
 
     def test_the_line(self):
+        # Wave 113: the line counts what went out and asks for nothing by hand - it said
+        # "3 packed ... mark each with ops crosspost done" while Buffer posted every video.
         from publishing.crosspost import week_line
 
         with patch("publishing.crosspost._load", return_value=STORE):
             line = week_line("tapin", now=NOW)
-        self.assertIn("3 packed", line)
         self.assertIn("2 posted", line)
         self.assertIn("TikTok", line)
+        self.assertNotIn("crosspost done", line)
 
     def test_nothing_packed_says_nothing(self):
         from publishing.crosspost import week_line

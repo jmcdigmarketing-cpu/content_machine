@@ -497,6 +497,19 @@ def drain_due(cap: int = PASS_CAP) -> int:
     return done
 
 
+def _sync_metrics() -> None:
+    """Wave 113: the metrics sync, once a day - `ops morning` was its only caller, and this
+    pass runs every 15 minutes from the UploadWorker task. Fail-open."""
+    try:
+        from analytics.sync_metrics import maybe_sync
+        from config.channels import active_channel_ids
+
+        for channel in active_channel_ids():
+            maybe_sync(channel)
+    except Exception as exc:
+        logger.debug("worker metrics sync skipped: %s", exc)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Content OS job worker")
     parser.add_argument(
@@ -509,6 +522,7 @@ def main():
 
     if args.loop <= 0:
         processed = drain_due()
+        _sync_metrics()
         if processed > 1:
             print(f"Sent {processed} due job(s) in one pass.")
         if not processed:
@@ -531,6 +545,7 @@ def main():
             did_work = False
             while process_one():
                 did_work = True
+            _sync_metrics()
             if not did_work and not has_quota_for_upload():
                 print(
                     f"Waiting for YouTube quota reset — {format_quota_detail()}. "

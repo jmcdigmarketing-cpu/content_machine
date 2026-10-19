@@ -75,6 +75,11 @@ lockfile, #1058 (the operator's Reporting API). `test_docs_lint` holds the backl
 - `main._ask_length_and_voices`, `prompt_upload_plan(privacy_kept=)` (#1077);
   `length_recommender` reads the newest 40 measured runs (#1313).
 
+**Wave 113 in progress (batches 1-5; a batch not in `git log` was not finished):** 1 (the
+shortfalls write-up, #1314-#1517, decision 68) and 2 (TikTok views, the unattended sync)
+done. Next: 3 (#1319 ad-safe titles, #1427 quota by caller), 4 (#1322 the follow line,
+#1417 #1419 hook copies), 5 (consolidation, pages).
+
 **Live:** Monday's compilation is overnight's (wave 111); the matchup card shows on the next
 preview render. **Defects first:** none open of mine.
 

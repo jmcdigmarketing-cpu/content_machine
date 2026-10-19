@@ -8570,3 +8570,44 @@ card at 2.5 s in a 6 s draft and gone at 5.0 s. The settings line live, one prom
 
 `roadmap-index`: open 59, done 1487, numbered open 50, highest open #1290. Suite 6,380,
 forward and reversed.
+
+## 2026-10-18 night — wave 113, the 22 shortfalls (Claude Code)
+
+**Prompt:** the Story's "Where it falls short" list pasted, then: "I would like a written
+description on how we will adress each one of these alongside 10 ideas per bullet to go in the
+backlog, and after do the most pressing 5 in backlog. Update all docs and consolidate if an
+improvement presents itself, then audit, debug, and push to main. big prompt, feel free to do
+multiple rounds of questions and a large large plan."
+
+Answers, two rounds:
+- All 220 ideas as numbered items, so the ceiling rises to 300 (decision 68).
+- The five became six - all four candidates beside the two defects.
+- The quota gets a breakdown plus an upload reserve.
+- The follow line goes on previews with a call only.
+- An ad-unsafe word makes an overnight draft wait, and `py main.py` warns.
+- One plan, by shortfall.
+
+Measured first (read-only):
+- Buffer measured five TikTok posts, and every one read "not measured yet": TikTok calls the
+  metric "Video Views". Those viewers watched 1.24-1.68 s, inside the 2.15 s intro.
+- `ops status` told the operator to "mark each with ops crosspost done" while Buffer posted.
+- Metrics synced only from `ops morning`/`ops all` (the operator's ran 10:04); nine newer videos
+  had no rate, mostly YouTube's lag.
+- The quota ledger kept only a daily total: 9,485 units on 10-17, 6,032 on 10-18.
+- Draft 166 is "Hot Dads & Horny Art: ..."; nothing checks a title for ad-unsafe words.
+- week_compile cut 2.15 s from every Short, the hook of one rendered without the intro.
+- **Corrected:** wave 112's report listed letting overnight wake the PC as the operator's step.
+  The task's WakeToRun is on and the power plan allows wake timers.
+
+Batch 1:
+- hands_off_plan.md rebuilt by shortfall: where each stands, how it is addressed, who acts, the
+  command for done.
+- #1314-#1517 filed under "The 22 shortfalls"; 16 slots cite an item already open.
+- Decision 68.
+
+Batch 2:
+- #1418, #1329, #1398: Buffer's metric names, read again from stored rows, and the week line.
+- #1489, #1490: `sync_metrics.maybe_sync` from overnight and the worker, and health's sync note.
+- 11 new tests failed on clean HEAD, and so did test_crosspost_week's updated line test.
+- Live: run 157 TikTok 79 views. The growth line reads "1.4 s on average - less than the 2.15 s
+  intro".

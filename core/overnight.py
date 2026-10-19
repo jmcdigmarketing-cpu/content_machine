@@ -145,6 +145,13 @@ def run_overnight(
     except Exception as exc:
         logger.debug("overnight pause check skipped: %s", exc)
 
+    try:  # wave 113: the metrics sync ran only from `ops morning`; once a day it runs here too
+        from analytics.sync_metrics import maybe_sync
+
+        maybe_sync(channel)
+    except Exception as exc:
+        logger.debug("overnight metrics sync skipped: %s", exc)
+
     try:
         return _run_overnight_body(
             channel,

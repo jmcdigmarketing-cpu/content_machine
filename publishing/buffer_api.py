@@ -309,11 +309,30 @@ def find_posts(organization_id: str, channel_id: str, **kw: Any) -> list[dict[st
 
 _METRIC_NAMES = {
     "views": "views",
+    # Wave 113: TikTok's is "Video Views" - five measured TikTok posts read "not measured yet".
+    "video views": "views",
     "likes": "likes",
+    "reactions": "likes",
     "comments": "comments",
     "shares": "shares",
     "saves": "saves",
+    "reach": "reach",
+    "follows": "follows",
+    "watch time (min)": "watch_min",
+    "avg. watch time (sec)": "avg_watch_s",
 }
+_MAPPED = ("views", "likes", "comments", "shares", "saves", "reach", "follows", "watch_min",
+           "avg_watch_s")  # fmt: skip
+
+
+def map_metrics(buffer: dict[str, Any]) -> dict[str, Any]:
+    """Buffer's metric names (they differ per platform) as this repo's keys."""
+    mapped: dict[str, Any] = {}
+    for name, value in (buffer or {}).items():
+        key = _METRIC_NAMES.get(str(name).strip().lower())
+        if key and mapped.get(key) is None:
+            mapped[key] = value
+    return mapped
 
 
 def parse_metrics_node(node: dict[str, Any]) -> dict[str, Any]:
@@ -330,23 +349,15 @@ def parse_metrics_node(node: dict[str, Any]) -> dict[str, Any]:
             buffer[str(item["name"])] = item.get("value")
     updated = node.get("metricsUpdatedAt")
     measured = bool(updated)
-    mapped: dict[str, Any] = {}
-    if measured:
-        for name, value in buffer.items():
-            key = _METRIC_NAMES.get(str(name).strip().lower())
-            if key:
-                mapped[key] = value
-    return {
+    mapped = map_metrics(buffer) if measured else {}
+    row: dict[str, Any] = {
         "id": str(node.get("id") or ""),
         "measured": measured,
         "metrics_updated_at": str(updated) if updated else "",
-        "views": mapped.get("views") if measured else None,
-        "likes": mapped.get("likes") if measured else None,
-        "comments": mapped.get("comments") if measured else None,
-        "shares": mapped.get("shares") if measured else None,
-        "saves": mapped.get("saves") if measured else None,
-        "buffer": buffer,
     }
+    row.update({key: mapped.get(key) for key in _MAPPED})
+    row["buffer"] = buffer
+    return row
 
 
 def channel_post_metrics(organization_id: str, channel_id: str, **kw: Any) -> list[dict[str, Any]]:

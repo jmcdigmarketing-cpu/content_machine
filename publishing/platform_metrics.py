@@ -29,7 +29,24 @@ def load(channel_id: str) -> dict[str, Any]:
             data = json.load(handle)
     except (OSError, ValueError):
         return {}
-    return data if isinstance(data, dict) else {}
+    if not isinstance(data, dict):
+        return {}
+    for platforms in (data.get("rows") or {}).values():
+        for row in (platforms or {}).values() if isinstance(platforms, dict) else ():
+            _remap(row)
+    return data
+
+
+def _remap(row: Any) -> None:
+    """Wave 113: a measured row stored before TikTok's "Video Views" was mapped is read again
+    from its raw `buffer` metrics, so it does not wait for the next day's fetch."""
+    if not isinstance(row, dict) or not row.get("measured"):
+        return
+    from publishing.buffer_api import map_metrics
+
+    for key, value in map_metrics(row.get("buffer") or {}).items():
+        if row.get(key) is None:
+            row[key] = value
 
 
 def _save(channel_id: str, data: dict[str, Any]) -> None:
@@ -43,7 +60,7 @@ def _save(channel_id: str, data: dict[str, Any]) -> None:
 
 def get_row(channel_id: str, run_id: str, platform: str) -> dict[str, Any] | None:
     row = ((load(channel_id).get("rows") or {}).get(str(run_id)) or {}).get(platform)
-    return row if isinstance(row, dict) else None
+    return row if isinstance(row, dict) else None  # load() has remapped it
 
 
 def _utc_hour(stamp: Any) -> int | None:

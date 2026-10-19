@@ -107,7 +107,32 @@ def feed_lines(channel_id: str) -> list[str]:
             lines.append(f"{label}: not measured yet")
             continue
         lines.append(
-            f"{label}: {total} views, best {best_title} ({best_views} views). "
+            f"{label}: {total} views, best {best_title} ({best_views} views).{_watch_note(rows, platform, channel_id)} "
             f"{learning_line(channel_id, platform)}"
         )
     return lines or ["No platform results yet."]
+
+
+def _intro_seconds(channel_id: str) -> float:
+    from video.intro_offset import intro_offset_seconds
+
+    return intro_offset_seconds(channel_id)
+
+
+def _watch_note(rows: dict[str, Any], platform: str, channel_id: str) -> str:
+    """Wave 113: TikTok's viewers watched 1.24-1.68 s on average - inside the 2.15 s intro."""
+    watched = [
+        float(row["avg_watch_s"])
+        for platforms in rows.values()
+        if isinstance(platforms, dict)
+        for row in [platforms.get(platform)]
+        if isinstance(row, dict) and row.get("views") and row.get("avg_watch_s") is not None
+    ]
+    if not watched:
+        return ""
+    mean = sum(watched) / len(watched)
+    note = f" Viewers watch {mean:.1f} s on average"
+    intro = _intro_seconds(channel_id)
+    if intro and mean < intro:
+        note += f" - less than the {intro:.2f} s intro"
+    return note + "."

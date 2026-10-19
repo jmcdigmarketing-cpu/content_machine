@@ -8,10 +8,83 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
+import os
+from datetime import datetime, timezone
 
 from analytics.youtube_metrics import _analytics_enabled, refresh_publish_metrics
 from config.channels import resolve_channel_id
+from config.paths import DATA_DIR
+from core.logging import get_logger
 from storage.repositories.publish_log import get_publish_log_repository, video_title
+
+logger = get_logger("analytics.sync_metrics")
+
+# Wave 113: the sync ran only when the operator ran `ops morning` or `ops all`. Overnight and the
+# upload worker (every 15 minutes) sync once a day without them; this stamps the last sync.
+SYNC_STAMP_FILE = os.path.join(DATA_DIR, "metrics_synced.json")
+SYNC_EVERY_HOURS = 20.0
+RETRY_HOURS = 2.0
+
+
+def _stamps() -> dict:
+    try:
+        with open(SYNC_STAMP_FILE, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def mark_synced(channel_id: str, *, now: datetime | None = None) -> None:
+    data = _stamps()
+    data[channel_id] = (now or datetime.now(timezone.utc)).isoformat()
+    try:
+        os.makedirs(os.path.dirname(SYNC_STAMP_FILE) or ".", exist_ok=True)
+        tmp = f"{SYNC_STAMP_FILE}.tmp"
+        with open(tmp, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=2)
+        os.replace(tmp, SYNC_STAMP_FILE)
+    except OSError as exc:
+        logger.debug("sync stamp not written: %s", exc)
+
+
+def last_synced(channel_id: str) -> datetime | None:
+    raw = _stamps().get(channel_id)
+    try:
+        when = datetime.fromisoformat(str(raw))
+    except (TypeError, ValueError):
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+
+
+def maybe_sync(channel_id: str, *, now: datetime | None = None) -> bool:
+    """Sync when the last one is over SYNC_EVERY_HOURS old (or never ran). True when it ran.
+    Fail-open: an unattended caller never stops on it."""
+    moment = now or datetime.now(timezone.utc)
+    last = last_synced(channel_id)
+    if last is not None and (moment - last).total_seconds() < SYNC_EVERY_HOURS * 3600:
+        return False
+    tried = last_synced(f"{channel_id}:tried")
+    if tried is not None and (moment - tried).total_seconds() < RETRY_HOURS * 3600:
+        return False  # a failed sync (analytics off, API down) is not retried every 15 minutes
+    code = 1
+    try:
+        code = sync_channel(channel_id)
+    except Exception as exc:
+        logger.warning("unattended metrics sync failed: %s: %s", type(exc).__name__, exc)
+    if code != 0:
+        mark_synced(f"{channel_id}:tried", now=moment)
+    return True
+
+
+def sync_note(channel_id: str, *, now: datetime | None = None) -> str:
+    """For health's unmeasured line: when the sync last ran, and that YouTube lags."""
+    last = last_synced(channel_id)
+    if last is None:
+        return "no unattended sync recorded yet; YouTube's numbers lag 2-3 days"
+    hours = max(0, int(((now or datetime.now(timezone.utc)) - last).total_seconds() // 3600))
+    return f"last sync {hours} h ago; YouTube's numbers lag 2-3 days"
 
 
 def _probe_analytics_api(channel_id: str) -> tuple[bool, str]:
@@ -204,6 +277,7 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
         print(f"  Mailbag: {len(data.get('clusters') or [])} question(s) (ops mailbag)")
     if synced > 0:
         print("  Best-bet recommendations will reflect real engagement on next run.")
+    mark_synced(channel_id)
     return 0
 
 

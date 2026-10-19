@@ -5532,6 +5532,48 @@
         "falsy": true
       },
       "why": "fail-open: no two sides, no card"
+    },
+    {
+      "id": "tiktok-video-views-are-views",
+      "item": 1418,
+      "source": "live 2026-10-18: five measured TikTok posts read 'not measured yet'",
+      "call": "publishing.buffer_api:map_metrics",
+      "args": [
+        {
+          "Video Views": 79,
+          "Reactions": 3,
+          "Avg. Watch Time (sec)": 1.24
+        }
+      ],
+      "expect": {
+        "equals": {
+          "views": 79,
+          "likes": 3,
+          "avg_watch_s": 1.24
+        }
+      },
+      "why": "Buffer names each platform's metrics differently; TikTok's views are 'Video Views'"
+    },
+    {
+      "id": "instagram-views-and-follows",
+      "item": 1329,
+      "source": "wave 113: the sibling platform's names",
+      "call": "publishing.buffer_api:map_metrics",
+      "args": [
+        {
+          "Views": 129,
+          "Follows": 1,
+          "Reach": 117
+        }
+      ],
+      "expect": {
+        "equals": {
+          "views": 129,
+          "follows": 1,
+          "reach": 117
+        }
+      },
+      "why": "Instagram's views were read; its follows and reach were not"
     }
   ]
 }

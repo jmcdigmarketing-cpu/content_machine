@@ -322,15 +322,38 @@ def week_counts(channel_id: str, *, days: int = 7, now: datetime | None = None) 
     return packed, posted
 
 
+def buffer_week(channel_id: str, *, days: int = 7, now: datetime | None = None) -> tuple[int, int]:
+    """Wave 113: (posted, scheduled) - videos that reached TikTok or Instagram in the last `days`
+    days (through Buffer, or by hand before it), and videos Buffer holds for later now."""
+    moment = now or datetime.now(timezone.utc)
+    cutoff = moment - timedelta(days=days)
+    posted = scheduled = 0
+    data = _load(channel_id)
+    for entry in (data.get("runs") or {}).values():
+        if isinstance(entry, dict):
+            when = _stamp(entry.get("posted"))
+            posted += bool(when and when >= cutoff)
+    for entry in (data.get("posts") or {}).values():
+        if not isinstance(entry, dict):
+            continue
+        states = [s for s in (entry.get(p) for p in PLATFORMS) if isinstance(s, dict)]
+        sent = [_stamp(s.get("sent_at")) for s in states if s.get("state") == "sent"]
+        if any(w and w >= cutoff for w in sent):
+            posted += 1
+        elif any(s.get("state") == "scheduled" for s in states):
+            scheduled += 1
+    return posted, scheduled
+
+
 def week_line(channel_id: str, *, now: datetime | None = None) -> str:
-    """One line for the weekly report and `ops status`; "" when nothing was packed or posted."""
-    packed, posted = week_counts(channel_id, now=now)
-    if not packed and not posted:
+    """One line for the weekly report and `ops status`; "" when nothing went out or waits.
+
+    Wave 113: it said "17 packed, 6 posted - mark each with ops crosspost done", a hand-posting
+    instruction, while Buffer posted every video - packs are made for every public video."""
+    posted, scheduled = buffer_week(channel_id, now=now)
+    if not posted and not scheduled:
         return ""
-    return (
-        f"Buffer this week: {packed} packed, {posted} posted (TikTok + Instagram; "
-        "mark each with ops crosspost done --run-id N)"
-    )
+    return f"TikTok + Instagram this week: {posted} posted, {scheduled} scheduled in Buffer"
 
 
 def waiting_lines(channel_id: str) -> list[str]:

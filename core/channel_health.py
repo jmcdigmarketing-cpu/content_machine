@@ -84,6 +84,12 @@ def _engagement_sub(channel_id: str) -> HealthSub:
             f"; {len(unmeasured)} newer {plural} not measured yet "
             f"(runs {', '.join(str(r) for r in unmeasured)})"
         )
+        try:  # wave 113: lag or no sync - the line said neither
+            from analytics.sync_metrics import sync_note
+
+            detail += f" - {sync_note(channel_id)}"
+        except Exception as exc:
+            logger.debug("sync note skipped: %s", exc)
     if delta < -0.01:
         why = engagement_why(rates, _engagement_info(list(rates)))
         status, word = (RED, "declining") if delta < -0.05 else (YELLOW, "softening")

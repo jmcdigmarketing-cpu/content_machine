@@ -191,6 +191,7 @@ import config.competitors as _competitors
 import config.paths as _paths
 from analytics import mailbag as _mailbag
 from analytics import reach_report as _reach_report
+from analytics import sync_metrics as _sync_metrics
 from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
 from config import seo as _seo
@@ -331,6 +332,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_holdouts, "HOLDOUT_FILE", _suite_store("holdouts.json")),
     # Wave 112: the doctor's last result.
     patch.object(_ops_doctor, "DOCTOR_LAST_FILE", _suite_store("doctor_last.json")),
+    # Wave 113: when the metrics sync last ran (overnight and the worker sync once a day).
+    patch.object(_sync_metrics, "SYNC_STAMP_FILE", _suite_store("metrics_synced.json")),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

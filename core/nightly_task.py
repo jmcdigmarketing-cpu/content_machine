@@ -278,6 +278,22 @@ def _recorded(key: str) -> datetime | None:
         return None
 
 
+OVERDUE_HOURS = 26.0
+
+
+def overdue_line(*, now: datetime | None = None) -> str:
+    """#1372 (wave 115): "" while overnight has started in the last 26 hours, else what to say -
+    a missed run was found only when someone looked."""
+    started = _recorded_start()
+    if started is None:
+        return ""
+    hours = ((now or datetime.now()) - started).total_seconds() / 3600
+    if hours < OVERDUE_HOURS:
+        return ""
+    return (f"Overnight has not run for {hours:.0f} hours (last started {started:%a %H:%M}) - "
+            "was the PC off at 5:00? py -m scripts.ops overnight-last")  # fmt: skip
+
+
 def _recorded_finish() -> datetime | None:
     return _recorded("finished")
 

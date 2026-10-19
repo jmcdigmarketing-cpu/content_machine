@@ -211,6 +211,7 @@ from core import retraction_watch as _retraction_watch
 from core import run_trace as _run_trace
 from core import topic_trajectory as _topic_trajectory
 from core import trace_secrets as _trace_secrets
+from core import win_notify as _win_notify
 from core import ypp_readiness as _ypp_readiness
 from core.money import ledger as _spend_ledger
 from core.predictions import calls as _preview_calls
@@ -296,6 +297,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_paths, "RELIABILITY_HISTORY_FILE", _suite_store("reliability_history.json")),
     # Wave 115 (#1402): the morning reads the upload worker's last pass.
     patch.object(_paths, "WORKER_TASK_LOG", _suite_store("worker_task.log")),
+    # Wave 115 (#1399, #1372): the once-a-day toast stamps.
+    patch.object(_win_notify, "TOAST_DAYS_FILE", _suite_store("toast_days.json")),
     patch.object(_competitors, "DATA_DIR", _SUITE_DATA_TMP),
     patch.object(_channel_memory, "MEMORY_DIR", _suite_store("channel_memory")),
     patch.object(_subtitles, "SUBTITLE_DIR", _suite_store("subtitles")),

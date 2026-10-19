@@ -7,6 +7,18 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-18 night (Claude Code): wave 112, the next ten
+
+Five batches, each pushed and green: `ops status` reuses a doctor result under 12 h (7.9 ->
+3.4 s); betting roundups are not ideas; overnight calls every marquee game of the week; the
+Monday compilation draws its own thumbnail; runs 92 and 119's claims settled with sources
+(one rejected, a correction line on the video); the stake and the call in the first sentence
+(half the viewers are gone by a quarter of the video); the third-channel gate printed (24%
+stayed against 35%); paid-signal attribution on measured outcomes ("wait" - 3-4 runs
+without); a 3-second matchup card after a preview's first sentence; one Settings line in
+the menu (9 prompts instead of 11), and the length recommendation reads its 35 measured
+videos. Open 59.
+
 ## Previous — 2026-10-18 evening (Claude Code): wave 111, the plan's next ten
 
 The long-term plan is written (hands_off_plan.md: this week, the next ten, the quarter), then

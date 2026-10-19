@@ -497,6 +497,19 @@ def drain_due(cap: int = PASS_CAP) -> int:
     return done
 
 
+def _overnight_watch() -> None:
+    """#1372: a toast, once a day, when overnight has not started for 26 hours. Fail-open."""
+    try:
+        from core.nightly_task import overdue_line
+        from core.win_notify import toast_daily
+
+        line = overdue_line()
+        if line:
+            toast_daily("overnight-missed", "Content OS: overnight", line)
+    except Exception as exc:
+        logger.debug("overnight watch skipped: %s", exc)
+
+
 def _sync_metrics() -> None:
     """Wave 113: the metrics sync, once a day - `ops morning` was its only caller, and this
     pass runs every 15 minutes from the UploadWorker task. Fail-open."""
@@ -533,6 +546,7 @@ def main():
     if args.loop <= 0:
         processed = drain_due()
         _sync_metrics()
+        _overnight_watch()
         if processed > 1:
             print(f"Sent {processed} due job(s) in one pass.")
         if not processed:
@@ -556,6 +570,7 @@ def main():
             while process_one():
                 did_work = True
             _sync_metrics()
+            _overnight_watch()
             if not did_work and not has_quota_for_upload():
                 print(
                     f"Waiting for YouTube quota reset — {format_quota_detail()}. "

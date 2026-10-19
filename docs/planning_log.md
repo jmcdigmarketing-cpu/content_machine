@@ -8798,3 +8798,25 @@ Batch B:
 - The wave 111 guard caught the first version reading the real worker log in four status
   tests; the path moved to `config.paths` and the suite redirects it.
 - 6 new tests failed on clean HEAD.
+
+Batches C and D (one commit; they share the wave's test file and crosspost.py):
+- #1399: a failed Buffer send raises a toast, once a day.
+- #1372: a missed overnight raises a toast after 26 hours, and `ops status` has an Overnight
+  line.
+- #1317: new uploads link the newest public compilation.
+- **#1422 not shipped, by measurement:** the card's first frame for run 165 showed the hook's
+  sentence twice. The render already draws it as a headline at the top, and the copies start at
+  the first word since wave 113. It closes as already met. #1477 closes as #1491.
+- 8 new tests failed on clean HEAD.
+
+Audit (wave 115):
+- 21 tests in tests/test_wave115.py; 20 failed on clean HEAD, and the 21st guards that a
+  caption still goes up with room. 3 corpus cases.
+- The wave 111 guard caught the first #1402 version reading the real worker log.
+- A heredoc broke a `\n` in prepublish.py; it was caught before any test ran.
+- mypy 92, the baseline. ruff clean on every export.
+- Live: xpPz3ewlNJ8 has the AI line (the operator's yes); the morning shows the sign-in date, the
+  worker's last pass and overnight's start.
+- Not done: #1422's card (already met); nothing sent to Buffer by me.
+
+`roadmap-index`: open 235, done 1523, numbered open 226.

@@ -227,5 +227,139 @@ class SubscriberFlagTests(unittest.TestCase):
         self.assertEqual(subscriber_flag_line(rows[:1]), "")
 
 
+class ToastTests(unittest.TestCase):
+    """C: #1399 a failed Buffer send, #1372 a missed overnight - told once a day, not found."""
+
+    def test_a_toast_once_a_day_across_processes(self):
+        from core import win_notify
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(win_notify, "TOAST_DAYS_FILE", os.path.join(tmp, "days.json")),
+                patch.object(win_notify, "toast", return_value=True) as shown,
+            ):
+                first = win_notify.toast_daily(
+                    "buffer:tapin", "t", "b", now=datetime(2026, 10, 19, 9)
+                )
+                again = win_notify.toast_daily(
+                    "buffer:tapin", "t", "b", now=datetime(2026, 10, 19, 18)
+                )
+                next_day = win_notify.toast_daily(
+                    "buffer:tapin", "t", "b", now=datetime(2026, 10, 20, 9)
+                )
+        self.assertEqual((first, again, next_day), (True, False, True))
+        self.assertEqual(shown.call_count, 2)
+
+    def test_a_toast_that_did_not_show_is_not_stamped(self):
+        from core import win_notify
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(win_notify, "TOAST_DAYS_FILE", os.path.join(tmp, "days.json")),
+                patch.object(win_notify, "toast", side_effect=[False, True]) as shown,
+            ):
+                win_notify.toast_daily("k", "t", "b", now=datetime(2026, 10, 19, 9))
+                self.assertTrue(
+                    win_notify.toast_daily("k", "t", "b", now=datetime(2026, 10, 19, 10))
+                )
+        self.assertEqual(shown.call_count, 2)
+
+    def test_a_failed_buffer_send_toasts(self):
+        from publishing import crosspost
+
+        with (
+            patch.object(crosspost, "auto_enabled", return_value=True),
+            patch("publishing.buffer_api.configured", return_value=True),
+            patch.object(crosspost, "setup_missing", return_value=[]),
+            patch("publishing.platform_metrics.refresh"),
+            patch.object(crosspost, "sync_status", return_value=[]),
+            patch.object(
+                crosspost,
+                "send_due",
+                return_value=["  ! run 173 TikTok: Buffer refused it - bad video"],
+            ),
+            patch("core.win_notify.toast_daily") as toast,
+        ):
+            crosspost.step("tapin")
+        toast.assert_called_once()
+        self.assertIn("run 173 TikTok: Buffer refused it", toast.call_args.args[2])
+
+    def test_overnight_overdue_after_26_hours(self):
+        from core import nightly_task
+
+        with patch.object(
+            nightly_task, "_recorded_start", return_value=datetime(2026, 10, 19, 5, 0, 2)
+        ):
+            self.assertEqual(nightly_task.overdue_line(now=datetime(2026, 10, 20, 6, 0)), "")
+            line = nightly_task.overdue_line(now=datetime(2026, 10, 20, 8, 0))
+        self.assertTrue(
+            line.startswith("Overnight has not run for 27 hours (last started Mon 05:00)"), line
+        )
+
+    def test_the_worker_watches_it(self):
+        from jobs import worker
+
+        with (
+            patch(
+                "core.nightly_task.overdue_line", return_value="Overnight has not run for 27 hours"
+            ),
+            patch("core.win_notify.toast_daily") as toast,
+        ):
+            worker._overnight_watch()
+        toast.assert_called_once()
+        self.assertEqual(toast.call_args.args[0], "overnight-missed")
+
+
+class CompilationLinkTests(unittest.TestCase):
+    """D: #1317 (the operator: new uploads only) - a Short links the week's compilation."""
+
+    def _request(self, description="A Short."):
+        from publishing.base import PublishRequest
+
+        return PublishRequest(file_path="v.mp4", title="A Short", description=description)
+
+    def test_a_short_gets_the_link_once_a_compilation_is_public(self):
+        from publishing import prepublish
+
+        with (
+            patch("video.week_compile.latest_public_compilation", return_value="xpPz3ewlNJ8"),
+            patch.object(prepublish, "_is_compilation", return_value=False),
+        ):
+            got, added = prepublish.with_compilation_link(self._request(), "tapin", 175)
+            again, twice = prepublish.with_compilation_link(got, "tapin", 175)
+        self.assertTrue(added)
+        self.assertIn("Full week: https://youtu.be/xpPz3ewlNJ8", got.description)
+        self.assertFalse(twice)
+        self.assertEqual(again.description, got.description)
+
+    def test_none_public_or_the_compilation_itself_adds_nothing(self):
+        from publishing import prepublish
+
+        with patch("video.week_compile.latest_public_compilation", return_value=""):
+            self.assertFalse(prepublish.with_compilation_link(self._request(), "tapin", 175)[1])
+        with (
+            patch("video.week_compile.latest_public_compilation", return_value="xpPz3ewlNJ8"),
+            patch.object(prepublish, "_is_compilation", return_value=True),
+        ):
+            self.assertFalse(prepublish.with_compilation_link(self._request(), "tapin", 172)[1])
+
+    def test_the_latest_public_compilation(self):
+        from video import week_compile
+
+        rows = [SimpleNamespace(content_run_id=172, youtube_video_id="xpPz3ewlNJ8", privacy_status="public",
+                                published_at=datetime(2026, 10, 21, 16, tzinfo=timezone.utc)),
+                SimpleNamespace(content_run_id=150, youtube_video_id="short", privacy_status="public",
+                                published_at=datetime(2026, 10, 20, 16, tzinfo=timezone.utc))]  # fmt: skip
+        runs = {172: SimpleNamespace(features_json=json.dumps({"compilation": {"week": "2026-10-19"}})),
+                150: SimpleNamespace(features_json="{}")}  # fmt: skip
+        with (
+            patch("storage.repositories.publish_log.get_publish_log_repository",
+                  return_value=SimpleNamespace(list_uploaded_for_channel=lambda c: rows)),
+            patch("storage.repositories.content_runs.get_content_run_repository",
+                  return_value=SimpleNamespace(get=lambda rid: runs.get(rid))),
+        ):  # fmt: skip
+            self.assertEqual(week_compile.latest_public_compilation("tapin"), "xpPz3ewlNJ8")
+
+
 if __name__ == "__main__":
     unittest.main()

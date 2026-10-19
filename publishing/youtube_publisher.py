@@ -628,6 +628,9 @@ class YouTubePublisher(Publisher):
         try:
             from publishing import prepublish
 
+            request, linked = prepublish.with_compilation_link(request, channel_id, content_run_id)
+            if linked:  # #1317
+                logger.info("pre-publish: linked the week's compilation")
             request, added = prepublish.with_disclosure(request, channel_id)  # #1524
             if added:
                 logger.info("pre-publish: the AI disclosure line was missing - appended")

@@ -79,6 +79,30 @@ def _title(request: PublishRequest) -> Check:
     return Check("title", True, f"{len(title)} characters", True)
 
 
+def _is_compilation(content_run_id: int | None) -> bool:
+    return bool(_features(_run(content_run_id)).get("compilation"))
+
+
+def with_compilation_link(
+    request: PublishRequest, channel_id: str, content_run_id: int | None
+) -> tuple[PublishRequest, bool]:
+    """#1317 (wave 115, the operator: new uploads only): a Short links the newest public weekly
+    compilation - the long video is where the 4,000 hours are. Not the compilation itself."""
+    from dataclasses import replace
+
+    from video.week_compile import latest_public_compilation
+
+    video_id = latest_public_compilation(channel_id)
+    if not video_id or _is_compilation(content_run_id):
+        return request, False
+    link = f"Full week: https://youtu.be/{video_id}"
+    description = request.description or ""
+    if link in description:
+        return request, False
+    joined = f"{description.rstrip()}\n\n{link}" if description.strip() else link
+    return replace(request, description=joined), True
+
+
 def with_disclosure(request: PublishRequest, channel_id: str) -> tuple[PublishRequest, bool]:
     """#1524 (wave 114 found it, the operator: append it): (the request with the channel's AI
     disclosure line at the end of its description, whether it was added). The first weekly

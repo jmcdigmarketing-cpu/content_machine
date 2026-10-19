@@ -1744,7 +1744,7 @@ its heading rather than filed twice. Decision 68 holds the backlog under 300.
 - [x] 1314. **`ops ypp` counts what each weekly compilation added to long-form hours, and the weeks to 4,000 at that rate** *(S01.1, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114):** `ypp_readiness.compilation_line` in `ops ypp`: compilations made, their measured long-form hours, and the weeks to 4,000 at that rate. Live: "none made yet - overnight makes the first on Monday".
 - [ ] 1315. **A written long-form format: a 6-8 minute "Week in UFC / NFL" scripted from the week's facts, not only the Shorts stitched together** *(S01.2, filed 2026-10-18)* `[L]`
 - [ ] 1316. **Compilation titles and chapters written for search ("UFC Week in Review: Pereira, Topuria ...") - long videos are found by search, Shorts by the feed** *(S01.3, filed 2026-10-18)* `[S]`
-- [ ] 1317. **Each Short's description links the week's compilation, so a Shorts viewer can reach the long video** *(S01.4, filed 2026-10-18)* `[S]`
+- [x] 1317. **Each Short's description links the week's compilation, so a Shorts viewer can reach the long video** *(S01.4, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115; the operator: new uploads only):** `prepublish.with_compilation_link` - an upload adds "Full week: https://youtu.be/<id>" once a compilation is public (`week_compile.latest_public_compilation`), not on the compilation itself. Live: none public until Wed 10-21 16:00Z.
 - [ ] 1318. **The 11 playlists made on YouTube (550 quota units; your yes) - a playlist keeps a long-form session going** *(S01.5, filed 2026-10-18)* `[S]`
 - [x] 1319. **Advertiser-safe titles and first lines: a draft whose title, thumbnail text or first sentence would limit ads waits for you** *(S01.6, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113; the operator: an overnight draft waits, py main.py warns):** `authenticity.ad_limit_reason` reads the title (the thumbnail's headline comes from it) and the first sentence for sexual terms, strong profanity, hard drugs, self-harm and mass-casualty words; fight and game violence is not listed. `unattended_block_reason` and `backlog_gate` hold the draft with the word named; `py main.py` prints a warning beside the authenticity report. Live: run 166's "Hot Dads & Horny Art: Why Belmont's Curse Is Fixable" -> "its title or first line would limit ads (\"horny\")". Slurs are not listed in code.
 - [ ] 1320. **A monthly YPP card: the four numbers against last month, organic only, on the Story page** *(S01.9, filed 2026-10-18)* `[S]`
@@ -1821,7 +1821,7 @@ Already open for S05: #537 (per-section regeneration).
 ### S07 Overnight runs when the PC wakes, not at 5:00 AM
 
 - [ ] 1371. **`ops doctor` checks the wake: the task's WakeToRun, wake timers allowed, the last start time** *(S07.1, filed 2026-10-18)* `[S]`
-- [ ] 1372. **A toast when overnight has not run for 26 hours** *(S07.2, filed 2026-10-18)* `[S]`
+- [x] 1372. **A toast when overnight has not run for 26 hours** *(S07.2, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `nightly_task.overdue_line` - after 26 hours without an overnight start the worker's pass raises a toast once a day, and `ops status` has an Overnight line ("last started Mon 05:00" live).
 - [ ] 1373. **A late start drafts, and renders only if there is time before the first slot** *(S07.3, filed 2026-10-18)* `[S]`
 - [ ] 1374. **Drafts at 5:00, renders at 5:30, so a slow draft does not push renders past breakfast** *(S07.4, filed 2026-10-18)* `[S]`
 - [ ] 1375. **A second wake at 17:00 for the evening slot's render** *(S07.5, filed 2026-10-18)* `[S]`
@@ -1861,7 +1861,7 @@ Already open for S09: #464 (recorded API fixtures).
 ### S10 The last mile was manual
 
 - [x] 1398. **`ops status`'s Buffer line counts Buffer's sends - no "mark each with ops crosspost done"** *(S10.1, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** `crosspost.week_line` counts what reached TikTok or Instagram and what Buffer holds - live: "TikTok + Instagram this week: 7 posted, 1 scheduled in Buffer" - no "mark each with ops crosspost done".
-- [ ] 1399. **A toast when a Buffer send fails** *(S10.2, filed 2026-10-18)* `[S]`
+- [x] 1399. **A toast when a Buffer send fails** *(S10.2, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `crosspost.step` raises a toast when the round has a failure line - once a day per channel across processes (`win_notify.toast_daily`; the worker runs every 15 minutes in a new process, so the in-process dedupe would repeat it). Stamps in data/toast_days.json, redirected in the suite.
 - [ ] 1400. **A failed Buffer send retried once** *(S10.3, filed 2026-10-18)* `[S]`
 - [ ] 1401. **The pack-folder path retired after 30 Buffer sends in a row** *(S10.4, filed 2026-10-18)* `[S]`
 - [x] 1402. **The upload worker's last loop in the morning line** *(S10.5, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `jobs/worker_log.last_pass_line` - `ops status` has a Worker line: the last pass and what it did, and how long ago when over 2 hours. Live: "Worker: last pass 17:37 - uploads blocked by quota until the reset". The log path is `config.paths.WORKER_TASK_LOG` (redirected in the suite - the wave 111 guard caught the first version reading the real log); kept out of `jobs.worker` so `ops status` does not import the pipeline.
@@ -1892,7 +1892,7 @@ Already open for S11: #1058 (CTR into the learning loop).
 - [x] 1419. **The trim reads each run's own intro flag - week_compile cut 2.15 s from every Short, the hook of one rendered without the intro** *(S12.3, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113, with #1417):** each of the week's Shorts carries its own `hook_offset`; a Short without the intro is cut at 0, not 2.15 s.
 - [ ] 1420. **A 0.5 s sonic logo variant instead of the 2.15 s intro** *(S12.4, filed 2026-10-18)* `[S]`
 - [ ] 1421. **The intro as a corner logo, not a cut-in** *(S12.5, filed 2026-10-18)* `[S]`
-- [ ] 1422. **The first frame shows the hook's words** *(S12.6, filed 2026-10-18)* `[S]`
+- [x] 1422. **The first frame shows the hook's words** *(S12.6, filed 2026-10-18)* `[S]` **Closed 2026-10-19 (wave 115) - already met, measured:** a card was built (the first sentence for 1.5 s on the TikTok/Instagram copy) and its first frame viewed for run 165: the render already draws the hook's words as a headline at the top, and since the copies start at the first word (#1417) that headline is on frame one. The card said the same sentence twice (with the word timings' emphasis asterisks), so it was not shipped.
 - [x] 1423. **INTRO_TEST read with a stop rule (#354) at 3 each** *(S12.7, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114, with #354):** `growth.intro_verdict` - `ops growth`'s intro line reads at 6 each and says which side holds more and how sure, or "no real difference at 10 each"; dropping the intro stays the operator's call. Live: 1 without, 5 with - the line says when it will read.
 - [ ] 1424. **Open on the clip's most moving frame** *(S12.8, filed 2026-10-18)* `[M]`
 - [ ] 1425. **No silence at t=0** *(S12.9, filed 2026-10-18)* `[S]`
@@ -1973,7 +1973,7 @@ Already open for S17: #457 (lockfile and reproducible install); #445 (resume an 
 - [ ] 1474. **Data quality lists the missing fields per run** *(S18.4, filed 2026-10-18)* `[S]`
 - [ ] 1475. **Health history, one line a day** *(S18.5, filed 2026-10-18)* `[S]`
 - [ ] 1476. **Engagement's window printed with its dates and the newest measured video** *(S18.6, filed 2026-10-18)* `[S]`
-- [ ] 1477. **Health per format (Shorts and long videos)** *(S18.7, filed 2026-10-18)* `[S]`
+- [x] 1477. **Health per format (Shorts and long videos)** *(S18.7, filed 2026-10-18)* `[S]` **Closed 2026-10-19 (wave 115) - shipped as #1491 (wave 114):** health reads Shorts against Shorts and counts long videos apart.
 - [ ] 1478. **Cost uses the spend you entered** *(S18.8, filed 2026-10-18)* `[S]`
 - [ ] 1479. **The thresholds in one place, versioned** *(S18.9, filed 2026-10-18)* `[S]`
 - [ ] 1480. **A weekly fields-written-against-read audit** *(S18.10, filed 2026-10-18)* `[M]`

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-19: wave 114, the next ten
+# Handoff synopsis — 2026-10-19 evening: wave 115, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-19 (Claude Code): wave 114, the next ten
+## Last wave — 2026-10-19 evening (Claude Code): wave 115, the next ten
+
+Uploads stopped at 4 on 10-19 - three caption files took 1,200 of 8,629 units - so a caption
+file goes up only while an upload's worth remains. Every upload appends the AI line when it is
+missing, and the first compilation got it on YouTube (the operator's yes). The sync needs the
+analytics permission. `ops status` says when the sign-in lapses (Wed 9:36 PM EDT), what the
+worker last did, when overnight started, and names a 2+-subscriber video. A failed Buffer send
+and a missed overnight raise a toast once a day. Shorts link the compilation. Open 235.
+
+## Previous — 2026-10-19 (Claude Code): wave 114, the next ten
 
 Two defects from wave 113 first: the unattended sync tried a channel with no sign-in, and
 run 154 - moved on YouTube to 10-21 - kept its old slot, so Buffer was sent its TikTok and
@@ -30,18 +39,6 @@ without a hand step, the metrics sync from overnight and the worker, ad-unsafe t
 the YouTube quota by caller with fifteen unbooked calls booked and an upload reserve, a
 follow line on previews with a call, and Buffer copies that start at the first word. Open
 252.
-
-## Previous — 2026-10-18 night (Claude Code): wave 112, the next ten
-
-Five batches, each pushed and green: `ops status` reuses a doctor result under 12 h (7.9 ->
-3.4 s); betting roundups are not ideas; overnight calls every marquee game of the week; the
-Monday compilation draws its own thumbnail; runs 92 and 119's claims settled with sources
-(one rejected, a correction line on the video); the stake and the call in the first sentence
-(half the viewers are gone by a quarter of the video); the third-channel gate printed (24%
-stayed against 35%); paid-signal attribution on measured outcomes ("wait" - 3-4 runs
-without); a 3-second matchup card after a preview's first sentence; one Settings line in
-the menu (9 prompts instead of 11), and the length recommendation reads its 35 measured
-videos. Open 59.
 
 ## Pipeline order (operator)
 
@@ -117,7 +114,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1422 #1317 #1325 #1399 #1437 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1439 #1429 #1400 #1334 #1352 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

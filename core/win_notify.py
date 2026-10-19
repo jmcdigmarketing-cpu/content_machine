@@ -7,6 +7,7 @@ CONTENT_TOAST=false (see tests/__init__.py).
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from datetime import datetime
@@ -170,6 +171,41 @@ def toast(
     except Exception as exc:
         logger.debug("toast skipped: %s", exc)
         return False
+
+
+def _toast_days_file() -> str:
+    from config.paths import DATA_DIR
+
+    return os.path.join(DATA_DIR, "toast_days.json")
+
+
+TOAST_DAYS_FILE = ""  # the suite points it at a temp file; "" means data/toast_days.json
+
+
+def toast_daily(key: str, title: str, body: str, *, now: datetime | None = None) -> bool:
+    """A toast at most once a day per `key`, across processes - the upload worker runs every 15
+    minutes in a new process, so `toast`'s in-process dedupe would repeat it 96 times a day
+    (wave 115). The day is stamped only when the toast showed."""
+    path = TOAST_DAYS_FILE or _toast_days_file()
+    today = (now or datetime.now()).date().isoformat()
+    try:
+        with open(path, encoding="utf-8") as handle:
+            days = json.load(handle)
+        days = days if isinstance(days, dict) else {}
+    except (OSError, ValueError):
+        days = {}
+    if days.get(key) == today:
+        return False
+    if not toast(title, body, key=f"{key}:{today}"):
+        return False
+    days[key] = today
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(days, handle)
+    except OSError as exc:
+        logger.debug("toast day not stamped: %s", exc)
+    return True
 
 
 def notify_breaker(kind: str, reason: str) -> None:

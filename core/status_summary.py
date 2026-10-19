@@ -86,9 +86,25 @@ def _worker(channel_id: str) -> str:
     return f"Worker: {line}" if line else "Worker: no pass logged yet (ops worker-task --install)"
 
 
+def _overnight(channel_id: str) -> str:
+    """#1372: when overnight last started, or that it is overdue."""
+    from core.nightly_task import _recorded_start, overdue_line
+
+    overdue = overdue_line()
+    if overdue:
+        return overdue
+    started = _recorded_start()
+    return (
+        f"Overnight: last started {started:%a %H:%M}"
+        if started
+        else "Overnight: no run recorded yet"
+    )
+
+
 FAMILIES: list[tuple[str, str, Callable[[str], str]]] = [
     ("Sign-in", "ops check-youtube", _sign_in),
     ("Worker", "ops worker-task", _worker),
+    ("Overnight", "ops overnight-last", _overnight),
     ("Doctor", "ops doctor", _doctor),
     ("Keys", "ops secrets-doctor", _secrets),
     ("Health", "ops health", _health),

@@ -1232,4 +1232,12 @@ def step(channel_id: str) -> list[str]:
         except Exception as exc:
             logger.warning("crosspost %s failed: %s", part.__name__, exc)
             lines.append(f"  ! crosspost {part.__name__} failed: {type(exc).__name__}")
+    failed = [ln.strip().lstrip("! ").strip() for ln in lines if ln.strip().startswith("!")]
+    if failed:  # #1399 (wave 115): a failed send was found only by reading the morning's lines
+        try:
+            from core.win_notify import toast_daily
+
+            toast_daily(f"buffer:{channel_id}", "Content OS: TikTok / Instagram", failed[0][:180])
+        except Exception as exc:
+            logger.debug("buffer failure toast skipped: %s", exc)
     return lines

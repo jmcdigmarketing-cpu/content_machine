@@ -190,6 +190,32 @@ def _out_path(channel_id: str, week: str) -> str:
     return os.path.join(ROOT_DIR, "output", channel_id, "week", f"week_{week}.mp4")
 
 
+def latest_public_compilation(channel_id: str) -> str:
+    """#1317: the YouTube id of the newest compilation that is public, or "" - a Short links it
+    ("Full week: ..."), so a Shorts viewer can reach the long video."""
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        runs = get_content_run_repository()
+        best = None
+        for row in get_publish_log_repository().list_uploaded_for_channel(channel_id):
+            if (
+                str(getattr(row, "privacy_status", "") or "") != "public"
+                or not row.youtube_video_id
+            ):
+                continue
+            if not _features(runs.get(int(row.content_run_id or 0))).get("compilation"):
+                continue
+            when = getattr(row, "published_at", None)
+            if best is None or (when and best[0] and when > best[0]):
+                best = (when, str(row.youtube_video_id))
+    except Exception as exc:
+        logger.debug("latest compilation unread: %s", exc)
+        return ""
+    return best[1] if best else ""
+
+
 def week_done(channel_id: str, week: str) -> bool:
     """A compilation for this week is already a run."""
     from storage.repositories.content_runs import get_content_run_repository

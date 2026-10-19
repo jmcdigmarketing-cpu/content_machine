@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-19 · **HEAD at write:** the wave 114 batch E commit (`git log -1`)
+**Written:** 2026-10-19 evening · **HEAD at write:** the wave 115 batch C+D commit (`git log -1`)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
@@ -61,17 +61,6 @@ nothing broken, say that explicitly rather than leaving it implied.
 **The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall** (the Story's
 22); their ideas are #1314-#1517 in the backlog. Decision 68: `test_docs_lint` holds the
 backlog at <= 300, and wave 113 alone was exempt from "close as many as you file".
-
-**Wave 113 (five batches, each pushed):**
-- `buffer_api.map_metrics`, `platform_metrics._remap`, `crosspost.buffer_week` (#1418 #1398).
-- `sync_metrics.maybe_sync` from overnight and `jobs/worker._sync_metrics`; the stamp is
-  data/metrics_synced.json (#1489).
-- `authenticity.ad_limit_reason` in `unattended_block_reason` and `backlog_gate` (#1319).
-- `youtube_quota.record_usage(caller=)`, `record_call`, `upload_reserve`
-  (`YOUTUBE_UPLOAD_RESERVE`) (#1427).
-- `preview_brief`'s follow line (#1322).
-- `video/hook_copy.py` (`run_opening`, `hook_offset`, `ensure_hook_copy`) from
-  `crosspost._sent_file` and `week_compile` (#1417 #1419).
 
 **Wave 114 (five batches, each pushed):**
 - `jobs/worker._sync_metrics` skips a channel with no sign-in (#1518).
@@ -86,13 +75,21 @@ backlog at <= 300, and wave 113 alone was exempt from "close as many as you file
   the run's own intro (#1521).
 - `pylock.toml` and `ops_doctor.lock_check` (#457).
 - Batch F: `week_compile` adds the AI disclosure (#1522). The first compilation, already
-  scheduled (xpPz3ewlNJ8, public 10-21 16:00Z), lacks it on YouTube - the operator's call.
-**Wave 115 in progress (batches A-D):** A done (#1523 the sync's scope, #1524 the AI line at
-upload - xpPz3ewlNJ8 fixed with the operator's yes, #1525 captions only with quota) and B
-(#1437 #1402 #1325) done. Next: C #1399 #1372, D #1422 #1317.
+  scheduled (xpPz3ewlNJ8, public 10-21 16:00Z), got it on 10-19 (wave 115).
 
-**Live:** the worker task now syncs metrics once a day, and Buffer's next sends use the hook
-copy. TikTok's own send hour applies (5 measured rows). **Defects first:** none open of mine.
+**Wave 115 (four batches, three commits):**
+- `captions.caption_quota_ok` (#1525); `prepublish.with_disclosure` (#1524 - xpPz3ewlNJ8 fixed
+  with the operator's yes); the sync's analytics-scope check (#1523).
+- `oauth.sign_in_expiry_line`, `jobs/worker_log.last_pass_line`, `growth.subscriber_flags` in
+  `ops status` (#1437 #1402 #1325); `config.paths.WORKER_TASK_LOG`.
+- `win_notify.toast_daily` (stamps data/toast_days.json) from `crosspost.step` and the worker's
+  `_overnight_watch` (#1399 #1372); `prepublish.with_compilation_link` (#1317).
+- #1422 closed as already met (the headline shows the hook on frame one).
+
+**Live:** the sign-in lapses Wed 10-21 9:36 PM EDT unless the app is published (#1439 is next:
+the worker holding uploads cleanly after that). Uploads stopped at 4 on 10-19 by quota; the
+caption guard keeps the fifth. Renders 168 and 170 sit unlisted; re-cut 171 and run 173 wait.
+**Defects first:** none open of mine.
 
 ## Slot — Cursor
 

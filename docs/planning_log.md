@@ -8716,3 +8716,15 @@ Batch C:
   test_wave114.py after formatting it and checked only the files I touched. Batch B's commit
   carried the formatted file. Each export is now checked with `ruff format --check .` before
   its commit.
+
+Batch D:
+- #1057: `ops recut` - the best-held 20-40 s of an older video, $0, waits.
+  - **Corrected live:** against the curve's own straight trend the opening won on 2 of 3
+    videos, so the re-cut was the original's first 20 s. It is now scored against the
+    channel's average curve, after the first fifth.
+  - Live: run 171 from run 99, 36.8 s, with its sentence card. It waits in the queue manager.
+- #1521: the teaser cut the channel's 2.15 s, the sibling of #1419. It reads the run's own
+  intro now.
+- 7 new tests failed on clean HEAD.
+- Batch C's forward run also failed test_stage4's import-time budget (1.70 s against 1.66) while
+  overnight was rendering on the same PC. It passes 3 of 3 alone.

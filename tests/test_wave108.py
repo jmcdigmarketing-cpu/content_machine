@@ -85,7 +85,8 @@ class TeaserTests(unittest.TestCase):
             with (
                 patch("storage.repositories.content_runs.get_content_run_repository",
                       return_value=repo),
-                patch("scripts.probe_sync.intro_offset_seconds", return_value=2.15),
+                # wave 114: a run with no recorded opening falls back to the channel's offset
+                patch("video.intro_offset.intro_offset_seconds", return_value=2.15),
                 patch("video.teaser.create_teaser", return_value="t.mp4") as make,
                 redirect_stdout(io.StringIO()),
             ):  # fmt: skip

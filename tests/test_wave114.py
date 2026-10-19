@@ -279,5 +279,117 @@ class EmptyDayTests(unittest.TestCase):
         )
 
 
+def _curve(bump_from=0.5, bump_to=0.75):
+    """A falling curve (1.3 -> 0.2) with retention held well above it between two fractions."""
+    out = []
+    for i in range(1, 101):
+        x = i / 100.0
+        y = 1.3 - 1.1 * x + (0.25 if bump_from <= x <= bump_to else 0.0)
+        out.append([round(x, 2), round(y, 3)])
+    return out
+
+
+def _words(n=40, gap=1.5):
+    """Sentences of three words, one every `gap` seconds of audio."""
+    words = []
+    for k in range(n):
+        t = k * gap
+        words += [{"word": f"S{k}", "start": t, "end": t + 0.4}, {"word": "says", "start": t + 0.45, "end": t + 0.8},
+                  {"word": "this.", "start": t + 0.85, "end": t + 1.2}]  # fmt: skip
+    return words
+
+
+class RecutTests(unittest.TestCase):
+    """D: #1057 (the operator: the best-held window, a draft that waits)."""
+
+    def test_the_window_is_where_retention_beats_the_trend(self):
+        from video.recut import best_window
+
+        start, end = best_window(_curve(), 60.0, start_after=2.65)  # held from 30 s to 45 s
+        self.assertLessEqual(start, 30.6)
+        self.assertGreaterEqual(end, 44.4)
+        self.assertTrue(20.0 <= end - start <= 40.0)
+
+    def test_it_never_starts_inside_the_intro_or_runs_into_the_end(self):
+        from video.recut import best_window
+
+        start, _end = best_window(_curve(0.0, 0.3), 60.0, start_after=2.65)
+        self.assertGreaterEqual(start, 2.65)
+        self.assertIsNone(best_window(_curve(), 20.0, start_after=2.65))
+        self.assertLessEqual(best_window(_curve(0.7, 1.0), 60.0, start_after=2.65)[1], 56.0)
+
+    def test_it_snaps_to_whole_sentences(self):
+        from video.recut import snap
+
+        start, end, sentence = snap((30.2, 52.0), _words(), 2.15)
+        self.assertEqual(sentence, "S18 says this.")  # 30.2 s falls inside S18 (29.15-30.35)
+        self.assertAlmostEqual(start, 18 * 1.5 + 2.15)
+        self.assertTrue(20.0 <= end - start <= 40.5)
+
+    def test_the_cut_seeks_and_shows_the_card_first(self):
+        from video.recut import CARD_SECONDS, recut_argv
+
+        argv = recut_argv("in.mp4", "out.mp4", start=30.0, end=55.0, card="card.png")
+        self.assertLess(argv.index("-ss"), argv.index("-i"))
+        self.assertEqual(argv[argv.index("-t") + 1], "25.00")
+        graph = argv[argv.index("-filter_complex") + 1]
+        self.assertIn(f"between(t,0,{CARD_SECONDS})", graph)
+
+    def test_the_title_is_the_sentence_when_it_reads_as_one(self):
+        from video.recut import recut_title
+
+        self.assertEqual(recut_title("Pereira never fought a wrestler this good.", "Old"),
+                         "Pereira never fought a wrestler this good")  # fmt: skip
+        self.assertEqual(
+            recut_title("Short.", "UFC 310 preview"), "UFC 310 preview - the moment that held"
+        )
+
+    def test_apply_records_a_run_that_waits(self):
+        from video import recut
+
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "v.mp4")
+            with open(src, "wb") as handle:
+                handle.write(b"x")
+            source = SimpleNamespace(id=99, mp4_path=src, title="Old", description="Desc", tags_json="[]",
+                                     input_topic="topic")  # fmt: skip
+            plan = {"run_id": 99, "start": 30.0, "end": 55.0, "sentence": "S19 says this.",
+                    "title": "S19 says this", "stayed": 0.52, "video_id": "JX8"}  # fmt: skip
+
+            def cut(argv, **_kw):
+                with open(argv[-1], "wb") as out:
+                    out.write(b"y")
+                return SimpleNamespace(returncode=0)
+
+            with (
+                patch("storage.repositories.content_runs.get_content_run_repository",
+                      return_value=SimpleNamespace(get=lambda rid: source)),
+                patch("core.run_recorder.record_content_run", return_value=201) as record,
+            ):  # fmt: skip
+                made, where = recut.make_recut("tapin", plan, run=cut)
+        self.assertEqual(made, 201)
+        self.assertTrue(where.endswith("v.recut.mp4"))
+        kwargs = record.call_args.kwargs
+        self.assertEqual(kwargs["status"], "rendered")
+        self.assertEqual(kwargs["features"]["recut_of"]["run_id"], 99)
+
+    def test_the_teaser_starts_after_the_runs_own_intro(self):
+        from scripts.ops import COMMANDS
+
+        with tempfile.TemporaryDirectory() as tmp:
+            mp4 = os.path.join(tmp, "run164.mp4")
+            open(mp4, "wb").close()
+            run = SimpleNamespace(id=164, channel_id="tapin", mp4_path=mp4,
+                                  quality_json=json.dumps({"opening": {"intro": False, "intro_seconds": 0.0}}))  # fmt: skip
+            with (
+                patch("storage.repositories.content_runs.get_content_run_repository",
+                      return_value=SimpleNamespace(get=lambda rid: run)),
+                patch("video.teaser.create_teaser", return_value="t.mp4") as make,
+                patch("builtins.print"),
+            ):  # fmt: skip
+                COMMANDS["teaser"][1](SimpleNamespace(run_id=164))
+        self.assertEqual(make.call_args.kwargs.get("start"), 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

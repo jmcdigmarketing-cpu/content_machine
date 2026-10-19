@@ -1260,6 +1260,25 @@ def cmd_week_compile(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "recut",
+    "Re-cuts of past winners: the best-held 20-40 s of an older video, $0 (#1057; dry run; "
+    "--apply makes one, --run-id N picks it; it waits in the queue manager)",
+)
+def cmd_recut(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from video.recut import recut_lines
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    for line in recut_lines(
+        channel,
+        apply=bool(getattr(args, "apply", False)),
+        run_id=int(getattr(args, "run_id", 0) or 0),
+    ):
+        print(line)
+    return 0
+
+
 @_register("teaser", "Cut a 5s teaser from a finished vertical render (--run-id) (#511)")
 def cmd_teaser(args: argparse.Namespace) -> int:
     run_id = int(getattr(args, "run_id", 0) or 0)
@@ -1277,12 +1296,14 @@ def cmd_teaser(args: argparse.Namespace) -> int:
     if not source or not os.path.isfile(source):
         print(f"Run {run_id} has no finished mp4 on disk.")
         return 1
-    from scripts.probe_sync import intro_offset_seconds
+    from video.hook_copy import hook_offset, run_opening
 
     stem, ext = os.path.splitext(source)
     dest = f"{stem}_teaser{ext or '.mp4'}"
-    # #1264: from 0 s the teaser was the channel intro's sting.
-    made = create_teaser(source, dest, start=intro_offset_seconds(getattr(run, "channel_id", None)))
+    # #1264: from 0 s the teaser was the channel intro's sting. Wave 114: the run's own intro -
+    # the channel's 2.15 s cut the hook from a video rendered without it (as #1419 found).
+    start = hook_offset(run_opening(run), getattr(run, "channel_id", None))
+    made = create_teaser(source, dest, start=start)
     print(made)
     return 0
 

@@ -136,6 +136,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `recommend-length` | Recommend video length from engagement history |
 | `recommend-time` | Recommend next post time from engagement history |
 | `record-payloads` | Record each pinned signal's live response into its contract fixture; --apply writes (#905) |
+| `recut` | Re-cuts of past winners: the best-held 20-40 s of an older video, $0 (#1057; dry run; --apply makes one, --run-id N picks it; it waits in the queue manager) |
 | `regressions` | Replay frozen live-run defects ([file]: only the old fixes guarding that file) |
 | `reliability` | Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate) |
 | `render-preview` | Render a 480p ultrafast review copy without changing publish media (--run-id) |

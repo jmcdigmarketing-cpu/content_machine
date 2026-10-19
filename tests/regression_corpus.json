@@ -5721,6 +5721,20 @@
         "equals": "no_difference"
       },
       "why": "the stop rule ends a test at 10 each instead of inviting a peek-and-stop"
+    },
+    {
+      "id": "a-recut-title-fits-youtube-at-a-whole-word",
+      "item": 1057,
+      "source": "live 2026-10-19: run 69's fallback title ran past 100 characters, then cut 'Manifesto' to 'Manife'",
+      "call": "video.recut:recut_title",
+      "args": [
+        "Short.",
+        "GTA 6 Leaks Persist Despite Stop Killing Games' Condemnation of Leaker Manifesto and More"
+      ],
+      "expect": {
+        "equals": "GTA 6 Leaks Persist Despite Stop Killing Games' Condemnation of Leaker - the moment that held"
+      },
+      "why": "YouTube refuses a title over 100 characters; a cut word reads as a typo"
     }
   ]
 }

@@ -336,5 +336,119 @@ class QuotaByCallerTests(unittest.TestCase):
             self.assertLessEqual(source.count("record_call("), calls, module.__name__)
 
 
+class FollowLineTests(unittest.TestCase):
+    """B4 (#1322, the operator: previews with a call): 2 of 64 subscribers came from videos."""
+
+    def test_a_preview_with_a_call_ends_on_why_to_follow(self):
+        from core.facts.event_dates import preview_brief
+
+        brief = preview_brief("2026-10-19T00:20Z", call="Packers win - Dallas allows deep balls")
+        self.assertIn("follow to see if I was right", brief)
+        self.assertIn("graded after the game", brief)
+
+    def test_a_preview_without_a_call_does_not(self):
+        from core.facts.event_dates import preview_brief
+
+        self.assertNotIn("follow", preview_brief("2026-10-19T00:20Z").lower())
+
+    def test_the_line_is_not_taken_for_a_generic_cta(self):
+        from core.script_craft import strip_pre_cta_summary
+
+        script = ("Packers win this one.\n\nIn summary, Dallas cannot cover the deep ball.\n\n"
+                  "I grade this call after the game - follow to see if I was right.")  # fmt: skip
+        self.assertEqual(strip_pre_cta_summary(script)[0], script)
+
+
+class HookCopyTests(unittest.TestCase):
+    """B3 (#1417, #1419): TikTok's viewers left inside the 2.15 s intro; the copy starts at the hook."""
+
+    def test_the_offset_is_the_runs_own_intro(self):
+        from video.hook_copy import hook_offset
+
+        with patch("video.intro_offset.intro_offset_seconds", return_value=2.15):
+            self.assertEqual(hook_offset({"intro": True, "intro_seconds": 2.15}, "tapin"), 2.15)
+            self.assertEqual(hook_offset({"intro": False, "intro_seconds": 0.0}, "tapin"), 0.0)
+            self.assertEqual(hook_offset({}, "tapin"), 2.15)  # before #988 recorded it: all had one
+
+    def test_the_cut_seeks_before_the_input(self):
+        from video.hook_copy import hook_copy_argv
+
+        argv = hook_copy_argv("in.mp4", "in.hook.mp4", offset=2.15)
+        self.assertLess(argv.index("-ss"), argv.index("-i"))
+        self.assertEqual(argv[argv.index("-ss") + 1], "2.15")
+        self.assertEqual(argv[-1], "in.hook.mp4")
+
+    def test_a_copy_is_made_once_and_any_failure_sends_the_original(self):
+        from video import hook_copy
+
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "v.mp4")
+            with open(src, "wb") as handle:
+                handle.write(b"x" * 10)
+
+            def made(argv, **_kw):
+                with open(argv[-1], "wb") as out:
+                    out.write(b"y" * 10)
+                return type("Done", (), {"returncode": 0})()
+
+            feats = {"intro": True, "intro_seconds": 2.15}
+            self.assertEqual(
+                hook_copy.ensure_hook_copy(src, {"intro": False}, "tapin", run=made), src
+            )
+            got = hook_copy.ensure_hook_copy(src, feats, "tapin", run=made)
+            self.assertEqual(got, os.path.join(tmp, "v.hook.mp4"))
+            failing = type("Done", (), {"returncode": 1})()
+            os.remove(got)
+            self.assertEqual(
+                hook_copy.ensure_hook_copy(src, feats, "tapin", run=lambda *a, **k: failing), src
+            )
+
+    def test_the_opening_is_read_from_the_runs_quality(self):
+        # Live 2026-10-18: the first version read the run's features, where nothing records the
+        # intro - run 164 fell back to the channel's 2.15 s. The render keeps it in the quality.
+        from video.hook_copy import run_opening
+
+        run = type(
+            "R",
+            (),
+            {"quality_json": json.dumps({"opening": {"intro": False, "intro_seconds": 0.0}})},
+        )()
+        self.assertEqual(run_opening(run), {"intro": False, "intro_seconds": 0.0})
+        self.assertEqual(run_opening(type("R", (), {"quality_json": ""})()), {})
+
+    def test_buffer_is_sent_the_hook_copy(self):
+        import inspect
+
+        from publishing import crosspost
+
+        run = type(
+            "R",
+            (),
+            {"quality_json": json.dumps({"opening": {"intro": True, "intro_seconds": 2.15}})},
+        )()
+        with (
+            patch.object(crosspost, "_content_run", return_value=run),
+            patch("video.hook_copy.ensure_hook_copy", return_value="v.hook.mp4") as copy,
+        ):
+            self.assertEqual(crosspost._sent_file(157, "v.mp4", "tapin"), "v.hook.mp4")
+        self.assertEqual(copy.call_args.args[1], {"intro": True, "intro_seconds": 2.15})
+        self.assertIn("_sent_file(", inspect.getsource(crosspost.send_due))
+
+    def test_the_compilation_keeps_a_no_intro_shorts_hook(self):
+        from video import week_compile
+
+        when = datetime(2026, 10, 15, tzinfo=timezone.utc)
+        shorts = [{"run_id": i, "title": f"t{i}", "path": f"p{i}.mp4", "published_at": when + timedelta(hours=i),
+                   "offset": 0.0 if i == 1 else 2.15} for i in range(1, 6)]  # fmt: skip
+        with (
+            patch.object(week_compile, "week_shorts", return_value=shorts),
+            patch.object(week_compile, "_duration", return_value=40.0),
+        ):
+            plan = week_compile.plan_week("tapin", now=NOW)
+        seconds = {item["run_id"]: item["seconds"] for item in plan.items}
+        self.assertEqual(seconds[1], 40.0)
+        self.assertAlmostEqual(seconds[2], 37.85)
+
+
 if __name__ == "__main__":
     unittest.main()

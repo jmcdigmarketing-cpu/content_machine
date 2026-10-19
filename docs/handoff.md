@@ -77,8 +77,8 @@ lockfile, #1058 (the operator's Reporting API). `test_docs_lint` holds the backl
 
 **Wave 113 in progress (batches 1-5; a batch not in `git log` was not finished):** 1 (the
 shortfalls write-up, #1314-#1517, decision 68), 2 (TikTok views, the unattended sync) and
-3 (#1319 ad-safe titles, #1427 quota by caller) done. Next: 4 (#1322 the follow line,
-#1417 #1419 hook copies), 5 (consolidation, pages).
+3 (#1319 ad-safe titles, #1427 quota by caller) and 4 (#1322 the follow line, #1417 #1419
+hook copies) done. Next: 5 (consolidation, pages).
 
 **Live:** Monday's compilation is overnight's (wave 111); the matchup card shows on the next
 preview render. **Defects first:** none open of mine.

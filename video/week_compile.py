@@ -102,8 +102,13 @@ def week_shorts(channel_id: str, *, now: datetime | None = None) -> list[dict[st
         if not path or not os.path.isfile(path) or _features(run).get("compilation"):
             continue
         seen.add(int(run_id))
+        from video.hook_copy import hook_offset, run_opening
+
+        # #1419 (wave 113): the run's own intro - a Short rendered without it lost 2.15 s of hook
         out.append({"run_id": int(run_id), "title": str(getattr(run, "title", "") or ""),
-                    "path": path, "published_at": when})  # fmt: skip
+                    "path": path, "published_at": when,
+                    "offset": hook_offset(run_opening(run), channel_id,
+                                          default=_intro_offset(channel_id))})  # fmt: skip
     return sorted(out, key=lambda s: s["published_at"])
 
 
@@ -121,9 +126,10 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
     items: list[dict[str, Any]] = []
     for short in week_shorts(channel_id, now=moment):
         length = _duration(short["path"])
-        if not length or length > _MAX_SHORT_SECONDS or length - offset < 10:
+        cut = float(short.get("offset", offset))
+        if not length or length > _MAX_SHORT_SECONDS or length - cut < 10:
             continue
-        items.append({**short, "seconds": float(length) - offset})
+        items.append({**short, "offset": cut, "seconds": float(length) - cut})
     if len(items) < MIN_SHORTS:
         return None
     try:
@@ -192,7 +198,8 @@ def _render(plan: WeekPlan, dst: str) -> str:
         parts = []
         for index, item in enumerate(plan.items):
             part = os.path.join(tmp, f"part{index:02d}.mp4")
-            done = subprocess.run(segment_argv(item["path"], part, offset=offset),
+            cut = float(item.get("offset", offset))
+            done = subprocess.run(segment_argv(item["path"], part, offset=cut),
                                   capture_output=True, stdin=subprocess.DEVNULL,
                                   timeout=_SEGMENT_TIMEOUT, check=False)  # fmt: skip
             if done.returncode != 0 or not os.path.isfile(part):

@@ -322,6 +322,19 @@ def week_counts(channel_id: str, *, days: int = 7, now: datetime | None = None) 
     return packed, posted
 
 
+def _sent_file(run_id: Any, path: str, channel_id: str) -> str:
+    """#1417 (wave 113): the copy Buffer gets starts at the first word - TikTok's viewers watched
+    1.24-1.68 s, inside the 2.15 s intro. The run's own intro decides the cut; any failure sends
+    the render as it is."""
+    try:
+        from video.hook_copy import ensure_hook_copy, run_opening
+
+        return ensure_hook_copy(path, run_opening(_content_run(int(run_id))), channel_id)
+    except Exception as exc:
+        logger.debug("hook copy skipped for run %s: %s", run_id, exc)
+        return path
+
+
 def buffer_week(channel_id: str, *, days: int = 7, now: datetime | None = None) -> tuple[int, int]:
     """Wave 113: (posted, scheduled) - videos that reached TikTok or Instagram in the last `days`
     days (through Buffer, or by hand before it), and videos Buffer holds for later now."""
@@ -808,8 +821,9 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 continue
             try:
                 if not entry.get("object_key"):  # hosted once, at its public address
-                    key = video_host.object_key(channel_id, run_id, path)
-                    entry["url"] = video_host.host(path, key)
+                    sent = _sent_file(run_id, path, channel_id)  # #1417: from the first word
+                    key = video_host.object_key(channel_id, run_id, sent)
+                    entry["url"] = video_host.host(sent, key)
                     entry["object_key"] = key
             except Exception as exc:
                 lines.append(

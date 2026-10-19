@@ -5602,6 +5602,40 @@
         "equals": []
       },
       "why": "sports violence is advertiser-friendly; 'meth' and 'sex' must not match inside words"
+    },
+    {
+      "id": "a-run-without-the-intro-is-not-cut",
+      "item": 1419,
+      "source": "live 2026-10-18: run 164 rendered without the intro; a cut at the channel's 2.15 s takes its hook",
+      "call": "video.hook_copy:hook_offset",
+      "args": [
+        {
+          "intro": false,
+          "intro_seconds": 0.0
+        },
+        "tapin"
+      ],
+      "expect": {
+        "equals": 0.0
+      },
+      "why": "INTRO_TEST=alternate renders every other video without the intro"
+    },
+    {
+      "id": "a-run-with-the-intro-is-cut-at-it",
+      "item": 1417,
+      "source": "wave 113: the sibling - TikTok's viewers watched 1.24-1.68 s, inside the intro",
+      "call": "video.hook_copy:hook_offset",
+      "args": [
+        {
+          "intro": true,
+          "intro_seconds": 2.15
+        },
+        "tapin"
+      ],
+      "expect": {
+        "equals": 2.15
+      },
+      "why": "the cross-post copy starts at the first word"
     }
   ]
 }

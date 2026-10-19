@@ -264,6 +264,13 @@ def preview_brief(event_at: str, *, call: str = "") -> str:
     )
     if call:  # #1301: a preview is a prediction
         brief += f" Make this call and argue it from the facts: {call}."
+        # #1322 (wave 113, the operator: previews with a call): 2 of 64 new subscribers came from
+        # the videos. The call is graded after the game (calls.score_calls, "Picks, graded"), so
+        # that is a true reason to follow - said once, in the last line.
+        brief += (
+            " End on why to follow, in your own words: this call is graded after the game - "
+            'for example "I grade this call after the game - follow to see if I was right."'
+        )
     return brief
 
 

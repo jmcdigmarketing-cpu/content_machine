@@ -8621,3 +8621,14 @@ Batch 3:
   `record_call(kind)` books each one at YouTube's cost.
 - 9 new tests failed on clean HEAD. Two old tests asserted `record_usage(units=1)` without
   the caller name; they now name it.
+
+Batch 4:
+- #1322: a preview with a call ends on why to follow - it is graded after the game.
+- #1417 and #1419: the Buffer copy starts at the first word; week_compile cuts each Short at
+  its own intro. Live, run 165 went from 65.54 s to 63.41 s and its first frame is the hook.
+- **Corrected in the same batch:** the first version read the intro from run features, which
+  hold none, and fell back to 2.15 s. Four of the last eight renders have no intro
+  (INTRO_TEST=alternate), run 164 among them, so they would have lost their hook. The record
+  is the quality's `opening`.
+- 7 of 9 new tests failed on clean HEAD. The other two are guards that held before and after:
+  no call means no follow line, and the line is not stripped as a generic CTA.

@@ -1754,7 +1754,7 @@ Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content
 
 ### S02 Subscribers came from ads, not videos
 
-- [ ] 1322. **The earned follow line: a preview with a call ends "I grade this call after the game - follow to see if I was right"** *(S02.1, filed 2026-10-18)* `[M]`
+- [x] 1322. **The earned follow line: a preview with a call ends "I grade this call after the game - follow to see if I was right"** *(S02.1, filed 2026-10-18)* `[M]` **Done (2026-10-18, Claude, wave 113; the operator: previews with a call):** `event_dates.preview_brief` asks a preview with a call to end on why to follow - the call is graded after the game (`calls.score_calls`, "Picks, graded") - for example "I grade this call after the game - follow to see if I was right." A preview without a call is unchanged, and the line is not taken for a generic CTA (`script_craft`). The first overnight preview with a call carries it.
 - [ ] 1323. **Subscribers per 1,000 organic views by domain and format in `ops growth` - which content converts** *(S02.2, filed 2026-10-18)* `[S]`
 - [ ] 1324. **[You] Enter the campaign that ran to Oct 8 (`ops spend add --kind ads`) so `ops promotions` splits paid from organic subscribers** *(S02.3, filed 2026-10-18)* `[S]`
 - [ ] 1325. **A video that brings 2 or more subscribers is flagged in the morning as a follow-up candidate** *(S02.4, filed 2026-10-18)* `[S]`
@@ -1887,9 +1887,9 @@ Already open for S11: #1058 (CTR into the learning loop).
 
 ### S12 The first second
 
-- [ ] 1417. **Cross-post copies start at the first word: the TikTok and Instagram copy is cut at the run's intro** *(S12.1, filed 2026-10-18)* `[S]`
+- [x] 1417. **Cross-post copies start at the first word: the TikTok and Instagram copy is cut at the run's intro** *(S12.1, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** `video/hook_copy.py` - the copy `crosspost.send_due` hosts for Buffer starts at the first word: cut at the run's own intro, re-encoded once to `<stem>.hook.mp4`; any failure sends the render as before. YouTube keeps its intro test. Live: run 165 (with the intro) 65.54 s -> 63.41 s, its first frame the hook's caption instead of the logo. **Found on the way:** the first version read the run's features, where nothing records the intro, and fell back to the channel's 2.15 s - run 164 and three other recent renders have no intro (INTRO_TEST=alternate) and would have lost their hook; the record is the quality's `opening` (`hook_copy.run_opening`).
 - [x] 1418. **TikTok average watch time per post read from Buffer** *(S12.2, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** `buffer_api.map_metrics` reads every name Buffer uses - TikTok's "Video Views", "Reactions", "Avg. Watch Time (sec)", "Reach"; stored rows are read again from their raw metrics on load. Live: run 157 TikTok 79 views, run 155 76; `ops growth`: "TikTok: 169 views ... Viewers watch 1.4 s on average - less than the 2.15 s intro". With 5 measured rows TikTok's own send hour now applies (02:00 UTC, 10 PM EDT; #1196's 4-sample bar).
-- [ ] 1419. **The trim reads each run's own intro flag - week_compile cut 2.15 s from every Short, the hook of one rendered without the intro** *(S12.3, filed 2026-10-18)* `[S]`
+- [x] 1419. **The trim reads each run's own intro flag - week_compile cut 2.15 s from every Short, the hook of one rendered without the intro** *(S12.3, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113, with #1417):** each of the week's Shorts carries its own `hook_offset`; a Short without the intro is cut at 0, not 2.15 s.
 - [ ] 1420. **A 0.5 s sonic logo variant instead of the 2.15 s intro** *(S12.4, filed 2026-10-18)* `[S]`
 - [ ] 1421. **The intro as a corner logo, not a cut-in** *(S12.5, filed 2026-10-18)* `[S]`
 - [ ] 1422. **The first frame shows the hook's words** *(S12.6, filed 2026-10-18)* `[S]`

@@ -8767,3 +8767,26 @@ Batch F (found after the close):
   disclosure line. `week_compile` built its own description, and the pre-publish check only
   warned. The description now carries the channel's disclosure line.
 - The scheduled video's own description needs the operator's yes to update.
+
+## 2026-10-19 — wave 115, the next ten (Claude Code)
+
+**Prompt:** "next 10 up on the to do" (again). Answers, all four the recommended option:
+- a caption file goes up only when quota allows;
+- the hook card goes on the TikTok and Instagram copies only;
+- new uploads link the week's compilation;
+- the AI line goes on the live compilation now, and every upload appends it when it is missing.
+
+Measured first (17:30 CDT):
+- Uploads stopped at 4: 8,629 of 10,000 units, 1,200 of them three caption files - the first
+  day the breakdown from wave 113 could say so.
+- The sync tried "default" again: its sign-in file exists, for uploads only.
+- The compilation was scheduled without the AI line.
+- The sign-in lapses about Wed 10-21 8:36 PM CDT (consent screen still in Testing).
+
+Batch A:
+- #1523: the sync needs the analytics permission.
+- #1524: every upload appends the AI line when it is missing. Live, xpPz3ewlNJ8 got the line
+  (read back; schedule and privacy unchanged).
+- #1525: a caption file goes up only when quota allows.
+- 6 of 7 new tests failed on clean HEAD; the seventh guards that captions still go up with room.
+- test_wave114's worker test wrote an empty sign-in; it carries the analytics scope now.

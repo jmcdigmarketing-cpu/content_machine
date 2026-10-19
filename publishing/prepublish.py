@@ -79,6 +79,21 @@ def _title(request: PublishRequest) -> Check:
     return Check("title", True, f"{len(title)} characters", True)
 
 
+def with_disclosure(request: PublishRequest, channel_id: str) -> tuple[PublishRequest, bool]:
+    """#1524 (wave 114 found it, the operator: append it): (the request with the channel's AI
+    disclosure line at the end of its description, whether it was added). The first weekly
+    compilation was scheduled public without it - its description is built outside the SEO
+    path, and this check only warned."""
+    from dataclasses import replace
+
+    line = _disclosure_line(channel_id)
+    description = request.description or ""
+    if not line or line in description:
+        return request, False
+    joined = f"{description.rstrip()}\n\n{line}" if description.strip() else line
+    return replace(request, description=joined), True
+
+
 def _disclosure(request: PublishRequest, channel_id: str) -> Check:
     line = _disclosure_line(channel_id)
     if not line:

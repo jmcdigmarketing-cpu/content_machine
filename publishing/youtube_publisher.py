@@ -628,6 +628,15 @@ class YouTubePublisher(Publisher):
         try:
             from publishing import prepublish
 
+            request, added = prepublish.with_disclosure(request, channel_id)  # #1524
+            if added:
+                logger.info("pre-publish: the AI disclosure line was missing - appended")
+                print("  pre-publish: the AI disclosure line was missing - appended")
+        except Exception as exc:
+            logger.warning("disclosure append skipped: %s", exc)
+        try:
+            from publishing import prepublish
+
             # #1065: the finished upload looked at once, as a whole, before any API call.
             checks = prepublish.checklist(
                 request, channel_id=channel_id, content_run_id=content_run_id

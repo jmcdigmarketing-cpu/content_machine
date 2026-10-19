@@ -30,6 +30,18 @@ def resolve_caption_path(file_path: str | None = None, explicit: str | None = No
     return None
 
 
+CAPTION_UNITS = 400  # YouTube's cost of captions.insert
+
+
+def caption_quota_ok(remaining: int) -> bool:
+    """#1525 (the operator: only when quota allows): a caption file is 400 units - 1,200 of the
+    8,629 spent on 2026-10-19, when uploads stopped at 4. It goes up only while one upload's worth
+    is still left after it; the burned captions and YouTube's auto-captions remain either way."""
+    from apis.youtube_quota import units_per_upload
+
+    return int(remaining) - CAPTION_UNITS >= units_per_upload()
+
+
 def maybe_upload_captions(
     service, *, video_id: str, caption_path: str | None
 ) -> CaptionUploadResult:
@@ -38,6 +50,18 @@ def maybe_upload_captions(
         return CaptionUploadResult("skipped", "No video_id")
     if not caption_path or not os.path.isfile(caption_path):
         return CaptionUploadResult("not_found", "No caption track file")
+    try:
+        from apis.youtube_quota import get_usage_summary
+
+        remaining = int(get_usage_summary().get("remaining") or 0)
+    except Exception as exc:  # an unread ledger does not stop a caption (as before)
+        logger.debug("caption quota unread: %s", exc)
+        remaining = None
+    if remaining is not None and not caption_quota_ok(remaining):
+        logger.info("caption file skipped - keeps an upload's units (%s left)", remaining)
+        return CaptionUploadResult(
+            "skipped", f"caption file skipped - keeps an upload's units ({remaining:,} left)"
+        )
     try:
         mime = "application/octet-stream"
         lower = caption_path.lower()

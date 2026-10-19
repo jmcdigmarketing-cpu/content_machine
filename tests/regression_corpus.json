@@ -5766,6 +5766,32 @@
         ]
       },
       "why": "names are compared canonical; the project's own directory entry is not a package"
+    },
+    {
+      "id": "a-caption-keeps-an-uploads-units",
+      "item": 1525,
+      "source": "2026-10-19: uploads stopped at 4; captions took 1,200 of 8,629 units",
+      "call": "youtube.captions:caption_quota_ok",
+      "args": [
+        1371
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "400 units for a caption file must not cost the day's next upload"
+    },
+    {
+      "id": "a-caption-goes-up-with-room",
+      "item": 1525,
+      "source": "wave 115: the sibling - with room the caption file still goes up",
+      "call": "youtube.captions:caption_quota_ok",
+      "args": [
+        2000
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "2,000 left is one caption plus one upload"
     }
   ]
 }

@@ -50,7 +50,11 @@ class SyncSignInTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             token = os.path.join(tmp, "tapin.json")
             with open(token, "w", encoding="utf-8") as handle:
-                handle.write("{}")
+                handle.write(
+                    json.dumps(
+                        {"scopes": ["https://www.googleapis.com/auth/yt-analytics.readonly"]}
+                    )
+                )  # #1523
             paths = {"tapin": token, "default": os.path.join(tmp, "default.json")}
             with (
                 patch("config.channels.active_channel_ids", return_value=["tapin", "default"]),

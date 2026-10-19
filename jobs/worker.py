@@ -503,12 +503,18 @@ def _sync_metrics() -> None:
     try:
         from analytics.sync_metrics import maybe_sync
         from config.channels import active_channel_ids
-        from youtube.oauth import token_path_for_channel
+        from youtube.constants import SCOPE_YT_ANALYTICS_READONLY
+        from youtube.oauth import _scopes_from_token_file, token_path_for_channel
 
         for channel in active_channel_ids():
             # #1518: the generic "default" channel has no sign-in; it printed "OAuth token
-            # missing" and was retried every 2 hours for nothing.
-            if os.path.isfile(token_path_for_channel(channel)):
+            # missing" and was retried every 2 hours for nothing. #1523 (10-19 16:52): it has a
+            # sign-in file, for uploads only - "Token missing yt-analytics.readonly". The sync
+            # needs the analytics permission, read from the file (no refresh, no network).
+            path = token_path_for_channel(channel)
+            if os.path.isfile(path) and SCOPE_YT_ANALYTICS_READONLY in _scopes_from_token_file(
+                path
+            ):
                 maybe_sync(channel)
     except Exception as exc:
         logger.debug("worker metrics sync skipped: %s", exc)

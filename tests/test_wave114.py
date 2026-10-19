@@ -437,5 +437,27 @@ class LockTests(unittest.TestCase):
         self.assertIn("pip lock", detail)
 
 
+class CompilationDisclosureTests(unittest.TestCase):
+    """#1522 (live 2026-10-19 05:23): the first compilation was scheduled public with no AI
+    disclosure line - week_compile wrote its own description; the pre-publish check only warned."""
+
+    def test_the_compilation_says_it_is_ai_assisted(self):
+        from video import week_compile
+
+        when = datetime(2026, 10, 15, tzinfo=timezone.utc)
+        shorts = [{"run_id": i, "title": f"t{i}", "path": f"p{i}.mp4", "offset": 2.15,
+                   "published_at": when + timedelta(hours=i)} for i in range(1, 6)]  # fmt: skip
+        with (
+            patch.object(week_compile, "week_shorts", return_value=shorts),
+            patch.object(week_compile, "_duration", return_value=40.0),
+            patch(
+                "core.description_extras.ai_disclosure_line",
+                return_value="Made with AI-assisted narration.",
+            ),
+        ):
+            plan = week_compile.plan_week("tapin", now=NOW)
+        self.assertTrue(plan.description.rstrip().endswith("Made with AI-assisted narration."))
+
+
 if __name__ == "__main__":
     unittest.main()

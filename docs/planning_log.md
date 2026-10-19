@@ -8761,3 +8761,9 @@ Proof:
 - The 69 locked packages match.
 
 `roadmap-index`: open 243, done 1511, numbered open 234, highest open #1517.
+
+Batch F (found after the close):
+- #1522: the worker scheduled the first compilation (run 172, public 10-21 16:00Z) with no AI
+  disclosure line. `week_compile` built its own description, and the pre-publish check only
+  warned. The description now carries the channel's disclosure line.
+- The scheduled video's own description needs the operator's yes to update.

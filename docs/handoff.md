@@ -85,6 +85,8 @@ backlog at <= 300, and wave 113 alone was exempt from "close as many as you file
 - `video/recut.py` and `ops recut` (#1057; run 171 waits in the queue manager); the teaser reads
   the run's own intro (#1521).
 - `pylock.toml` and `ops_doctor.lock_check` (#457).
+- Batch F: `week_compile` adds the AI disclosure (#1522). The first compilation, already
+  scheduled (xpPz3ewlNJ8, public 10-21 16:00Z), lacks it on YouTube - the operator's call.
 **Live:** the worker task now syncs metrics once a day, and Buffer's next sends use the hook
 copy. TikTok's own send hour applies (5 measured rows). **Defects first:** none open of mine.
 

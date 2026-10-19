@@ -147,6 +147,17 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
         at += item["seconds"]
     monday = (moment - timedelta(days=moment.weekday())).date().isoformat()
     description = f"Every {name} Short from {span}, in one place.\n\n" + "\n".join(chapters) + "\n"
+    # #1522 (live 2026-10-19): the first compilation was scheduled public without the AI
+    # disclosure every other upload carries - this description is built here, not by the SEO path.
+    try:
+        from core.description_extras import ai_disclosure_line
+
+        disclosure = ai_disclosure_line(channel_id)
+    except Exception as exc:
+        logger.debug("week compile disclosure unread: %s", exc)
+        disclosure = ""
+    if disclosure:
+        description += f"\n{disclosure}\n"
     return WeekPlan(channel_id=channel_id, week=monday, title=f"{name} Week in Review: {span}",
                     description=description, items=items, seconds=at)  # fmt: skip
 

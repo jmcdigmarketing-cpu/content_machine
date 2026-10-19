@@ -1,12 +1,17 @@
 # Master plan
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-18
 
 The canonical forward plan. Supersedes `content_intelligence_roadmap.md`,
 `groundwork_q3_2026.md` and `scope_feature_store_and_research_v2.md` as *the* answer to
 "what are we doing next". [roadmap.md](roadmap.md) stays as the item-level ledger —
 this doc says which horizon an item belongs to and why. Evidence:
 [audit_2026-09.md](audit_2026-09.md).
+
+**Since 2026-10-18 the working plan is [hands_off_plan.md](hands_off_plan.md)** - the Content
+OS Story's 22 shortfalls, each with where it stands, how it is addressed, who acts and the
+command for done. This doc keeps the horizons (M0-M5), why they are in this order, and what is
+parked.
 
 ## The thesis
 
@@ -87,49 +92,6 @@ renames, links rewritten), one product name per layer (decisions §33), the neve
 docs read against HEAD, the oldest adopted into the `Reviewed` cycle, and the metric rule
 widened to subcommand, signal and module counts.
 
-**Exit (passed 2026-09-26):** `python -m unittest discover -s tests -t .`,
-`py -m scripts.ops test --order reverse` and `--order shuffle --seed 1` report the identical
-result; CI runs the reversed leg on every push. On a bare install the run prints one line
-naming the missing modules. What actually caused the run-69 symptom — a half-built
-`ExitStack` in `tests/test_ops_doctor`, not the probe cache — is in the audit §1.1.
-
-**Not in this wave:** raising coverage, adding tests, touching any feature.
-
----
-
-## M1 — Finish the docs standard · **done 2026-09-26**
-
-**Why now.** Half of it landed with the audit; the half-measure is worse than either
-end state, because a partially-applied convention teaches that conventions are optional.
-
-Already done: [docs_standard.md](docs_standard.md), [README.md](README.md),
-`tests/test_docs_standard.py` (11 checks, CI-blocking), doc cards on all 46 docs, four
-superseded plans marked `archived`, `audit.md` → `audit_2026-08.md`, volatile test counts
-out of `living` docs.
-
-Remaining:
-
-1. **Drain `LEGACY_NAMES`** — ten grandfathered filenames in
-   `tests/test_docs_standard.py`. Rename to `snake_case`, update inbound links in the
-   same commit (`data_sources.md` has 6, `signals_and_sources.md` 3), leave a redirect
-   stub only where an outside link might exist — the [ROADMAP.md](../ROADMAP.md) pattern.
-   The set may only shrink; the lint fails if a name in it no longer exists.
-2. **One product name.** Three are in circulation: "Content Machine" (19 docs), "Content
-   OS" (14), "Content Intelligence Platform" (8). Pick one, record it as a `§` in
-   [decisions.md](decisions.md), sweep the `living` docs, leave `frozen` and `archived`
-   ones alone — they were true when written.
-3. **Review the 15 never-revised docs.** Untouched since the first commit
-   (2026-07-10). Each gets exactly one of: a bumped `Reviewed` date after being read,
-   `Status: archived` with a successor, or deletion. No doc keeps a `living` card by
-   default.
-4. **Adopt the 15 oldest into the `Reviewed` cycle.** Reviewing a doc means reading it
-   against HEAD. Bumping the date without doing so makes the whole card worthless — say
-   so in review.
-5. **Extend the metric rule beyond test counts.** The lint currently catches `N tests`.
-   Subcommand counts (`~38` in `CLAUDE.md`, `~40` in `handoff_synopsis.md`), signal
-   counts and module counts drift the same way. Widen `VOLATILE_METRIC` once the
-   corpus is clean enough to pass.
-
 **Exit (passed 2026-09-26):** `python -m unittest tests.test_docs_standard
 tests.test_docs_lint` green with `LEGACY_NAMES` empty; the nine never-reviewed docs read
 against HEAD (verdicts in the audit §3.1); one product name per layer (decisions §33).
@@ -200,8 +162,8 @@ one commit per rule family), then `core/` seams (#834), then the broad-except in
 
 ## M4 — The volume problem (product; gated on M0)
 
-*Worked now through [hands_off_plan.md](hands_off_plan.md) (2026-10-18): nothing by hand,
-bigger ideas, reach and money honestly.*
+*Worked now through [hands_off_plan.md](hands_off_plan.md), shortfall by shortfall (wave 113,
+2026-10-18) - volume is its S13, reach its S01, S02 and S12.*
 
 **Why now.** The learning loop is the moat and it is starved, not broken. June recorded
 recommenders firing on 2–3 samples; August recorded 10 measured run-linked videos against
@@ -248,8 +210,9 @@ surfaced with its sample size.
 
 ## M5 — Reach (deliberately last)
 
-Multi-platform publishing (TikTok keys present and unimplemented, then Reels), long-form
-deep-dive mode on MoneyWise, clip-from-source, storyboard. All were correctly deferred
+TikTok and Instagram go out through Buffer since wave 89 (#1194), and their numbers are read
+back since wave 113; what is left here is the long-form deep-dive mode on MoneyWise,
+clip-from-source and storyboard. All were correctly deferred
 behind captions and grounding, and both of those have since landed — so this wave is now
 *unblocked*, not *ready*. It stays last because reach multiplies whatever quality and
 verification exist underneath it, in both directions.

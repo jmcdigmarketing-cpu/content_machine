@@ -29,7 +29,9 @@ still true; the conventions are [docs/docs_standard.md](docs/docs_standard.md) a
 are enforced by `tests/test_docs_standard.py`, so a new doc needs a card and an index
 entry or CI fails.
 
-Current priorities: [docs/roadmap.md](docs/roadmap.md) — short by design; the
+The working plan is [docs/hands_off_plan.md](docs/hands_off_plan.md) — the Content OS Story's
+22 shortfalls, one section each (where it stands, how it is addressed, the command for done),
+their ten ideas each filed in the backlog. Current priorities: [docs/roadmap.md](docs/roadmap.md) — short by design; the
 full inventory is [docs/backlog.md](docs/backlog.md), the Windows application programme is
 [docs/desktop_app.md](docs/desktop_app.md), and history is
 [docs/roadmap_archive.md](docs/roadmap_archive.md). Counts come from

@@ -331,7 +331,7 @@ falling. `tests/test_docs_lint.py` fails a backlog past 300.
 ---
 ## This week (H0)
 
-Code (wave 113, the operator's six): TikTok views and Buffer's own state (S10, S12; #1329, #1398, #1418), metrics synced without you (S20; #1489, #1490), advertiser-safe titles (S01; #1319), the quota by caller with an
+Shipped in wave 113 (the operator's six): TikTok views and Buffer's own state (S10, S12; #1329, #1398, #1418), metrics synced without you (S20; #1489, #1490), advertiser-safe titles (S01; #1319), the quota by caller with an
 upload reserve (S13; #1427), the earned follow line (S02; #1322), and cross-post copies that start at the hook (S12; #1417, #1419).
 
 Yours, each one line:
@@ -342,8 +342,8 @@ Yours, each one line:
    Oct 24 (S02).
 4. The 11 playlists, if yes: `py -m scripts.ops playlists --apply --channel tapin` - 550 units (S01).
 
-Done since 10-18: overnight can wake the PC - the task's WakeToRun is on and the power plan
-allows wake timers (S07).
+Done by you on 10-18: overnight can wake the PC - the task's WakeToRun is on and the power
+plan allows wake timers (S07).
 
 Answered 2026-10-18: NFL and NBA news join the ideas; the weekly long-form is a $0 compilation;
 the first series is "Picks, graded"; 1 in 5 overnight drafts is a holdout. Answered 2026-10-18:

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-18 night: wave 112, the next ten in five batches
+# Handoff synopsis — 2026-10-18 late night: wave 113, the 22 shortfalls
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,18 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-18 night (Claude Code): wave 112, the next ten
+## Last wave — 2026-10-18 late night (Claude Code): wave 113, the 22 shortfalls
+
+The plan is rebuilt around the Story's 22 shortfalls - each with where it stands, how it is
+addressed, who acts and the command for done - and their 220 ideas are in the backlog
+(#1314-#1517, 16 citing items already open; decision 68 sets the ceiling at 300). Then the
+six: TikTok's views read (its viewers watch 1.4 s, inside the 2.15 s intro), the Buffer line
+without a hand step, the metrics sync from overnight and the worker, ad-unsafe titles held,
+the YouTube quota by caller with fifteen unbooked calls booked and an upload reserve, a
+follow line on previews with a call, and Buffer copies that start at the first word. Open
+252.
+
+## Previous — 2026-10-18 night (Claude Code): wave 112, the next ten
 
 Five batches, each pushed and green: `ops status` reuses a doctor result under 12 h (7.9 ->
 3.4 s); betting roundups are not ideas; overnight calls every marquee game of the week; the
@@ -31,19 +42,6 @@ voice-note names; no test reads the real data/ (the suite now passes on the oper
 a call's why from ESPN's summary, every call kept and scored (`names_any` names the 49ers now);
 Picks, graded; holdouts 1 in 5; the weekly $0 compilation (`ops week-compile`, overnight on
 Mondays). Open 63.
-
-## Previous — 2026-10-18 afternoon (Claude Code): #1297-#1302, the plan, the audit
-
-Nothing by hand: one-key menus show their prompt again (#1297). Batch-review, the menu's slot
-and auto_generate use one slot rule - a game before kickoff or as it uploads (#1295), news in
-its window, the free noon/10 PM - and bare `ops crosspost` is the Buffer round (#1298). A
-scheduled video can be changed on the record and reaches Buffer within 15 minutes of its slot
-(#1299). Ideas read 17 feeds and lead with the story on most outlets (#1300); previews carry a
-call and the why against ESPN's line (#1301). `ops all` leaves the suite to CI, and `ops test`
-runs without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM.
-The plan is [hands_off_plan.md](hands_off_plan.md) (five steps are the operator's); the backlog
-audit kept 70 of 258 ([backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md)). Filed
-#1303-#1306.
 
 ## Pipeline order (operator)
 
@@ -119,7 +117,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1057 #1042 #354 #457 #1058 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1491 #1428 #1323 #1314 #1423 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

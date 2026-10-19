@@ -8596,8 +8596,9 @@ Measured first (read-only):
 - The quota ledger kept only a daily total: 9,485 units on 10-17, 6,032 on 10-18.
 - Draft 166 is "Hot Dads & Horny Art: ..."; nothing checks a title for ad-unsafe words.
 - week_compile cut 2.15 s from every Short, the hook of one rendered without the intro.
-- **Corrected:** wave 112's report listed letting overnight wake the PC as the operator's step.
-  The task's WakeToRun is on and the power plan allows wake timers.
+- Overnight can wake the PC: the task's WakeToRun is on and the power plan allows wake timers.
+  **Corrected:** I first wrote that wave 112's report was wrong to list this as the operator's
+  step. The operator had done it - the Back-Home tick is at 19:28 CDT, before my check.
 
 Batch 1:
 - hands_off_plan.md rebuilt by shortfall: where each stands, how it is addressed, who acts, the
@@ -8632,3 +8633,41 @@ Batch 4:
   is the quality's `opening`.
 - 7 of 9 new tests failed on clean HEAD. The other two are guards that held before and after:
   no call means no follow line, and the line is not stripped as a generic CTA.
+
+Batch 5 (consolidation):
+- master_plan.md had "M1 - Finish the docs standard" twice. The first copy ended on M0's
+  exit, a merge artifact; the second held the done "Remaining" list. One section now.
+- master_plan.md also points to hands_off_plan.md as the working plan. Its M5 no longer says
+  TikTok is unimplemented.
+- CLAUDE.md names the plan.
+- The roadmap's next five are drawn from the shortfalls.
+
+Audit (wave 113):
+- 29 tests in tests/test_wave113.py. 27 failed on clean HEAD before their fix; 2 are guards
+  that held before and after. 6 corpus cases.
+- Old tests changed for a reason: test_crosspost_week's line (it pinned the hand-posting
+  wording), and test_competitor_watch and test_privacy_sync (record_usage now names its
+  caller).
+- Defects found on the way:
+  - fifteen Data API calls booked no quota;
+  - the hook copy's first version read the intro from the wrong record, and would have cut
+    the hook from 4 of 8 renders;
+  - master_plan's doubled M1.
+- Every new symbol has a production caller.
+- ruff clean; mypy 92, the baseline; the suite leaves data/ and output/ untouched.
+- Not done:
+  - nothing was sent to Buffer or YouTube by me; the hook copies and the follow line reach
+    the public through the normal sends;
+  - slurs are not in the ad-unsafe list;
+  - the YouTube intro decision, the Reporting API, the app publish, the ad entry and the
+    playlists stay the operator's.
+
+Proof:
+- TikTok run 157 has 79 views, and its viewers watch 1.4 s on average.
+- The worker's unattended sync ran at 21:37: 71 subscribers, stamped.
+- Run 166's title is held on "horny".
+- The quota line reads "spent on: privacy 2, channels.list 1, ...".
+- Run 165's Buffer copy is 2.13 s shorter and opens on the hook.
+
+`roadmap-index`: open 252, done 1498, numbered open 243, highest #1517. Suite 6,409, forward
+and reversed.

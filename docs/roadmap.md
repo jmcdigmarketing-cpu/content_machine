@@ -83,14 +83,13 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-18 (Claude, wave 112).** The plan is [hands_off_plan.md](hands_off_plan.md); wave
-111 shipped its H1 and wave 112 ten more, so the next five come from its quarter (H2):
-**#1057** re-cuts of past winners (the curves are stored - #356 is closed), the rest of
-**#1042** (the standings table and the score bug; the record card shipped), **#354** a stop
-rule for the title and thumbnail arms, **#457** a lockfile, **#1058** click-through into
-learning once the Reporting API is on (yours). #1071 waits on runs without the paid signals
-(3-4 now, 5 to call); #1290 on n of about 85 (master_plan M4.5). Four steps are yours, in
-the plan's "This week".
+**2026-10-18 (Claude, wave 113).** The plan is [hands_off_plan.md](hands_off_plan.md), now one
+section per shortfall with ten ideas each in the backlog (decision 68). Next, the cheapest
+measured ones: **#1491** engagement per format (run 120, a 406 s long video at 11%, is most
+of the drop), **#1428** one more render when tomorrow is empty at 21:00, **#1323** subscribers
+per 1,000 views by domain and format, **#1314** what each compilation adds to long-form
+hours (the first is made on Monday), **#1423** the intro test read with a stop rule. Wave
+112's #1057 #1042 #354 #457 stay next after them; #1058 waits on your Reporting API click.
 **2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
 push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
 the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
@@ -103,6 +102,7 @@ read in full; three corrections. Filed #1263-#1269. The audit:
 **2026-10-18 (Claude, wave 110).** Nothing by hand: prompts visible again (#1297), one slot rule and the Buffer round as the bare `crosspost` (#1298), scheduled videos changeable and sent at their slot (#1299), ideas ranked by outlets (#1300), previews with a call (#1301), `ops all` without the suite and `ops test` without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM. Filed #1303-#1306. `roadmap-index`: open 74, done 1465, numbered open 65, highest #1306.
 **2026-10-18 (Claude, wave 111).** The plan's next ten, in six batches: NFL/NBA news in ideas (#1303), the twelve stale cards (#1269) and two audit misses (#104 #1059), status updates that switched embedding off on 7 videos (#1306, repaired), voice-note names (#1296), no test reads the real data/ (#1305), calls from ESPN's summary kept and scored (#1304), Picks graded (#991), holdouts (#83), the weekly compilation (#138). `roadmap-index`: open 63, done 1476, numbered open 54.
 **2026-10-18 (Claude, wave 112).** The next ten in five batches: `ops status` 7.9 -> 3.4 s (#1307), roundups not ideas (#1308), the week's games called (#1309), the compilation's thumbnail (#1310), runs 92 and 119's claims settled (#1136), the call in the first sentence (#1311), the third-channel gate printed (#1079), paid-signal attribution on outcomes (#1312), the matchup card (#1042), the menu with fewer prompts (#1077), and the length recommendation reading its measured videos (#1313). `roadmap-index`: open 59, done 1487, numbered open 50.
+**2026-10-18 (Claude, wave 113).** The 22 shortfalls: the plan rebuilt by shortfall and #1314-#1517 filed (decision 68, the ceiling 300); TikTok views read (#1418) - its viewers watch 1.4 s, inside the intro; the Buffer line asks for nothing by hand (#1398); the metrics sync without you (#1489); ad-unsafe titles wait (#1319); the quota by caller, fifteen unbooked calls booked, an upload reserve (#1427); a follow line on previews with a call (#1322); Buffer copies from the first word (#1417). `roadmap-index`: open 252, done 1498, numbered open 243.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

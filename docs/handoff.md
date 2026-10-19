@@ -53,35 +53,28 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-18 night · **HEAD at write:** the wave 112 batch E commit (`git log -1`) ·
-**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
+**Written:** 2026-10-18 late night · **HEAD at write:** the wave 113 batch 5 commit (`git log -1`)
+· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**The plan is [hands_off_plan.md](hands_off_plan.md)**; its H1 shipped in wave 111, so the next
-five come from its quarter (H2): #1057 re-cuts, the rest of #1042, #354 a stop rule, #457 a
-lockfile, #1058 (the operator's Reporting API). `test_docs_lint` holds the backlog at <= 130.
+**The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall** (the Story's
+22); their ideas are #1314-#1517 in the backlog. Decision 68: `test_docs_lint` holds the
+backlog at <= 300, and wave 113 alone was exempt from "close as many as you file".
 
-**Wave 112 (five batches, A-E, each pushed):**
-- `ops_doctor.save_last` / `last_checks`: `ops status` reuses a result under 12 h (#1307).
-- `best_bet._is_roundup_headline` (#1308); overnight `_call_week` (#1309);
-  `week_compile.make_thumbnail` (#1310).
-- #1136 settled (the operator's yes); a correction line on q6_QBAUrtiQ.
-- `authenticity.first_line_take` and the first-line rule in both prompts (#1311;
-  FIRST_LINE_RULE pinned off in the suite); `retention.cliff_line`,
-  `growth.third_channel_line` (#1079).
-- `paid_signal_attribution` on measured outcomes (#1312; the finding is on #1071).
-- `video/matchup_card.py`, overlaid by `render_video` (#1042; MATCHUP_CARD pinned off).
-- `main._ask_length_and_voices`, `prompt_upload_plan(privacy_kept=)` (#1077);
-  `length_recommender` reads the newest 40 measured runs (#1313).
+**Wave 113 (five batches, each pushed):**
+- `buffer_api.map_metrics`, `platform_metrics._remap`, `crosspost.buffer_week` (#1418 #1398).
+- `sync_metrics.maybe_sync` from overnight and `jobs/worker._sync_metrics`; the stamp is
+  data/metrics_synced.json (#1489).
+- `authenticity.ad_limit_reason` in `unattended_block_reason` and `backlog_gate` (#1319).
+- `youtube_quota.record_usage(caller=)`, `record_call`, `upload_reserve`
+  (`YOUTUBE_UPLOAD_RESERVE`) (#1427).
+- `preview_brief`'s follow line (#1322).
+- `video/hook_copy.py` (`run_opening`, `hook_offset`, `ensure_hook_copy`) from
+  `crosspost._sent_file` and `week_compile` (#1417 #1419).
 
-**Wave 113 in progress (batches 1-5; a batch not in `git log` was not finished):** 1 (the
-shortfalls write-up, #1314-#1517, decision 68), 2 (TikTok views, the unattended sync) and
-3 (#1319 ad-safe titles, #1427 quota by caller) and 4 (#1322 the follow line, #1417 #1419
-hook copies) done. Next: 5 (consolidation, pages).
-
-**Live:** Monday's compilation is overnight's (wave 111); the matchup card shows on the next
-preview render. **Defects first:** none open of mine.
+**Live:** the worker task now syncs metrics once a day, and Buffer's next sends use the hook
+copy. TikTok's own send hour applies (5 measured rows). **Defects first:** none open of mine.
 
 ## Slot — Cursor
 

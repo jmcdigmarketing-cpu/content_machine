@@ -7,6 +7,19 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-18 afternoon (Claude Code): #1297-#1302, the plan, the audit
+
+Nothing by hand: one-key menus show their prompt again (#1297). Batch-review, the menu's slot
+and auto_generate use one slot rule - a game before kickoff or as it uploads (#1295), news in
+its window, the free noon/10 PM - and bare `ops crosspost` is the Buffer round (#1298). A
+scheduled video can be changed on the record and reaches Buffer within 15 minutes of its slot
+(#1299). Ideas read 17 feeds and lead with the story on most outlets (#1300); previews carry a
+call and the why against ESPN's line (#1301). `ops all` leaves the suite to CI, and `ops test`
+runs without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM.
+The plan is [hands_off_plan.md](hands_off_plan.md) (five steps are the operator's); the backlog
+audit kept 70 of 258 ([backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md)). Filed
+#1303-#1306.
+
 ## Previous — 2026-10-18 late morning (Claude Code): #1292 #1293 #1294 #1291 #450
 
 The take detector knows what-to-watch and conditional calls, and a waiting draft held only for

@@ -73,6 +73,10 @@ backlog at <= 300, and wave 113 alone was exempt from "close as many as you file
 - `video/hook_copy.py` (`run_opening`, `hook_offset`, `ensure_hook_copy`) from
   `crosspost._sent_file` and `week_compile` (#1417 #1419).
 
+**Wave 114 in progress (batches A-E):** A done (#1518 #1519 #1520 - run 154's Buffer posts
+removed with the operator's yes, to resend at YouTube's 10-21 02:00Z). Next: B #1491 #1323
+#1314, C #354 #1423, D #1428 #1057, E #457.
+
 **Live:** the worker task now syncs metrics once a day, and Buffer's next sends use the hook
 copy. TikTok's own send hour applies (5 measured rows). **Defects first:** none open of mine.
 

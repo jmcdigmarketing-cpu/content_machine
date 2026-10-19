@@ -199,8 +199,14 @@ class UnattendedSyncTests(unittest.TestCase):
 
         self.assertIn("maybe_sync", inspect.getsource(overnight.run_overnight))
         self.assertIn("_sync_metrics()", inspect.getsource(worker.main))
-        with patch("analytics.sync_metrics.maybe_sync") as sync:
+        # Wave 114 (#1518): a channel needs a sign-in file; CI has none, so give it one.
+        with (
+            tempfile.NamedTemporaryFile(suffix=".json", delete=False) as token,
+            patch("youtube.oauth.token_path_for_channel", return_value=token.name),
+            patch("analytics.sync_metrics.maybe_sync") as sync,
+        ):
             worker._sync_metrics()
+        os.unlink(token.name)
         sync.assert_called_with("tapin")
 
 

@@ -513,6 +513,52 @@ def _public_runs(channel_id: str) -> list[tuple[int, str]]:
     return sorted(out.items())
 
 
+def _held_by_youtube(channel_id: str, videos: dict[int, str]) -> dict[int, str]:
+    """#1519: {run_id: YouTube's slot} for each video YouTube still holds private for a later
+    publish. Run 154 was moved on YouTube to 10-21 while its record kept 10-19, so the round sent
+    its TikTok and Instagram posts for a day before YouTube published it. One status read (1
+    unit) per round, only for videos about to be sent; any failure holds nothing (as before)."""
+    if not videos:
+        return {}
+    try:
+        from analytics import privacy_sync
+        from youtube.oauth import live_youtube_forbidden
+
+        if live_youtube_forbidden():
+            return {}
+        service = privacy_sync._service(channel_id)
+        status = (
+            privacy_sync.fetch_status(service, sorted(set(videos.values()))) if service else None
+        )
+    except Exception as exc:
+        logger.debug("crosspost: YouTube status unread: %s", exc)
+        return {}
+    held = privacy_sync.held_slots(status or {})
+    return {
+        run: str((status or {})[vid]["publish_at"]) for run, vid in videos.items() if vid in held
+    }
+
+
+def _needs_hosting(entry: dict[str, Any]) -> bool:
+    """True when the video must be (re)hosted: never hosted, or its copy was removed - wave 114:
+    a cancelled post's copy is deleted, and a resend would have sent Buffer the dead link."""
+    return not entry.get("object_key") or bool(entry.get("object_removed"))
+
+
+def _move_record(channel_id: str, run_id: int, slot: str) -> None:
+    """The publish log takes YouTube's slot, so the video leaves the round until then."""
+    try:
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        when = datetime.fromisoformat(slot.replace("Z", "+00:00"))
+        repo = get_publish_log_repository()
+        for row in repo.list_uploaded_for_channel(channel_id):
+            if getattr(row, "content_run_id", None) == run_id:
+                repo.update(row.id, {"published_at": when, "privacy_status": "public"})
+    except Exception as exc:
+        logger.debug("crosspost: record for run %s not moved: %s", run_id, exc)
+
+
 def _content_run(run_id: int) -> Any:
     from storage.repositories.content_runs import get_content_run_repository
 
@@ -723,16 +769,29 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 in_buffer[service] = []
         return in_buffer[service]
 
-    for run_id, _video in public:
-        if run_id in baseline:
-            continue
+    def _todo(run_id: int) -> list[str]:
         entry = posts.get(str(run_id)) or {}
-        todo = [
+        return [
             s for s in PLATFORMS
             if s in ids and (entry.get(s) or {}).get("state") in (None, "", "sending", "retry")
         ]  # fmt: skip
+
+    due_now = {run: video for run, video in public if run not in baseline and _todo(run) and video}
+    held = _held_by_youtube(channel_id, due_now) if apply else {}
+    for run_id, _video in public:
+        if run_id in baseline:
+            continue
+        todo = _todo(run_id)
         if not todo:
             continue
+        if run_id in held:  # #1519
+            lines.append(
+                f"  run {run_id}: YouTube publishes it at {held[run_id][:16]}Z - it goes to TikTok "
+                "and Instagram then"
+            )
+            _move_record(channel_id, run_id, held[run_id])
+            continue
+        entry = posts.get(str(run_id)) or {}
         run = _content_run(run_id)
         path = str(getattr(run, "mp4_path", "") or "") if run is not None else ""
         if not path or not os.path.isfile(path):
@@ -820,7 +879,8 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 )
                 continue
             try:
-                if not entry.get("object_key"):  # hosted once, at its public address
+                if _needs_hosting(entry):  # hosted once, at its public address
+                    entry.pop("object_removed", None)
                     sent = _sent_file(run_id, path, channel_id)  # #1417: from the first word
                     key = video_host.object_key(channel_id, run_id, sent)
                     entry["url"] = video_host.host(sent, key)

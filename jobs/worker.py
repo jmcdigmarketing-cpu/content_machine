@@ -503,9 +503,13 @@ def _sync_metrics() -> None:
     try:
         from analytics.sync_metrics import maybe_sync
         from config.channels import active_channel_ids
+        from youtube.oauth import token_path_for_channel
 
         for channel in active_channel_ids():
-            maybe_sync(channel)
+            # #1518: the generic "default" channel has no sign-in; it printed "OAuth token
+            # missing" and was retried every 2 hours for nothing.
+            if os.path.isfile(token_path_for_channel(channel)):
+                maybe_sync(channel)
     except Exception as exc:
         logger.debug("worker metrics sync skipped: %s", exc)
 

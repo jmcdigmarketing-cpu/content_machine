@@ -13,6 +13,7 @@ A video YouTube no longer returns is reported and left alone - nothing here dele
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -23,14 +24,23 @@ GONE = "gone"
 _KNOWN = frozenset({"public", "unlisted", "private"})
 
 
-def drift(stored: dict[str, str], live: dict[str, str]) -> dict[str, list[str]]:
+def _aware(when: datetime) -> datetime:
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+
+
+def drift(
+    stored: dict[str, str], live: dict[str, str], *, held: Any = frozenset()
+) -> dict[str, list[str]]:
     """{video_id: [was, now]} for every video whose stored privacy is not YouTube's.
 
     A video missing from `live` is `GONE`. An answer that is not a privacy YouTube has
-    (an empty status) is not a change.
+    (an empty status) is not a change. A video in `held` (#1519: private with a publishAt -
+    YouTube holds it for its slot) is not a change either; `sync_privacy` keeps its record.
     """
     out: dict[str, list[str]] = {}
     for video_id, was in stored.items():
+        if video_id in held:
+            continue
         now = live.get(video_id, GONE)
         if now != GONE and now not in _KNOWN:
             continue
@@ -39,9 +49,10 @@ def drift(stored: dict[str, str], live: dict[str, str]) -> dict[str, list[str]]:
     return out
 
 
-def fetch_privacy(service: Any, video_ids: list[str]) -> dict[str, str] | None:
-    """{video_id: privacyStatus} for the ids YouTube returns, or None when the read failed."""
-    live: dict[str, str] = {}
+def fetch_status(service: Any, video_ids: list[str]) -> dict[str, dict[str, str]] | None:
+    """{video_id: {"privacy", "publish_at"}} for the ids YouTube returns, or None when the read
+    failed. `publish_at` (#1519) is YouTube's scheduled slot, "" when none is set."""
+    live: dict[str, dict[str, str]] = {}
     try:
         for start in range(0, len(video_ids), 50):
             chunk = video_ids[start : start + 50]
@@ -50,12 +61,35 @@ def fetch_privacy(service: Any, video_ids: list[str]) -> dict[str, str] | None:
                 service.videos().list(part="status", id=",".join(chunk), maxResults=50).execute()
             )
             for item in reply.get("items") or []:
-                status = str((item.get("status") or {}).get("privacyStatus") or "").lower()
-                live[str(item.get("id") or "")] = status
+                status = item.get("status") or {}
+                live[str(item.get("id") or "")] = {
+                    "privacy": str(status.get("privacyStatus") or "").lower(),
+                    "publish_at": str(status.get("publishAt") or ""),
+                }
     except Exception as exc:
         logger.warning("privacy read failed: %s", exc)
         return None
     return live
+
+
+def fetch_privacy(service: Any, video_ids: list[str]) -> dict[str, str] | None:
+    """{video_id: privacyStatus} for the ids YouTube returns, or None when the read failed."""
+    live = fetch_status(service, video_ids)
+    return None if live is None else {vid: s["privacy"] for vid, s in live.items()}
+
+
+def held_slots(live: dict[str, dict[str, str]]) -> dict[str, datetime]:
+    """#1519: {video_id: slot} for each video YouTube holds private until a publishAt."""
+    out: dict[str, datetime] = {}
+    for video_id, status in live.items():
+        if status.get("privacy") != "private" or not status.get("publish_at"):
+            continue
+        try:
+            when = datetime.fromisoformat(str(status["publish_at"]).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        out[video_id] = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+    return out
 
 
 def _spend(units: int) -> None:
@@ -104,13 +138,33 @@ def sync_privacy(channel_id: str, *, service: Any = None, apply: bool = True) ->
     if service is None:
         report["error"] = "no YouTube sign-in for this channel"
         return report
-    live = fetch_privacy(service, [str(r.youtube_video_id) for r in rows])
-    if live is None:
+    status = fetch_status(service, [str(r.youtube_video_id) for r in rows])
+    if status is None:
         report["error"] = "YouTube did not answer"
         return report
+    live = {vid: s["privacy"] for vid, s in status.items()}
+    held = held_slots(status)
     report["checked"] = len(rows)
+    report["rescheduled"] = []
     stored = {str(r.youtube_video_id): str(r.privacy_status or "") for r in rows}
-    changes = drift(stored, live)
+    for row in rows:  # #1519: run 154 was moved to 10-21 on YouTube; its record kept 10-19
+        slot = held.get(str(row.youtube_video_id))
+        if slot is None:
+            continue
+        fix: dict[str, Any] = {}
+        if str(row.privacy_status or "").strip().lower() != "public":
+            fix["privacy_status"] = "public"  # a scheduled upload's record holds its target
+        was = getattr(row, "published_at", None)
+        if was is None or abs((slot - _aware(was)).total_seconds()) > 60:
+            fix["published_at"] = slot
+        if fix:
+            report["rescheduled"].append(
+                {"run_id": row.content_run_id, "video_id": str(row.youtube_video_id),
+                 "slot": slot.isoformat()}
+            )  # fmt: skip
+            if apply:
+                repo.update(row.id, fix)
+    changes = drift(stored, live, held=held)
     for row in rows:
         video_id = str(row.youtube_video_id)
         if video_id not in changes:
@@ -178,4 +232,9 @@ def sync_lines(report: dict[str, Any]) -> list[str]:
     moved = report.get("runs_published") or []
     if moved:
         lines.append(f'Run status: {len(moved)} run(s) were still "scheduled" - now published')
+    rescheduled = report.get("rescheduled") or []
+    if rescheduled:
+        slots = ", ".join(f"run {e['run_id']} {str(e['slot'])[:16]}Z" for e in rescheduled)
+        lines.append(f"Schedule: {len(rescheduled)} video(s) YouTube publishes at another time - "
+                     f"the record now has YouTube's slot ({slots})")  # fmt: skip
     return lines

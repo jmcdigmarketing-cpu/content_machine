@@ -8671,3 +8671,28 @@ Proof:
 
 `roadmap-index`: open 252, done 1498, numbered open 243, highest #1517. Suite 6,409, forward
 and reversed.
+
+## 2026-10-18 late night — wave 114, the next ten (Claude Code)
+
+**Prompt:** "next 10 up on the to do". Answers, all four the recommended option:
+- #1428's extra render waits for the operator (decision 60 holds);
+- #1057's re-cut is the best-held window, as a draft that waits;
+- #457 is a lock plus a check, with CI unchanged;
+- #354 settles at 95% sure, or says "no real difference" at 10 each.
+
+Asked mid-batch: run 154's two Buffer posts, set for a day before YouTube - "Remove them; resend
+at YouTube's time".
+
+Measured first, two defects from wave 113's own changes:
+- the unattended sync tried the "default" channel, which has no sign-in;
+- run 154 had been moved on YouTube to 10-21 while its record kept 10-19, so Buffer was sent
+  its posts for 10-20, and the privacy sync then wrote "private" over the record.
+
+Batch A:
+- #1518: the worker syncs only signed-in channels.
+- #1519: the privacy sync reads publishAt and keeps a held video's record at YouTube's slot;
+  the Buffer round asks YouTube before it sends.
+- #1520: a removed copy is hosted again.
+- Live: run 154 moved to 10-21 02:00Z; its Buffer posts were deleted and cleared to resend.
+- 7 new tests failed on clean HEAD. test_wave113's worker test passed only because this PC has a
+  tapin sign-in; it gives itself one now, as CI has none.

@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from apis.youtube_quota import record_call
 from core.logging import get_logger
 
 logger = get_logger("publishing.description_fix")
@@ -70,6 +71,7 @@ def apply_description_fix(
         except ValueError as exc:
             return DescriptionFix("missing", str(exc))
         body = {"id": video_id, "snippet": writable_snippet(live, description=description)}
+        record_call("videos.update")  # wave 113: it booked nothing
         service.videos().update(part="snippet", body=body).execute()
     except Exception as exc:
         from publishing.snippet_update import edit_error_text

@@ -212,7 +212,7 @@ def fetch_channel_recent_videos(
 
     from apis.youtube_quota import record_usage
 
-    record_usage(units=_API_UNITS)
+    record_usage(units=_API_UNITS, caller="competitors")
     _sync_api_units += _API_UNITS
     return fetch_channel_recent_videos_api(service, youtube_channel_id, max_results=max_results)
 

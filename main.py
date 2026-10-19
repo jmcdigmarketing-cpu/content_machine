@@ -1076,6 +1076,11 @@ def _run_new_video_flow_body(
             exclude_run_id=result.run_id,
         )
         display_authenticity_report(auth)
+        from core.authenticity import ad_limit_reason
+
+        _ads = ad_limit_reason(result.title or "", result.script)  # #1319: a warning; you decide
+        if _ads:
+            print(f"  ! Ads: {_ads} - YouTube limits ads on it; rewrite it or render anyway")
         if blocks_render(auth):
             if not ask_confirm(
                 "  Authenticity gate flagged this video. Render anyway? [y/N]: ",

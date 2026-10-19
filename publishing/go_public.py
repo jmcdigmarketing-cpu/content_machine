@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+from apis.youtube_quota import record_call
 from core.logging import get_logger
 from core.run_features import load_features, merge_features
 
@@ -276,6 +277,7 @@ def apply_schedule_public(
         service = get_youtube_service(channel_id)
         # #1306: the whole status, or YouTube switches embedding and public stats off.
         body["status"] = writable_status(live_status(service, video_id), **change)
+        record_call("videos.update")  # wave 113: it booked nothing
         service.videos().update(part="status", body=body).execute()
     except Exception as exc:
         from publishing.snippet_update import edit_error_text
@@ -398,6 +400,7 @@ def apply_go_public(
         service = get_youtube_service(channel_id)
         # #1306: the whole status, or YouTube switches embedding and public stats off.
         body["status"] = writable_status(live_status(service, target), **body["status"])
+        record_call("videos.update")  # wave 113: it booked nothing
         service.videos().update(part="status", body=body).execute()
     except Exception as exc:
         from publishing.snippet_update import edit_error_text
@@ -465,6 +468,7 @@ def repair_status_fields(channel_id: str = "tapin", *, apply: bool = False, repo
         return [*lines, f"  Not sent: {problem}"]
     for video_id, status in fixes.items():
         try:
+            record_call("videos.update")  # wave 113: it booked nothing
             service.videos().update(
                 part="status", body={"id": video_id, "status": status}
             ).execute()

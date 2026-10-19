@@ -262,7 +262,7 @@ def _fetch_comments(youtube, video_id: str, limit: int) -> list[dict[str, Any]]:
         logger.debug("comments unavailable for %s: %s", video_id, exc)
         return []
 
-    record_usage(units=UNITS_VIDEOS_LIST)
+    record_usage(units=UNITS_VIDEOS_LIST, caller="comments")
     out: list[dict[str, Any]] = []
     for item in response.get("items") or []:
         snippet = ((item.get("snippet") or {}).get("topLevelComment") or {}).get("snippet") or {}
@@ -288,7 +288,7 @@ def gather_comment_intel(topic: str) -> dict[str, Any]:
 
     youtube = _get_youtube_client()
     search = _search_videos(youtube, topic)
-    record_usage()  # search.list + the videos.list the helper implies
+    record_usage(caller="comments")  # search.list + the videos.list the helper implies
 
     video_ids = [
         item["id"]["videoId"]

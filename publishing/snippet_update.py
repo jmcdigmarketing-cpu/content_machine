@@ -11,6 +11,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from apis.youtube_quota import record_call
+
 WRITABLE_KEYS = (
     "title",
     "description",
@@ -67,6 +69,7 @@ def fetch_snippets(service, video_ids: list[str]) -> dict[str, dict[str, Any]]:
     ids = [v for v in dict.fromkeys(video_ids) if v]
     for start in range(0, len(ids), _BATCH):
         chunk = ids[start : start + _BATCH]
+        record_call("videos.list")  # wave 113: it booked nothing
         resp = service.videos().list(part="snippet", id=",".join(chunk)).execute() or {}
         for item in resp.get("items") or []:
             if item.get("id") and isinstance(item.get("snippet"), dict):
@@ -110,6 +113,7 @@ def fetch_statuses(service, video_ids: list[str]) -> dict[str, dict[str, Any]]:
     ids = [v for v in dict.fromkeys(video_ids) if v]
     for start in range(0, len(ids), _BATCH):
         chunk = ids[start : start + _BATCH]
+        record_call("videos.list")  # wave 113: it booked nothing
         resp = service.videos().list(part="status", id=",".join(chunk)).execute() or {}
         for item in resp.get("items") or []:
             if item.get("id") and isinstance(item.get("status"), dict):

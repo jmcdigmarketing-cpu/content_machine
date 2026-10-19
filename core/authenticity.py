@@ -561,6 +561,41 @@ def first_line_take(sentence: str) -> bool:
     return bool(text) and (bool(_FIRST_LINE_CALL.search(text)) or has_insight(text))
 
 
+# Wave 113 (#1319, the operator: an overnight draft waits, py main.py warns): YouTube limits ads on
+# sexual content, strong profanity, hard drugs, self-harm and mass-casualty tragedies in a title or
+# a video's opening. Draft 166 waited titled "Hot Dads & Horny Art" and nothing checked it. Fight
+# and game violence in a sports context is fine for ads, so "KO", "brutal" and "kill" are not here.
+_AD_UNFRIENDLY = re.compile(
+    r"\b(horny|sexy|sexiest|sex|sexual|porn\w*|nude|nudes|naked|nsfw|onlyfans|xxx|"
+    r"fuck\w*|f\*+k\w*|shit|shits|shitty|bullshit|bitch\w*|cunt\w*|asshole\w*|motherf\w*|"
+    r"cocaine|heroin|meth|fentanyl|overdos\w*|"
+    r"suicid\w*|self-harm|mass shooting|school shooting)\b",
+    re.IGNORECASE,
+)
+
+
+def ad_unfriendly_words(text: str) -> list[str]:
+    """The words in `text` that would limit ads, lowercased, in first-seen order; [] when clean."""
+    seen: list[str] = []
+    for match in _AD_UNFRIENDLY.finditer(text or ""):
+        word = match.group(0).lower()
+        if word not in seen:
+            seen.append(word)
+    return seen
+
+
+def opening_sentence(script: str) -> str:
+    """The script's first sentence - what the viewer hears first."""
+    parts = re.split(r"(?<=[.!?])\s+", (script or "").strip(), maxsplit=1)
+    return parts[0] if parts else ""
+
+
+def ad_limit_reason(title: str, script: str) -> str:
+    """Why the title or the first line would limit ads, else "" (#1319)."""
+    words = ad_unfriendly_words(f"{title or ''} {opening_sentence(script)}")
+    return f'its title or first line would limit ads ("{words[0]}")' if words else ""
+
+
 def has_insight(script: str) -> bool:
     """True if the script carries an opinion/prediction/analysis beat (a 'take').
 

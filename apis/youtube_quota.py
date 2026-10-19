@@ -7,6 +7,7 @@ uses documented unit costs and a configurable daily cap (default 10,000).
 
 import json
 import os
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -81,16 +82,80 @@ def quota_day(now=None) -> str:
     return moment.astimezone(ZoneInfo(_YOUTUBE_TZ)).date().isoformat()
 
 
-def record_usage(units=None):
+_LOCK = threading.Lock()  # signals record from a thread pool; the read-modify-write must not race
+
+
+def record_usage(units=None, caller: str = "search"):
+    """Add `units` to today's total, under `caller` - wave 113: 9,485 units went on 2026-10-17
+    and the ledger could not say on what."""
     units = units or units_per_search_call()
     today = quota_day()
-    data = _load()
-    entry = data.get(today, {"used": 0, "updated": time.time()})
-    entry["used"] = entry.get("used", 0) + units
-    entry["updated"] = time.time()
-    data[today] = entry
-    _save(data)
+    with _LOCK:
+        data = _load()
+        entry = data.get(today, {"used": 0, "updated": time.time()})
+        entry["used"] = entry.get("used", 0) + units
+        by = entry.get("by") if isinstance(entry.get("by"), dict) else {}
+        by[caller] = int(by.get(caller, 0)) + int(units)
+        entry["by"] = by
+        entry["updated"] = time.time()
+        data[today] = entry
+        _save(data)
     return get_usage_summary()
+
+
+# Wave 113: YouTube's documented unit costs for the calls that booked nothing - a captions insert
+# alone is 400, each status or snippet update 50 - so "uploads left" read high.
+API_UNITS = {
+    "videos.update": 50,
+    "captions.insert": 400,
+    "commentThreads.insert": 50,
+    "playlists.insert": 50,
+    "playlistItems.insert": 50,
+    "videos.list": 1,
+    "channels.list": 1,
+    "playlistItems.list": 1,
+}
+
+
+def record_call(kind: str) -> None:
+    """Book one Data API call by its documented cost, under its own name. Never raises: a ledger
+    write must not fail an upload, a go-public or a caption."""
+    try:
+        record_usage(units=API_UNITS.get(kind, 1), caller=kind)
+    except Exception as exc:
+        logger.debug("quota not recorded for %s: %s", kind, exc)
+
+
+def usage_by_caller(day: str | None = None) -> dict[str, int]:
+    """{caller: units} for a quota day (today by default); {} before wave 113 recorded it."""
+    entry = _load().get(day or quota_day(), {})
+    by = entry.get("by") if isinstance(entry, dict) else None
+    return {str(k): int(v) for k, v in (by or {}).items()}
+
+
+def format_usage_split(day: str | None = None) -> str:
+    """'upload 3,200 · search 2,424 · ...', biggest first; what was not broken down says so."""
+    entry = _load().get(day or quota_day(), {})
+    used = int(entry.get("used", 0)) if isinstance(entry, dict) else 0
+    by = usage_by_caller(day)
+    if not by:
+        return "not broken down yet (recorded from 2026-10-18)" if used else ""
+    parts = [f"{name} {units:,}" for name, units in sorted(by.items(), key=lambda kv: -kv[1])]
+    rest = used - sum(by.values())
+    if rest > 0:
+        parts.append(f"before the breakdown {rest:,}")
+    return ", ".join(parts)  # cp1252-safe: a "·" printed as "?" in `ops status`
+
+
+def upload_reserve() -> int:
+    """Units searches leave for one upload (wave 113, the operator: an upload is worth more than a
+    late search). `YOUTUBE_UPLOAD_RESERVE`, default one upload; 0 turns it off. Competitor sync
+    keeps its own (`COMPETITOR_SYNC_RESERVE_UNITS`)."""
+    raw = os.getenv("YOUTUBE_UPLOAD_RESERVE", "").strip()
+    try:
+        return max(0, int(raw)) if raw else UNITS_VIDEO_INSERT
+    except ValueError:
+        return UNITS_VIDEO_INSERT
 
 
 def get_usage_summary():
@@ -118,7 +183,8 @@ def format_quota_detail():
 
 
 def has_quota_for_search() -> bool:
-    return get_usage_summary()["remaining"] >= units_per_search_call()
+    """A search leaves `upload_reserve()` units, so a finished video can still upload today."""
+    return get_usage_summary()["remaining"] >= units_per_search_call() + upload_reserve()
 
 
 def units_for_lightweight_search():
@@ -178,7 +244,7 @@ def has_quota_for_upload() -> bool:
 
 
 def record_upload_usage():
-    return record_usage(units=UNITS_VIDEO_INSERT)
+    return record_usage(units=UNITS_VIDEO_INSERT, caller="upload")
 
 
 def units_per_thumbnail():
@@ -190,7 +256,7 @@ def has_quota_for_thumbnail() -> bool:
 
 
 def record_thumbnail_usage():
-    return record_usage(units=UNITS_THUMBNAIL_SET)
+    return record_usage(units=UNITS_THUMBNAIL_SET, caller="thumbnail")
 
 
 def next_quota_retry_at():

@@ -916,7 +916,9 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
 
     if title_cut_off(draft.title):  # #1225: run 158 ended "... positive outlook\u2026"
         return "its title is cut off"
-    return ""
+    from core.authenticity import ad_limit_reason
+
+    return ad_limit_reason(draft.title, draft.script)  # #1319: draft 166, "Hot Dads & Horny Art"
 
 
 def dead_reason(meta: dict[str, Any], *, now: datetime | None = None) -> str:

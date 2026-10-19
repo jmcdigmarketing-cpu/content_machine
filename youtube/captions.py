@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from googleapiclient.http import MediaFileUpload
 
+from apis.youtube_quota import record_call
 from core.logging import get_logger
 
 logger = get_logger("youtube.captions")
@@ -44,6 +45,7 @@ def maybe_upload_captions(
             mime = "text/vtt"
         elif lower.endswith(".srt"):
             mime = "application/octet-stream"
+        record_call("captions.insert")  # wave 113: it booked nothing
         service.captions().insert(
             part="snippet",
             body={

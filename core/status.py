@@ -96,6 +96,11 @@ def build_status_lines(channel_id: str) -> list[str]:
                 f"YouTube API quota: BLOCKED for uploads — {format_quota_detail()} "
                 "(upload ~1,600 units; discovery search ~101 each)"
             )
+        from apis.youtube_quota import format_usage_split
+
+        split = format_usage_split()  # wave 113: what spent today's units
+        if split:
+            lines.append(f"  spent on: {split}")
     except Exception as exc:
         logger.debug("format_quota_detail skipped: %s", exc)
 

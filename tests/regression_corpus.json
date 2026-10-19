@@ -5574,6 +5574,34 @@
         }
       },
       "why": "Instagram's views were read; its follows and reach were not"
+    },
+    {
+      "id": "a-sexual-title-would-limit-ads",
+      "item": 1319,
+      "source": "live 2026-10-18: draft 166, 'Hot Dads & Horny Art: Why Belmont's Curse Is Fixable'",
+      "call": "core.authenticity:ad_unfriendly_words",
+      "args": [
+        "Hot Dads & Horny Art: Why Belmont's Curse Is Fixable"
+      ],
+      "expect": {
+        "equals": [
+          "horny"
+        ]
+      },
+      "why": "YouTube limits ads on sexual terms in a title; nothing checked it"
+    },
+    {
+      "id": "fight-violence-does-not-limit-ads",
+      "item": 1319,
+      "source": "wave 113: the sibling - a UFC channel's normal words",
+      "call": "core.authenticity:ad_unfriendly_words",
+      "args": [
+        "Pereira's brutal KO ends it, the method behind it, Sussex reacts"
+      ],
+      "expect": {
+        "equals": []
+      },
+      "why": "sports violence is advertiser-friendly; 'meth' and 'sex' must not match inside words"
     }
   ]
 }

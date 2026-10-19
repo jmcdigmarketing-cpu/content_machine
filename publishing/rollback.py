@@ -11,6 +11,7 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
+from apis.youtube_quota import record_call
 from core.logging import get_logger
 
 logger = get_logger("publishing.rollback")
@@ -116,6 +117,7 @@ def apply_rollback(
 
         # #1306: the whole status, or YouTube switches embedding and public stats off.
         body["status"] = writable_status(live_status(service, video_id), **body["status"])
+        record_call("videos.update")  # wave 113: it booked nothing
         service.videos().update(part="status,snippet", body=body).execute()
     except Exception as exc:
         from publishing.snippet_update import edit_error_text

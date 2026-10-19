@@ -104,7 +104,7 @@ class SyncTests(unittest.TestCase):
             updates, [(1, {"privacy_status": "public"}), (3, {"privacy_status": "public"})]
         )
         self.assertEqual([c["run_id"] for c in report["changed"]], [92, 55])
-        spent.assert_called_once_with(units=1)
+        spent.assert_called_once_with(units=1, caller="privacy")
 
     def test_a_dry_run_reports_and_writes_nothing(self):
         rows = [_row(1, "a", "unlisted")]

@@ -260,7 +260,7 @@ def _lightweight_signal(search_response):
             status_detail="No videos returned (lightweight search)",
         )
     score = min(len(items) * (100 / max(_MAX_RESULTS, 1)), 100)
-    record_usage(units=units_for_lightweight_search())
+    record_usage(units=units_for_lightweight_search(), caller="search")
     return make_signal(
         connected=True,
         active=True,
@@ -353,7 +353,7 @@ def search_youtube(query):
         avg_velocity = total_velocity / max(len(video_ids), 1)
         scaled_score = min(math.log1p(avg_velocity) * 10, 100)
 
-        record_usage(units=units_per_search_call())
+        record_usage(units=units_per_search_call(), caller="search")
 
         return make_signal(
             connected=True,
@@ -451,7 +451,7 @@ def fetch_video_metadata(video_id_or_url: str) -> dict | None:
             )
             .execute()
         )
-        record_usage(units=1)  # videos.list is 1 unit
+        record_usage(units=1, caller="videos")  # videos.list is 1 unit
         items = response.get("items") or []
         if not items:
             return None

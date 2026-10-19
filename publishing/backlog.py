@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from apis.youtube_quota import record_call
 from core.logging import get_logger
 
 logger = get_logger("publishing.backlog")
@@ -224,6 +225,11 @@ def backlog_gate(draft: Any) -> list[str]:
     age = draft_age_days(meta)
     if age is not None and age > freshness_window_days(meta):
         reasons.append(f"stale ({age:.0f} days old)")
+    from core.authenticity import ad_limit_reason
+
+    ads = ad_limit_reason(draft.title, draft.script)  # #1319
+    if ads:
+        reasons.append(ads)
     return reasons
 
 
@@ -508,6 +514,7 @@ def pull(channel_id: str, run_id: int) -> str:
                 selfDeclaredMadeForKids=False,
             )  # fmt: skip
             body = {"id": video, "status": status}
+            record_call("videos.update")  # wave 113: it booked nothing
             service.videos().update(part="status", body=body).execute()
             log.update(row.id, {"status": "pulled", "privacy_status": "private"})
             notes.append(f"run {run_id} ({video}): now private and no longer scheduled")

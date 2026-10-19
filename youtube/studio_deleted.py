@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from apis.youtube_quota import record_call
 from core.logging import get_logger
 
 if TYPE_CHECKING:
@@ -60,6 +61,7 @@ def detect_studio_deleted(
     try:
         for start in range(0, len(ids), 50):
             chunk = ids[start : start + 50]
+            record_call("videos.list")  # wave 113: it booked nothing
             resp = service.videos().list(part="id", id=",".join(chunk), maxResults=50).execute()
             for item in resp.get("items") or []:
                 vid = str(item.get("id") or "")

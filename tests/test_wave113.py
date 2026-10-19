@@ -204,5 +204,137 @@ class UnattendedSyncTests(unittest.TestCase):
         sync.assert_called_with("tapin")
 
 
+class AdSafeTests(unittest.TestCase):
+    """B5 (#1319, the operator: an overnight draft waits, py main.py warns)."""
+
+    def test_draft_166s_title_is_flagged_and_sports_violence_is_not(self):
+        from core.authenticity import ad_unfriendly_words
+
+        self.assertEqual(
+            ad_unfriendly_words("Hot Dads & Horny Art: Why Belmont's Curse Works"), ["horny"]
+        )
+        for clean in ("Pereira's brutal KO ends it in round one", "Sussex fans react",
+                      "The method behind the Chiefs' defense", "Kill streaks in Warzone"):  # fmt: skip
+            self.assertEqual(ad_unfriendly_words(clean), [], clean)
+
+    def test_the_first_sentence_counts_the_rest_does_not(self):
+        from core.authenticity import ad_limit_reason
+
+        self.assertIn(
+            "would limit ads", ad_limit_reason("Fine title", "This is sexy football. More.")
+        )
+        self.assertEqual(ad_limit_reason("Fine title", "Clean opener. Then a shit line later."), "")
+
+    def test_an_overnight_draft_with_one_waits(self):
+        from core import batch_review
+
+        draft = batch_review.PendingDraft(
+            folder="x", meta={"run_id": 166, "title": "Hot Dads & Horny Art: Why Belmont's Curse Works"},
+            script="Belmont's curse is the best art this year. Here's why.",
+        )  # fmt: skip
+        with (
+            patch.object(batch_review, "dead_reason", return_value=""),
+            patch.object(batch_review, "_blocking_claims", return_value=[]),
+            patch.object(batch_review, "authenticity_now", return_value=("ok", "")),
+            patch.object(batch_review, "game_block_reason", return_value=""),
+            patch.object(batch_review, "arc_counter_reason", return_value=""),
+        ):
+            why = batch_review.unattended_block_reason(draft)
+        self.assertEqual(why, 'its title or first line would limit ads ("horny")')
+
+    def test_the_backlog_gate_says_it_too(self):
+        from publishing import backlog
+
+        draft = type("D", (), {"meta": {"run_id": 166}, "run_id": 166, "script": "Fine.",
+                               "title": "Hot Dads & Horny Art"})()  # fmt: skip
+        with (
+            patch("core.video_grade.grade_run", return_value=type("G", (), {"letter": "A"})()),
+            patch("core.batch_review.draft_age_days", return_value=0),
+            patch("core.batch_review.freshness_window_days", return_value=7),
+        ):
+            reasons = backlog.backlog_gate(draft)
+        self.assertIn('its title or first line would limit ads ("horny")', reasons)
+
+
+class QuotaByCallerTests(unittest.TestCase):
+    """B6 (#1427, the operator: a breakdown and an upload reserve)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        path = os.path.join(self.tmp.name, "youtube_quota.json")
+        from apis import youtube_quota
+
+        self.patches = [
+            patch.object(youtube_quota, "_quota_path", return_value=path),
+            patch.object(youtube_quota, "quota_day", return_value="2026-10-18"),
+        ]
+        for p in self.patches:
+            p.start()
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+        self.tmp.cleanup()
+
+    def test_each_caller_is_booked_under_its_name(self):
+        from apis import youtube_quota
+
+        youtube_quota.record_usage(units=101)
+        youtube_quota.record_upload_usage()
+        youtube_quota.record_call("captions.insert")
+        youtube_quota.record_call("videos.update")
+        self.assertEqual(youtube_quota.usage_by_caller(),
+                         {"search": 101, "upload": 1600, "captions.insert": 400, "videos.update": 50})  # fmt: skip
+        split = youtube_quota.format_usage_split()
+        self.assertTrue(split.startswith("upload 1,600, captions.insert 400"), split)
+
+    def test_a_day_before_the_breakdown_says_so(self):
+        from apis import youtube_quota
+
+        youtube_quota._save({"2026-10-18": {"used": 6032, "updated": 0}})
+        self.assertIn("not broken down", youtube_quota.format_usage_split())
+
+    def test_searches_leave_one_upload(self):
+        from apis import youtube_quota
+
+        youtube_quota._save({"2026-10-18": {"used": 10000 - 1650, "updated": 0}})
+        with patch.dict(os.environ, {"YOUTUBE_UPLOAD_RESERVE": ""}):
+            self.assertFalse(youtube_quota.has_quota_for_search())
+            self.assertTrue(youtube_quota.has_quota_for_upload())
+        youtube_quota._save({"2026-10-18": {"used": 10000 - 1750, "updated": 0}})
+        self.assertTrue(youtube_quota.has_quota_for_search())
+        youtube_quota._save({"2026-10-18": {"used": 10000 - 150, "updated": 0}})
+        with patch.dict(os.environ, {"YOUTUBE_UPLOAD_RESERVE": "0"}):
+            self.assertTrue(youtube_quota.has_quota_for_search())
+
+    def test_a_ledger_write_never_breaks_the_call(self):
+        from apis import youtube_quota
+
+        with patch.object(youtube_quota, "record_usage", side_effect=OSError("disk")):
+            youtube_quota.record_call("videos.update")  # no raise
+
+    def test_every_data_api_call_site_books_itself(self):
+        # Wave 113: captions.insert (400), videos.update (50) and the list calls booked nothing.
+        import inspect
+
+        from core import playlists
+        from publishing import (
+            backlog,
+            description_fix,
+            go_public,
+            recategorize,
+            rollback,
+            snippet_update,
+        )
+        from youtube import captions, channel_uploads, pin_comment, studio_deleted
+
+        for module in (playlists, backlog, description_fix, go_public, recategorize, rollback,
+                       snippet_update, captions, channel_uploads, pin_comment, studio_deleted):  # fmt: skip
+            source = inspect.getsource(module)
+            calls = source.count(".execute()")
+            self.assertGreaterEqual(source.count("record_call("), 1, module.__name__)
+            self.assertLessEqual(source.count("record_call("), calls, module.__name__)
+
+
 if __name__ == "__main__":
     unittest.main()

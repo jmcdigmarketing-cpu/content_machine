@@ -8611,3 +8611,13 @@ Batch 2:
 - 11 new tests failed on clean HEAD, and so did test_crosspost_week's updated line test.
 - Live: run 157 TikTok 79 views. The growth line reads "1.4 s on average - less than the 2.15 s
   intro".
+
+Batch 3:
+- #1319: ad-unsafe words in a title or first sentence hold an overnight draft and warn in
+  `py main.py`. Live, run 166's title is named. Slurs are not listed in code.
+- #1427: the quota by caller, under a lock, plus an upload reserve for searches.
+- **Found on the way:** fifteen Data API calls booked nothing (captions.insert 400 units,
+  every videos.update 50, comments, playlists, five list calls), so "uploads left" read high.
+  `record_call(kind)` books each one at YouTube's cost.
+- 9 new tests failed on clean HEAD. Two old tests asserted `record_usage(units=1)` without
+  the caller name; they now name it.

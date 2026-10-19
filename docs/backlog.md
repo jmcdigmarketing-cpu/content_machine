@@ -1746,7 +1746,7 @@ its heading rather than filed twice. Decision 68 holds the backlog under 300.
 - [ ] 1316. **Compilation titles and chapters written for search ("UFC Week in Review: Pereira, Topuria ...") - long videos are found by search, Shorts by the feed** *(S01.3, filed 2026-10-18)* `[S]`
 - [ ] 1317. **Each Short's description links the week's compilation, so a Shorts viewer can reach the long video** *(S01.4, filed 2026-10-18)* `[S]`
 - [ ] 1318. **The 11 playlists made on YouTube (550 quota units; your yes) - a playlist keeps a long-form session going** *(S01.5, filed 2026-10-18)* `[S]`
-- [ ] 1319. **Advertiser-safe titles and first lines: a draft whose title, thumbnail text or first sentence would limit ads waits for you** *(S01.6, filed 2026-10-18)* `[S]`
+- [x] 1319. **Advertiser-safe titles and first lines: a draft whose title, thumbnail text or first sentence would limit ads waits for you** *(S01.6, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113; the operator: an overnight draft waits, py main.py warns):** `authenticity.ad_limit_reason` reads the title (the thumbnail's headline comes from it) and the first sentence for sexual terms, strong profanity, hard drugs, self-harm and mass-casualty words; fight and game violence is not listed. `unattended_block_reason` and `backlog_gate` hold the draft with the word named; `py main.py` prints a warning beside the authenticity report. Live: run 166's "Hot Dads & Horny Art: Why Belmont's Curse Is Fixable" -> "its title or first line would limit ads (\"horny\")". Slurs are not listed in code.
 - [ ] 1320. **A monthly YPP card: the four numbers against last month, organic only, on the Story page** *(S01.9, filed 2026-10-18)* `[S]`
 - [ ] 1321. **A day-one YPP checklist in operator_guide.md: what to switch on when the threshold is met (ads, Super Thanks, memberships)** *(S01.10, filed 2026-10-18)* `[S]`
 
@@ -1900,7 +1900,7 @@ Already open for S11: #1058 (CTR into the learning loop).
 
 ### S13 Volume
 
-- [ ] 1427. **The quota by caller, and searches stop early enough to leave one upload's units** *(S13.1, filed 2026-10-18)* `[M]`
+- [x] 1427. **The quota by caller, and searches stop early enough to leave one upload's units** *(S13.1, filed 2026-10-18)* `[M]` **Done (2026-10-18, Claude, wave 113; the operator: a breakdown and an upload reserve):** `record_usage(caller=...)` books each day's units by what spent them, under a lock (signals record from a thread pool); `ops status` and `ops reliability` print "spent on: ...". Searches stop while fewer than `YOUTUBE_UPLOAD_RESERVE` (1,600) units plus one search are left. **Found on the way:** fifteen Data API calls booked nothing - `captions.insert` (400 units), every `videos.update` (50: go-public, description fixes, recategorize, rollback, the backlog's status), `commentThreads.insert` (50), the playlist inserts (50) and five list calls - so "uploads left" read high; `record_call(kind)` books each by YouTube's documented cost. Live: "spent on: privacy 2, channels.list 1, playlistItems.list 1, before the breakdown 6,032".
 - [ ] 1428. **If nothing is scheduled for tomorrow by 21:00, overnight renders one more** *(S13.2, filed 2026-10-18)* `[S]`
 - [ ] 1429. **The two-week schedule in the morning line** *(S13.3, filed 2026-10-18)* `[S]`
 - [ ] 1430. **Shorts cut from chapters fill empty slots** *(S13.4, filed 2026-10-18)* `[S]`

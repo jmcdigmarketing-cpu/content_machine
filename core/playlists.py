@@ -24,6 +24,7 @@ import os
 import re
 from typing import Any
 
+from apis.youtube_quota import record_call
 from core.logging import get_logger
 
 logger = get_logger("core.playlists")
@@ -128,6 +129,7 @@ def sync_playlists(service, channel_id: str, *, store_path: str | None = None) -
     for name in wanted:
         if ids.get(name):
             continue
+        record_call("playlists.insert")  # wave 113: it booked nothing
         resp = (
             service.playlists()
             .insert(
@@ -185,6 +187,7 @@ def add_to_playlists(
         if name in done:
             continue
         try:
+            record_call("playlistItems.insert")  # wave 113: it booked nothing
             service.playlistItems().insert(
                 part="snippet",
                 body={

@@ -103,7 +103,7 @@ def _spend(units: int) -> None:
     try:
         from apis.youtube_quota import record_usage
 
-        record_usage(units=units)
+        record_usage(units=units, caller="competitors")
     except Exception as exc:
         logger.debug("competitor list: usage not recorded: %s", exc)
 

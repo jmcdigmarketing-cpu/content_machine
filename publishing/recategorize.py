@@ -14,6 +14,7 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
+from apis.youtube_quota import record_call
 from core.logging import get_logger
 from core.run_features import resolved_run_domain, run_domain
 
@@ -113,6 +114,7 @@ def apply_recategorize(
             "snippet": writable_snippet(current, categoryId=item.category_id),
         }
         try:
+            record_call("videos.update")  # wave 113: it booked nothing
             service.videos().update(part="snippet", body=body).execute()
         except Exception as exc:  # one refusal must not lose the rest of the batch
             result["failed"] += 1

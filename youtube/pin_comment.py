@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from apis.youtube_comments_signal import _is_clean
+from apis.youtube_quota import record_call
 from core.logging import get_logger
 
 logger = get_logger("youtube.pin_comment")
@@ -114,6 +115,7 @@ def due_count(now: datetime | None = None) -> int:
 
 
 def _insert(service, *, video_id: str, text: str) -> None:
+    record_call("commentThreads.insert")  # wave 113: it booked nothing
     service.commentThreads().insert(
         part="snippet",
         body={

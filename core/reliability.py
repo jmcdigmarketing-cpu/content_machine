@@ -693,6 +693,14 @@ def render(data: dict[str, Any] | None = None) -> str:
         if yt.get("next_reset"):
             line += f" — resets {str(yt['next_reset'])[:16]} UTC"
         lines.append(line)
+        try:  # wave 113: what spent them
+            from apis.youtube_quota import format_usage_split
+
+            split = format_usage_split()
+            if split:
+                lines.append(f"  spent on: {split}")
+        except Exception as exc:
+            logger.debug("quota split skipped: %s", exc)
         if int(uploads_left or 0) < 1:
             try:
                 from apis.youtube_quota import quota_increase_advice

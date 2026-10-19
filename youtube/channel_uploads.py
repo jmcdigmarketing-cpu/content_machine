@@ -9,17 +9,21 @@ from __future__ import annotations
 
 from typing import Any
 
+from apis.youtube_quota import record_call
+
 
 def uploads_playlist_items(service: Any, *, max_results: int = 50) -> list[dict[str, str]]:
     """[{video_id, title, published_at}] newest first; [] when the channel has none.
 
     Errors propagate: the callers decide whether a failed read matters.
     """
+    record_call("channels.list")  # wave 113: it booked nothing
     channels = service.channels().list(part="contentDetails", mine=True).execute()
     items = channels.get("items") or []
     if not items:
         return []
     uploads_id = items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
+    record_call("playlistItems.list")  # wave 113: it booked nothing
     playlist = (
         service.playlistItems()
         .list(playlistId=uploads_id, part="snippet,contentDetails", maxResults=max_results)

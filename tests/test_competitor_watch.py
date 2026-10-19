@@ -230,7 +230,7 @@ class ListTests(_ListCase):
         service.channels.return_value.list.assert_called_once_with(
             part="snippet", forHandle="@mmadaily"
         )
-        self.spent.assert_called_once_with(units=1)
+        self.spent.assert_called_once_with(units=1, caller="competitors")
 
     def test_resolve_of_nothing_asks_nothing(self):
         from analytics import competitor_list

@@ -13,10 +13,59 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from config.paths import DATA_DIR
+from config.paths import DATA_DIR, ROOT_DIR
 from core.logging import get_logger
 
 logger = get_logger("core.ops_doctor")
+
+# #457 (wave 114, the operator: a lock and a check, CI unchanged): `pip lock -e ".[app]"` wrote the
+# exact versions this PC runs; #326 was the environment silently disagreeing with pyproject.
+LOCK_FILE = os.path.join(ROOT_DIR, "pylock.toml")
+
+
+def _canonical(name: str) -> str:
+    return str(name or "").strip().lower().replace("_", "-").replace(".", "-")
+
+
+def lock_drift(lock: dict[str, Any], installed: dict[str, str]) -> list[str]:
+    """Each locked package whose installed version differs - "name lock X, installed Y" or
+    "name lock X, not installed". The project itself (a directory entry) is not compared."""
+    have = {_canonical(k): str(v) for k, v in (installed or {}).items()}
+    out: list[str] = []
+    for package in (lock or {}).get("packages") or []:
+        if not isinstance(package, dict) or "version" not in package:
+            continue
+        name = _canonical(package.get("name", ""))
+        want = str(package["version"])
+        got = have.get(name)
+        if got is None:
+            out.append(f"{name} lock {want}, not installed")
+        elif got != want:
+            out.append(f"{name} lock {want}, installed {got}")
+    return out
+
+
+def _installed_versions() -> dict[str, str]:
+    from importlib.metadata import distributions
+
+    return {_canonical(d.metadata["Name"] or ""): d.version for d in distributions()}
+
+
+def lock_check() -> tuple[bool, str]:
+    """(ok, detail) for the doctor: the installed packages against pylock.toml."""
+    import tomllib
+
+    if not os.path.isfile(LOCK_FILE):
+        return True, "no pylock.toml (write one: pip lock -e .[app])"
+    with open(LOCK_FILE, "rb") as handle:
+        lock = tomllib.load(handle)
+    drift = lock_drift(lock, _installed_versions())
+    locked = sum(1 for p in lock.get("packages") or [] if isinstance(p, dict) and "version" in p)
+    if not drift:
+        return True, f"the {locked} locked packages match pylock.toml"
+    return False, (f"{len(drift)} of {locked} differ from pylock.toml: {'; '.join(drift[:3])} - "
+                   "after an intended upgrade re-lock: pip lock -e .[app]")  # fmt: skip
+
 
 APIFY_STATUS_URL = "https://status.apify.com/api/v2/status.json"
 # Paid Apify signals (apis/register_signals._APIFY_PAID_SIGNALS). OpenRouter's
@@ -320,6 +369,13 @@ def gather(
     except Exception as exc:
         logger.debug("doctor paid_calls skipped: %s", exc)
         add("paid_calls", True, f"n/a ({type(exc).__name__})")
+
+    try:  # #457
+        ok, detail = lock_check()
+        add("lockfile", ok, detail)
+    except Exception as exc:
+        logger.debug("doctor lockfile skipped: %s", exc)
+        add("lockfile", True, f"n/a ({type(exc).__name__})")
 
     try:
         from core.startup_budget import budget_for

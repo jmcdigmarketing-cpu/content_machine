@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-18 late night: wave 113, the 22 shortfalls
+# Handoff synopsis — 2026-10-19: wave 114, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,17 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-18 late night (Claude Code): wave 113, the 22 shortfalls
+## Last wave — 2026-10-19 (Claude Code): wave 114, the next ten
+
+Two defects from wave 113 first: the unattended sync tried a channel with no sign-in, and
+run 154 - moved on YouTube to 10-21 - kept its old slot, so Buffer was sent its TikTok and
+Instagram posts for a day early (removed with the operator's yes; the round now asks YouTube
+before it sends). Then: health reads Shorts against Shorts (the softening was one long video -
+GREEN), subscribers per 1,000 views by domain, compilation hours in `ops ypp`, a stop rule for
+every test (95% sure or 10 each), one more overnight render for an empty day, `ops recut`
+(run 171 waits), and a lockfile `ops doctor` checks. Overnight woke the PC at 05:00. Open 243.
+
+## Previous — 2026-10-18 late night (Claude Code): wave 113, the 22 shortfalls
 
 The plan is rebuilt around the Story's 22 shortfalls - each with where it stands, how it is
 addressed, who acts and the command for done - and their 220 ideas are in the backlog
@@ -32,16 +42,6 @@ stayed against 35%); paid-signal attribution on measured outcomes ("wait" - 3-4 
 without); a 3-second matchup card after a preview's first sentence; one Settings line in
 the menu (9 prompts instead of 11), and the length recommendation reads its 35 measured
 videos. Open 59.
-
-## Previous — 2026-10-18 evening (Claude Code): wave 111, the plan's next ten
-
-The long-term plan is written (hands_off_plan.md: this week, the next ten, the quarter), then
-all ten in six batches, each pushed and green: NFL/NBA news in ideas; two audit misses and the
-twelve stale doc cards; status-only updates had switched embedding off on 7 videos (repaired);
-voice-note names; no test reads the real data/ (the suite now passes on the operator's PC);
-a call's why from ESPN's summary, every call kept and scored (`names_any` names the 49ers now);
-Picks, graded; holdouts 1 in 5; the weekly $0 compilation (`ops week-compile`, overnight on
-Mondays). Open 63.
 
 ## Pipeline order (operator)
 
@@ -117,7 +117,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1491 #1428 #1323 #1314 #1423 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1422 #1317 #1325 #1399 #1437 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

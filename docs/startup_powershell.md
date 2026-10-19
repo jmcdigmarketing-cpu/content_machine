@@ -80,6 +80,11 @@ cd C:\dev\content_machine
 py main.py
 ```
 
+The exact versions this PC runs are in `pylock.toml` (#457); `py -m scripts.ops doctor`'s
+lockfile line names any package that drifted. After an intended upgrade, re-lock from what is
+installed: `pip freeze --exclude-editable > constraints.txt`, then
+`pip lock -e ".[app]" -c constraints.txt -o pylock.toml` (two commands; delete constraints.txt).
+
 **Stage 2 run window** (token look; no PowerShell prompts; paste facts in the box):
 
 ```powershell

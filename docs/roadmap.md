@@ -83,13 +83,12 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-18 (Claude, wave 113).** The plan is [hands_off_plan.md](hands_off_plan.md), now one
-section per shortfall with ten ideas each in the backlog (decision 68). Next, the cheapest
-measured ones: **#1491** engagement per format (run 120, a 406 s long video at 11%, is most
-of the drop), **#1428** one more render when tomorrow is empty at 21:00, **#1323** subscribers
-per 1,000 views by domain and format, **#1314** what each compilation adds to long-form
-hours (the first is made on Monday), **#1423** the intro test read with a stop rule. Wave
-112's #1057 #1042 #354 #457 stay next after them; #1058 waits on your Reporting API click.
+**2026-10-19 (Claude, wave 114).** The plan is [hands_off_plan.md](hands_off_plan.md), one
+section per shortfall. Next, measured: **#1422** the hook's words on the first frame (TikTok's
+viewers leave in 1.4 s), **#1317** each Short links the week's compilation (the first is
+today's), **#1325** a video that brings 2+ subscribers is flagged in the morning, **#1399** a
+toast when a Buffer send fails, **#1437** the sign-in's expiry date in the morning. #1042's
+standings table and score bug stay open; #1058 waits on your Reporting API click.
 **2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
 push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
 the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
@@ -103,6 +102,7 @@ read in full; three corrections. Filed #1263-#1269. The audit:
 **2026-10-18 (Claude, wave 111).** The plan's next ten, in six batches: NFL/NBA news in ideas (#1303), the twelve stale cards (#1269) and two audit misses (#104 #1059), status updates that switched embedding off on 7 videos (#1306, repaired), voice-note names (#1296), no test reads the real data/ (#1305), calls from ESPN's summary kept and scored (#1304), Picks graded (#991), holdouts (#83), the weekly compilation (#138). `roadmap-index`: open 63, done 1476, numbered open 54.
 **2026-10-18 (Claude, wave 112).** The next ten in five batches: `ops status` 7.9 -> 3.4 s (#1307), roundups not ideas (#1308), the week's games called (#1309), the compilation's thumbnail (#1310), runs 92 and 119's claims settled (#1136), the call in the first sentence (#1311), the third-channel gate printed (#1079), paid-signal attribution on outcomes (#1312), the matchup card (#1042), the menu with fewer prompts (#1077), and the length recommendation reading its measured videos (#1313). `roadmap-index`: open 59, done 1487, numbered open 50.
 **2026-10-18 (Claude, wave 113).** The 22 shortfalls: the plan rebuilt by shortfall and #1314-#1517 filed (decision 68, the ceiling 300); TikTok views read (#1418) - its viewers watch 1.4 s, inside the intro; the Buffer line asks for nothing by hand (#1398); the metrics sync without you (#1489); ad-unsafe titles wait (#1319); the quota by caller, fifteen unbooked calls booked, an upload reserve (#1427); a follow line on previews with a call (#1322); Buffer copies from the first word (#1417). `roadmap-index`: open 252, done 1498, numbered open 243.
+**2026-10-19 (Claude, wave 114).** Two of wave 113's own defects first: the sync tried a channel with no sign-in (#1518), and a video moved on YouTube kept its old slot so Buffer was sent a day early (#1519, #1520 - run 154's posts removed with your yes). Then: Shorts read against Shorts (#1491 - the softening was one long video; GREEN), subscribers per 1,000 views (#1323), compilation hours (#1314), a stop rule (#354, #1423, #1507), one more render for an empty day (#1428), re-cuts of winners (#1057, #1521), a lockfile (#457). `roadmap-index`: open 243, done 1511, numbered open 234.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

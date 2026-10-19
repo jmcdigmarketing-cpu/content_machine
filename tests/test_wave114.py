@@ -391,5 +391,51 @@ class RecutTests(unittest.TestCase):
         self.assertEqual(make.call_args.kwargs.get("start"), 0.0)
 
 
+class LockTests(unittest.TestCase):
+    """E: #457 (the operator: a lock and a check, CI unchanged)."""
+
+    def test_drift_names_each_package_that_differs(self):
+        from core.ops_doctor import lock_drift
+
+        lock = {"packages": [{"name": "content-machine", "directory": {"path": "."}},
+                             {"name": "Anyio", "version": "4.13.0"}, {"name": "certifi", "version": "2026.4.22"},
+                             {"name": "rich", "version": "14.0.0"}]}  # fmt: skip
+        installed = {"anyio": "4.13.0", "Certifi": "2026.10.18"}
+        self.assertEqual(lock_drift(lock, installed),
+                         ["certifi lock 2026.4.22, installed 2026.10.18", "rich lock 14.0.0, not installed"])  # fmt: skip
+
+    def test_the_lock_covers_every_direct_dependency(self):
+        import re
+        import tomllib
+
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "pyproject.toml"), "rb") as handle:
+            project = tomllib.load(handle)["project"]
+        with open(os.path.join(root, "pylock.toml"), "rb") as handle:
+            locked = {p["name"].lower().replace("_", "-") for p in tomllib.load(handle)["packages"]}
+        wanted = [
+            *project.get("dependencies", []),
+            *project.get("optional-dependencies", {}).get("app", []),
+        ]
+        missing = []
+        for requirement in wanted:
+            if ";" in requirement:  # a platform marker: locked on Windows only when it applies
+                continue
+            name = re.match(r"[A-Za-z0-9_.-]+", requirement).group(0).lower().replace("_", "-")
+            if name not in locked:
+                missing.append(name)
+        self.assertEqual(missing, [])
+
+    def test_no_lock_is_not_a_failure(self):
+        from core import ops_doctor
+
+        with patch.object(
+            ops_doctor, "LOCK_FILE", os.path.join(tempfile.gettempdir(), "no-such-pylock.toml")
+        ):
+            ok, detail = ops_doctor.lock_check()
+        self.assertTrue(ok)
+        self.assertIn("pip lock", detail)
+
+
 if __name__ == "__main__":
     unittest.main()

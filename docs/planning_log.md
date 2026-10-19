@@ -8728,3 +8728,36 @@ Batch D:
 - 7 new tests failed on clean HEAD.
 - Batch C's forward run also failed test_stage4's import-time budget (1.70 s against 1.66) while
   overnight was rendering on the same PC. It passes 3 of 3 alone.
+
+Batch E:
+- #457: `pylock.toml`, and `ops doctor`'s lockfile line.
+  - **Corrected before it shipped:** `pip lock` unconstrained locked PyPI's newest versions,
+    so 31 of 69 differed on day one. It is constrained to the installed versions now.
+  - CI keeps installing from pyproject.
+
+Audit (wave 114):
+- 26 tests in tests/test_wave114.py; every one failed on clean HEAD before its fix. 6 corpus
+  cases.
+- Defects found on the way:
+  - #1518 and #1519, both from wave 113's own changes;
+  - #1520, a resend would have sent a dead link;
+  - #1521, the teaser cut the channel's intro;
+  - the re-cut's opening bias and its title length, caught live before shipping;
+  - the unconstrained lock.
+- CI failed once (9c2b426, the ruff format check). Since then every export is checked
+  repo-wide before its commit, and it caught two findings in batch D before the push.
+- mypy 92, the baseline. ruff clean. The suite leaves data/ and output/ untouched.
+- Batch C's forward run missed an import-time budget while overnight rendered on the same PC;
+  it passed 3 of 3 alone.
+- Not done: run 171 (the first re-cut) and the empty-day render wait for the operator; nothing
+  was uploaded or sent by me beyond removing run 154's two Buffer posts, with the operator's
+  yes.
+
+Proof:
+- Health is GREEN: Shorts 32.1% against 32.9%.
+- Gaming Shorts bring 0.6 subscribers per 1,000 views; UFC and NBA 0.
+- Run 154's record says 10-21 02:00Z.
+- Overnight started at 05:00:02.
+- The 69 locked packages match.
+
+`roadmap-index`: open 243, done 1511, numbered open 234, highest open #1517.

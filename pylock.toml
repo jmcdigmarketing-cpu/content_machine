@@ -1,0 +1,768 @@
+lock-version = "1.0"
+created-by = "pip"
+
+[[packages]]
+name = "alembic"
+version = "1.16.1"
+
+[[packages.wheels]]
+name = "alembic-1.16.1-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/31/59/565286efff3692c5716c212202af61466480f6357c4ae3089d4453bff1f3/alembic-1.16.1-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "0cdd48acada30d93aa1035767d67dff25702f8de74d7c3919f2e8492c8db2e67"
+
+[[packages]]
+name = "annotated-types"
+version = "0.7.0"
+
+[[packages.wheels]]
+name = "annotated_types-0.7.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/78/b6/6307fbef88d9b5ee7421e68d78a9f162e0da4900bc5f5793f6d3d0e34fb8/annotated_types-0.7.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53"
+
+[[packages]]
+name = "anyio"
+version = "4.13.0"
+
+[[packages.wheels]]
+name = "anyio-4.13.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/da/42/e921fccf5015463e32a3cf6ee7f980a6ed0f395ceeaa45060b61d86486c2/anyio-4.13.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "08b310f9e24a9594186fd75b4f73f4a4152069e3853f1ed8bfbf58369f4ad708"
+
+[[packages]]
+name = "beautifulsoup4"
+version = "4.14.3"
+
+[[packages.wheels]]
+name = "beautifulsoup4-4.14.3-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/1a/39/47f9197bdd44df24d67ac8893641e16f386c984a0619ef2ee4c51fbbc019/beautifulsoup4-4.14.3-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "0918bfe44902e6ad8d57732ba310582e98da931428d231a5ecb9e7c703a735bb"
+
+[[packages]]
+name = "boto3"
+version = "1.43.114"
+
+[[packages.wheels]]
+name = "boto3-1.43.114-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/c8/f8/0799a101e6f65c8b687f50c218654cef1e44658e946c7d33d362e2572621/boto3-1.43.114-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "d9cac2eb921ce674970cef1c9ad750f85ee3a846aedcf188d18368fb9eb6da23"
+
+[[packages]]
+name = "botocore"
+version = "1.43.114"
+
+[[packages.wheels]]
+name = "botocore-1.43.114-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/9a/41/7c6fa7ac5fcfd5ea3c6f32aab001942da32b184a210f39042778cb1ad8ed/botocore-1.43.114-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "d1c441a22e93e158de5b1e026205f5d6d67a4545d10540c5090c62dccb3a9eca"
+
+[[packages]]
+name = "certifi"
+version = "2026.4.22"
+
+[[packages.wheels]]
+name = "certifi-2026.4.22-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/22/30/7cd8fdcdfbc5b869528b079bfb76dcdf6056b1a2097a662e5e8c04f42965/certifi-2026.4.22-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "3cb2210c8f88ba2318d29b0388d1023c8492ff72ecdde4ebdaddbb13a31b1c4a"
+
+[[packages]]
+name = "cffi"
+version = "2.0.0"
+
+[[packages.wheels]]
+name = "cffi-2.0.0-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/ae/8f/dc5531155e7070361eb1b7e4c1a9d896d0cb21c49f807a6c03fd63fc877e/cffi-2.0.0-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "66f011380d0e49ed280c789fbd08ff0d40968ee7b665575489afa95c98196ab5"
+
+[[packages]]
+name = "charset-normalizer"
+version = "3.4.7"
+
+[[packages.wheels]]
+name = "charset_normalizer-3.4.7-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/20/d9/5f67790f06b735d7c7637171bbfd89882ad67201891b7275e51116ed8207/charset_normalizer-3.4.7-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "8e385e4267ab76874ae30db04c627faaaf0b509e1ccc11a95b3fc3e83f855c00"
+
+[[packages]]
+name = "colorama"
+version = "0.4.6"
+
+[[packages.wheels]]
+name = "colorama-0.4.6-py2.py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"
+
+[[packages]]
+name = "content-machine"
+
+[packages.directory]
+path = "."
+editable = true
+
+[[packages]]
+name = "cryptography"
+version = "48.0.0"
+
+[[packages.wheels]]
+name = "cryptography-48.0.0-cp311-abi3-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/f4/ac/8ac51b4a5fc5932eb7ee5c517ba7dc8cd834f0048962b6b352f00f41ebf9/cryptography-48.0.0-cp311-abi3-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "5b012212e08b8dd5edc78ef54da83dd9892fd9105323b3993eff6bea65dc21d7"
+
+[[packages]]
+name = "cssselect"
+version = "1.4.0"
+
+[[packages.wheels]]
+name = "cssselect-1.4.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/20/0c/7bb51e3acfafd16c48875bf3db03607674df16f5b6ef8d056586af7e2b8b/cssselect-1.4.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "c0ec5c0191c8ee39fcc8afc1540331d8b55b0183478c50e9c8a79d44dbceb1d8"
+
+[[packages]]
+name = "distro"
+version = "1.9.0"
+
+[[packages.wheels]]
+name = "distro-1.9.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2"
+
+[[packages]]
+name = "elevenlabs"
+version = "2.45.0"
+
+[[packages.wheels]]
+name = "elevenlabs-2.45.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/60/2f/e9136e7b049898fcd8ddf1836d687cac0acc5ed76329740942498fe602e0/elevenlabs-2.45.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "19edf75de4da22b340bd96c833c3589a9871015addc1d487b034b4541c71b0ef"
+
+[[packages]]
+name = "google-api-core"
+version = "2.30.3"
+
+[[packages.wheels]]
+name = "google_api_core-2.30.3-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/03/15/e56f351cf6ef1cfea58e6ac226a7318ed1deb2218c4b3cc9bd9e4b786c5a/google_api_core-2.30.3-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "a85761ba72c444dad5d611c2220633480b2b6be2521eca69cca2dbb3ffd6bfe8"
+
+[[packages]]
+name = "google-api-python-client"
+version = "2.196.0"
+
+[[packages.wheels]]
+name = "google_api_python_client-2.196.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/99/c7/1817b4edf966d5afcac1c0781ca36d621bc0cb58104c4e7c2a475ab185f7/google_api_python_client-2.196.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "2591e9b47dcb17e4e62a09370aaee3bcf323af8f28ccecdabcd0a42a23ca4db5"
+
+[[packages]]
+name = "google-auth"
+version = "2.52.0"
+
+[[packages.wheels]]
+name = "google_auth-2.52.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/ee/fc/2cdc74252746f547f81ff3f02d4d4234a3f411b5de5b61af97e633a060b9/google_auth-2.52.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "aee92803ba0ff93a70a3b8a35c7b4797837751cd6380b63ff38372b98f3ed627"
+
+[[packages]]
+name = "google-auth-httplib2"
+version = "0.2.0"
+
+[[packages.wheels]]
+name = "google_auth_httplib2-0.2.0-py2.py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/be/8a/fe34d2f3f9470a27b01c9e76226965863f153d5fbe276f83608562e49c04/google_auth_httplib2-0.2.0-py2.py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "b65a0a2123300dd71281a7bf6e64d65a0759287df52729bdd1ae2e47dc311a3d"
+
+[[packages]]
+name = "google-auth-oauthlib"
+version = "1.2.2"
+
+[[packages.wheels]]
+name = "google_auth_oauthlib-1.2.2-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/ac/84/40ee070be95771acd2f4418981edb834979424565c3eec3cd88b6aa09d24/google_auth_oauthlib-1.2.2-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "fd619506f4b3908b5df17b65f39ca8d66ea56986e5472eb5978fd8f3786f00a2"
+
+[[packages]]
+name = "googleapis-common-protos"
+version = "1.75.0"
+
+[[packages.wheels]]
+name = "googleapis_common_protos-1.75.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/e7/c8/e2645aa8ed02fd4c7a2f59d68783b65b1f3cbdfe39a6308e156509d1fee8/googleapis_common_protos-1.75.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "961ed60399c457ceb0ee8f285a84c870aabc9c6a832b9d37bb281b5bebde43ed"
+
+[[packages]]
+name = "goose3"
+version = "3.1.21"
+
+[[packages.wheels]]
+name = "goose3-3.1.21-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/07/ba/744e8ed007bfc8b57e37ccef63bbd55b7f49a2f17dd6921170312ff68249/goose3-3.1.21-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "16204171caef2e243e49e2954baa88059f46575ad5d4f146e804fe229911f7ad"
+
+[[packages]]
+name = "greenlet"
+version = "3.5.1"
+
+[[packages.wheels]]
+name = "greenlet-3.5.1-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/f5/56/5f332b7705545eac2dc01b4e9254d24a793f2656d55d5cc6b94ee59d22ae/greenlet-3.5.1-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "88e300d136eac057b2397aa1cfd7328b4c87c7eb66a09c7bc6a1292234db474e"
+
+[[packages]]
+name = "h11"
+version = "0.16.0"
+
+[[packages.wheels]]
+name = "h11-0.16.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"
+
+[[packages]]
+name = "httpcore"
+version = "1.0.9"
+
+[[packages.wheels]]
+name = "httpcore-1.0.9-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
+
+[[packages]]
+name = "httplib2"
+version = "0.31.2"
+
+[[packages.wheels]]
+name = "httplib2-0.31.2-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/2f/90/fd509079dfcab01102c0fdd87f3a9506894bc70afcf9e9785ef6b2b3aff6/httplib2-0.31.2-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "dbf0c2fa3862acf3c55c078ea9c0bc4481d7dc5117cae71be9514912cf9f8349"
+
+[[packages]]
+name = "httpx"
+version = "0.28.1"
+
+[[packages.wheels]]
+name = "httpx-0.28.1-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"
+
+[[packages]]
+name = "idna"
+version = "3.13"
+
+[[packages.wheels]]
+name = "idna-3.13-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/5d/13/ad7d7ca3808a898b4612b6fe93cde56b53f3034dcde235acb1f0e1df24c6/idna-3.13-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "892ea0cde124a99ce773decba204c5552b69c3c67ffd5f232eb7696135bc8bb3"
+
+[[packages]]
+name = "imageio-ffmpeg"
+version = "0.6.0"
+
+[[packages.wheels]]
+name = "imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/2c/c6/fa760e12a2483469e2bf5058c5faff664acf66cadb4df2ad6205b016a73d/imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "02fa47c83703c37df6bfe4896aab339013f62bf02c5ebf2dce6da56af04ffc0a"
+
+[[packages]]
+name = "jiter"
+version = "0.14.0"
+
+[[packages.wheels]]
+name = "jiter-0.14.0-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/b8/86/c500b53dcbf08575f5963e536ebd757a1f7c568272ba5d180b212c9a87fb/jiter-0.14.0-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "42d6ed359ac49eb922fdd565f209c57340aa06d589c84c8413e42a0f9ae1b842"
+
+[[packages]]
+name = "jmespath"
+version = "1.1.0"
+
+[[packages.wheels]]
+name = "jmespath-1.1.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/14/2f/967ba146e6d58cf6a652da73885f52fc68001525b4197effc174321d70b4/jmespath-1.1.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "a5663118de4908c91729bea0acadca56526eb2698e83de10cd116ae0f4e97c64"
+
+[[packages]]
+name = "langdetect"
+version = "1.0.9"
+
+[packages.sdist]
+name = "langdetect-1.0.9.tar.gz"
+url = "https://files.pythonhosted.org/packages/0e/72/a3add0e4eec4eb9e2569554f7c70f4a3c27712f40e3284d483e88094cc0e/langdetect-1.0.9.tar.gz"
+
+[packages.sdist.hashes]
+sha256 = "cbc1fef89f8d062739774bd51eda3da3274006b3661d199c2655f6b3f6d605a0"
+
+[[packages]]
+name = "lxml"
+version = "6.1.0"
+
+[[packages.wheels]]
+name = "lxml-6.1.0-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/02/05/d60c732b56da5085175c07c74b2df4e6d181b0c9a61e1691474f06ef4b39/lxml-6.1.0-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "183bfb45a493081943be7ea2b5adfc2b611e1cf377cefa8b8a8be404f45ef9a7"
+
+[[packages]]
+name = "mako"
+version = "1.3.12"
+
+[[packages.wheels]]
+name = "mako-1.3.12-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/bc/b1/a0ec7a5a9db730a08daef1fdfb8090435b82465abbf758a596f0ea88727e/mako-1.3.12-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "8f61569480282dbf557145ce441e4ba888be453c30989f879f0d652e39f53ea9"
+
+[[packages]]
+name = "markupsafe"
+version = "3.0.3"
+
+[[packages.wheels]]
+name = "markupsafe-3.0.3-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/83/8a/4414c03d3f891739326e1783338e48fb49781cc915b2e0ee052aa490d586/markupsafe-3.0.3-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "de8a88e63464af587c950061a5e6a67d3632e36df62b986892331d4620a35c01"
+
+[[packages]]
+name = "numpy"
+version = "2.4.4"
+
+[[packages.wheels]]
+name = "numpy-2.4.4-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/bd/63/05d193dbb4b5eec1eca73822d80da98b511f8328ad4ae3ca4caf0f4db91d/numpy-2.4.4-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "6bbe4eb67390b0a0265a2c25458f6b90a409d5d069f1041e6aff1e27e3d9a79e"
+
+[[packages]]
+name = "oauthlib"
+version = "3.3.1"
+
+[[packages.wheels]]
+name = "oauthlib-3.3.1-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/be/9c/92789c596b8df838baa98fa71844d84283302f7604ed565dafe5a6b5041a/oauthlib-3.3.1-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "88119c938d2b8fb88561af5f6ee0eec8cc8d552b7bb1f712743136eb7523b7a1"
+
+[[packages]]
+name = "openai"
+version = "2.33.0"
+
+[[packages.wheels]]
+name = "openai-2.33.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/7d/32/37734d769bc8b42e4938785313cc05aade6cb0fa72479d3220a0d61a4e78/openai-2.33.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "03ac37d70e8c9e3a8124214e3afa785e2cbc12e627fbd98177a086ef2fd87ad5"
+
+[[packages]]
+name = "pillow"
+version = "12.3.0"
+
+[[packages.wheels]]
+name = "pillow-12.3.0-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/63/c6/4bad1b18d132a50b27e1365e1ab163616f7a5bb56d330f66f9d1d9d4f9d4/pillow-12.3.0-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a"
+
+[[packages]]
+name = "proto-plus"
+version = "1.28.0"
+
+[[packages.wheels]]
+name = "proto_plus-1.28.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/7c/20/b122d4626976acb81132036d2ad1bb35a1a8775fceb837ec30964622516a/proto_plus-1.28.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "a630604310899e73c59ec302e5765c058d412b2f090b9c79c8822589f14955b8"
+
+[[packages]]
+name = "protobuf"
+version = "7.34.1"
+
+[[packages.wheels]]
+name = "protobuf-7.34.1-cp310-abi3-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/4d/87/cb5e585192a22b8bd457df5a2c16a75ea0db9674c3a0a39fc9347d84e075/protobuf-7.34.1-cp310-abi3-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "e97b55646e6ce5cbb0954a8c28cd39a5869b59090dfaa7df4598a7fba869468c"
+
+[[packages]]
+name = "psycopg2-binary"
+version = "2.9.10"
+
+[[packages.wheels]]
+name = "psycopg2_binary-2.9.10-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/61/69/3b3d7bd583c6d3cbe5100802efa5beacaacc86e37b653fc708bf3d6853b8/psycopg2_binary-2.9.10-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "ee0e8c683a7ff25d23b55b11161c2663d4b099770f6085ff0a20d4505778d6b4"
+
+[[packages]]
+name = "pyahocorasick"
+version = "2.3.1"
+
+[[packages.wheels]]
+name = "pyahocorasick-2.3.1-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/12/63/7072ae6d6458518c277b256a14dd1b20726192e880915b4f6d3daeb0700d/pyahocorasick-2.3.1-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "cb75c32f73be3f70435e49bbc5518105b54f1320a51e7da18ac989bfe93f6c1c"
+
+[[packages]]
+name = "pyasn1"
+version = "0.6.3"
+
+[[packages.wheels]]
+name = "pyasn1-0.6.3-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/5d/a0/7d793dce3fa811fe047d6ae2431c672364b462850c6235ae306c0efd025f/pyasn1-0.6.3-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "a80184d120f0864a52a073acc6fc642847d0be408e7c7252f31390c0f4eadcde"
+
+[[packages]]
+name = "pyasn1-modules"
+version = "0.4.2"
+
+[[packages.wheels]]
+name = "pyasn1_modules-0.4.2-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/47/8d/d529b5d697919ba8c11ad626e835d4039be708a35b0d22de83a269a6682c/pyasn1_modules-0.4.2-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"
+
+[[packages]]
+name = "pycparser"
+version = "3.0"
+
+[[packages.wheels]]
+name = "pycparser-3.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/0c/c3/44f3fbbfa403ea2a7c779186dc20772604442dde72947e7d01069cbe98e3/pycparser-3.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"
+
+[[packages]]
+name = "pydantic"
+version = "2.13.3"
+
+[[packages.wheels]]
+name = "pydantic-2.13.3-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/f3/0a/fd7d723f8f8153418fb40cf9c940e82004fce7e987026b08a68a36dd3fe7/pydantic-2.13.3-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "6db14ac8dfc9a1e57f87ea2c0de670c251240f43cb0c30a5130e9720dc612927"
+
+[[packages]]
+name = "pydantic-core"
+version = "2.46.3"
+
+[[packages.wheels]]
+name = "pydantic_core-2.46.3-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/18/9c/f41951b0d858e343f1cf09398b2a7b3014013799744f2c4a8ad6a3eec4f2/pydantic_core-2.46.3-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "b5b9c6cf08a8a5e502698f5e153056d12c34b8fb30317e0c5fd06f45162a6346"
+
+[[packages]]
+name = "pyparsing"
+version = "3.3.2"
+
+[[packages.wheels]]
+name = "pyparsing-3.3.2-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/10/bd/c038d7cc38edc1aa5bf91ab8068b63d4308c66c4c8bb3cbba7dfbc049f9c/pyparsing-3.3.2-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d"
+
+[[packages]]
+name = "pyside6"
+version = "6.11.2"
+
+[[packages.wheels]]
+name = "pyside6-6.11.2-cp310-abi3-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/94/fe/4aea9d30300fff4cda9bb729c1363b9e1095a8544e0d6b57065465e16599/pyside6-6.11.2-cp310-abi3-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "3201d67e3c10be2eaedd3910ff0f02351eca7e88c95a291cde5e7f2f55ef207f"
+
+[[packages]]
+name = "pyside6-addons"
+version = "6.11.2"
+
+[[packages.wheels]]
+name = "pyside6_addons-6.11.2-cp310-abi3-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/fb/c1/08bf6594101b42fc88834009f1dac59a983c5b6805c62c5081f077d09b4a/pyside6_addons-6.11.2-cp310-abi3-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "f449ea4431da20e7b86752cca8d166f93434516fe417f981c27e5f8e1b554407"
+
+[[packages]]
+name = "pyside6-essentials"
+version = "6.11.2"
+
+[[packages.wheels]]
+name = "pyside6_essentials-6.11.2-cp310-abi3-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/dc/09/d2662684aee4d3f027ff9b1e965f22301bc28ffc5b7f167658508e4475dc/pyside6_essentials-6.11.2-cp310-abi3-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "c8a29def77032773a30879f7f24415b5395ad08592d147c170824ef4c735dfc1"
+
+[[packages]]
+name = "python-dateutil"
+version = "2.9.0.post0"
+
+[[packages.wheels]]
+name = "python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"
+
+[[packages]]
+name = "python-dotenv"
+version = "1.0.1"
+
+[[packages.wheels]]
+name = "python_dotenv-1.0.1-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/6a/3e/b68c118422ec867fa7ab88444e1274aa40681c606d59ac27de5a5588f082/python_dotenv-1.0.1-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "f7b63ef50f1b690dddf550d03497b66d609393b40b564ed0d674909a68ebf16a"
+
+[[packages]]
+name = "requests"
+version = "2.32.4"
+
+[[packages.wheels]]
+name = "requests-2.32.4-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/7c/e4/56027c4a6b4ae70ca9de302488c5ca95ad4a39e190093d6c1a8ace08341b/requests-2.32.4-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "27babd3cda2a6d50b30443204ee89830707d396671944c998b5975b031ac2b2c"
+
+[[packages]]
+name = "requests-oauthlib"
+version = "2.0.0"
+
+[[packages.wheels]]
+name = "requests_oauthlib-2.0.0-py2.py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "7dd8a5c40426b779b0868c404bdef9768deccf22749cde15852df527e6269b36"
+
+[[packages]]
+name = "s3transfer"
+version = "0.19.2"
+
+[[packages.wheels]]
+name = "s3transfer-0.19.2-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/bc/e7/5c595c75e9f41a44f30e526eda465ea0b4eec93470e074e4a111b253f13a/s3transfer-0.19.2-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "d8168eccca828cbb2cd573675333f3bddd254313a9c42494b84c76b539e8ba25"
+
+[[packages]]
+name = "shiboken6"
+version = "6.11.2"
+
+[[packages.wheels]]
+name = "shiboken6-6.11.2-cp310-abi3-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/ce/6b/fee1b4814317e4664e318644c9c007676c65a71e5b2b9d3ac4121a94dc0a/shiboken6-6.11.2-cp310-abi3-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "6ab0eba1c904455df621f9a6df3ca2bb896bab8670572d2bc4e37804ae91f19a"
+
+[[packages]]
+name = "six"
+version = "1.17.0"
+
+[[packages.wheels]]
+name = "six-1.17.0-py2.py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"
+
+[[packages]]
+name = "sniffio"
+version = "1.3.1"
+
+[[packages.wheels]]
+name = "sniffio-1.3.1-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"
+
+[[packages]]
+name = "soupsieve"
+version = "2.8.4"
+
+[[packages.wheels]]
+name = "soupsieve-2.8.4-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/5e/f5/0c41cb68dcae6b7de4fac4188a3a9589e21fb31df21ea3a2e888db95e6c9/soupsieve-2.8.4-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "e7e6b0769c8f51ed59acab6e994b00621096cfb1c640a7509295987388fbaf65"
+
+[[packages]]
+name = "sqlalchemy"
+version = "2.0.41"
+
+[[packages.wheels]]
+name = "sqlalchemy-2.0.41-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/9d/8e/8344f8ae1cb6a479d0741c02cd4f666925b2bf02e2468ddaf5ce44111f30/sqlalchemy-2.0.41-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "3d3549fc3e40667ec7199033a4e40a2f669898a00a7b18a931d3efb4c7900504"
+
+[[packages]]
+name = "tqdm"
+version = "4.67.3"
+
+[[packages.wheels]]
+name = "tqdm-4.67.3-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "ee1e4c0e59148062281c49d80b25b67771a127c85fc9676d3be5f243206826bf"
+
+[[packages]]
+name = "typing-extensions"
+version = "4.15.0"
+
+[[packages.wheels]]
+name = "typing_extensions-4.15.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/18/67/36e9267722cc04a6b9f15c7f3441c2363321a3ea07da7ae0c0707beb2a9c/typing_extensions-4.15.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"
+
+[[packages]]
+name = "typing-inspection"
+version = "0.4.2"
+
+[[packages.wheels]]
+name = "typing_inspection-0.4.2-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7"
+
+[[packages]]
+name = "tzdata"
+version = "2026.2"
+
+[[packages.wheels]]
+name = "tzdata-2026.2-py2.py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/ce/e4/dccd7f47c4b64213ac01ef921a1337ee6e30e8c6466046018326977efd95/tzdata-2026.2-py2.py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "bbe9af844f658da81a5f95019480da3a89415801f6cc966806612cc7169bffe7"
+
+[[packages]]
+name = "uritemplate"
+version = "4.2.0"
+
+[[packages.wheels]]
+name = "uritemplate-4.2.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/a9/99/3ae339466c9183ea5b8ae87b34c0b897eda475d2aec2307cae60e5cd4f29/uritemplate-4.2.0-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "962201ba1c4edcab02e60f9a0d3821e82dfc5d2d6662a21abd533879bdb8a686"
+
+[[packages]]
+name = "urllib3"
+version = "2.6.3"
+
+[[packages.wheels]]
+name = "urllib3-2.6.3-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4"
+
+[[packages]]
+name = "websockets"
+version = "16.0"
+
+[[packages.wheels]]
+name = "websockets-16.0-cp311-cp311-win_amd64.whl"
+url = "https://files.pythonhosted.org/packages/54/67/eaff76b3dbaf18dcddabc3b8c1dba50b483761cccff67793897945b37408/websockets-16.0-cp311-cp311-win_amd64.whl"
+
+[packages.wheels.hashes]
+sha256 = "8d7f0659570eefb578dacde98e24fb60af35350193e4f56e11190787bee77dac"
+
+[[packages]]
+name = "yt-dlp"
+version = "2026.6.9"
+
+[[packages.wheels]]
+name = "yt_dlp-2026.6.9-py3-none-any.whl"
+url = "https://files.pythonhosted.org/packages/f3/ee/188a3dadf9dfdac713243521f919feca1cd091d4358c9ea7e8ebb710a7cc/yt_dlp-2026.6.9-py3-none-any.whl"
+
+[packages.wheels.hashes]
+sha256 = "442ba4c75724b9496144c8434b617962ee08d0ee7c26ec663848fe9b78d5a3e4"

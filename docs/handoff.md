@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-18 late night · **HEAD at write:** the wave 113 batch 5 commit (`git log -1`)
+**Written:** 2026-10-19 · **HEAD at write:** the wave 114 batch E commit (`git log -1`)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
@@ -73,11 +73,18 @@ backlog at <= 300, and wave 113 alone was exempt from "close as many as you file
 - `video/hook_copy.py` (`run_opening`, `hook_offset`, `ensure_hook_copy`) from
   `crosspost._sent_file` and `week_compile` (#1417 #1419).
 
-**Wave 114 in progress (batches A-E):** A (#1518 #1519 #1520 - run 154's Buffer posts
-removed with the operator's yes, to resend at YouTube's 10-21 02:00Z), B (#1491 #1323
-#1314), C (#354 #1423 #1507 #1428) and D (#1057 re-cuts - run 171 waits; #1521) done.
-Next: E #457.
-
+**Wave 114 (five batches, each pushed):**
+- `jobs/worker._sync_metrics` skips a channel with no sign-in (#1518).
+- `privacy_sync.fetch_status` / `held_slots`; `crosspost._held_by_youtube` and `_needs_hosting`
+  (#1519 #1520). Run 154's two Buffer posts were removed with the operator's yes; the round
+  sends them when YouTube publishes it, at 10-21 02:00Z.
+- `channel_health` reads Shorts against Shorts (#1491); `growth.conversion` (#1323);
+  `ypp_readiness.compilation_line` (#1314).
+- `experiment_stats.evaluate(max_per_arm=10)` -> `no_difference` (#354); `growth.intro_verdict`
+  (#1423); `batch_review.overnight_render_limit` (#1428).
+- `video/recut.py` and `ops recut` (#1057; run 171 waits in the queue manager); the teaser reads
+  the run's own intro (#1521).
+- `pylock.toml` and `ops_doctor.lock_check` (#457).
 **Live:** the worker task now syncs metrics once a day, and Buffer's next sends use the hook
 copy. TikTok's own send hour applies (5 measured rows). **Defects first:** none open of mine.
 

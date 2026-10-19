@@ -5735,6 +5735,37 @@
         "equals": "GTA 6 Leaks Persist Despite Stop Killing Games' Condemnation of Leaker - the moment that held"
       },
       "why": "YouTube refuses a title over 100 characters; a cut word reads as a typo"
+    },
+    {
+      "id": "lock-drift-names-the-package",
+      "item": 457,
+      "source": "wave 114: the environment silently disagreed with pyproject (#326)",
+      "call": "core.ops_doctor:lock_drift",
+      "args": [
+        {
+          "packages": [
+            {
+              "name": "content-machine",
+              "directory": {
+                "path": "."
+              }
+            },
+            {
+              "name": "Certifi",
+              "version": "2026.4.22"
+            }
+          ]
+        },
+        {
+          "certifi": "2026.10.18"
+        }
+      ],
+      "expect": {
+        "equals": [
+          "certifi lock 2026.4.22, installed 2026.10.18"
+        ]
+      },
+      "why": "names are compared canonical; the project's own directory entry is not a package"
     }
   ]
 }

@@ -7,6 +7,16 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-18 evening (Claude Code): wave 111, the plan's next ten
+
+The long-term plan is written (hands_off_plan.md: this week, the next ten, the quarter), then
+all ten in six batches, each pushed and green: NFL/NBA news in ideas; two audit misses and the
+twelve stale doc cards; status-only updates had switched embedding off on 7 videos (repaired);
+voice-note names; no test reads the real data/ (the suite now passes on the operator's PC);
+a call's why from ESPN's summary, every call kept and scored (`names_any` names the 49ers now);
+Picks, graded; holdouts 1 in 5; the weekly $0 compilation (`ops week-compile`, overnight on
+Mondays). Open 63.
+
 ## Previous — 2026-10-18 afternoon (Claude Code): #1297-#1302, the plan, the audit
 
 Nothing by hand: one-key menus show their prompt again (#1297). Batch-review, the menu's slot

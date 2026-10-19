@@ -330,6 +330,11 @@ def _display_one(report: dict[str, Any], *, print_fn=print) -> None:
         print_fn(line)
     if ev.get("winner"):
         print_fn(f"  Winner: {ev['winner']} — consider making it the default and stopping.")
+    elif ev.get("status") == "no_difference":  # #354
+        print_fn(
+            f"  Settled: no real difference at 10 each - stop it "
+            f"(py -m core.experiments stop {lever}); keep whichever arm is cheaper."
+        )
 
 
 def main(argv: list[str] | None = None) -> int:

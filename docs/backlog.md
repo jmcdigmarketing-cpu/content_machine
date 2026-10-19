@@ -642,7 +642,7 @@ Learning loop & analytics rigor
 
 - [x] 352. **Bayesian shrinkage toward the channel mean** — "ufc averages 30.6% across 2 videos" should shrink to the baseline until it earns its own estimate. Fixes volume-starved learning without waiting for volume `[M]` **Done (wave 44; the premise was half stale):** `best_bet._adjusted_domain_rates` already shrank domains toward the channel mean (k = `MODERATE_SAMPLES`); the length and post-time recommenders still ranked on raw means. The formula is now `recommender_confidence.shrunk_mean` and all three rank on it; the printed average stays raw and `ranked_on_note` names the basis when it differs. Measured: three videos at 36% no longer beat eight at 33% when the channel mean is 24%; best-bet output unchanged.
 - [x] 353. **Minimum-detectable-effect check before an arm is proposed** *(2026-08-28)* — `start_experiment` refuses a lever with more arms than measured videos. The test reads the arm count from `experiment_levers.arms()`, so a lever gaining an arm cannot pass a hardcoded number `[S]`
-- [ ] 354. **Sequential-testing stop rule for title/thumb arms** — peeking and stopping on a good look is exactly how the loop learns superstitions `[M]`
+- [x] 354. **Sequential-testing stop rule for title/thumb arms** — peeking and stopping on a good look is exactly how the loop learns superstitions `[M]` **Done (2026-10-19, Claude, wave 114; the operator: "95% sure or 10 each"):** `experiment_stats.evaluate` keeps its gates (a winner at 95% once each arm has 6) and adds `no_difference` once every arm has 10 - a test that never clears 95% used to say "no clear winner" forever, so stopping on a good look was the only way out. `core.experiments` prints "Settled: no real difference at 10 each - stop it". The TTS report and the caption arms read the same function.
 - [x] 355. **Per-video surprise score (actual minus predicted)** *(2026-08-28)* — residual persisted when metrics sync lands; surfaced beside the grade `[S]`
 - [x] 356. **Store the retention *curve*, not just `drop_off_ratio`** — #28's learned intro reads one number; the shape is where the cliff actually is `[M]` **Closed 2026-10-18 (wave 112) - shipped before:** 24 videos carry 100-point curves in the publish log's metrics, and `retention.pacing_hint` puts the drop-off point in the script prompt for presets 2-3. Wave 112 adds the first-line rule (#1311) for every preset and `retention.cliff_line` in `ops growth`.
 - [x] 357. **Feature-importance report over `run_features.py`** *(E1)* — dozens of features are recorded and none is ever tested for correlation with outcome `[M]` *(fixed wave 46)* **Done:** `ops feature-report` (`core/predictions/features.py`): Pearson r per numeric/boolean feature with `n_for_significance`, per-level means for categorical ones, free text and ids excluded; report-only, nothing tuned from it.
@@ -1893,7 +1893,7 @@ Already open for S11: #1058 (CTR into the learning loop).
 - [ ] 1420. **A 0.5 s sonic logo variant instead of the 2.15 s intro** *(S12.4, filed 2026-10-18)* `[S]`
 - [ ] 1421. **The intro as a corner logo, not a cut-in** *(S12.5, filed 2026-10-18)* `[S]`
 - [ ] 1422. **The first frame shows the hook's words** *(S12.6, filed 2026-10-18)* `[S]`
-- [ ] 1423. **INTRO_TEST read with a stop rule (#354) at 3 each** *(S12.7, filed 2026-10-18)* `[S]`
+- [x] 1423. **INTRO_TEST read with a stop rule (#354) at 3 each** *(S12.7, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114, with #354):** `growth.intro_verdict` - `ops growth`'s intro line reads at 6 each and says which side holds more and how sure, or "no real difference at 10 each"; dropping the intro stays the operator's call. Live: 1 without, 5 with - the line says when it will read.
 - [ ] 1424. **Open on the clip's most moving frame** *(S12.8, filed 2026-10-18)* `[M]`
 - [ ] 1425. **No silence at t=0** *(S12.9, filed 2026-10-18)* `[S]`
 - [ ] 1426. **Retention at seconds 1-3 per video in `ops retention`** *(S12.10, filed 2026-10-18)* `[S]`
@@ -1901,7 +1901,7 @@ Already open for S11: #1058 (CTR into the learning loop).
 ### S13 Volume
 
 - [x] 1427. **The quota by caller, and searches stop early enough to leave one upload's units** *(S13.1, filed 2026-10-18)* `[M]` **Done (2026-10-18, Claude, wave 113; the operator: a breakdown and an upload reserve):** `record_usage(caller=...)` books each day's units by what spent them, under a lock (signals record from a thread pool); `ops status` and `ops reliability` print "spent on: ...". Searches stop while fewer than `YOUTUBE_UPLOAD_RESERVE` (1,600) units plus one search are left. **Found on the way:** fifteen Data API calls booked nothing - `captions.insert` (400 units), every `videos.update` (50: go-public, description fixes, recategorize, rollback, the backlog's status), `commentThreads.insert` (50), the playlist inserts (50) and five list calls - so "uploads left" read high; `record_call(kind)` books each by YouTube's documented cost. Live: "spent on: privacy 2, channels.list 1, playlistItems.list 1, before the breakdown 6,032".
-- [ ] 1428. **If nothing is scheduled for tomorrow by 21:00, overnight renders one more** *(S13.2, filed 2026-10-18)* `[S]`
+- [x] 1428. **If nothing is scheduled for tomorrow by 21:00, overnight renders one more** *(S13.2, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114; the operator: it renders and waits):** `batch_review.overnight_render_limit` - a channel that renders overnight renders one more when nothing is scheduled to go public in the next 24 hours (`coming_day_empty`, the upload queue's jobs and the publish log's slots; a failed read adds nothing). It goes up unlisted and waits (decision 60); the morning says "One more render tonight: ...". Live 10-19 05:20: not empty, the limit stays 2.
 - [ ] 1429. **The two-week schedule in the morning line** *(S13.3, filed 2026-10-18)* `[S]`
 - [ ] 1430. **Shorts cut from chapters fill empty slots** *(S13.4, filed 2026-10-18)* `[S]`
 - [ ] 1431. **YouTube search units capped per signal per day** *(S13.6, filed 2026-10-18)* `[S]`
@@ -2014,7 +2014,7 @@ Already open for S19: #334 (entity disambiguation ledger); #553 (entity-role che
 - [ ] 1504. **The ten best-held openers as examples in the hook prompt** *(S21.6, filed 2026-10-18)* `[S]`
 - [ ] 1505. **Hook length in words against stayed share** *(S21.7, filed 2026-10-18)* `[S]`
 - [ ] 1506. **TikTok watch time per hook type** *(S21.9, filed 2026-10-18)* `[S]`
-- [ ] 1507. **`ops growth` says the score's retune waits on n of about 85 (it says n=21, which is the rewrite's)** *(S21.10, filed 2026-10-18)* `[S]`
+- [x] 1507. **`ops growth` says the score's retune waits on n of about 85 (it says n=21, which is the rewrite's)** *(S21.10, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114):** the hook line reads "settles at n=21; the score's retune waits for about 85 (master_plan M4.5)".
 
 Already open for S21: #1290 (the hook scorer against who stays).
 

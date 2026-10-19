@@ -5682,6 +5682,45 @@
         "truthy": true
       },
       "why": "a private video with no publishAt is really private; one with a slot is waiting"
+    },
+    {
+      "id": "ten-each-with-no-winner-is-settled",
+      "item": 354,
+      "source": "wave 114: a test that never cleared 95% said 'no clear winner' forever",
+      "call": "core.experiment_stats:evaluate",
+      "args": [
+        {
+          "a": [
+            0.3,
+            0.34,
+            0.28,
+            0.36,
+            0.31,
+            0.33,
+            0.29,
+            0.35,
+            0.32,
+            0.3
+          ],
+          "b": [
+            0.3,
+            0.32,
+            0.35,
+            0.29,
+            0.33,
+            0.31,
+            0.36,
+            0.28,
+            0.34,
+            0.3
+          ]
+        }
+      ],
+      "select": "status",
+      "expect": {
+        "equals": "no_difference"
+      },
+      "why": "the stop rule ends a test at 10 each instead of inviting a peek-and-stop"
     }
   ]
 }

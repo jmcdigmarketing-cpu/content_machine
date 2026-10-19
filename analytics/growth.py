@@ -141,8 +141,8 @@ def _opening(run_id: Any) -> dict[str, Any] | None:
 _INTRO_MIN = 3
 
 
-def intro_split(channel_id: str) -> dict[str, Any]:
-    """#988: median stayed share of videos that opened on the intro vs those that did not."""
+def _intro_rates(channel_id: str) -> tuple[list[float], list[float]]:
+    """(stayed shares with the channel intro, without it) - each video's own opening (#988)."""
     with_intro: list[float] = []
     without: list[float] = []
     for row in _rows(channel_id):
@@ -152,6 +152,12 @@ def intro_split(channel_id: str) -> dict[str, Any]:
         if opening is None:
             continue
         (with_intro if opening.get("intro") else without).append(float(row["stayed"]))
+    return with_intro, without
+
+
+def intro_split(channel_id: str) -> dict[str, Any]:
+    """#988: median stayed share of videos that opened on the intro vs those that did not."""
+    with_intro, without = _intro_rates(channel_id)
     out: dict[str, Any] = {"n_with": len(with_intro), "n_without": len(without)}
     if with_intro:
         out["with"] = round(_median(with_intro), 3)
@@ -182,17 +188,39 @@ def third_channel_line(channel_id: str) -> str:
             f"against a bar of {bar:.0%} (#1079)")  # fmt: skip
 
 
+def intro_verdict(with_intro: list[float], without: list[float]) -> str:
+    """#1423 (#354, the operator: "95% sure or 10 each"): what the intro test says - read once
+    each side has 6, settled at 95% sure or as no real difference at 10 each."""
+    from core.experiment_stats import evaluate
+
+    ev = evaluate({"with the intro": with_intro, "without it": without})
+    status = ev.get("status")
+    if status == "collecting":
+        return "reads at 6 each"
+    if status == "winner":
+        side = "no intro" if ev.get("winner") == "without it" else "the intro"
+        sure = (ev["arms"][ev["winner"]] or {}).get("p_best", 0)
+        return f"{side} holds more viewers - {sure:.0%} sure; dropping it is your call"
+    if status == "no_difference":
+        return "no real difference at 10 each - the intro can stay or go"
+    sure = (ev["arms"].get("without it") or {}).get("p_best", 0)
+    return f"not settled - {sure:.0%} that no intro holds more; it settles at 95% or 10 each"
+
+
 def intro_line(channel_id: str) -> str:
+    with_intro, without = _intro_rates(channel_id)
     split = intro_split(channel_id)
     if split["n_with"] >= _INTRO_MIN and split["n_without"] >= _INTRO_MIN:
         return (
             f"Intro: {split['with']:.0%} stayed past the swipe with the channel intro "
             f"(n={split['n_with']}) vs {split['without']:.0%} without it (n={split['n_without']})"
+            f" - {intro_verdict(with_intro, without)}"
         )
     return (
         f"Intro: {split['n_without']} video(s) without the channel intro so far, "
         f"{split['n_with']} with it - INTRO_TEST=alternate in .env drops it on every other "
-        f"render until both have {_INTRO_MIN}"
+        f"render until both have {_INTRO_MIN}; the test reads at 6 each and settles at 95% "
+        "sure or 10 each (#354)"
     )
 
 

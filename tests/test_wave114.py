@@ -12,7 +12,7 @@ import json
 import os
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -197,6 +197,86 @@ class FormatTests(unittest.TestCase):
         line = self._compilations([week, short], [log])
         self.assertIn("1 made, 2.0 long-form hours from 1 measured", line)
         self.assertIn("4,000 hours is", line)
+
+
+class StopRuleTests(unittest.TestCase):
+    """C: #354 a test that ends, #1423 the intro read with it, #1507 the hook line."""
+
+    def test_ten_each_without_a_winner_is_no_difference(self):
+        from core.experiment_stats import evaluate
+
+        mixed = [0.30, 0.34, 0.28, 0.36, 0.31, 0.33, 0.29, 0.35, 0.32, 0.30]
+        self.assertEqual(
+            evaluate({"a": mixed, "b": list(reversed(mixed))})["status"], "no_difference"
+        )
+        self.assertEqual(evaluate({"a": mixed[:6], "b": mixed[:6]})["status"], "no_clear_winner")
+        self.assertEqual(evaluate({"a": mixed[:5], "b": mixed[:6]})["status"], "collecting")
+        clear = evaluate({"a": [0.6] * 10, "b": [0.2] * 10})
+        self.assertEqual((clear["status"], clear["winner"]), ("winner", "a"))
+
+    def test_the_intro_verdict(self):
+        from analytics.growth import intro_verdict
+
+        self.assertEqual(intro_verdict([0.3] * 5, [0.4] * 4), "reads at 6 each")
+        self.assertTrue(
+            intro_verdict([0.2] * 8, [0.6] * 8).startswith("no intro holds more viewers - ")
+        )
+        mixed = [0.30, 0.34, 0.28, 0.36, 0.31, 0.33, 0.29, 0.35, 0.32, 0.30]
+        self.assertTrue(
+            intro_verdict(mixed, list(reversed(mixed))).startswith("no real difference")
+        )
+
+    def test_the_experiment_report_says_stop(self):
+        from core import experiments
+
+        report = {"lever": "intro", "assigned": {"on": 10, "off": 10},
+                  "evaluation": {"status": "no_difference", "winner": None, "arms": {}}}  # fmt: skip
+        lines: list[str] = []
+        experiments._display_one(report, print_fn=lines.append)
+        self.assertTrue(any("Settled: no real difference at 10 each" in ln for ln in lines), lines)
+
+    def test_the_hook_line_says_the_retune_waits(self):
+        from analytics import hook_learning
+
+        got = {"ready": True, "n": 14, "r": -0.42, "needs": 21, "traits": [], "min": 8}
+        with (
+            patch.object(hook_learning, "learn", return_value=got),
+            patch.object(hook_learning, "_against_rules", return_value=[]),
+        ):
+            line = hook_learning.render_line("tapin")
+        self.assertIn("settles at n=21", line)
+        self.assertIn("retune waits for about 85", line)
+
+
+class EmptyDayTests(unittest.TestCase):
+    """D: #1428 (the operator: it renders and waits) - one more render for an empty day."""
+
+    def _limit(self, entries, *, base=2):
+        from core import batch_review
+
+        with (
+            patch.object(batch_review, "unattended_limit", return_value=base),
+            patch("analytics.upload_queue.list_queue_entries", **entries),
+        ):
+            return batch_review.overnight_render_limit("tapin", now=NOW)
+
+    def test_one_more_only_when_the_next_day_is_empty(self):
+        soon = SimpleNamespace(publish_at=NOW + timedelta(hours=10))
+        later = SimpleNamespace(publish_at=NOW + timedelta(hours=40))
+        self.assertEqual(self._limit({"return_value": [later]})[0], 3)
+        self.assertEqual(self._limit({"return_value": [soon, later]}), (2, ""))
+        self.assertEqual(self._limit({"return_value": []}, base=0), (0, ""))
+        self.assertEqual(self._limit({"side_effect": RuntimeError("db")}), (2, ""))
+
+    def test_the_morning_says_why(self):
+        from core.overnight import OvernightResult, render_lines
+
+        result = OvernightResult(channel_id="tapin")
+        result.renders = {"rendered": [170], "queued": [170], "failed": [], "waiting": [],
+                          "empty_day": "nothing is scheduled for the next 24 hours - one more render"}  # fmt: skip
+        self.assertTrue(
+            any(ln.startswith("One more render tonight") for ln in render_lines(result))
+        )
 
 
 if __name__ == "__main__":

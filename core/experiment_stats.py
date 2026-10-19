@@ -28,6 +28,7 @@ def evaluate(
     arm_outcomes: dict[str, list[float]],
     *,
     min_per_arm: int = 6,
+    max_per_arm: int | None = 10,
     baseline: float | None = None,
     draws: int = _DEFAULT_DRAWS,
     win_prob: float = _DEFAULT_WIN_PROB,
@@ -36,7 +37,11 @@ def evaluate(
     """Per-arm posteriors + a confidence-gated winner.
 
     Returns {arms: {arm: {n, successes, rate, post_mean, p_best}}, winner, status,
-    baseline}. `status`: collecting | no_clear_winner | winner | insufficient.
+    baseline}. `status`: collecting | no_clear_winner | winner | no_difference | insufficient.
+
+    #354 (wave 114, the operator: "95% sure or 10 each"): a test that never clears 95% used to
+    say "no clear winner" forever, so a peek-and-stop was the only way out. Once every arm has
+    `max_per_arm` it says `no_difference` - stop it; neither side is better by enough to see.
     """
     base = _baseline(arm_outcomes) if baseline is None else baseline
     arms: dict[str, dict] = {}
@@ -74,6 +79,8 @@ def evaluate(
         status, winner = "collecting", None
     elif arms[leader]["p_best"] >= win_prob:
         status, winner = "winner", leader
+    elif max_per_arm and all(arms[a]["n"] >= max_per_arm for a in names):
+        status, winner = "no_difference", None
     else:
         status, winner = "no_clear_winner", None
     return {"arms": arms, "winner": winner, "status": status, "baseline": base}

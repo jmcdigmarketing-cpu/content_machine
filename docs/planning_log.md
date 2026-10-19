@@ -8705,3 +8705,14 @@ Batch B:
 - #1314: what each compilation adds to long-form hours, in `ops ypp`.
 - 3 new tests failed on clean HEAD.
 - **S07 confirmed:** overnight started at 05:00:02 on 10-19 - the wake works.
+
+Batch C:
+- #354: a test settles at 95% sure, or as "no real difference" at 10 each.
+- #1423: the intro test is read with that rule.
+- #1507: the hook line says the retune waits for about 85 videos.
+- #1428: one more overnight render when the next 24 hours are empty. It waits like the rest.
+- 6 new tests failed on clean HEAD.
+- **CI failed on batch A** (9c2b426): the ruff format check. I added a test to
+  test_wave114.py after formatting it and checked only the files I touched. Batch B's commit
+  carried the formatted file. Each export is now checked with `ruff format --check .` before
+  its commit.

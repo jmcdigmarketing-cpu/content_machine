@@ -21,7 +21,7 @@ import os
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -966,6 +966,32 @@ def _queue_unlisted(run_id: int, channel_id: str) -> int:
     from analytics.queue_manager import requeue_content_run
 
     return requeue_content_run(run_id, channel_id, privacy_status="unlisted")
+
+
+def coming_day_empty(channel_id: str, *, now: datetime | None = None, hours: float = 24.0) -> bool:
+    """#1428: nothing is scheduled to go public in the next `hours` - the upload queue's jobs
+    and the publish log's future slots (`upload_queue.list_queue_entries`). A failed read is
+    not empty (no extra render on a guess)."""
+    moment = now or datetime.now(timezone.utc)
+    try:
+        from analytics.upload_queue import list_queue_entries
+
+        entries = list_queue_entries(channel_id)
+    except Exception as exc:
+        logger.debug("empty-day check skipped: %s", exc)
+        return False
+    horizon = moment + timedelta(hours=hours)
+    return not any(moment < e.publish_at <= horizon for e in entries)
+
+
+def overnight_render_limit(channel_id: str, *, now: datetime | None = None) -> tuple[int, str]:
+    """(how many drafts overnight renders, why one more). #1428 (wave 114, the operator: it
+    renders and waits): a channel that renders overnight renders one more when nothing is
+    scheduled for the next 24 hours; it goes up unlisted and waits like the rest (decision 60)."""
+    limit = unattended_limit(channel_id)
+    if limit > 0 and coming_day_empty(channel_id, now=now):
+        return limit + 1, "nothing is scheduled for the next 24 hours - one more render"
+    return limit, ""
 
 
 def render_unattended(

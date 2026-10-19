@@ -334,11 +334,13 @@ def _run_overnight_body(
     # #1078 (operator, 2026-10-11): overnight may render. Only when the channel says how
     # many, only drafts nothing is flagged on, and every one is queued unlisted.
     try:
-        from core.batch_review import render_unattended, unattended_limit
+        from core.batch_review import overnight_render_limit, render_unattended
 
-        limit = unattended_limit(channel)
+        limit, why_more = overnight_render_limit(channel)  # #1428: one more for an empty day
         if limit > 0:
             result.renders = render_unattended(channel, limit)
+            if why_more:
+                result.renders["empty_day"] = why_more
     except Exception as exc:
         logger.warning("overnight render step did not run: %s", exc)
 
@@ -436,6 +438,8 @@ def render_lines(result: OvernightResult) -> list[str]:
             f"Rendered overnight: {len(rendered)} ({runs}), queued unlisted - watch each, "
             f"then: py -m scripts.ops go-public --channel {result.channel_id}"
         )
+    if done.get("empty_day"):  # #1428
+        lines.append(f"One more render tonight: {done['empty_day']}")
     for run_id, why in done.get("failed") or []:
         lines.append(f"Not rendered: run {run_id} ({why})")
     if done.get("paused"):  # #1152

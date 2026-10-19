@@ -187,6 +187,9 @@ def render_line(channel_id: str) -> str:
             needs = " (clears p<0.05 at this n)"
         else:
             needs = f", settles at n={got['needs']}" if got["needs"] else ""
+            # #1507 (wave 114): that n is the correlation's; the score itself is retuned on
+            # logic until n of about 85 (master_plan M4.5, wave 112).
+            needs += "; the score's retune waits for about 85 (master_plan M4.5)"
         parts.append(f"score r={got['r']:+.2f}{needs}")
     up = [t for t in got["traits"] if t["gap"] >= _GAP][:1]
     down = [t for t in reversed(got["traits"]) if t["gap"] <= -_GAP][:1]

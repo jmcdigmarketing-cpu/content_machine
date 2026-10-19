@@ -294,6 +294,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_incident_ledger, "INCIDENTS_FILE", _suite_store("incidents.json")),
     patch.object(_buffer_api, "REQUESTS_FILE", _suite_store("buffer_requests.json")),
     patch.object(_paths, "RELIABILITY_HISTORY_FILE", _suite_store("reliability_history.json")),
+    # Wave 115 (#1402): the morning reads the upload worker's last pass.
+    patch.object(_paths, "WORKER_TASK_LOG", _suite_store("worker_task.log")),
     patch.object(_competitors, "DATA_DIR", _SUITE_DATA_TMP),
     patch.object(_channel_memory, "MEMORY_DIR", _suite_store("channel_memory")),
     patch.object(_subtitles, "SUBTITLE_DIR", _suite_store("subtitles")),

@@ -409,6 +409,26 @@ def conversion(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(out, key=lambda g: -g["views"])
 
 
+def subscriber_flags(rows: list[dict[str, Any]], *, min_subs: int = 2) -> list[dict[str, Any]]:
+    """#1325 (wave 115): the videos that brought `min_subs` or more subscribers, most first -
+    2 of the channel's first 64 came from videos, so one that brings two is worth a follow-up."""
+    hits = [r for r in rows if int(r.get("subs") or 0) >= min_subs]
+    return sorted(hits, key=lambda r: -int(r.get("subs") or 0))
+
+
+def subscriber_flag_line(rows: list[dict[str, Any]]) -> str:
+    hits = subscriber_flags(rows)
+    if not hits:
+        return ""
+    named = ", ".join(f"{r['title']} ({int(r['subs'])})" for r in hits[:3])
+    return f"Brought 2+ subscribers: {named} - a follow-up on it is a good next idea"
+
+
+def flag_line(channel_id: str) -> str:
+    """The flag for `ops status` and the morning, from the synced rows."""
+    return subscriber_flag_line(_rows(channel_id))
+
+
 def conversion_line(rep: dict[str, Any]) -> str:
     groups = (rep.get("subscribers") or {}).get("by") or []
     if not groups:
@@ -588,6 +608,9 @@ def render(channel_id: str) -> str:
     converts = conversion_line(rep)
     if converts:
         lines.append(f"  {converts}")
+    flagged = flag_line(channel_id)  # #1325
+    if flagged:
+        lines.append(f"  {flagged}")
     try:
         from analytics.promotions import status_line
 

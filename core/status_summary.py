@@ -69,11 +69,26 @@ def _sign_in(channel_id: str) -> str:
             return f"Sign-in: {short_sign_in(channel_id)}"
         return f"Sign-in: {problem}"
     reminder = sign_in_reminder(channel_id)  # #974
-    return f"Sign-in: ok ({channel_id}) - {reminder}" if reminder else f"Sign-in: ok ({channel_id})"
+    if reminder:
+        return f"Sign-in: ok ({channel_id}) - {reminder}"
+    from youtube.oauth import sign_in_expiry_line
+
+    lapse = sign_in_expiry_line(channel_id)  # #1437: the date, every day
+    return f"Sign-in: ok ({channel_id}) - {lapse}" if lapse else f"Sign-in: ok ({channel_id})"
+
+
+def _worker(channel_id: str) -> str:
+    """#1402: what the upload worker last did."""
+    from config import paths
+    from jobs.worker_log import last_pass_line
+
+    line = last_pass_line(paths.WORKER_TASK_LOG)
+    return f"Worker: {line}" if line else "Worker: no pass logged yet (ops worker-task --install)"
 
 
 FAMILIES: list[tuple[str, str, Callable[[str], str]]] = [
     ("Sign-in", "ops check-youtube", _sign_in),
+    ("Worker", "ops worker-task", _worker),
     ("Doctor", "ops doctor", _doctor),
     ("Keys", "ops secrets-doctor", _secrets),
     ("Health", "ops health", _health),

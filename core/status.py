@@ -275,6 +275,14 @@ def build_status_lines(channel_id: str) -> list[str]:
             lines.append(line)
     except Exception as exc:
         logger.debug("buffer week line skipped: %s", exc)
+    try:
+        from analytics.growth import flag_line
+
+        flagged = flag_line(channel_id)  # #1325: a video that brought 2+ subscribers
+        if flagged:
+            lines.append(flagged)
+    except Exception as exc:
+        logger.debug("subscriber flag skipped: %s", exc)
 
     try:
         from analytics.unconfirmed_check import status_line as unconfirmed_line

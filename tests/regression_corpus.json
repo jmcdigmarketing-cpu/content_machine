@@ -5792,6 +5792,21 @@
         "truthy": true
       },
       "why": "2,000 left is one caption plus one upload"
+    },
+    {
+      "id": "a-blocked-worker-pass-says-quota",
+      "item": 1402,
+      "source": "live 2026-10-19 17:22: the worker's pass printed 'YouTube upload blocked today'",
+      "call": "jobs.worker_log:summarize_pass",
+      "args": [
+        [
+          "YouTube upload blocked today - ~1,371 units remaining today (8,629/10,000 used)"
+        ]
+      ],
+      "expect": {
+        "equals": "uploads blocked by quota until the reset"
+      },
+      "why": "the morning says why nothing went up, not just that the worker ran"
     }
   ]
 }

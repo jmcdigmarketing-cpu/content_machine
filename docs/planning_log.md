@@ -8790,3 +8790,11 @@ Batch A:
 - #1525: a caption file goes up only when quota allows.
 - 6 of 7 new tests failed on clean HEAD; the seventh guards that captions still go up with room.
 - test_wave114's worker test wrote an empty sign-in; it carries the analytics scope now.
+
+Batch B:
+- #1437: the sign-in's lapse date every day - Wed 9:36 PM EDT unless the app is published.
+- #1402: the worker's last pass in `ops status` - "uploads blocked by quota".
+- #1325: a 2+-subscriber video is named (silent today).
+- The wave 111 guard caught the first version reading the real worker log in four status
+  tests; the path moved to `config.paths` and the suite redirects it.
+- 6 new tests failed on clean HEAD.

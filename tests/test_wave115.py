@@ -123,5 +123,109 @@ class CaptionQuotaTests(unittest.TestCase):
         self.assertFalse(caption_quota_ok(1_999))
 
 
+class SignInDateTests(unittest.TestCase):
+    """#1437: the sign-in's lapse date every day, not only from day 5."""
+
+    def _token(self, tmp, stamp):
+        path = os.path.join(tmp, "t.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump({"signed_in_at": stamp} if stamp else {}, handle)
+        return path
+
+    def test_the_date_is_seven_days_on(self):
+        from youtube import oauth
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._token(tmp, "2026-10-15T01:36:30+00:00")
+            with patch.object(oauth, "token_path_for_channel", return_value=path):
+                when = oauth.sign_in_expiry("tapin")
+                with patch(
+                    "analytics.post_timing.format_scheduled_local", return_value="Wed 9:36 PM EDT"
+                ):
+                    line = oauth.sign_in_expiry_line("tapin", now=NOW)
+        self.assertEqual(when, datetime(2026, 10, 22, 1, 36, 30, tzinfo=timezone.utc))
+        self.assertEqual(line, "lapses Wed 9:36 PM EDT unless the app is published")
+
+    def test_quiet_when_published_or_unknown(self):
+        from youtube import oauth
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._token(tmp, "2026-10-15T01:36:30+00:00")
+            with (
+                patch.object(oauth, "token_path_for_channel", return_value=path),
+                patch.dict(os.environ, {"SIGN_IN_REMINDER_DAYS": "0"}),
+            ):
+                self.assertEqual(oauth.sign_in_expiry_line("tapin", now=NOW), "")
+            bare = self._token(tmp, "")
+            with patch.object(oauth, "token_path_for_channel", return_value=bare):
+                self.assertEqual(oauth.sign_in_expiry_line("tapin", now=NOW), "")
+
+    def test_the_status_line_carries_it(self):
+        from core import status_summary
+
+        with (
+            patch("youtube.oauth.sign_in_status", return_value=""),
+            patch("youtube.oauth.sign_in_reminder", return_value=""),
+            patch(
+                "youtube.oauth.sign_in_expiry_line",
+                return_value="lapses Wed 9:36 PM EDT unless the app is published",
+            ),
+        ):
+            line = status_summary._sign_in("tapin")
+        self.assertEqual(
+            line, "Sign-in: ok (tapin) - lapses Wed 9:36 PM EDT unless the app is published"
+        )
+
+
+WORKER_LOG = """--- 2026-10-19T17:07:01 worker pass
+Job 73 scheduled -> https://youtu.be/2dsGGwnpPSA
+--- 2026-10-19T17:22:01 worker pass
+YouTube upload blocked today - ~1,371 units remaining today (8,629/10,000 used)
+"""
+
+
+class WorkerPassTests(unittest.TestCase):
+    """#1402: the upload worker's last pass, in the morning."""
+
+    def test_the_last_pass_and_what_it_did(self):
+        from jobs.worker_log import last_pass_line
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "worker_task.log")
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(WORKER_LOG)
+            line = last_pass_line(path, now=datetime(2026, 10, 19, 17, 30))
+            stale = last_pass_line(path, now=datetime(2026, 10, 19, 23, 30))
+            missing = last_pass_line(
+                os.path.join(tmp, "none.log"), now=datetime(2026, 10, 19, 17, 30)
+            )
+        self.assertEqual(line, "last pass 17:22 - uploads blocked by quota until the reset")
+        self.assertIn("6 h ago", stale)
+        self.assertEqual(missing, "")
+
+    def test_sent_and_nothing(self):
+        from jobs.worker_log import summarize_pass
+
+        self.assertEqual(summarize_pass(["Job 70 uploaded -> x", "Job 72 scheduled -> y", "Sent 3 due job(s)"]),
+                         "2 sent")  # fmt: skip
+        self.assertEqual(summarize_pass(["No pending jobs."]), "nothing waiting")
+
+
+class SubscriberFlagTests(unittest.TestCase):
+    """#1325: a video that brings 2+ subscribers is named, with a follow-up suggested."""
+
+    def test_it_names_the_video(self):
+        from analytics.growth import subscriber_flags
+
+        rows = [{"title": "Vanguard meta", "subs": 1, "run_id": 1}, {"title": "GTA box", "subs": 3, "run_id": 2},
+                {"title": "Topuria", "subs": 2, "run_id": 3}]  # fmt: skip
+        self.assertEqual([r["title"] for r in subscriber_flags(rows)], ["GTA box", "Topuria"])
+        from analytics.growth import subscriber_flag_line
+
+        line = subscriber_flag_line(rows)
+        self.assertTrue(line.startswith("Brought 2+ subscribers: GTA box (3), Topuria (2)"), line)
+        self.assertEqual(subscriber_flag_line(rows[:1]), "")
+
+
 if __name__ == "__main__":
     unittest.main()

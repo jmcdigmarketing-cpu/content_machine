@@ -88,8 +88,8 @@ backlog at <= 300, and wave 113 alone was exempt from "close as many as you file
 - Batch F: `week_compile` adds the AI disclosure (#1522). The first compilation, already
   scheduled (xpPz3ewlNJ8, public 10-21 16:00Z), lacks it on YouTube - the operator's call.
 **Wave 115 in progress (batches A-D):** A done (#1523 the sync's scope, #1524 the AI line at
-upload - xpPz3ewlNJ8 fixed with the operator's yes, #1525 captions only with quota). Next: B
-#1437 #1402 #1325, C #1399 #1372, D #1422 #1317.
+upload - xpPz3ewlNJ8 fixed with the operator's yes, #1525 captions only with quota) and B
+(#1437 #1402 #1325) done. Next: C #1399 #1372, D #1422 #1317.
 
 **Live:** the worker task now syncs metrics once a day, and Buffer's next sends use the hook
 copy. TikTok's own send hour applies (5 measured rows). **Defects first:** none open of mine.

@@ -28,6 +28,8 @@ DOMAIN_NAMES_FILE = os.path.join(ROOT_DIR, "config", "domain_names.json")
 FEED_HEALTH_FILE = os.path.join(DATA_DIR, "feed_health.json")
 SIGNAL_CANARY_FILE = os.path.join(DATA_DIR, "signal_canary.json")
 RELIABILITY_HISTORY_FILE = os.path.join(DATA_DIR, "reliability_history.json")
+# #1402: what scripts/worker_task.pyw appends each pass (the morning reads its last pass).
+WORKER_TASK_LOG = os.path.join(DATA_DIR, "logs", "worker_task.log")
 TRACES_DIR = os.path.join(DATA_DIR, "traces")
 
 DEFAULT_CLIENT_SECRETS = os.path.join(SECRETS_DIR, "client_secrets.json")

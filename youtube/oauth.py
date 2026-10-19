@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
@@ -235,6 +235,34 @@ def sign_in_reminder(channel_id: str | None = None) -> str:
         f"days ({remaining}); renew now: py -m youtube.oauth_setup --channel {cid} "
         "(SIGN_IN_REMINDER_DAYS=0 once the consent screen is published)"
     )
+
+
+def sign_in_expiry(channel_id: str | None = None) -> datetime | None:
+    """When a Testing-mode sign-in lapses: its `signed_in_at` stamp plus 7 days, or None."""
+    stamp = _signed_in_at(token_path_for_channel(resolve_channel_id(channel_id)))
+    try:
+        when = datetime.fromisoformat(stamp) if stamp else None
+    except ValueError:
+        return None
+    if when is None:
+        return None
+    when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+    return when + timedelta(days=7)
+
+
+def sign_in_expiry_line(channel_id: str | None = None, *, now: datetime | None = None) -> str:
+    """#1437 (wave 115): the lapse date every day - the reminder spoke only from day 5, and the
+    10-13 expiry passed unread. "" once the consent screen is published (SIGN_IN_REMINDER_DAYS=0),
+    without a stamp, or when it has passed (sign_in_status says that)."""
+    if _reminder_days() <= 0:
+        return ""
+    when = sign_in_expiry(channel_id)
+    if when is None or when <= (now or _now()):
+        return ""
+    from analytics.post_timing import format_scheduled_local
+
+    local = format_scheduled_local(when, resolve_channel_id(channel_id))
+    return f"lapses {local} unless the app is published"
 
 
 def token_has_scope(channel_id: str | None, scope: str) -> bool:

@@ -1757,7 +1757,7 @@ Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content
 - [x] 1322. **The earned follow line: a preview with a call ends "I grade this call after the game - follow to see if I was right"** *(S02.1, filed 2026-10-18)* `[M]` **Done (2026-10-18, Claude, wave 113; the operator: previews with a call):** `event_dates.preview_brief` asks a preview with a call to end on why to follow - the call is graded after the game (`calls.score_calls`, "Picks, graded") - for example "I grade this call after the game - follow to see if I was right." A preview without a call is unchanged, and the line is not taken for a generic CTA (`script_craft`). The first overnight preview with a call carries it.
 - [x] 1323. **Subscribers per 1,000 organic views by domain and format in `ops growth` - which content converts** *(S02.2, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114):** `growth.conversion` - subscribers per 1,000 organic views by domain and format, in `ops growth`. Live: gaming Shorts 0.6 (2 from 3,128), UFC Shorts 0.0 (0 from 1,595), NBA Shorts 0.0 (0 from 356).
 - [ ] 1324. **[You] Enter the campaign that ran to Oct 8 (`ops spend add --kind ads`) so `ops promotions` splits paid from organic subscribers** *(S02.3, filed 2026-10-18)* `[S]`
-- [ ] 1325. **A video that brings 2 or more subscribers is flagged in the morning as a follow-up candidate** *(S02.4, filed 2026-10-18)* `[S]`
+- [x] 1325. **A video that brings 2 or more subscribers is flagged in the morning as a follow-up candidate** *(S02.4, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `growth.subscriber_flags` - `ops status` and `ops growth` name a video that brought 2+ subscribers, with a follow-up suggested. Live: silent - the two videos that brought any brought one each.
 - [ ] 1326. **"Picks, graded" as a named weekly series: one title stem, one playlist, the same opener** *(S02.5, filed 2026-10-18)* `[M]`
 - [ ] 1327. **A first comment on each preview asking for the viewer's call (commentThreads.insert; pinning is Studio-only, so the morning reminds you)** *(S02.6, filed 2026-10-18)* `[M]`
 - [ ] 1328. **The follow line's effect read: subscribers per 1,000 views on previews with it against before, once n reaches 10** *(S02.7, filed 2026-10-18)* `[M]`
@@ -1864,7 +1864,7 @@ Already open for S09: #464 (recorded API fixtures).
 - [ ] 1399. **A toast when a Buffer send fails** *(S10.2, filed 2026-10-18)* `[S]`
 - [ ] 1400. **A failed Buffer send retried once** *(S10.3, filed 2026-10-18)* `[S]`
 - [ ] 1401. **The pack-folder path retired after 30 Buffer sends in a row** *(S10.4, filed 2026-10-18)* `[S]`
-- [ ] 1402. **The upload worker's last loop in the morning line** *(S10.5, filed 2026-10-18)* `[S]`
+- [x] 1402. **The upload worker's last loop in the morning line** *(S10.5, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `jobs/worker_log.last_pass_line` - `ops status` has a Worker line: the last pass and what it did, and how long ago when over 2 hours. Live: "Worker: last pass 17:37 - uploads blocked by quota until the reset". The log path is `config.paths.WORKER_TASK_LOG` (redirected in the suite - the wave 111 guard caught the first version reading the real log); kept out of `jobs.worker` so `ops status` does not import the pipeline.
 - [ ] 1403. **A thumbnail upload that failed is retried** *(S10.6, filed 2026-10-18)* `[S]`
 - [ ] 1404. **A toast with the watch link when a video goes public** *(S10.7, filed 2026-10-18)* `[S]`
 - [ ] 1405. **A count of commands you typed that the system should have run** *(S10.8, filed 2026-10-18)* `[M]`
@@ -1915,7 +1915,7 @@ Already open for S13: #1057 (re-cuts of past winners).
 ### S14 The sign-in ends every 7 days until the Google app is published
 
 - [ ] 1436. **[You] Publish the Google OAuth app (consent screen -> Publish app)** *(S14.1, filed 2026-10-18)* `[S]`
-- [ ] 1437. **The sign-in's expiry date in the morning line** *(S14.2, filed 2026-10-18)* `[S]`
+- [x] 1437. **The sign-in's expiry date in the morning line** *(S14.2, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `oauth.sign_in_expiry_line` - `ops status`'s sign-in line says the lapse date every day (the reminder spoke only from day 5). Live: "Sign-in: ok (tapin) - lapses Wed 9:36 PM EDT unless the app is published". Quiet once SIGN_IN_REMINDER_DAYS=0.
 - [ ] 1438. **A toast 24 hours before the sign-in expires** *(S14.3, filed 2026-10-18)* `[S]`
 - [ ] 1439. **The worker holds uploads cleanly on an expired sign-in and resumes after** *(S14.4, filed 2026-10-18)* `[S]`
 - [ ] 1440. **The policy site's links checked live before you publish the app** *(S14.5, filed 2026-10-18)* `[S]`

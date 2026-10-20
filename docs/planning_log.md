@@ -8897,3 +8897,30 @@ Audit (wave 116):
   - job 74 uploads after the reset, which is not yet seen.
 
 `roadmap-index`: open 227, done 1533, numbered open 218.
+
+## 2026-10-20 — wave 117, the next ten (Claude Code)
+
+**Prompt:** "next 10 up on the to do" (again). Answers, both the recommended option:
+- an 8 PM toast when overnight has work;
+- overnight drafts a follow-up on a video that brought 2+ subscribers, in one of its slots.
+
+Measured first (Tue 16:25 CDT):
+- The PC was shut down at Mon 8:49 PM (Kernel-Power 42, TargetState 6). The 5:00 task could not
+  wake it and started at 4:22 PM. 10-17 and 10-18 were shutdowns too; the one Sleep night woke
+  at 5:00. Wake timers on, WakeToRun on.
+- No worker pass from 20:37 to 16:37. The 16:22 catch-up was refused right after boot
+  (0x800710E0, an InteractiveToken task before logon). At 16:37 job 74 uploaded and made its
+  6 PM EDT slot. Its TikTok and Instagram posts share a minute with runs 156 and 158 -
+  decision 63, left.
+- The day-5 sign-in reminder replaced the lapse date and named the `.env` switch.
+- `ops agents` read both mailbox slots as "never written".
+- Health's cadence counted 15 past and 3 coming days as "the 7-day window".
+
+Batch A:
+- #1528 / #1380: the cause is read from the System event log, not guessed. The morning says
+  "started Tue 4:22 PM, 11 h after 5:00 AM - the PC was shut down Mon 8:49 PM".
+- #1371: an `ops doctor` wake check, and the uploads check names a worker gap.
+- #1337: a Tonight line and the 8 PM toast - "drafts 3, renders up to 2 - leave the PC
+  asleep, not shut down".
+- 11 of the 12 new tests failed on clean HEAD. The twelfth guards the old wording when the
+  event log cannot be read.

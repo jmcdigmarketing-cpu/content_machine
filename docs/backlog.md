@@ -1772,7 +1772,7 @@ Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content
 - [x] 1334. **The final sentence must be complete and on the topic before a render** *(S03.3, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 116):** `script_craft.unfinished_ending` in `script_check` - a last sentence without a stop, or a team's city or state in lowercase (`topic_tokens.place_words`; run 136's "...in convincing fashion on tennessee."). Replayed on the 78 stored tapin scripts: run 136 alone. "On the topic" was not built, by measurement: 29 of the 78 closing lines share no word with the title and read fine.
 - [ ] 1335. **At render time the facts' dates are re-checked against the event (a fact older than the game it previews)** *(S03.4, filed 2026-10-18)* `[S]`
 - [ ] 1336. **A frame check of the finished video's first and last 3 seconds (black, frozen, the wrong clip) - #1044 checks stretches, not the ends** *(S03.5, filed 2026-10-18)* `[M]`
-- [ ] 1337. **The evening line says what overnight would render** *(S03.6, filed 2026-10-18)* `[S]`
+- [x] 1337. **The evening line says what overnight would render** *(S03.6, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117; the operator: an 8 PM toast):** `nightly_task.tonight_line` - a Tonight line in `ops status` (live: "Tonight at 5:00 AM: drafts 3, renders up to 2 - leave the PC asleep, not shut down") and `worker._tonight_watch`, one toast a day from 8 PM. Built from overnight's own `draft_count` and `overnight_render_limit`.
 - [ ] 1338. **`ops overnight --pause-until DATE` - one line to stop it while you are away** *(S03.7, filed 2026-10-18)* `[S]`
 - [ ] 1339. **The two Oct 13 drafts kept as regression fixtures** *(S03.8, filed 2026-10-18)* `[S]`
 - [ ] 1340. **A render whose game is under 6 hours away goes up unlisted for a look** *(S03.9, filed 2026-10-18)* `[S]`
@@ -1820,7 +1820,7 @@ Already open for S05: #537 (per-section regeneration).
 
 ### S07 Overnight runs when the PC wakes, not at 5:00 AM
 
-- [ ] 1371. **`ops doctor` checks the wake: the task's WakeToRun, wake timers allowed, the last start time** *(S07.1, filed 2026-10-18)* `[S]`
+- [x] 1371. **`ops doctor` checks the wake: the task's WakeToRun, wake timers allowed, the last start time** *(S07.1, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117):** `nightly_task.wake_doctor` - an `ops doctor` "wake" check: the task's WakeToRun, wake timers on AC, and how the PC went off before the last 5:00 (live: "... the PC was shut down Mon 8:49 PM - use Sleep, not Shut down"). The "uploads" check names a worker gap the same way (`worker_gap`).
 - [x] 1372. **A toast when overnight has not run for 26 hours** *(S07.2, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `nightly_task.overdue_line` - after 26 hours without an overnight start the worker's pass raises a toast once a day, and `ops status` has an Overnight line ("last started Mon 05:00" live).
 - [ ] 1373. **A late start drafts, and renders only if there is time before the first slot** *(S07.3, filed 2026-10-18)* `[S]`
 - [ ] 1374. **Drafts at 5:00, renders at 5:30, so a slow draft does not push renders past breakfast** *(S07.4, filed 2026-10-18)* `[S]`
@@ -1829,7 +1829,7 @@ Already open for S05: #537 (per-section regeneration).
 - [ ] 1377. **Overnight's duration trend in the weekly report** *(S07.7, filed 2026-10-18)* `[S]`
 - [ ] 1378. **The PC sleeps again after overnight (the power plan's idle sleep checked)** *(S07.8, filed 2026-10-18)* `[S]`
 - [ ] 1379. **Drafting in the cloud when the PC is off; renders stay on the PC** *(S07.9, filed 2026-10-18)* `[L]`
-- [ ] 1380. **The morning says when overnight started and why it was late** *(S07.10, filed 2026-10-18)* `[S]`
+- [x] 1380. **The morning says when overnight started and why it was late** *(S07.10, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117):** `nightly_task.late_short` in `ops status` - live: "Overnight: started Tue 4:22 PM, 11 h after 5:00 AM - the PC was shut down Mon 8:49 PM (Sleep keeps the 5:00 AM start)"; the cause from the System event log (#1528).
 
 ### S08 Good research blocked good drafts
 
@@ -2050,3 +2050,7 @@ Already open for S21: #1290 (the hook scorer against who stays).
 
 - [x] 1526. **An upload held by the quota was called overdue, with a command to type** *(live 2026-10-19 18:37 CDT: job 74, run 173, due 18:48 EDT and held because 8,681 of 10,000 units were spent; `ops status` said "nothing is sending uploads - py -m scripts.ops worker" and "1 queued, waiting for the worker", and the worker's log said "No pending jobs." with a `requeue_upload` command - the job was queued and goes after the reset by itself)* `[S]` **Done (2026-10-19, Claude, wave 116):** `job_queue.quota_wait` / `quota_held_line`. Live: "Upload waiting: run 173 was due Mon 10-19 6:48 PM EDT and waits for the quota reset at Tue 3:05 AM EDT - the worker sends it then"; the worker pass: "1 upload waits for the quota reset (run 173) - it goes after Tue 3:05 AM EDT". The due time is in the channel's zone (it printed the PC's CDT).
 - [x] 1527. **The publish queue listed three public videos as coming, at their jobs' old slots, in two zones** *(live 2026-10-19: `ops status` printed job slots in UTC and YouTube's in EDT with no label; runs 162, 164 and 165, public since 10-18, were listed for 10-22 to 10-23, so `next_optimal_post_time` started after Fri 10-23 - Sat 10-24 noon; run 156, moved in Studio, collided with run 161 at Tue noon)* `[S]` **Done (2026-10-19, Claude, wave 116):** `upload_queue._logged_runs` - a run YouTube has is listed and reserved at the publish log's time; `queue_lines` in the channel's zone with "the same minute as run N". Live: 9 reserved -> 6; the next slot Sat noon -> Fri 6 PM; run 161 moved to Thu 10-22 noon with the operator's yes (read back from YouTube).
+
+### Found in wave 117 (2026-10-20)
+
+- [x] 1528. **A late overnight was guessed at, not read** *(live 2026-10-20: the PC was shut down at Mon 10-19 8:49 PM - Kernel-Power 42, TargetState 6 - so the 5:00 task could not wake it and started at 4:22 PM when the PC came on; `ops overnight-last` said "it was shut down, or wake timers are off" with wake timers on, and the morning only "Overnight: last started Tue 16:24". 10-17 and 10-18 were shutdowns too; the 10-18 night was Sleep and woke at 5:00)* `[S]` **Done (2026-10-20, Claude, wave 117):** `nightly_task.power_events` / `power_off_before` read the System log with `wevtutil` (no administrator; skipped in the suite); `missed_line` says "the PC was shut down at Mon 8:49 PM - a shut-down PC cannot wake; Sleep keeps the 5:00 AM start".

@@ -613,6 +613,29 @@ def _sign_in_watch(now: datetime | None = None) -> None:
         logger.debug("sign-in watch skipped: %s", exc)
 
 
+_TONIGHT_HOUR = 20  # the operator: one toast at 8 PM
+
+
+def _tonight_watch(now: datetime | None = None) -> None:
+    """#1337 (wave 117, the operator: an 8 PM toast): from 8 PM, once a day, what overnight will
+    do and to leave the PC asleep - it was shut down on 10-19 at 8:49 PM and the 5:00 run started
+    at 4:22 PM. Fail-open."""
+    moment = now or datetime.now()
+    if moment.hour < _TONIGHT_HOUR:
+        return
+    try:
+        from config.channels import active_channel_ids
+        from core.nightly_task import tonight_line
+        from core.win_notify import toast_daily
+
+        channels = [c for c in active_channel_ids() if c != "default"] or ["tapin"]
+        line = tonight_line(channels[0])
+        if line:
+            toast_daily("overnight-tonight", "Content OS: overnight", line, now=moment)
+    except Exception as exc:
+        logger.debug("tonight watch skipped: %s", exc)
+
+
 def _sync_metrics() -> None:
     """Wave 113: the metrics sync, once a day - `ops morning` was its only caller, and this
     pass runs every 15 minutes from the UploadWorker task. Fail-open."""
@@ -677,6 +700,7 @@ def main():
         _sync_metrics()
         _overnight_watch()
         _sign_in_watch()  # #1438
+        _tonight_watch()  # #1337
         if processed > 1:
             print(f"Sent {processed} due job(s) in one pass.")
         if not processed:
@@ -694,6 +718,7 @@ def main():
             _sync_metrics()
             _overnight_watch()
             _sign_in_watch()
+            _tonight_watch()
             if not did_work and not has_quota_for_upload():
                 print(
                     f"Waiting for YouTube quota reset — {format_quota_detail()}. "

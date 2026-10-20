@@ -30,23 +30,36 @@ def summarize_pass(lines: list[str]) -> str:
     return "nothing waiting"
 
 
-def last_pass_line(path: str, *, now: datetime | None = None) -> str:
-    """#1402 (wave 115): "last pass 17:22 - uploads blocked by quota until the reset", from the
-    scheduled task's log; it says how long ago when that is over 2 hours. "" without a log."""
+def _last_pass(path: str) -> tuple[datetime, list[str]] | None:
     try:
         with open(path, encoding="utf-8", errors="replace") as handle:
             tail = handle.readlines()[-400:]
     except OSError:
-        return ""
+        return None
     starts = [i for i, ln in enumerate(tail) if ln.startswith("--- ") and "worker pass" in ln]
     if not starts:
-        return ""
+        return None
     head = tail[starts[-1]]
-    body = [ln.rstrip("\n") for ln in tail[starts[-1] + 1 :]]
     try:
         when = datetime.fromisoformat(head.split()[1])
     except (IndexError, ValueError):
+        return None
+    return when, [ln.rstrip("\n") for ln in tail[starts[-1] + 1 :]]
+
+
+def last_pass_at(path: str) -> datetime | None:
+    """When the scheduled worker last ran (wave 117, #1371's gap), or None."""
+    found = _last_pass(path)
+    return found[0] if found else None
+
+
+def last_pass_line(path: str, *, now: datetime | None = None) -> str:
+    """#1402 (wave 115): "last pass 17:22 - uploads blocked by quota until the reset", from the
+    scheduled task's log; it says how long ago when that is over 2 hours. "" without a log."""
+    found = _last_pass(path)
+    if found is None:
         return ""
+    when, body = found
     line = f"last pass {when:%H:%M} - {summarize_pass(body)}"
     age = ((now or datetime.now()) - when).total_seconds() / 3600
     if age > _PASS_STALE_HOURS:

@@ -143,7 +143,79 @@ def _clock(when: datetime) -> str:
     return when.strftime("%I:%M %p").lstrip("0")
 
 
-def missed_line(times: dict[str, Any], *, now: datetime, wakes: bool | None = None) -> str:
+POWER_STATES = {4: "asleep", 5: "hibernated", 6: "shut down"}  # Kernel-Power 42 TargetState
+_POWER_QUERY = "*[System[Provider[@Name='Microsoft-Windows-Kernel-Power'] and (EventID=42)]]"
+
+
+def parse_power_events(xml: str) -> list[tuple[datetime, int]]:
+    """(local time, TargetState) of each Kernel-Power 42 event in `wevtutil qe /f:xml` output -
+    4 is sleep, 5 hibernate, 6 shutdown (Fast Startup's included)."""
+    from datetime import timezone
+
+    out: list[tuple[datetime, int]] = []
+    for event in re.findall(r"<Event[ >].*?</Event>", xml or "", re.S):
+        stamp = re.search(r"SystemTime='(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)", event)
+        state = re.search(r"<Data Name='TargetState'>(\d+)</Data>", event)
+        if not stamp or not state:
+            continue
+        utc = datetime.strptime(stamp.group(1), "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+        out.append((utc.astimezone().replace(tzinfo=None), int(state.group(1))))
+    return out
+
+
+def power_events(count: int = 6) -> list[tuple[datetime, int]]:
+    """The newest `count` sleep / hibernate / shutdown events (no administrator needed). [] in
+    the suite (`NIGHTLY_TASK_QUERY=false`) or off Windows."""
+    if not _query_enabled():
+        return []
+    try:
+        proc = subprocess.run(
+            ["wevtutil", "qe", "System", f"/q:{_POWER_QUERY}", f"/c:{int(count)}", "/rd:true",
+             "/f:xml"],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            stdin=subprocess.DEVNULL,
+        )  # fmt: skip
+    except Exception as exc:
+        logger.debug("power events unread: %s", exc)
+        return []
+    return parse_power_events(proc.stdout or "") if proc.returncode == 0 else []
+
+
+def power_off_before(
+    due: datetime, events: list[tuple[datetime, int]]
+) -> tuple[str, datetime] | None:
+    """#1528 (wave 117): how the PC went off last before `due` - ("shut down", when) - or None.
+    On 2026-10-19 at 8:49 PM it was shut down, and a shut-down PC cannot wake for the 5:00 task;
+    from Sleep it woke on 10-19."""
+    prior = [(when, state) for when, state in events if when <= due and state in POWER_STATES]
+    if not prior:
+        return None
+    when, state = max(prior)
+    return POWER_STATES[state], when
+
+
+def _due(times: dict[str, Any], now: datetime) -> datetime | None:
+    start = times.get("start")
+    if start is None:
+        return None
+    due = now.replace(hour=start[0], minute=start[1], second=0, microsecond=0)
+    return due - timedelta(days=1) if due > now else due
+
+
+def _off_words(off: tuple[str, datetime]) -> str:
+    kind, when = off
+    return f"the PC was {kind} {when:%a} {_clock(when)}"
+
+
+def missed_line(
+    times: dict[str, Any],
+    *,
+    now: datetime,
+    wakes: bool | None = None,
+    off: tuple[str, datetime] | None = None,
+) -> str:
     """What the operator should know about the last run, or "" when it ran on time (#1167).
 
     The task is set for 5:00 AM. On 2026-10-13 it ran at 4:45 PM and on 10-14 it did not run:
@@ -159,7 +231,15 @@ def missed_line(times: dict[str, Any], *, now: datetime, wakes: bool | None = No
     if due > now:
         due -= timedelta(days=1)
     fix = "py -m scripts.ops schedule-drafts --wake"
-    if wakes is False:
+    if off is not None and off[0] in ("shut down", "hibernated") and wakes is not False:
+        # #1528: the event log says which - it had guessed "shut down, or wake timers are off"
+        # with wake timers on.
+        kind, when = off
+        why = (
+            f"the PC was {kind} at {when:%a} {_clock(when)} - a {kind.replace(' ', '-')} PC cannot "
+            f"wake; Sleep keeps the {_clock(due)} start"
+        )
+    elif wakes is False:
         why = f"the PC was asleep, and the task is not allowed to wake the PC: {fix}"
     elif wakes is True:
         why = (
@@ -180,6 +260,39 @@ def missed_line(times: dict[str, Any], *, now: datetime, wakes: bool | None = No
             f"{_clock(due)} start - {why}"
         )
     return ""
+
+
+def late_short(
+    times: dict[str, Any], *, now: datetime, off: tuple[str, datetime] | None = None
+) -> str:
+    """#1380 (wave 117): the morning's words for a late or missed run, "" when it ran on time -
+    `ops status` said only "Overnight: last started Tue 16:24" after the 10-19 shutdown."""
+    last, due = times.get("last"), _due(times, now)
+    if last is None or due is None:
+        return ""
+    cause = f" - {_off_words(off)} (Sleep keeps the {_clock(due)} start)" if off else ""
+    if last < due - timedelta(minutes=5):
+        return f"did not run at {_clock(due)} {due:%a}{cause}"
+    late = (last - due).total_seconds() / 3600
+    if late < 1:
+        return ""
+    return f"started {last:%a} {_clock(last)}, {round(late)} h after {_clock(due)}{cause}"
+
+
+def _last_off(times: dict[str, Any], now: datetime) -> tuple[str, datetime] | None:
+    due = _due(times, now)
+    return power_off_before(due, power_events()) if due is not None else None
+
+
+def overnight_late_short(*, now: datetime | None = None) -> str:
+    """`late_short` for the installed task, with the event log's cause. "" in the suite."""
+    times = _queried_times()
+    if not times:
+        return ""
+    moment = now or datetime.now()
+    if not late_short(times, now=moment):
+        return ""
+    return late_short(times, now=moment, off=_last_off(times, moment))
 
 
 # #1216: what "Last Result" says about a run that did not finish. 2026-10-16: the task woke
@@ -238,8 +351,10 @@ def overnight_timing_line(*, now: datetime | None = None) -> str:
     times = _queried_times()
     if not times:
         return ""
-    line = missed_line(times, now=now or datetime.now())
-    return missed_line(times, now=now or datetime.now(), wakes=task_wakes()) if line else ""
+    moment = now or datetime.now()
+    if not missed_line(times, now=moment):
+        return ""
+    return missed_line(times, now=moment, wakes=task_wakes(), off=_last_off(times, moment))
 
 
 def overnight_record_path() -> str:
@@ -543,6 +658,93 @@ def worker_installed() -> bool:
     return code == 0
 
 
+def wake_doctor(*, now: datetime | None = None) -> tuple[bool, str]:
+    """#1371 (wave 117): (ok, line) for `ops doctor` - may the task wake the PC, are wake timers
+    on, and how the PC went off before the last 5:00. A shutdown passes but is named: the PC
+    was shut down on 10-17, 10-18 and 10-19, and each of those mornings started late."""
+    wakes = task_wakes()
+    if wakes is None:
+        return True, "n/a (the task is not readable here)"
+    if wakes is False:
+        return False, "the task may not wake the PC - py -m scripts.ops schedule-drafts --wake"
+    timers = wake_timers()
+    if timers.get("ac") == "off":
+        return False, "wake timers are off (Power Options > Sleep > Allow wake timers)"
+    line = "the task may wake the PC and wake timers are on"
+    times = _queried_times()
+    moment = now or datetime.now()
+    off = _last_off(times, moment) if times else None
+    if off is not None and off[0] != "asleep":
+        kind, when = off
+        line += (
+            f"; before the last {_clock(_due(times or {}, moment) or moment)} start the PC was "
+            f"{kind} {when:%a} {_clock(when)} - use Sleep, not Shut down"
+        )
+    return True, line
+
+
+def tonight_text(drafts: int, renders: int, start: tuple[int, int] | None) -> str:
+    """#1337 (wave 117): what overnight will do, "" when nothing. The operator: an 8 PM toast."""
+    if drafts <= 0 and renders <= 0:
+        return ""
+    hour, minute = start or (5, 0)
+    clock = _clock(datetime(2000, 1, 1, hour, minute))
+    return (
+        f"Tonight at {clock}: drafts {drafts}, renders up to {renders} - leave the PC asleep, "
+        "not shut down"
+    )
+
+
+def tonight_line(channel_id: str) -> str:
+    """`tonight_text` for the channel, from what overnight itself decides: the drafts it may write
+    (`overnight.draft_count` against the waiting drafts) and the renders it may make
+    (`batch_review.overnight_render_limit`). Fail-open: ""."""
+    try:
+        from core.batch_review import overnight_render_limit, pending_drafts
+        from core.output_paths import channel_output_root
+        from core.overnight import draft_count
+
+        times = _queried_times() or {}
+        count = int(times.get("count") or DEFAULT_COUNT)
+        root = os.path.join(channel_output_root(channel_id), "drafts")  # read, never made here
+        waiting = len(pending_drafts(channel_id, root=root)) if os.path.isdir(root) else 0
+        drafts, _why = draft_count(waiting, count)
+        renders, _more = overnight_render_limit(channel_id)
+        return tonight_text(drafts, renders, times.get("start"))
+    except Exception as exc:
+        logger.debug("tonight line skipped: %s", exc)
+        return ""
+
+
+def worker_gap_text(last_pass: datetime | None, off: tuple[str, datetime] | None) -> str:
+    """How the PC went off after the worker's last pass - "" when it did not."""
+    if last_pass is None or off is None or off[1] < last_pass or off[0] == "asleep":
+        return ""
+    kind, when = off
+    return (
+        f"last ran {last_pass:%a} {_clock(last_pass)}; the PC was {kind} {when:%a} {_clock(when)} "
+        "and it runs only while the PC is on"
+    )
+
+
+def worker_gap() -> str:
+    """#1371: the worker's gap named from the event log. On 10-20 the doctor said "check
+    data/logs/worker_task.log" - the PC had been shut down at 8:49 PM, 12 minutes after the last
+    pass. "" in the suite."""
+    try:
+        from config import paths
+        from jobs.worker_log import last_pass_at
+
+        last = last_pass_at(paths.WORKER_TASK_LOG)
+        events = power_events()
+        later = [(w, s) for w, s in events if last is not None and w >= last and s in POWER_STATES]
+        off = (POWER_STATES[min(later)[1]], min(later)[0]) if later else None
+        return worker_gap_text(last, off)
+    except Exception as exc:
+        logger.debug("worker gap unread: %s", exc)
+        return ""
+
+
 def worker_doctor(channel_id: str) -> tuple[bool, str]:
     """(ok, line) for `ops doctor`: is anything sending uploads, and is one waiting."""
     from core.job_queue import list_active_jobs, overdue_uploads
@@ -555,6 +757,9 @@ def worker_doctor(channel_id: str) -> tuple[bool, str]:
             if installed
             else "py -m scripts.ops worker-task --install"
         )
+        gap = worker_gap() if installed else ""
+        if gap:  # #1371: the task runs only while the PC is on
+            fix = f"the task is installed and {gap}"
         return False, f"{len(late)} upload(s) overdue and nothing has sent them - {fix}"
     if installed:
         return True, f"queued uploads are sent every {WORKER_EVERY_MINUTES} minutes"

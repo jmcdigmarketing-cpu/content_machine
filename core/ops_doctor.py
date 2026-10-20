@@ -339,6 +339,15 @@ def gather(
         add("uploads", True, f"n/a ({type(exc).__name__})")
 
     try:
+        from core import nightly_task
+
+        wake_ok, wake_line = nightly_task.wake_doctor()  # #1371
+        add("wake", wake_ok, wake_line)
+    except Exception as exc:
+        logger.debug("doctor wake skipped: %s", exc)
+        add("wake", True, f"n/a ({type(exc).__name__})")
+
+    try:
         from analytics import reach_report
 
         reach_ok, reach_line = reach_report.status(channel_id)  # #1058

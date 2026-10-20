@@ -5906,6 +5906,42 @@
         "falsy": true
       },
       "why": "a title in the middle of a sentence is not a missing stop"
+    },
+    {
+      "id": "tonight-says-what-overnight-will-do",
+      "item": 1337,
+      "source": "live 2026-10-20: the PC was shut down at 8:49 PM and overnight started at 4:22 PM",
+      "call": "core.nightly_task:tonight_text",
+      "args": [
+        3,
+        2,
+        [
+          5,
+          0
+        ]
+      ],
+      "expect": {
+        "equals": "Tonight at 5:00 AM: drafts 3, renders up to 2 - leave the PC asleep, not shut down"
+      },
+      "why": "the evening line names the work and the one thing that stops it"
+    },
+    {
+      "id": "tonight-is-quiet-with-nothing-to-do",
+      "item": 1337,
+      "source": "wave 117: the sibling - no drafts and no renders",
+      "call": "core.nightly_task:tonight_text",
+      "args": [
+        0,
+        0,
+        [
+          5,
+          0
+        ]
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "no toast when overnight has nothing to do"
     }
   ]
 }

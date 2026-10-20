@@ -88,11 +88,14 @@ def _worker(channel_id: str) -> str:
 
 def _overnight(channel_id: str) -> str:
     """#1372: when overnight last started, or that it is overdue."""
-    from core.nightly_task import _recorded_start, overdue_line
+    from core.nightly_task import _recorded_start, overdue_line, overnight_late_short
 
     overdue = overdue_line()
     if overdue:
         return overdue
+    late = overnight_late_short()  # #1380: late, and why - the 10-19 shutdown
+    if late:
+        return f"Overnight: {late}"
     started = _recorded_start()
     return (
         f"Overnight: last started {started:%a %H:%M}"
@@ -101,10 +104,18 @@ def _overnight(channel_id: str) -> str:
     )
 
 
+def _tonight(channel_id: str) -> str:
+    """#1337: what overnight will do at 5:00, and to leave the PC asleep."""
+    from core.nightly_task import tonight_line
+
+    return tonight_line(channel_id) or "Tonight: overnight has nothing to do"
+
+
 FAMILIES: list[tuple[str, str, Callable[[str], str]]] = [
     ("Sign-in", "ops check-youtube", _sign_in),
     ("Worker", "ops worker-task", _worker),
     ("Overnight", "ops overnight-last", _overnight),
+    ("Tonight", "ops overnight-last", _tonight),
     ("Doctor", "ops doctor", _doctor),
     ("Keys", "ops secrets-doctor", _secrets),
     ("Health", "ops health", _health),

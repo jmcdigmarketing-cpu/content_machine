@@ -197,6 +197,7 @@ class QuotaWaitTests(unittest.TestCase):
             patch.object(worker, "_sync_metrics"),
             patch.object(worker, "_overnight_watch"),
             patch.object(worker, "_sign_in_watch"),
+            patch.object(worker, "_tonight_watch"),
             patch.object(worker, "get_job_repository", return_value=repo),
             patch("sys.argv", ["worker"]),
             patch("builtins.print") as out,

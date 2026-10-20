@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-19 night · **HEAD at write:** the wave 116 batch C+D commit (`git log -1`)
+**Written:** 2026-10-20 · **HEAD at write:** `58bf1bc` (batch A; the batch B-D commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
@@ -61,15 +61,6 @@ nothing broken, say that explicitly rather than leaving it implied.
 **The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall** (the Story's
 22); their ideas are #1314-#1517 in the backlog. Decision 68: `test_docs_lint` holds the
 backlog at <= 300, and wave 113 alone was exempt from "close as many as you file".
-
-**Wave 115 (four batches, three commits):**
-- `captions.caption_quota_ok` (#1525); `prepublish.with_disclosure` (#1524 - xpPz3ewlNJ8 fixed
-  with the operator's yes); the sync's analytics-scope check (#1523).
-- `oauth.sign_in_expiry_line`, `jobs/worker_log.last_pass_line`, `growth.subscriber_flags` in
-  `ops status` (#1437 #1402 #1325); `config.paths.WORKER_TASK_LOG`.
-- `win_notify.toast_daily` (stamps data/toast_days.json) from `crosspost.step` and the worker's
-  `_overnight_watch` (#1399 #1372); `prepublish.with_compilation_link` (#1317).
-- #1422 closed as already met (the headline shows the hook on frame one).
 
 **Wave 116 (four batches, three commits):**
 - `job_queue.quota_wait` / `quota_held_line` (#1526); `upload_queue._logged_runs`,
@@ -79,9 +70,17 @@ backlog at <= 300, and wave 113 alone was exempt from "close as many as you file
 - `script_craft.unfinished_ending` / `run_on_sentences` in `script_check`,
   `topic_tokens.place_words` (#1334 #1352); `crosspost.sync_status` retries once (#1400).
 
-**Live:** the sign-in lapses Wed 10-21 9:36 PM EDT unless the app is published - then uploads
-hold, not fail. Job 74 (run 173) uploads after the 3:05 AM EDT reset. Renders 168 and 170
-sit unlisted; re-cut 171 waits. **Defects first:** none open of mine.
+**Wave 117 (four batches, two commits):**
+- `nightly_task.power_events` / `power_off_before` (wevtutil, skipped in the suite),
+  `late_short`, `wake_doctor`, `worker_gap`, `tonight_line`; `worker._tonight_watch` (#1528
+  #1380 #1371 #1337).
+- `oauth.sign_in_reminder` keeps the date (#1529); `agent_comms.blame_sha` (#1530).
+- `batch_generation.follow_up_topic` (#1452); `worker._toast_public` (#1404);
+  `go_public._read_back` (#1392); health's cadence rule (#1435).
+
+**Live:** the PC was shut down Mon 8:49 PM and overnight ran at 4:22 PM - leave it asleep. The
+sign-in lapses Wed 10-21 9:36 PM EDT unless the app is published (uploads then hold). Renders
+168 and 170 sit unlisted; re-cut 171 waits. **Defects first:** none open of mine.
 
 ## Slot — Cursor
 

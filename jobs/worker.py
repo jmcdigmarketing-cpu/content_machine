@@ -145,6 +145,28 @@ def _reslot_after_hold(job, payload: dict, channel_id: str) -> dict:
     return moved
 
 
+def _toast_public(videos: list[tuple[str, str]]) -> None:
+    """#1404 (wave 117): a toast with the watch link when a video goes public, once per video -
+    run 173 went public at 6 PM EDT on 10-20 and nothing said so. Fail-open."""
+    try:
+        from core.win_notify import toast_daily
+
+        for video_id, title in videos:
+            if video_id:
+                body = f"{(title or 'A video')[:90]} - https://youtu.be/{video_id}"
+                toast_daily(f"public:{video_id}", "Content OS: now public", body)
+    except Exception as exc:
+        logger.debug("public toast skipped: %s", exc)
+
+
+def _titled(rows: list, video_ids: list[str]) -> list[tuple[str, str]]:
+    """(video id, title) for the publish-log rows of the given videos."""
+    from storage.repositories.publish_log import video_title
+
+    by_id = {str(getattr(r, "youtube_video_id", "") or ""): r for r in rows}
+    return [(vid, video_title(by_id[vid]) if vid in by_id else "") for vid in video_ids if vid]
+
+
 def _crosspost_after_upload(job) -> None:
     """#1202 (operator, 2026-10-15: "right away"): an upload that went out public is sent to
     TikTok and Instagram now - the same round `go-public --apply` starts. A video still unlisted
@@ -204,6 +226,13 @@ def _finalize_upload_job(job, result) -> None:
             get_content_run_repository().update(job.content_run_id, {"status": run_status})
         if result.status == "uploaded":
             _crosspost_after_upload(job)
+            try:  # never a reason the upload's record is not finished
+                payload = json.loads(getattr(job, "payload_json", "") or "{}")
+                # #1404: an overnight render goes up unlisted - only a public one is announced.
+                if result.video_id and str(payload.get("privacy_status") or "") == "public":
+                    _toast_public([(str(result.video_id), str(payload.get("title") or ""))])
+            except (TypeError, ValueError, AttributeError) as exc:
+                logger.debug("public toast skipped for job %s: %s", job.id, exc)
         return
 
     if result.status in UPLOAD_STATUS_TERMINAL_FAILURE:
@@ -549,8 +578,12 @@ def _crosspost_scheduled_live(now: datetime | None = None) -> int:
 
                 report = sync_privacy(channel_id)
                 changed = report.get("changed") or []
-                if not any(str(c.get("now") or "") == "public" for c in changed):
+                went = [str(c.get("video_id") or "") for c in changed if c.get("now") == "public"]
+                if not went:
                     continue
+            else:
+                went = [str(getattr(r, "youtube_video_id", "") or "") for r in public]
+            _toast_public(_titled(rows, went))  # #1404
             from publishing.crosspost import step
 
             for line in step(channel_id):

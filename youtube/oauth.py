@@ -225,17 +225,28 @@ def sign_in_reminder(channel_id: str | None = None) -> str:
         return ""
     if age >= TESTING_DAYS and sign_in_mode(cid) == "production":
         return ""  # #1443: it outlived Testing's 7 days, so the app is published
-    left = 7 - age
-    if left >= 1:
-        remaining = f"about {round(left)} days left"
-    elif left > 0:
+    left = TESTING_DAYS - age
+    fix = f"py -m youtube.oauth_setup --channel {cid}"
+    if left <= 0:
+        return (
+            f"YouTube sign-in for {cid} is {int(age)} days old - a Testing-mode sign-in stops at 7 "
+            f"days and it is past that; sign in again: {fix}"
+        )
+    # #1529 (wave 117): on day 5 this replaced the lapse date in the morning, read "about 1 days
+    # left", and still named SIGN_IN_REMINDER_DAYS=0 - which #1443 made unnecessary.
+    days = round(left)
+    if left < 1:
         remaining = "less than a day left"
+    elif days == 1:
+        remaining = "about a day left"
     else:
-        remaining = "it is past that"
+        remaining = f"about {days} days left"
+    from analytics.post_timing import format_scheduled_local
+
+    lapse = format_scheduled_local(when + timedelta(days=TESTING_DAYS), cid)
     return (
-        f"YouTube sign-in for {cid} is {int(age)} days old - a Testing-mode sign-in stops at 7 "
-        f"days ({remaining}); renew now: py -m youtube.oauth_setup --channel {cid} "
-        "(SIGN_IN_REMINDER_DAYS=0 once the consent screen is published)"
+        f"YouTube sign-in for {cid} is {int(age)} days old and lapses {lapse} ({remaining}) - "
+        f"publish the app (ops check-youtube prints the page), then sign in once more: {fix}"
     )
 
 

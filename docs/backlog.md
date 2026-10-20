@@ -1849,7 +1849,7 @@ Already open for S08: #547 (inline provenance); #555 (vault deduplication).
 - [ ] 1389. **Each sync prints how many records it corrected** *(S09.1, filed 2026-10-18)* `[S]`
 - [ ] 1390. **Titles and descriptions edited in Studio read back** *(S09.2, filed 2026-10-18)* `[S]`
 - [ ] 1391. **Thumbnails read back** *(S09.3, filed 2026-10-18)* `[S]`
-- [ ] 1392. **A scheduled publishAt read back after scheduling** *(S09.4, filed 2026-10-18)* `[S]`
+- [x] 1392. **A scheduled publishAt read back after scheduling** *(S09.4, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117):** `go_public._read_back` - after a schedule change it reads YouTube once more when the first read shows another time (run 161 on 10-19), then says "YouTube shows Thu 12:00 PM EDT" or that it still shows the old one and the privacy sync corrects the record.
 - [ ] 1393. **A weekly full reconcile of every video; the daily sync keeps to the recent ones** *(S09.5, filed 2026-10-18)* `[S]`
 - [ ] 1394. **Playlist membership read back once playlists exist** *(S09.6, filed 2026-10-18)* `[S]`
 - [ ] 1395. **Every public video has a run id (a check)** *(S09.7, filed 2026-10-18)* `[S]`
@@ -1866,7 +1866,7 @@ Already open for S09: #464 (recorded API fixtures).
 - [ ] 1401. **The pack-folder path retired after 30 Buffer sends in a row** *(S10.4, filed 2026-10-18)* `[S]`
 - [x] 1402. **The upload worker's last loop in the morning line** *(S10.5, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `jobs/worker_log.last_pass_line` - `ops status` has a Worker line: the last pass and what it did, and how long ago when over 2 hours. Live: "Worker: last pass 17:37 - uploads blocked by quota until the reset". The log path is `config.paths.WORKER_TASK_LOG` (redirected in the suite - the wave 111 guard caught the first version reading the real log); kept out of `jobs.worker` so `ops status` does not import the pipeline.
 - [ ] 1403. **A thumbnail upload that failed is retried** *(S10.6, filed 2026-10-18)* `[S]`
-- [ ] 1404. **A toast with the watch link when a video goes public** *(S10.7, filed 2026-10-18)* `[S]`
+- [x] 1404. **A toast with the watch link when a video goes public** *(S10.7, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117):** `worker._toast_public` - "Content OS: now public" with the watch link, once per video, from the scheduled-live pass and an upload that went public (an unlisted overnight render is not announced).
 - [ ] 1405. **A count of commands you typed that the system should have run** *(S10.8, filed 2026-10-18)* `[M]`
 - [ ] 1406. **Approve a draft from the Back-Home page** *(S10.9, filed 2026-10-18)* `[L]`
 - [ ] 1407. **The morning says "nothing by hand today" only when every step ran** *(S10.10, filed 2026-10-18)* `[S]`
@@ -1908,7 +1908,7 @@ Already open for S11: #1058 (CTR into the learning loop).
 - [ ] 1432. **Shorts skip the custom thumbnail upload (50 units) - measured first** *(S13.7, filed 2026-10-18)* `[S]`
 - [ ] 1433. **[You] A YouTube quota increase request** *(S13.8, filed 2026-10-18)* `[S]`
 - [ ] 1434. **The draft-waiting cap rises when slots are empty** *(S13.9, filed 2026-10-18)* `[S]`
-- [ ] 1435. **Health's cadence: 7 a week green, under 5 yellow** *(S13.10, filed 2026-10-18)* `[S]`
+- [x] 1435. **Health's cadence: 7 a week green, under 5 yellow** *(S13.10, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117):** `channel_health._cadence_sub` - published in the last 7 days against 7 a week: yellow under 5, green with "short of 7 a week" at 5-6; live "15 published in the last 7 days, 3 scheduled in the next 7" (it said "17 in the 7-day window").
 
 Already open for S13: #1057 (re-cuts of past winners).
 
@@ -1933,7 +1933,7 @@ Already open for S13: #1057 (re-cuts of past winners).
 - [ ] 1449. **The five previews rotate across leagues** *(S15.6, filed 2026-10-18)* `[S]`
 - [ ] 1450. **A domain rests after three weak videos in a row** *(S15.7, filed 2026-10-18)* `[M]`
 - [ ] 1451. **"More like this" on an idea seeds the next ideas** *(S15.8, filed 2026-10-18)* `[M]`
-- [ ] 1452. **A sequel idea from the week's best video** *(S15.9, filed 2026-10-18)* `[S]`
+- [x] 1452. **A sequel idea from the week's best video** *(S15.9, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117; the operator: in one of its draft slots):** `batch_generation.follow_up_topic` - a video published in the last 14 days that brought 2+ subscribers gets `Follow-up to "<title>": what has happened since` in overnight's last slot that is not a holdout, once per video; its pick record is dropped. Live: the Pistons bench video (run 162, 2 subscribers).
 - [ ] 1453. **Freshness, outlets and our past views per domain in one score** *(S15.10, filed 2026-10-18)* `[M]`
 
 Already open for S15: #475 (competitor gap map); #473 (forward franchise calendar).
@@ -2054,3 +2054,5 @@ Already open for S21: #1290 (the hook scorer against who stays).
 ### Found in wave 117 (2026-10-20)
 
 - [x] 1528. **A late overnight was guessed at, not read** *(live 2026-10-20: the PC was shut down at Mon 10-19 8:49 PM - Kernel-Power 42, TargetState 6 - so the 5:00 task could not wake it and started at 4:22 PM when the PC came on; `ops overnight-last` said "it was shut down, or wake timers are off" with wake timers on, and the morning only "Overnight: last started Tue 16:24". 10-17 and 10-18 were shutdowns too; the 10-18 night was Sleep and woke at 5:00)* `[S]` **Done (2026-10-20, Claude, wave 117):** `nightly_task.power_events` / `power_off_before` read the System log with `wevtutil` (no administrator; skipped in the suite); `missed_line` says "the PC was shut down at Mon 8:49 PM - a shut-down PC cannot wake; Sleep keeps the 5:00 AM start".
+- [x] 1529. **On day 5 the sign-in reminder replaced the lapse date** *(live 2026-10-20: "YouTube sign-in for tapin is 5 days old - a Testing-mode sign-in stops at 7 days (about 1 days left); renew now: ... (SIGN_IN_REMINDER_DAYS=0 once the consent screen is published)" - no date, no publish page, and the `.env` switch #1443 made unnecessary)* `[S]` **Done (2026-10-20, Claude, wave 117):** `oauth.sign_in_reminder` - "is 5 days old and lapses Wed 9:36 PM EDT (about a day left) - publish the app (ops check-youtube prints the page), then sign in once more".
+- [x] 1530. **`ops agents` read both mailbox slots as "never written"** *(live 2026-10-20: `agent_comms` takes the SHA after "HEAD at write"; Claude's slot named "the wave 116 batch C+D commit" - written as the commit's last edit, it cannot name it - and Cursor's names none, so the check CLAUDE.md asks every agent to run was blind)* `[S]` **Done (2026-10-20, Claude, wave 117):** `agent_comms.slots` takes the commit that last changed a slot's "Written:" line (`git blame --porcelain`). Live: "Claude Code 2026-10-19 @ 28ae2fa (current)", "Cursor 2026-10-17 @ 2f44d4e".

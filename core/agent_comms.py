@@ -66,8 +66,27 @@ def tree_state() -> dict[str, int | str]:
     }
 
 
+def blame_sha(porcelain: str) -> str:
+    """The short SHA `git blame --porcelain` names for a line; "" for a line not committed yet."""
+    first = (porcelain or "").split(maxsplit=1)
+    sha = first[0] if first else ""
+    if not re.fullmatch(r"[0-9a-f]{40}", sha) or set(sha) == {"0"}:
+        return ""
+    return sha[:7]
+
+
+def _written_line_sha(line_no: int) -> str:
+    rel = MAILBOX.relative_to(ROOT).as_posix()
+    return blame_sha(_git("blame", "--porcelain", "-L", f"{line_no},{line_no}", "--", rel))
+
+
 def slots() -> list[dict[str, str]]:
-    """Each mailbox slot with the HEAD it claims to have been written at."""
+    """Each mailbox slot with the HEAD it claims to have been written at.
+
+    #1530 (wave 117): a slot written as the last edit of a commit cannot name that commit - it
+    says "the wave 116 batch C+D commit" - and both slots read "never written", so the check
+    CLAUDE.md asks for was blind. Without a SHA, the slot is the commit that last changed its
+    "Written:" line."""
     if not MAILBOX.is_file():
         return []
     body = MAILBOX.read_text(encoding="utf-8")
@@ -77,10 +96,13 @@ def slots() -> list[dict[str, str]]:
         chunk = body[mark.end() : marks[i + 1].start() if i + 1 < len(marks) else len(body)]
         sha = _HEAD_RE.search(chunk)
         when = _WRITTEN_RE.search(chunk)
+        named = sha.group("sha") if sha else ""
+        if not named and when:
+            named = _written_line_sha(body[: mark.end() + when.start()].count("\n") + 1)
         found.append(
             {
                 "agent": mark.group("name").strip(),
-                "sha": sha.group("sha") if sha else "",
+                "sha": named,
                 "written": (when.group("when").strip("_ ") if when else "") or "never",
             }
         )

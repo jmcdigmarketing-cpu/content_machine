@@ -149,10 +149,58 @@ def collect_topics(
                 else:
                     record = pick_record(chosen, rank, by="batch")
                 picks[bet.topic] = record
-        return [b.topic for b in chosen]
+        return _with_follow_up(channel_id, [b.topic for b in chosen], held, picks)
     except Exception as exc:
         logger.warning("No topics given and best bets unavailable: %s", exc)
         return []
+
+
+FOLLOW_UP_DAYS = 14  # a follow-up on old news is not one
+
+
+def follow_up_topic(channel_id: str, *, now: datetime | None = None) -> str:
+    """#1452 (wave 117, the operator: in one of its draft slots): a follow-up on a recent video
+    that brought 2+ subscribers, "" when there is none or it was drafted already. On 10-20 the
+    morning named run 162 (the Pistons bench, 2 subscribers) and nothing drafted one."""
+    try:
+        from analytics.growth import _rows, subscriber_flags
+        from storage.repositories.content_runs import get_content_run_repository
+
+        moment = now or datetime.now(timezone.utc)
+        for row in subscriber_flags(_rows(channel_id)):
+            published = row.get("published")
+            if not published or (moment - published).days > FOLLOW_UP_DAYS:
+                continue
+            run = (
+                get_content_run_repository().get(int(row["run_id"])) if row.get("run_id") else None
+            )
+            title = str(getattr(run, "title", "") or row.get("title") or "").strip()
+            if not title:
+                continue
+            topic = f'Follow-up to "{title}": what has happened since'
+            if not series_drafted(channel_id, topic):  # once per video
+                return topic
+    except Exception as exc:
+        logger.debug("follow-up topic skipped: %s", exc)
+    return ""
+
+
+def _with_follow_up(
+    channel_id: str, topics: list[str], held: set[str], picks: dict[str, dict] | None
+) -> list[str]:
+    """The night's last slot that is not a holdout goes to the follow-up; its pick record is
+    dropped - a follow-up is not a best bet. Two slots or more only."""
+    if len(topics) < 2:
+        return topics
+    follow = follow_up_topic(channel_id)
+    slots = [i for i, topic in enumerate(topics) if topic not in held]
+    if not follow or not slots or follow in topics:
+        return topics
+    i = slots[-1]
+    if picks is not None:
+        picks.pop(topics[i], None)
+    logger.info("overnight: %s takes the slot of %s", follow, topics[i])
+    return [*topics[:i], follow, *topics[i + 1 :]]
 
 
 def _swap_holdouts(chosen: list, candidates: list) -> set[str]:

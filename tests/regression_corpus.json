@@ -5942,6 +5942,32 @@
         "equals": ""
       },
       "why": "no toast when overnight has nothing to do"
+    },
+    {
+      "id": "a-slot-without-a-sha-is-its-commit",
+      "item": 1530,
+      "source": "live 2026-10-20: ops agents read both slots as 'never written'",
+      "call": "core.agent_comms:blame_sha",
+      "args": [
+        "28ae2fa0123456789abcdef0123456789abcdef0 56 56 1\nauthor Claude\n"
+      ],
+      "expect": {
+        "equals": "28ae2fa"
+      },
+      "why": "the commit that wrote a slot's Written: line is the slot's HEAD"
+    },
+    {
+      "id": "an-uncommitted-slot-has-no-sha",
+      "item": 1530,
+      "source": "wave 117: the sibling - blame of a line not committed yet",
+      "call": "core.agent_comms:blame_sha",
+      "args": [
+        "0000000000000000000000000000000000000000 56 56 1\n"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "an edit in the tree is not a commit anyone can check"
     }
   ]
 }

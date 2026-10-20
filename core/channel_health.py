@@ -28,6 +28,8 @@ from core.logging import get_logger
 logger = get_logger("core.channel_health")
 
 GREEN, YELLOW, RED = "green", "yellow", "red"
+CADENCE_GOAL = 7  # S13: 7 a week (#1435)
+CADENCE_YELLOW_UNDER = 5
 _RANK = {GREEN: 0, YELLOW: 1, RED: 2}
 _MARK = {GREEN: "+", YELLOW: "~", RED: "!"}  # cp1252-safe (ops doesn't force UTF-8)
 
@@ -262,8 +264,18 @@ def _cadence_sub(channel_id: str) -> HealthSub:
     from core.cadence import cadence_status
 
     c = cadence_status(channel_id)
-    if not c.capped:  # decision 65: no cap
-        return HealthSub("cadence", GREEN, f"{c.total} in the {c.window_days}-day window, no cap")
+    if not c.capped:  # decision 65: no cap - so S13's floor is the rule (#1435)
+        # #1435 (wave 117): it said "17 in the 7-day window" for 15 published in the last 7 days
+        # plus 3 scheduled in the next 7, and nothing was ever short.
+        detail = (
+            f"{c.recent} published in the last {c.window_days} days, {c.upcoming} scheduled in "
+            f"the next {c.window_days}"
+        )
+        if c.recent < CADENCE_YELLOW_UNDER:
+            return HealthSub("cadence", YELLOW, f"{detail} - under {CADENCE_YELLOW_UNDER} a week")
+        if c.recent < CADENCE_GOAL:
+            detail += f" - short of {CADENCE_GOAL} a week"
+        return HealthSub("cadence", GREEN, detail)
     room = c.cap - c.total
     detail = f"{c.total}/{c.cap} in the {c.window_days}-day window"
     if c.total > c.cap:

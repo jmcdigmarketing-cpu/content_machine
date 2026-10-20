@@ -8924,3 +8924,36 @@ Batch A:
   asleep, not shut down".
 - 11 of the 12 new tests failed on clean HEAD. The twelfth guards the old wording when the
   event log cannot be read.
+
+Batches B to D (one commit):
+- #1529: the day-5 reminder carries the date and the publish page, not the `.env` switch.
+- #1530: `ops agents` reads a slot with no SHA from the commit that wrote its Written: line.
+- #1452 (the operator: in one of its slots): a recent video that brought 2+ subscribers gets
+  a follow-up in overnight's last non-holdout slot, once. Live: the Pistons bench (run 162).
+- #1404: a toast with the watch link when a video goes public, once per video.
+- #1392: a schedule change is read back. A stale first read (run 161, 10-19) is read again;
+  an empty read says nothing.
+- #1435: health's cadence is 15 published plus 3 scheduled, yellow under 5 a week.
+- All 12 new tests failed on clean HEAD.
+
+Audit (wave 117):
+- 24 tests in tests/test_wave117.py; 23 were seen failing on clean HEAD. The 24th guards the
+  old missed-run wording when the event log cannot be read.
+- 4 corpus cases.
+- Order slip: the C/D code went in before its tests were appended; the clean-HEAD run is
+  their proof.
+- Found on the way, left: the three Wed 11 AM TikTok posts share a minute, which is
+  decision 63. The UploadWorker's catch-up right after a boot is refused before logon
+  (0x800710E0); the next pass ran 15 minutes later and job 74 made its slot.
+- The first B-D export failed two old tests (`test_wave16`, `test_hand_posts_and_morning`):
+  the public toast read `job.payload_json` from a job that had none, and it raised inside
+  `_finalize_upload_job`. It is fail-open now - a toast is never why an upload's record is not
+  finished.
+- mypy 92. ruff clean on every export.
+- Live: the shutdown named in `ops status`, `ops overnight-last` and `ops doctor`; the
+  Tonight line; `ops agents` with SHAs; the follow-up topic; the cadence line. Toasts were
+  run with the toast stubbed. Nothing outward changed.
+- Not seen yet: the 8 PM toast on the PC (tonight) and the follow-up being drafted (Wed
+  5:00 - if the PC is asleep, not shut down).
+
+`roadmap-index`: open 220, done 1543, numbered open 211.

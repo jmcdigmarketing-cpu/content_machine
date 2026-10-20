@@ -7,6 +7,16 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-19 (Claude Code): wave 114, the next ten
+
+Two defects from wave 113 first: the unattended sync tried a channel with no sign-in, and
+run 154 - moved on YouTube to 10-21 - kept its old slot, so Buffer was sent its TikTok and
+Instagram posts for a day early (removed with the operator's yes; the round now asks YouTube
+before it sends). Then: health reads Shorts against Shorts (the softening was one long video -
+GREEN), subscribers per 1,000 views by domain, compilation hours in `ops ypp`, a stop rule for
+every test (95% sure or 10 each), one more overnight render for an empty day, `ops recut`
+(run 171 waits), and a lockfile `ops doctor` checks. Overnight woke the PC at 05:00. Open 243.
+
 ## Previous — 2026-10-18 late night (Claude Code): wave 113, the 22 shortfalls
 
 The plan is rebuilt around the Story's 22 shortfalls - each with where it stands, how it is

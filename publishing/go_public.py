@@ -300,7 +300,45 @@ def apply_schedule_public(
 
     result = GoPublicResult("scheduled", "", video_id, run_id=run_id, title=title)
     result.detail = f"{result.label} goes public {format_scheduled_local(when, channel_id)}"
+    result.detail += _read_back(service, video_id, when, channel_id)
     return result
+
+
+_READ_AGAIN_SECONDS = 5.0
+
+
+def _read_back(service: Any, video_id: str, when: datetime, channel_id: str) -> str:
+    """#1392 (wave 117): what YouTube shows after the change. Run 161 on 10-19: the first read
+    returned the old time and the next one, a minute later, the new - so a stale read is read
+    once more. The log row was already written; a time that did not take is said, and the next
+    privacy sync corrects the record (#1520). Fail-open: ""."""
+    import time
+
+    from analytics.post_timing import format_scheduled_local
+    from publishing.snippet_update import live_status
+
+    def shown() -> datetime | None:  # fetch_statuses books the videos.list unit
+        raw = str((live_status(service, video_id) or {}).get("publishAt") or "")
+        try:
+            return datetime.fromisoformat(raw.replace("Z", "+00:00")) if raw else None
+        except ValueError:
+            return None
+
+    try:
+        target = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+        seen = shown()
+        if seen is not None and seen != target:  # a stale read, as on 10-19
+            time.sleep(_READ_AGAIN_SECONDS)
+            seen = shown()
+    except Exception as exc:
+        logger.debug("schedule read-back skipped: %s", exc)
+        return ""
+    if seen is None:
+        return ""  # unreadable - nothing to say
+    if seen == target:
+        return f" (YouTube shows {format_scheduled_local(seen, channel_id)})"
+    old = format_scheduled_local(seen, channel_id)
+    return f" - YouTube still shows {old}; the next privacy sync corrects the record"
 
 
 def unlisted_holds(channel_id: str) -> list:

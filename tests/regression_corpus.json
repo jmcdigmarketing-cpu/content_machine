@@ -5807,6 +5807,36 @@
         "equals": "uploads blocked by quota until the reset"
       },
       "why": "the morning says why nothing went up, not just that the worker ran"
+    },
+    {
+      "id": "a-held-upload-reads-as-the-quota",
+      "item": 1526,
+      "source": "live 2026-10-19: the worker pass held job 74 for the quota and said 'No pending jobs.'",
+      "call": "jobs.worker_log:summarize_pass",
+      "args": [
+        [
+          "1 upload waits for the quota reset (run 173) - it goes after Tue 3:05 AM EDT"
+        ]
+      ],
+      "expect": {
+        "equals": "uploads blocked by quota until the reset"
+      },
+      "why": "the morning's Worker line must still say the quota held the uploads"
+    },
+    {
+      "id": "an-idle-pass-under-the-quota-reads-as-the-quota",
+      "item": 1526,
+      "source": "wave 116: the sibling - nothing pending, quota spent",
+      "call": "jobs.worker_log:summarize_pass",
+      "args": [
+        [
+          "No pending jobs. YouTube upload blocked today - ~1,264 units remaining today; the quota resets Tue 3:05 AM EDT."
+        ]
+      ],
+      "expect": {
+        "equals": "uploads blocked by quota until the reset"
+      },
+      "why": "a pass with nothing waiting under a spent quota is not 'nothing waiting'"
     }
   ]
 }

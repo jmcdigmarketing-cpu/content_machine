@@ -110,6 +110,12 @@ def _signed_out(channel_id: str) -> bool:
         return False
 
 
+def _quota_wait(channel_id: str) -> str:
+    from core.job_queue import quota_wait
+
+    return quota_wait(channel_id)
+
+
 def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any]]:
     """One row per finished video that is not public, with the exact command (#1131).
 
@@ -122,6 +128,7 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
     rows: list[dict[str, Any]] = []
     queued = _queued_runs(channel_id)
     signed_out = bool(queued) and _signed_out(channel_id)  # #1153
+    reset = _quota_wait(channel_id) if queued and not signed_out else ""
     for run in list_recyclable(channel_id):
         age = render_age_days(run)
         base = {
@@ -135,6 +142,14 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
                     base,
                     state="queued - the YouTube sign-in has expired",
                     command=f"py -m youtube.oauth_setup --channel {channel_id}",
+                )
+            )
+        elif int(run.id) in queued and reset:  # #1526
+            rows.append(
+                dict(
+                    base,
+                    state=f"queued - waits for the quota reset at {reset}",
+                    command="nothing to do - the worker sends it then",
                 )
             )
         elif int(run.id) in queued:
@@ -327,11 +342,14 @@ def shelf_lines(channel_id: str, counts: dict[str, int], *, days: int = STALE_DA
     past = int(counts.get("past_window") or 0)
     if renders:
         parts = []
+        reset = _quota_wait(channel_id) if queued else ""
         if queued and _signed_out(channel_id):
             parts.append(
                 f"{queued} queued, the sign-in has expired - "
                 f"py -m youtube.oauth_setup --channel {channel_id}"
             )
+        elif queued and reset:  # #1526: the worker sends it after the reset
+            parts.append(f"{queued} queued, waits for the quota reset at {reset}")
         elif queued:
             parts.append(f"{queued} queued, waiting for the worker - py -m scripts.ops worker")
         if renders - stale - queued - past:

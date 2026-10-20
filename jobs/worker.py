@@ -61,11 +61,13 @@ def _defer_for_quota(job, result) -> bool:
             "attempts": max(0, (job.attempts or 1) - 1),
         },
     )
+    from analytics.post_timing import format_scheduled_local
+
     msg = (
         f"Job {job.id} deferred — YouTube upload quota exhausted "
         f"({summary['remaining']:,} units left; upload needs ~1,600). "
-        f"Retry scheduled ~{retry_at.isoformat()[:16]} UTC. "
-        f"Or wait for daily reset and run: py -m scripts.requeue_upload --channel tapin --run-id {job.content_run_id} --queue"
+        f"It goes after the reset, {format_scheduled_local(retry_at, job.channel_id or 'tapin')}"
+        " - nothing to do (#1526)"
     )
     logger.warning(msg)
     print(msg)
@@ -533,6 +535,32 @@ def _sync_metrics() -> None:
         logger.debug("worker metrics sync skipped: %s", exc)
 
 
+def _idle_line() -> str:
+    """What a pass that sent nothing says. #1526 (wave 116): with job 74 held by the quota it
+    printed "No pending jobs." and a requeue command - the job was queued and went by itself
+    after the reset."""
+    from apis.youtube_quota import format_quota_detail, has_quota_for_upload
+
+    if has_quota_for_upload():
+        return "No pending jobs."
+    from core.job_queue import quota_held_line, quota_wait
+
+    try:
+        jobs = list(get_job_repository().list_active_jobs() or [])
+    except Exception as exc:
+        logger.debug("held uploads unread: %s", exc)
+        jobs = []
+    pending = [j for j in jobs if j.job_type == "upload" and j.status == JOB_PENDING]
+    reset = quota_wait(resolve_channel_id(pending[0].channel_id if pending else None))
+    held = quota_held_line(jobs, reset)
+    if held:
+        return held
+    return (
+        f"No pending jobs. YouTube upload blocked today — {format_quota_detail()}; "
+        f"the quota resets {reset or 'at midnight Pacific'}."
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Content OS job worker")
     parser.add_argument(
@@ -550,15 +578,7 @@ def main():
         if processed > 1:
             print(f"Sent {processed} due job(s) in one pass.")
         if not processed:
-            from apis.youtube_quota import format_quota_detail, has_quota_for_upload
-
-            print("No pending jobs.")
-            if not has_quota_for_upload():
-                print(
-                    f"YouTube upload blocked today — {format_quota_detail()}. "
-                    "Uploads need ~1,600 units. Wait for daily quota reset (midnight Pacific) "
-                    "then: py -m scripts.requeue_upload --channel tapin --run-id ID --queue"
-                )
+            print(_idle_line())
         return
 
     from apis.youtube_quota import format_quota_detail, has_quota_for_upload

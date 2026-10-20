@@ -8820,3 +8820,34 @@ Audit (wave 115):
 - Not done: #1422's card (already met); nothing sent to Buffer by me.
 
 `roadmap-index`: open 235, done 1523, numbered open 226.
+
+## 2026-10-19 evening — wave 116, the next ten (Claude Code)
+
+**Prompt:** "next 10 up on the to do" (again). Answers, both the recommended option:
+- move run 161 off run 156's minute to Thu 10-22 noon;
+- an upload held through a lapsed sign-in goes public at the next free slot.
+
+Measured first (18:30 CDT):
+- Job 74 (run 173) was held by the quota, and three lines said otherwise: "overdue ... nothing
+  is sending uploads", "waiting for the worker - py -m scripts.ops worker", and the worker's
+  "No pending jobs." with a requeue command.
+- The queue printed UTC beside EDT, unlabeled. It listed runs 162, 164 and 165 (public since
+  10-18) at their finished jobs' old slots, so the next free slot was Sat 10-24 noon.
+- Runs 156 and 161 were both set for Tue noon. 156 was moved off Mon noon outside the system.
+- Scripts, 78 stored:
+  - run 136's "on tennessee" is the only garbled ending;
+  - "on the topic" by word overlap would flag 29 good closers;
+  - a capitalised function word with 6+ words each side finds run 150's run-on and leaves run
+    109's "led The Lost Legacy".
+- Buffer: 14 sent, 0 failed.
+
+Batch A:
+- #1526: a held upload names the reset - "waits for the quota reset at Tue 3:05 AM EDT - the
+  worker sends it then". No overdue line and no command.
+- #1527: a run YouTube has takes the publish log's time. The queue went 9 -> 6, the next slot
+  Sat noon -> Fri 6 PM. Every time is in the channel's zone, named, and a second video at a
+  minute says so.
+- #1429: "Next 14 days: 6 scheduled on 4 of 14 days - nothing after Thu 10-22".
+- Live, with the operator's yes: run 161 (YJYYdQLNTyU) moved to Thu 10-22 12:00 PM EDT. YouTube
+  read it back on the second read - the first returned the old time. Embedding and stats were
+  kept.

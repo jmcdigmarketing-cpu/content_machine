@@ -25,7 +25,10 @@ def list_active_jobs(repo: JobRepository | None = None) -> list[JobRecord]:
 
 
 def overdue_uploads(
-    jobs: list[JobRecord] | None, *, now: datetime | None = None
+    jobs: list[JobRecord] | None,
+    *,
+    now: datetime | None = None,
+    grace_minutes: float = OVERDUE_GRACE_MINUTES,
 ) -> list[JobRecord]:
     """Pending uploads whose time has passed - nothing is sending them (#1129).
 
@@ -40,7 +43,7 @@ def overdue_uploads(
         if job.job_type != "upload" or job.status != "pending":
             continue
         due = _parse_scheduled_at(job.scheduled_at)
-        if due is not None and (clock - due).total_seconds() > OVERDUE_GRACE_MINUTES * 60:
+        if due is not None and (clock - due).total_seconds() > grace_minutes * 60:
             late.append(job)
     return late
 
@@ -51,7 +54,10 @@ def _local(job: JobRecord) -> str:
     due = _parse_scheduled_at(job.scheduled_at)
     if due is None:
         return "?"
-    return due.astimezone().strftime("%b %d %I:%M %p").replace(" 0", " ")
+    from analytics.upload_queue import when_label
+
+    # #1527: the channel's zone, named - it printed the PC's (CDT) beside EDT everywhere else.
+    return when_label(due, str(job.channel_id or "tapin"))
 
 
 def _signed_out(channel_id: str) -> bool:
@@ -64,14 +70,45 @@ def _signed_out(channel_id: str) -> bool:
         return False
 
 
+def quota_wait(channel_id: str) -> str:
+    """#1526 (wave 116): "" while an upload can go, else when the daily quota resets in the
+    channel's zone ("Tue 3:00 AM EDT"). Job 74 (run 173) was held by the quota on 10-19 and
+    `ops status` said "nothing is sending uploads - py -m scripts.ops worker" while the worker
+    task ran every 15 minutes. Fail-open: "" when the quota is unreadable."""
+    try:
+        from apis.youtube_quota import has_quota_for_upload, next_quota_retry_at
+
+        if has_quota_for_upload():
+            return ""
+        from analytics.post_timing import format_scheduled_local
+
+        return format_scheduled_local(next_quota_retry_at(), channel_id)
+    except Exception:
+        return ""
+
+
+def quota_held_line(jobs: list[JobRecord] | None, reset: str) -> str:
+    """#1526: what the worker pass holds for the quota - it printed "No pending jobs." and a
+    requeue command for a job already queued. "" when no due upload is waiting."""
+    held = overdue_uploads(jobs, grace_minutes=0)
+    if not held or not reset:
+        return ""
+    noun = "upload waits" if len(held) == 1 else "uploads wait"
+    runs = ", ".join(f"run {j.content_run_id}" for j in held[:3])
+    return f"{len(held)} {noun} for the quota reset ({runs}) - it goes after {reset}"
+
+
 def overdue_short(jobs: list[JobRecord] | None, channel_id: str) -> str:
     """The header's words: "1 upload overdue - ops worker", or ""."""
     late = [j for j in overdue_uploads(jobs) if j.channel_id == channel_id]
     if not late:
         return ""
     noun = "upload" if len(late) == 1 else "uploads"
-    fix = "sign in" if _signed_out(channel_id) else "ops worker"
-    return f"{len(late)} {noun} overdue - {fix}"
+    if _signed_out(channel_id):
+        return f"{len(late)} {noun} overdue - sign in"
+    if quota_wait(channel_id):  # #1526
+        return f"{len(late)} {noun} {'waits' if len(late) == 1 else 'wait'} for the quota reset"
+    return f"{len(late)} {noun} overdue - ops worker"
 
 
 def overdue_lines(jobs: list[JobRecord] | None, channel_id: str) -> list[str]:
@@ -81,7 +118,14 @@ def overdue_lines(jobs: list[JobRecord] | None, channel_id: str) -> list[str]:
     if not late:
         return out
     signed_out = _signed_out(channel_id)
+    reset = "" if signed_out else quota_wait(channel_id)
     for job in late:
+        if reset:  # #1526: held by the quota, not stuck
+            out.append(
+                f"Upload waiting: run {job.content_run_id} was due {_local(job)} and waits for "
+                f"the quota reset at {reset} - the worker sends it then"
+            )
+            continue
         if signed_out:
             out.append(
                 f"Upload overdue: run {job.content_run_id} was due {_local(job)} and the "

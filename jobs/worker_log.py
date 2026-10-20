@@ -19,7 +19,9 @@ def summarize_pass(lines: list[str]) -> str:
     sent = sum(1 for ln in lines if re.match(r"^Job \d+ (uploaded|scheduled)", ln.strip()))
     if sent:
         return f"{sent} sent"
-    if "upload blocked today" in text.lower() or "waiting for youtube quota" in text.lower():
+    low = text.lower()
+    # "for the quota reset": #1526 (wave 116) - the pass names the uploads it holds.
+    if any(k in low for k in ("upload blocked today", "waiting for youtube quota", "quota reset")):
         return "uploads blocked by quota until the reset"
     if "failed" in text.lower():
         return "a job failed - see data/logs/worker_task.log"

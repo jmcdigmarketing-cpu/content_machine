@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from analytics.upload_queue import list_queue_entries
+from analytics.upload_queue import list_queue_entries, queue_lines, two_week_line
 from config.channels import resolve_channel_id
 from core.logging import get_logger
 from youtube.check_setup import check_channel_setup
@@ -216,8 +216,8 @@ def build_status_lines(channel_id: str) -> list[str]:
         lines.append(
             f"  ({len(awaiting)} not on YouTube yet — upload must succeed before publishAt)"
         )
-    for e in entries[:5]:
-        lines.append(f"  - {e.publish_at.isoformat()[:16]}  {e.title[:35]}  [{e.status}]")
+    lines.extend(queue_lines(entries, channel_id))  # #1527: one zone, a clash named
+    lines.append(f"  {two_week_line(entries, channel_id)}")  # #1429
 
     from analytics.queue_manager import list_requeue_candidates
 

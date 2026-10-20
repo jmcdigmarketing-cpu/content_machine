@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-19 evening: wave 115, the next ten
+# Handoff synopsis — 2026-10-19 night: wave 116, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,17 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-19 evening (Claude Code): wave 115, the next ten
+## Last wave — 2026-10-19 night (Claude Code): wave 116, the next ten
+
+Job 74 was held by the quota while the morning called it overdue and asked for a command;
+it now names the 3:05 AM EDT reset. The queue had listed three public videos at their jobs'
+old slots, so the next free slot was Sat noon; it is Fri 6 PM, every time in EDT, with the
+next 14 days in one line. Run 161 moved to Thu noon (the operator's yes). An ended sign-in
+holds uploads (next free slot after), a toast comes 24 h before the Wed lapse, and `ops
+check-youtube` prints the publish page. The script check fails a garbled last line and a
+run-on; a failed Buffer send goes once more. Open 227.
+
+## Previous — 2026-10-19 evening (Claude Code): wave 115, the next ten
 
 Uploads stopped at 4 on 10-19 - three caption files took 1,200 of 8,629 units - so a caption
 file goes up only while an upload's worth remains. Every upload appends the AI line when it is
@@ -28,17 +38,6 @@ before it sends). Then: health reads Shorts against Shorts (the softening was on
 GREEN), subscribers per 1,000 views by domain, compilation hours in `ops ypp`, a stop rule for
 every test (95% sure or 10 each), one more overnight render for an empty day, `ops recut`
 (run 171 waits), and a lockfile `ops doctor` checks. Overnight woke the PC at 05:00. Open 243.
-
-## Previous — 2026-10-18 late night (Claude Code): wave 113, the 22 shortfalls
-
-The plan is rebuilt around the Story's 22 shortfalls - each with where it stands, how it is
-addressed, who acts and the command for done - and their 220 ideas are in the backlog
-(#1314-#1517, 16 citing items already open; decision 68 sets the ceiling at 300). Then the
-six: TikTok's views read (its viewers watch 1.4 s, inside the 2.15 s intro), the Buffer line
-without a hand step, the metrics sync from overnight and the worker, ad-unsafe titles held,
-the YouTube quota by caller with fifteen unbooked calls booked and an upload reserve, a
-follow line on previews with a call, and Buffer copies that start at the first word. Open
-252.
 
 ## Pipeline order (operator)
 
@@ -114,7 +113,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1439 #1429 #1400 #1334 #1352 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1392 #1404 #1337 #1371 #1407 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

@@ -15,6 +15,8 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from tests.test_buffer_crosspost import CrosspostCase
+
 NOW = datetime(2026, 10, 19, 23, 30, tzinfo=timezone.utc)
 
 
@@ -375,6 +377,123 @@ class SignInModeTests(unittest.TestCase):
             report = check_setup.check_channel_setup("tapin")
         self.assertIn("Publish the app: URL", report.hints)
         self.assertIn("Sign-in: Testing - lapses Wed", report.hints)
+
+
+RUN_136_END = (
+    "The Texans have a best-case scenario against the Titans on Sunday. I expect Houston's pass "
+    "rush to exploit a shaky Titans offensive line and for the Texans to emerge victorious in "
+    "convincing fashion on tennessee. Tap in for more."
+)
+RUN_150_OPENER = (
+    "Justin Herbert threw for only 17 second-half points last game The Chargers' Super Bowl path "
+    "is insane, but it's real. The defense has to hold."
+)
+
+
+class ScriptEndingTests(unittest.TestCase):
+    """#1334: the last line complete - a stop, and no place written in lowercase (run 136)."""
+
+    def test_run_136s_garbled_ending(self):
+        from core.script_craft import unfinished_ending
+
+        self.assertEqual(
+            unfinished_ending(RUN_136_END), ['a place written in lowercase ("tennessee")']
+        )
+
+    def test_a_cut_off_last_line(self):
+        from core.script_craft import unfinished_ending
+
+        problems = unfinished_ending(
+            "Houston wins this one. The real question is whether the line holds up"
+        )
+        self.assertEqual(len(problems), 1)
+        self.assertIn("no stop", problems[0])
+
+    def test_short_whole_endings_and_names_pass(self):
+        from core.script_craft import unfinished_ending
+
+        self.assertEqual(unfinished_ending("Pereira is out. Neither does Silva."), [])
+        self.assertEqual(
+            unfinished_ending("Kansas City visits Denver. That's where this game gets decided."), []
+        )
+        self.assertEqual(
+            unfinished_ending("The city got 62 bucks back. Watch the magic happen."), []
+        )
+
+
+class RunOnTests(unittest.TestCase):
+    """#1352: a sentence that runs into the next fails the script check (run 150's opener)."""
+
+    def test_run_150s_opener(self):
+        from core.script_craft import run_on_sentences
+
+        self.assertEqual(len(run_on_sentences(RUN_150_OPENER)), 1)
+
+    def test_a_title_mid_sentence_is_not_a_run_on(self):
+        from core.script_craft import run_on_sentences
+
+        self.assertEqual(
+            run_on_sentences("Uncharted's magic came from the same guy who led The Lost Legacy."),
+            [],
+        )
+        self.assertEqual(
+            run_on_sentences("Fans spent the weekend deep in The Last of Us remake trailer again."),
+            [],
+        )
+
+    def test_the_script_check_holds_both(self):
+        from core.script_craft import script_check
+
+        check = script_check(script=RUN_150_OPENER + " " + RUN_136_END)
+        self.assertFalse(check["ok"])
+        joined = " ".join(check["why"])
+        self.assertIn("runs into the next", joined)
+        self.assertIn("lowercase", joined)
+
+
+class BufferRetryTests(CrosspostCase):
+    """#1400: a send Buffer reports failed is sent once more; a second failure stays failed."""
+
+    def setUp(self):
+        super().setUp()
+        self._first_then((113, "yt113"))  # post1 TikTok, post2 Instagram
+
+    def _sync(self, posts):
+        from publishing.crosspost import sync_status
+
+        with patch("publishing.buffer_api.get_post", side_effect=lambda pid: posts[pid]):
+            return sync_status("tapin")
+
+    def _fail_tiktok(self, post_id="post1"):
+        return self._sync({
+            post_id: {"id": post_id, "status": "error", "error": {"message": "TikTok upload failed"}},
+            "post2": {"id": "post2", "status": "scheduled"},
+        })  # fmt: skip
+
+    def test_a_failed_send_is_tried_again_once(self):
+        from publishing.crosspost import send_due
+
+        lines = self._fail_tiktok()
+        tiktok = self._store()["posts"]["113"]["tiktok"]
+        self.assertEqual((tiktok["state"], tiktok["retried"]), ("retry", 1))
+        self.assertIn("sent again", " ".join(lines))
+        self.assertTrue(any(ln.strip().startswith("!") for ln in lines))  # the #1399 toast
+        self.remove.assert_not_called()
+        made = self.made
+        send_due("tapin")
+        self.assertEqual(self.made, made + 1)
+        tiktok = self._store()["posts"]["113"]["tiktok"]
+        self.assertEqual((tiktok["state"], tiktok["retried"]), ("scheduled", 1))
+
+    def test_a_second_failure_stays_failed(self):
+        from publishing.crosspost import send_due
+
+        self._fail_tiktok()
+        send_due("tapin")
+        resent = self._store()["posts"]["113"]["tiktok"]["post_id"]
+        lines = self._fail_tiktok(resent)
+        self.assertEqual(self._store()["posts"]["113"]["tiktok"]["state"], "error")
+        self.assertNotIn("sent again", " ".join(lines))
 
 
 if __name__ == "__main__":

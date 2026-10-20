@@ -5852,6 +5852,60 @@
         "equals": "uploads held - the YouTube sign-in has ended"
       },
       "why": "the morning says the uploads wait for a sign-in, not that a job failed"
+    },
+    {
+      "id": "run136-a-place-in-lowercase-ends-it",
+      "item": 1334,
+      "source": "run 136, pulled 2026-10-13: 'garbled last line'",
+      "call": "core.script_craft:unfinished_ending",
+      "args": [
+        "I expect Houston's pass rush to exploit a shaky Titans offensive line and for the Texans to emerge victorious in convincing fashion on tennessee. Tap in for more."
+      ],
+      "expect": {
+        "equals": [
+          "a place written in lowercase (\"tennessee\")"
+        ]
+      },
+      "why": "a team's city or state in lowercase is a broken line, not a style"
+    },
+    {
+      "id": "a-short-whole-ending-passes",
+      "item": 1334,
+      "source": "wave 116: the sibling - run 111 ended 'Neither does Silva.'",
+      "call": "core.script_craft:unfinished_ending",
+      "args": [
+        "Pereira is out. Neither does Silva."
+      ],
+      "expect": {
+        "equals": []
+      },
+      "why": "a three-word closing line is whole"
+    },
+    {
+      "id": "run150-an-opener-that-runs-on",
+      "item": 1352,
+      "source": "run 150, 2026-10-14: the new opener had no full stop",
+      "call": "core.script_craft:run_on_sentences",
+      "args": [
+        "Justin Herbert threw for only 17 second-half points last game The Chargers' Super Bowl path is insane, but it's real."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "two sentences joined with no stop read as one garbled line"
+    },
+    {
+      "id": "run109-a-title-mid-sentence-is-not-a-run-on",
+      "item": 1352,
+      "source": "run 109: 'the same guy who led The Lost Legacy.'",
+      "call": "core.script_craft:run_on_sentences",
+      "args": [
+        "Uncharted's magic came from the same guy who led The Lost Legacy."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a title in the middle of a sentence is not a missing stop"
     }
   ]
 }

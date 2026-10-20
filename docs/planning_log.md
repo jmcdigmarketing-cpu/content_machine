@@ -8864,3 +8864,36 @@ Batch B, the sign-in (it lapses Wed 10-21 9:36 PM EDT):
   reminder and the hint go quiet with no `.env` edit, and `ops doctor` names the mode.
 - Order slip: the oauth code was written before its tests, so its four tests passed in the
   tree at once. Their fail-first proof is the clean-HEAD run.
+
+Batches C and D (one commit):
+- #1334: a last line without a stop, or a team's city or state in lowercase, fails the script
+  check. Replayed on the 78 stored scripts: run 136 alone. "On the topic" was not built
+  (29 of 78).
+- #1352: a run-on sentence fails it. Replayed on every sentence of the 78: run 150's opener
+  alone. That is why it checks every sentence, not only the opener.
+- #1400: Buffer's failed send is sent once more at the next due slot. The mark rides through
+  the resend. `test_buffer_crosspost`'s error test now expects `retry` - the behaviour it
+  pinned changed on purpose.
+
+Audit (wave 116):
+- 27 tests in tests/test_wave116.py; 24 were seen failing on clean HEAD (9 of 10 in A, 8 of
+  9 in B, 7 of 8 in C and D). The three that passed are guards: the old overdue line while
+  quota allows, the quota rule for a held job, and a second Buffer failure staying failed.
+- 9 corpus cases.
+- Found on the way: the reserved-slot reader (`get_reserved_publish_times`) and the empty-day
+  check read the same stale job slots as the display. All three are fixed by one change.
+- The private-stop-list guard (`test_topic_text_shared`) failed the first C+D export: it
+  matched a regex named `_STOP_AT_END`. It was renamed `_ENDS_SENTENCE`, and its
+  two literal curly quotes became escape sequences, like the file's others.
+- mypy 92, the baseline, after one new error was fixed (an `int(None)` path in the queue).
+  ruff clean on every export.
+- Live:
+  - 161 moved and read back;
+  - `ops status` and the worker pass name the 3:05 AM reset;
+  - `ops check-youtube` prints the console page;
+  - the 24-hour watch is quiet at 26 h and says it at 20 h (toast stubbed).
+- Not done:
+  - the hosted test of a real sign-in lapse - it comes Wed unless the app is published;
+  - job 74 uploads after the reset, which is not yet seen.
+
+`roadmap-index`: open 227, done 1533, numbered open 218.

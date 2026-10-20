@@ -1769,7 +1769,7 @@ Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content
 
 - [ ] 1332. **A "pulled before public" count in the weekly report - each pull is a gate that missed** *(S03.1, filed 2026-10-18)* `[S]`
 - [ ] 1333. **Post-render transcript check: the render's audio transcribed and compared with the script (the garbled ending)** *(S03.2, filed 2026-10-18)* `[M]`
-- [ ] 1334. **The final sentence must be complete and on the topic before a render** *(S03.3, filed 2026-10-18)* `[S]`
+- [x] 1334. **The final sentence must be complete and on the topic before a render** *(S03.3, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 116):** `script_craft.unfinished_ending` in `script_check` - a last sentence without a stop, or a team's city or state in lowercase (`topic_tokens.place_words`; run 136's "...in convincing fashion on tennessee."). Replayed on the 78 stored tapin scripts: run 136 alone. "On the topic" was not built, by measurement: 29 of the 78 closing lines share no word with the title and read fine.
 - [ ] 1335. **At render time the facts' dates are re-checked against the event (a fact older than the game it previews)** *(S03.4, filed 2026-10-18)* `[S]`
 - [ ] 1336. **A frame check of the finished video's first and last 3 seconds (black, frozen, the wrong clip) - #1044 checks stretches, not the ends** *(S03.5, filed 2026-10-18)* `[M]`
 - [ ] 1337. **The evening line says what overnight would render** *(S03.6, filed 2026-10-18)* `[S]`
@@ -1793,7 +1793,7 @@ Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content
 
 ### S05 Clean is not the same as good (Oct 14)
 
-- [ ] 1352. **An opener that runs into the next sentence (no stop between two capitals) fails the script check** *(S05.1, filed 2026-10-18)* `[S]`
+- [x] 1352. **An opener that runs into the next sentence (no stop between two capitals) fails the script check** *(S05.1, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 116):** `script_craft.run_on_sentences` in `script_check` - a capitalised function word after a lowercase word that is not one, six or more words each side. Replayed on every sentence of the 78 stored scripts: run 150's opener alone ("...last game The Chargers' Super Bowl path is..."); run 109's "led The Lost Legacy" stays.
 - [ ] 1353. **A sentence said twice across the hook rewrite fails the script check** *(S05.2, filed 2026-10-18)* `[S]`
 - [ ] 1354. **A title score in the grade: a named subject, under 60 characters, no broken names** *(S05.3, filed 2026-10-18)* `[M]`
 - [ ] 1355. **The captions burned into the render compared with the script (typos on screen)** *(S05.4, filed 2026-10-18)* `[S]`
@@ -1862,7 +1862,7 @@ Already open for S09: #464 (recorded API fixtures).
 
 - [x] 1398. **`ops status`'s Buffer line counts Buffer's sends - no "mark each with ops crosspost done"** *(S10.1, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113):** `crosspost.week_line` counts what reached TikTok or Instagram and what Buffer holds - live: "TikTok + Instagram this week: 7 posted, 1 scheduled in Buffer" - no "mark each with ops crosspost done".
 - [x] 1399. **A toast when a Buffer send fails** *(S10.2, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `crosspost.step` raises a toast when the round has a failure line - once a day per channel across processes (`win_notify.toast_daily`; the worker runs every 15 minutes in a new process, so the in-process dedupe would repeat it). Stamps in data/toast_days.json, redirected in the suite.
-- [ ] 1400. **A failed Buffer send retried once** *(S10.3, filed 2026-10-18)* `[S]`
+- [x] 1400. **A failed Buffer send retried once** *(S10.3, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 116):** `crosspost.sync_status` - Buffer's error becomes `retry` with `retried: 1` and goes at the next due slot; the mark rides through the resend, so a second failure stays `error`. The #1399 toast still fires. Measured: 0 of 14 sends had failed, so this is protection.
 - [ ] 1401. **The pack-folder path retired after 30 Buffer sends in a row** *(S10.4, filed 2026-10-18)* `[S]`
 - [x] 1402. **The upload worker's last loop in the morning line** *(S10.5, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `jobs/worker_log.last_pass_line` - `ops status` has a Worker line: the last pass and what it did, and how long ago when over 2 hours. Live: "Worker: last pass 17:37 - uploads blocked by quota until the reset". The log path is `config.paths.WORKER_TASK_LOG` (redirected in the suite - the wave 111 guard caught the first version reading the real log); kept out of `jobs.worker` so `ops status` does not import the pipeline.
 - [ ] 1403. **A thumbnail upload that failed is retried** *(S10.6, filed 2026-10-18)* `[S]`

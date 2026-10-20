@@ -10,6 +10,7 @@ own partial copy.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 # Question words, auxiliaries, pronouns and connectives. Deliberately NOT generic
 # nouns ("update", "news", "game"): those are each signal's own call.
@@ -465,3 +466,24 @@ def search_query(
         if words:
             return " ".join(words[:3])[:max_len]
     return text[:max_len] or (topic or "")[:max_len]
+
+
+_GENERIC_PLACE_WORDS = frozenset({"city", "state", "golden", "green"})
+
+
+@lru_cache(maxsize=1)
+def place_words() -> frozenset[str]:
+    """#1334 (wave 116): the city and state words of the NFL and NBA teams' full names
+    ("tennessee", "kansas", "philadelphia") - the names a garbled line writes in lowercase.
+    Run 136 (pulled 10-13) ended "...in convincing fashion on tennessee." Words that are also
+    ordinary English (city, state, golden, green) are left out."""
+    from apis.nba_teams import NBA_TEAM_NAMES
+    from apis.nfl_entities import NFL_TEAM_NAMES
+
+    words: set[str] = set()
+    for names in (NFL_TEAM_NAMES, NBA_TEAM_NAMES):
+        for full in names.values():
+            parts = full.split()
+            city = parts[:-2] if full.endswith("Trail Blazers") else parts[:-1]
+            words |= {w.lower() for w in city if len(w) > 3}
+    return frozenset(words - _GENERIC_PLACE_WORDS)

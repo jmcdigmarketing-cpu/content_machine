@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-19 evening · **HEAD at write:** the wave 115 batch C+D commit (`git log -1`)
+**Written:** 2026-10-19 night · **HEAD at write:** the wave 116 batch C+D commit (`git log -1`)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
@@ -61,21 +61,6 @@ nothing broken, say that explicitly rather than leaving it implied.
 **The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall** (the Story's
 22); their ideas are #1314-#1517 in the backlog. Decision 68: `test_docs_lint` holds the
 backlog at <= 300, and wave 113 alone was exempt from "close as many as you file".
-
-**Wave 114 (five batches, each pushed):**
-- `jobs/worker._sync_metrics` skips a channel with no sign-in (#1518).
-- `privacy_sync.fetch_status` / `held_slots`; `crosspost._held_by_youtube` and `_needs_hosting`
-  (#1519 #1520). Run 154's two Buffer posts were removed with the operator's yes; the round
-  sends them when YouTube publishes it, at 10-21 02:00Z.
-- `channel_health` reads Shorts against Shorts (#1491); `growth.conversion` (#1323);
-  `ypp_readiness.compilation_line` (#1314).
-- `experiment_stats.evaluate(max_per_arm=10)` -> `no_difference` (#354); `growth.intro_verdict`
-  (#1423); `batch_review.overnight_render_limit` (#1428).
-- `video/recut.py` and `ops recut` (#1057; run 171 waits in the queue manager); the teaser reads
-  the run's own intro (#1521).
-- `pylock.toml` and `ops_doctor.lock_check` (#457).
-- Batch F: `week_compile` adds the AI disclosure (#1522). The first compilation, already
-  scheduled (xpPz3ewlNJ8, public 10-21 16:00Z), got it on 10-19 (wave 115).
 
 **Wave 115 (four batches, three commits):**
 - `captions.caption_quota_ok` (#1525); `prepublish.with_disclosure` (#1524 - xpPz3ewlNJ8 fixed
@@ -86,10 +71,17 @@ backlog at <= 300, and wave 113 alone was exempt from "close as many as you file
   `_overnight_watch` (#1399 #1372); `prepublish.with_compilation_link` (#1317).
 - #1422 closed as already met (the headline shows the hook on frame one).
 
-**Live:** the sign-in lapses Wed 10-21 9:36 PM EDT unless the app is published (#1439 is next:
-the worker holding uploads cleanly after that). Uploads stopped at 4 on 10-19 by quota; the
-caption guard keeps the fifth. Renders 168 and 170 sit unlisted; re-cut 171 and run 173 wait.
-**Defects first:** none open of mine.
+**Wave 116 (four batches, three commits):**
+- `job_queue.quota_wait` / `quota_held_line` (#1526); `upload_queue._logged_runs`,
+  `queue_lines`, `two_week_line` (#1527 #1429). Run 161 moved to Thu 10-22 noon (operator's yes).
+- `worker._hold_for_sign_in` / `_reslot_after_hold` / `_sign_in_watch`; `oauth.sign_in_mode`,
+  `publish_app_hint` (#1439 #1438 #1443 #1445).
+- `script_craft.unfinished_ending` / `run_on_sentences` in `script_check`,
+  `topic_tokens.place_words` (#1334 #1352); `crosspost.sync_status` retries once (#1400).
+
+**Live:** the sign-in lapses Wed 10-21 9:36 PM EDT unless the app is published - then uploads
+hold, not fail. Job 74 (run 173) uploads after the 3:05 AM EDT reset. Renders 168 and 170
+sit unlisted; re-cut 171 waits. **Defects first:** none open of mine.
 
 ## Slot — Cursor
 

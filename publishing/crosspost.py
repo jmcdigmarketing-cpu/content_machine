@@ -891,12 +891,15 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 )
                 _save(channel_id, data)
                 return lines
+            # #1400: a resend keeps its mark, so a second failure is not tried a third time.
+            kept = {"retried": state["retried"]} if state.get("retried") else {}
             entry[service] = {
                 "state": "sending",
                 "due_at": due.isoformat(),
                 "text_start": text[:60],
                 "arm": arm,
                 "at": _now_text(moment),
+                **kept,
             }
             _save(channel_id, data)  # the mark goes down before the call
             try:
@@ -943,6 +946,7 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 "due_at": due.isoformat(),
                 "text_start": text[:60],
                 "at": _now_text(moment),
+                **kept,
             }
             _save(channel_id, data)
             lines.append(f"  run {run_id} {label}: scheduled for {_local(due, channel_id)}")
@@ -1010,8 +1014,15 @@ def sync_status(channel_id: str) -> list[str]:
                 message = str(
                     ((post.get("error") or {}).get("message")) or "Buffer reported an error"
                 )
-                state.update(state="error", error=message)
-                lines.append(f"  ! run {rid} {label}: Buffer could not post it - {message}")
+                if not state.get("retried"):  # #1400 (wave 116): once, at the next due slot
+                    state.update(state="retry", error=message, retried=1)
+                    lines.append(
+                        f"  ! run {rid} {label}: Buffer could not post it - {message} - sent "
+                        "again next round"
+                    )
+                else:
+                    state.update(state="error", error=message)
+                    lines.append(f"  ! run {rid} {label}: Buffer could not post it - {message}")
         _remove_copy_when_done(entry)
     _save(channel_id, data)
     return lines

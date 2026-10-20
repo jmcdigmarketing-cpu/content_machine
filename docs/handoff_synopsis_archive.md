@@ -7,6 +7,17 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-18 late night (Claude Code): wave 113, the 22 shortfalls
+
+The plan is rebuilt around the Story's 22 shortfalls - each with where it stands, how it is
+addressed, who acts and the command for done - and their 220 ideas are in the backlog
+(#1314-#1517, 16 citing items already open; decision 68 sets the ceiling at 300). Then the
+six: TikTok's views read (its viewers watch 1.4 s, inside the 2.15 s intro), the Buffer line
+without a hand step, the metrics sync from overnight and the worker, ad-unsafe titles held,
+the YouTube quota by caller with fifteen unbooked calls booked and an upload reserve, a
+follow line on previews with a call, and Buffer copies that start at the first word. Open
+252.
+
 ## Previous — 2026-10-18 night (Claude Code): wave 112, the next ten
 
 Five batches, each pushed and green: `ops status` reuses a doctor result under 12 h (7.9 ->

@@ -371,7 +371,8 @@ class SyncTests(CrosspostCase):
             "post1": {"id": "post1", "status": "error", "error": {"message": "Video too short"}},
             "post2": {"id": "post2", "status": "scheduled"},
         })  # fmt: skip
-        self.assertEqual(self._store()["posts"]["113"]["tiktok"]["state"], "error")
+        # #1400 (wave 116): the first failure is sent once more; the message stays.
+        self.assertEqual(self._store()["posts"]["113"]["tiktok"]["state"], "retry")
         self.assertIn("Video too short", "\n".join(status_lines("tapin")))
         self.remove.assert_not_called()  # Instagram still needs the link
 

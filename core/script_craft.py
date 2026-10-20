@@ -448,6 +448,63 @@ def said_twice(script: str) -> list[str]:
     return repeats
 
 
+_ENDS_SENTENCE = re.compile(r"[.!?]['\"\u201d\u2019)]*$")
+_LOWER_WORD = re.compile(r"\b[a-z][a-z]+\b")
+_RUN_ON_SIDE = 6  # words on each side of the missing stop
+
+
+def unfinished_ending(script: str) -> list[str]:
+    """#1334 (wave 116): what is wrong with how the script ends - [] when nothing.
+
+    Run 136 (pulled 2026-10-13, "garbled last line") ended "...for the Texans to emerge
+    victorious in convincing fashion on tennessee." Measured on the 78 stored tapin scripts
+    before it was let near a render: every last line ends with a stop (the two shortest are whole:
+    "Neither does Silva."), and a team's city or state in lowercase is run 136 alone - nicknames
+    and "city" gave three false hits, so it is places only. "On the topic" by shared words is
+    not checked: 29 of the 78 closing lines share no word with the title and read fine ("That's
+    where this game gets decided.")."""
+    from apis.topic_tokens import place_words
+
+    sentences = [s for s in script_sentences(script) if not _SIGN_OFF_RE.match(s.strip())]
+    if not sentences:
+        return []
+    problems: list[str] = []
+    last = sentences[-1].strip()
+    if not _ENDS_SENTENCE.search(last):
+        problems.append(f'the last sentence has no stop ("...{last[-50:]}")')
+    places = place_words()
+    lowered = sorted({w for s in sentences for w in _LOWER_WORD.findall(s) if w in places})
+    if lowered:
+        problems.append(f'a place written in lowercase ("{lowered[0]}")')
+    return problems
+
+
+def run_on_sentences(script: str) -> list[str]:
+    """#1352 (wave 116): the sentences that run into the next one with no stop between.
+
+    Run 150's opener (2026-10-14): "...only 17 second-half points last game The Chargers' Super
+    Bowl path is ...". The sign is a capitalised function word right after a lowercase word that
+    is not itself one, with six or more words on each side inside the sentence - so a title
+    stays ("the same guy who led The Lost Legacy.", run 109). Topic words come from
+    `apis.topic_tokens.FUNCTION_WORDS`."""
+    from apis.topic_tokens import FUNCTION_WORDS
+
+    starters = {w.capitalize() for w in FUNCTION_WORDS if w.isalpha() and len(w) > 1}
+    hits: list[str] = []
+    for sentence in script_sentences(script):
+        words = sentence.split()
+        for i in range(_RUN_ON_SIDE, len(words) - _RUN_ON_SIDE + 1):
+            before, word = words[i - 1], words[i]
+            if (
+                word in starters
+                and re.fullmatch(r"[a-z][\w'\u2019-]*", before)
+                and before.lower() not in FUNCTION_WORDS
+            ):
+                hits.append(sentence)
+                break
+    return hits
+
+
 def drop_repeats(script: str, *, min_words: int, max_cut: int = 2) -> tuple[str, list[str]]:
     """Cut the second telling of a fact, while the script keeps its length. (script, cut)."""
     repeats = said_twice(script)[:max_cut]
@@ -495,6 +552,10 @@ def script_check(
     twice = len(said_twice(script))
     if twice:
         why.append(f"{twice} thing{'s' if twice > 1 else ''} said twice")  # #1155
+    run_on = run_on_sentences(script)
+    if run_on:  # #1352
+        why.append(f'a sentence runs into the next ("{run_on[0][:60]}")')
+    why.extend(unfinished_ending(script))  # #1334
     if reading_target is not None:
         grade = reading_grade(script)
         if grade is not None and grade > float(reading_target):

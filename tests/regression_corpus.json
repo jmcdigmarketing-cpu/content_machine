@@ -5837,6 +5837,21 @@
         "equals": "uploads blocked by quota until the reset"
       },
       "why": "a pass with nothing waiting under a spent quota is not 'nothing waiting'"
+    },
+    {
+      "id": "a-sign-in-hold-reads-as-the-sign-in",
+      "item": 1439,
+      "source": "wave 116: the sign-in lapses Wed 10-21; an auth_error had failed the job",
+      "call": "jobs.worker_log:summarize_pass",
+      "args": [
+        [
+          "Upload job 74 (run 173) held - the YouTube sign-in has ended - it goes on the first pass after you sign in again"
+        ]
+      ],
+      "expect": {
+        "equals": "uploads held - the YouTube sign-in has ended"
+      },
+      "why": "the morning says the uploads wait for a sign-in, not that a job failed"
     }
   ]
 }

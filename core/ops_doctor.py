@@ -213,11 +213,17 @@ def gather(
         exists = os.path.isfile(path)
         upload = exists and token_has_scope(channel_id, SCOPE_YOUTUBE_UPLOAD)
         analytics = exists and token_has_scope(channel_id, SCOPE_YT_ANALYTICS_READONLY)
+        mode = ""
+        if exists:
+            from youtube.oauth import sign_in_mode_line
+
+            mode = sign_in_mode_line(channel_id)  # #1443: Testing or In production
         add(
             "oauth",
             exists,
             f"token {'present' if exists else 'missing'}; "
-            f"upload={'yes' if upload else 'no'} analytics={'yes' if analytics else 'no'}",
+            f"upload={'yes' if upload else 'no'} analytics={'yes' if analytics else 'no'}"
+            + (f"; {mode}" if mode else ""),
         )
     except Exception as exc:
         logger.debug("doctor oauth skipped: %s", exc)

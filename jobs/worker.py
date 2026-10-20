@@ -74,6 +74,77 @@ def _defer_for_quota(job, result) -> bool:
     return True
 
 
+SIGN_IN_HOLD = "held - the YouTube sign-in has ended"
+_SIGN_IN_RETRY_MINUTES = 15  # the UploadWorker task's pass
+_SLOT_LEAD_MINUTES = 15  # youtube_publisher's YOUTUBE_PUBLISH_MIN_LEAD_MINUTES
+
+
+def _hold_for_sign_in(job, result) -> bool:
+    """#1439 (wave 116): an ended sign-in holds the upload; it does not fail it. `auth_error` was
+    terminal, so the Testing-mode lapse (Wed 10-21 9:36 PM EDT) would have failed every queued
+    upload for a requeue by hand - and a refresh that failed on the network did the same. The
+    job waits for the next pass with its attempt given back; one toast a day says why."""
+    if result.status != "auth_error":
+        return False
+    from datetime import timedelta
+
+    from youtube.oauth import short_sign_in
+
+    channel = resolve_channel_id(job.channel_id)
+    note = short_sign_in(channel)
+    get_job_repository().update(
+        job.id,
+        {
+            "status": JOB_PENDING,
+            "last_error": f"{SIGN_IN_HOLD}: {note}"[:500],
+            "scheduled_at": datetime.now(timezone.utc) + timedelta(minutes=_SIGN_IN_RETRY_MINUTES),
+            "attempts": max(0, (job.attempts or 1) - 1),
+        },
+    )
+    print(
+        f"Upload job {job.id} (run {job.content_run_id}) {SIGN_IN_HOLD} - it goes on the "
+        "first pass after you sign in again"
+    )
+    try:
+        from core.win_notify import toast_daily
+
+        toast_daily(f"signin:{channel}", "Content OS: YouTube sign-in", note[:180])
+    except Exception as exc:
+        logger.debug("sign-in toast skipped: %s", exc)
+    return True
+
+
+def _reslot_after_hold(job, payload: dict, channel_id: str) -> dict:
+    """#1439 (the operator: the next free slot): an upload held through an ended sign-in whose
+    slot has passed goes public at the next free slot, not minutes after it uploads - which could
+    land it on another video. A quota hold keeps today's rule. The new slot is stored."""
+    from datetime import timedelta
+
+    publish_at = _parse_publish_at(payload)
+    if publish_at is None or SIGN_IN_HOLD not in (job.last_error or ""):
+        return payload
+    if publish_at > datetime.now(timezone.utc) + timedelta(minutes=_SLOT_LEAD_MINUTES):
+        return payload
+    try:
+        from core.spaced_queue import free_slots
+
+        slots = free_slots(channel_id, 1)
+    except Exception as exc:
+        logger.warning("next free slot unread for job %s: %s", job.id, exc)
+        return payload
+    if not slots:
+        return payload
+    moved = {**payload, "youtube_publish_at": slots[0].isoformat()}
+    try:
+        get_job_repository().update(job.id, {"payload_json": json.dumps(moved)})
+    except Exception as exc:
+        logger.debug("re-slot not stored for job %s: %s", job.id, exc)
+    print(
+        f"Upload job {job.id}: its slot passed while signed out - now {slots[0].isoformat()[:16]}Z"
+    )
+    return moved
+
+
 def _crosspost_after_upload(job) -> None:
     """#1202 (operator, 2026-10-15: "right away"): an upload that went out public is sent to
     TikTok and Instagram now - the same round `go-public --apply` starts. A video still unlisted
@@ -111,6 +182,8 @@ def _finalize_upload_job(job, result) -> None:
     repo = get_job_repository()
 
     if _defer_for_quota(job, result):
+        return
+    if _hold_for_sign_in(job, result):  # #1439
         return
 
     if result.status in UPLOAD_STATUS_SUCCESS:
@@ -200,6 +273,7 @@ def _process_upload(job) -> None:
         print(rpm_blocked)
         return
 
+    payload = _reslot_after_hold(job, payload, channel_id)  # #1439
     request = PublishRequest(
         file_path=payload.get("file_path", ""),
         title=payload.get("title", ""),
@@ -512,6 +586,33 @@ def _overnight_watch() -> None:
         logger.debug("overnight watch skipped: %s", exc)
 
 
+def _sign_in_watch(now: datetime | None = None) -> None:
+    """#1438 (wave 116): a toast, once a day, from 24 hours before a Testing-mode sign-in lapses
+    - the morning line says the date, but nobody reads it on the day. Quiet once the app is
+    published (the expiry line is then ""). Fail-open."""
+    from datetime import timedelta
+
+    try:
+        from config.channels import active_channel_ids
+        from core.win_notify import toast_daily
+        from youtube.oauth import sign_in_expiry, sign_in_expiry_line, token_path_for_channel
+
+        moment = now or datetime.now(timezone.utc)
+        for channel in active_channel_ids():
+            if not os.path.isfile(token_path_for_channel(channel)):
+                continue
+            line = sign_in_expiry_line(channel, now=moment)
+            when = sign_in_expiry(channel)
+            if line and when is not None and when - moment <= timedelta(hours=24):
+                toast_daily(
+                    f"signin-soon:{channel}",
+                    "Content OS: YouTube sign-in",
+                    f"The {channel} sign-in {line} - ops check-youtube has the link",
+                )
+    except Exception as exc:
+        logger.debug("sign-in watch skipped: %s", exc)
+
+
 def _sync_metrics() -> None:
     """Wave 113: the metrics sync, once a day - `ops morning` was its only caller, and this
     pass runs every 15 minutes from the UploadWorker task. Fail-open."""
@@ -575,6 +676,7 @@ def main():
         processed = drain_due()
         _sync_metrics()
         _overnight_watch()
+        _sign_in_watch()  # #1438
         if processed > 1:
             print(f"Sent {processed} due job(s) in one pass.")
         if not processed:
@@ -591,6 +693,7 @@ def main():
                 did_work = True
             _sync_metrics()
             _overnight_watch()
+            _sign_in_watch()
             if not did_work and not has_quota_for_upload():
                 print(
                     f"Waiting for YouTube quota reset — {format_quota_detail()}. "

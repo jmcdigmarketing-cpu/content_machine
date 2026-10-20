@@ -8851,3 +8851,16 @@ Batch A:
 - Live, with the operator's yes: run 161 (YJYYdQLNTyU) moved to Thu 10-22 12:00 PM EDT. YouTube
   read it back on the second read - the first returned the old time. Embedding and stats were
   kept.
+
+Batch B, the sign-in (it lapses Wed 10-21 9:36 PM EDT):
+- #1439: `auth_error` was terminal. The lapse would have failed every queued upload, for a
+  requeue by hand, and a refresh that failed on the network did the same. Now the job waits
+  for the next pass and gets its attempt back. A slot that passed meanwhile becomes the next
+  free one (the operator's answer).
+- #1438: one toast a day from 24 hours before the lapse.
+- #1445: `ops check-youtube` prints the Google Auth Platform Audience page with the project, and
+  says to sign in once more after publishing - a Testing sign-in keeps its 7 days.
+- #1443: a sign-in older than 7 days that still loads means the app is published. The
+  reminder and the hint go quiet with no `.env` edit, and `ops doctor` names the mode.
+- Order slip: the oauth code was written before its tests, so its four tests passed in the
+  tree at once. Their fail-first proof is the clean-HEAD run.

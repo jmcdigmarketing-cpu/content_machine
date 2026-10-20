@@ -20,6 +20,8 @@ def summarize_pass(lines: list[str]) -> str:
     if sent:
         return f"{sent} sent"
     low = text.lower()
+    if "the youtube sign-in has ended" in low:  # #1439: held for the sign-in, not failed
+        return "uploads held - the YouTube sign-in has ended"
     # "for the quota reset": #1526 (wave 116) - the pass names the uploads it holds.
     if any(k in low for k in ("upload blocked today", "waiting for youtube quota", "quota reset")):
         return "uploads blocked by quota until the reset"

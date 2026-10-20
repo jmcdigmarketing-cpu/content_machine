@@ -1916,14 +1916,14 @@ Already open for S13: #1057 (re-cuts of past winners).
 
 - [ ] 1436. **[You] Publish the Google OAuth app (consent screen -> Publish app)** *(S14.1, filed 2026-10-18)* `[S]`
 - [x] 1437. **The sign-in's expiry date in the morning line** *(S14.2, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115):** `oauth.sign_in_expiry_line` - `ops status`'s sign-in line says the lapse date every day (the reminder spoke only from day 5). Live: "Sign-in: ok (tapin) - lapses Wed 9:36 PM EDT unless the app is published". Quiet once SIGN_IN_REMINDER_DAYS=0.
-- [ ] 1438. **A toast 24 hours before the sign-in expires** *(S14.3, filed 2026-10-18)* `[S]`
-- [ ] 1439. **The worker holds uploads cleanly on an expired sign-in and resumes after** *(S14.4, filed 2026-10-18)* `[S]`
+- [x] 1438. **A toast 24 hours before the sign-in expires** *(S14.3, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 116):** `worker._sign_in_watch` - one toast a day from 24 hours before the lapse (from Tue 10-20 9:36 PM EDT), "ops check-youtube has the link"; quiet once the app is published. Checked against the live token with the toast stubbed: quiet at 26 h left, said at 20 h.
+- [x] 1439. **The worker holds uploads cleanly on an expired sign-in and resumes after** *(S14.4, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 116; the operator: the next free slot):** `auth_error` was terminal, so the lapse would have failed every queued upload for a requeue by hand. `worker._hold_for_sign_in` puts it back to pending for the next pass with its attempt given back, one toast a day; `_reslot_after_hold` gives a slot that passed meanwhile `spaced_queue.free_slots`; the Worker line says "uploads held - the YouTube sign-in has ended". A quota hold keeps its rule.
 - [ ] 1440. **The policy site's links checked live before you publish the app** *(S14.5, filed 2026-10-18)* `[S]`
 - [ ] 1441. **Scopes reduced to what is used, for a faster verification** *(S14.6, filed 2026-10-18)* `[S]`
 - [ ] 1442. **Separate tokens for uploads and analytics** *(S14.7, filed 2026-10-18)* `[M]`
-- [ ] 1443. **`ops doctor` tells Testing from In production by the token's lifetime** *(S14.8, filed 2026-10-18)* `[S]`
+- [x] 1443. **`ops doctor` tells Testing from In production by the token's lifetime** *(S14.8, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 116):** `oauth.sign_in_mode` - a sign-in older than 7 days that still loads was made on a published app: the reminder and the hint go quiet with no SIGN_IN_REMINDER_DAYS=0 edit; `ops doctor`'s oauth check and `ops check-youtube` name the mode (live: "Testing - lapses Wed 9:36 PM EDT unless the app is published").
 - [ ] 1444. **A sign-in line in the weekly review** *(S14.9, filed 2026-10-18)* `[S]`
-- [ ] 1445. **`ops check-youtube` prints the exact console page for the publish click** *(S14.10, filed 2026-10-18)* `[S]`
+- [x] 1445. **`ops check-youtube` prints the exact console page for the publish click** *(S14.10, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 116):** `oauth.publish_app_hint` in `ops check-youtube` - live: "Publish the app: https://console.cloud.google.com/auth/audience?project=secure-unison-495301-c8 -> Publish app; then sign in once more" (a sign-in made in Testing keeps its 7 days). The project id is read from the client secrets file.
 
 ### S15 Every best bet was a game (Oct 14)
 

@@ -223,6 +223,8 @@ def sign_in_reminder(channel_id: str | None = None) -> str:
     age = (_now() - when).total_seconds() / 86400
     if age < limit:
         return ""
+    if age >= TESTING_DAYS and sign_in_mode(cid) == "production":
+        return ""  # #1443: it outlived Testing's 7 days, so the app is published
     left = 7 - age
     if left >= 1:
         remaining = f"about {round(left)} days left"
@@ -263,6 +265,78 @@ def sign_in_expiry_line(channel_id: str | None = None, *, now: datetime | None =
 
     local = format_scheduled_local(when, resolve_channel_id(channel_id))
     return f"lapses {local} unless the app is published"
+
+
+TESTING_DAYS = 7.0  # a Testing-mode consent screen ends a sign-in after 7 days (#961)
+CONSOLE_AUDIENCE = "https://console.cloud.google.com/auth/audience"  # Google Auth Platform
+
+
+def _age_days(channel_id: str | None = None, *, now: datetime | None = None) -> float | None:
+    stamp = _signed_in_at(token_path_for_channel(resolve_channel_id(channel_id)))
+    try:
+        when = datetime.fromisoformat(stamp) if stamp else None
+    except ValueError:
+        return None
+    if when is None:
+        return None
+    when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+    return ((now or _now()) - when).total_seconds() / 86400
+
+
+def sign_in_mode(channel_id: str | None = None, *, now: datetime | None = None) -> str:
+    """#1443 (wave 116): "testing", "production" or "lapsed" by the sign-in's age; "" with no
+    stamp. A sign-in older than 7 days that still loads was made on a published app, so the
+    reminder goes quiet on its own - no SIGN_IN_REMINDER_DAYS=0 edit. Under 7 days the two
+    cannot be told apart and it says "testing"."""
+    age = _age_days(channel_id, now=now)
+    if age is None:
+        return ""
+    if age < TESTING_DAYS:
+        return "testing"
+    return "production" if load_credentials(channel_id) is not None else "lapsed"
+
+
+def sign_in_mode_line(channel_id: str | None = None, *, now: datetime | None = None) -> str:
+    """`ops doctor`'s words for the mode (#1443)."""
+    mode = sign_in_mode(channel_id, now=now)
+    age = _age_days(channel_id, now=now) or 0.0
+    if mode == "production":
+        return f"In production - a sign-in {age:.0f} days old still works"
+    if mode == "lapsed":
+        return (
+            "lapsed - sign in again: "
+            + f"py -m youtube.oauth_setup --channel {resolve_channel_id(channel_id)}"
+        )
+    if mode == "testing":
+        lapse = sign_in_expiry_line(channel_id, now=now)
+        return f"Testing - {lapse}" if lapse else "Testing"
+    return ""
+
+
+def project_id() -> str:
+    """The Google Cloud project of the OAuth client - a name, not a secret (#1445). ""."""
+    try:
+        with open(_client_secrets_path(), encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return ""
+    block = (data.get("installed") or data.get("web") or {}) if isinstance(data, dict) else {}
+    return str(block.get("project_id") or "") if isinstance(block, dict) else ""
+
+
+def publish_app_hint(channel_id: str | None = None, *, now: datetime | None = None) -> str:
+    """#1445 (wave 116): the exact page for the publish click, and the one sign-in after it -
+    a sign-in made in Testing keeps its 7 days. "" once the app is published (by the reminder's
+    switch or by a sign-in that outlived 7 days)."""
+    if _reminder_days() <= 0 or sign_in_mode(channel_id, now=now) in ("", "production"):
+        return ""
+    project = project_id()
+    url = f"{CONSOLE_AUDIENCE}?project={project}" if project else CONSOLE_AUDIENCE
+    cid = resolve_channel_id(channel_id)
+    return (
+        f"Publish the app: {url} -> Publish app; then sign in once more: "
+        f"py -m youtube.oauth_setup --channel {cid} (a sign-in made in Testing keeps its 7 days)"
+    )
 
 
 def token_has_scope(channel_id: str | None, scope: str) -> bool:

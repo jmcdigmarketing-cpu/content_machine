@@ -15,6 +15,8 @@ from youtube.constants import SCOPE_YOUTUBE_UPLOAD, SCOPE_YT_ANALYTICS_READONLY
 from youtube.oauth import (
     _client_secrets_path,
     load_credentials,
+    publish_app_hint,
+    sign_in_mode_line,
     sign_in_problem,
     token_has_scope,
     token_path_for_channel,
@@ -70,6 +72,15 @@ def check_channel_setup(channel_id: str | None = None) -> SetupReport:
     hints.append(f"Channel: {profile.name} ({channel_id})")
     hints.append(f"Token path: {token_path}")
     hints.append("Worker: py -m jobs.worker --loop 30")
+    try:
+        mode = sign_in_mode_line(channel_id)  # #1443
+        if mode:
+            hints.append(f"Sign-in: {mode}")
+        publish = publish_app_hint(channel_id)  # #1445: the page for the click
+        if publish:
+            hints.append(publish)
+    except Exception as exc:  # a hint, never a reason the check fails
+        hints.append(f"Sign-in mode unread ({type(exc).__name__})")
 
     if not issues and not is_upload_configured(channel_id):
         issues.append(

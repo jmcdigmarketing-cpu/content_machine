@@ -194,6 +194,7 @@ class QuotaWaitTests(unittest.TestCase):
             patch.object(worker, "drain_due", return_value=0),
             patch.object(worker, "_sync_metrics"),
             patch.object(worker, "_overnight_watch"),
+            patch.object(worker, "_sign_in_watch"),
             patch.object(worker, "get_job_repository", return_value=repo),
             patch("sys.argv", ["worker"]),
             patch("builtins.print") as out,
@@ -211,6 +212,169 @@ class QuotaWaitTests(unittest.TestCase):
 
         line = "1 upload waits for the quota reset (run 173) - it goes after Tue 3:00 AM EDT"
         self.assertEqual(summarize_pass([line]), "uploads blocked by quota until the reset")
+
+
+class SignInHoldTests(unittest.TestCase):
+    """#1439 (the operator: the next free slot): an ended sign-in holds an upload, not fails it."""
+
+    def test_an_ended_sign_in_holds_the_job(self):
+        from jobs import worker
+
+        repo = MagicMock()
+        job = _job(74, 173, NOW, status="running")
+        job.attempts = 1
+        result = SimpleNamespace(status="auth_error", detail="OAuth token invalid or expired")
+        with (
+            patch.object(worker, "get_job_repository", return_value=repo),
+            patch("core.win_notify.toast_daily") as toast,
+            patch("builtins.print"),
+        ):
+            worker._finalize_upload_job(job, result)
+        fields = repo.update.call_args.args[1]
+        self.assertEqual(fields["status"], "pending")
+        self.assertEqual(fields["attempts"], 0)
+        self.assertIn(worker.SIGN_IN_HOLD, fields["last_error"])
+        self.assertIn("oauth_setup --channel tapin", fields["last_error"])
+        self.assertEqual(toast.call_args.args[0], "signin:tapin")
+
+    def _sent_request(self, last_error, slot):
+        from jobs import worker
+
+        job = _job(74, 173, slot, status="running")
+        job.last_error = last_error
+        payload = json.loads(job.payload_json)
+        payload["file_path"] = "v.mp4"
+        job.payload_json = json.dumps(payload)
+        publisher = MagicMock()
+        publisher.publish.return_value = SimpleNamespace(status="scheduled")
+        free = datetime.now(timezone.utc) + timedelta(hours=20)
+        with (
+            patch("core.rpm_cost_gate.rpm_cost_gate_reason", return_value=None),
+            patch.object(worker, "get_publisher", return_value=publisher),
+            patch.object(worker, "get_job_repository", return_value=MagicMock()),
+            patch.object(worker, "_finalize_upload_job"),
+            patch("core.spaced_queue.free_slots", return_value=[free]),
+        ):
+            worker._process_upload(job)
+        return publisher.publish.call_args.args[0], free
+
+    def test_after_the_sign_in_a_passed_slot_takes_the_next_free_one(self):
+        from jobs import worker
+
+        passed = datetime.now(timezone.utc) - timedelta(hours=3)
+        request, free = self._sent_request(f"{worker.SIGN_IN_HOLD}: sign in again", passed)
+        self.assertEqual(request.publish_at, free)
+
+    def test_a_job_held_by_the_quota_keeps_todays_rule(self):
+        passed = datetime.now(timezone.utc) - timedelta(hours=3)
+        request, _free = self._sent_request("Upload quota exhausted", passed)
+        self.assertEqual(request.publish_at, passed.replace(microsecond=passed.microsecond))
+
+    def test_the_morning_says_it(self):
+        from jobs import worker
+        from jobs.worker_log import summarize_pass
+
+        line = f"Upload job 74 (run 173) {worker.SIGN_IN_HOLD} - it goes on the first pass after you sign in again"
+        self.assertEqual(summarize_pass([line]), "uploads held - the YouTube sign-in has ended")
+
+
+class SignInSoonTests(unittest.TestCase):
+    """#1438: a toast from 24 hours before a Testing-mode sign-in lapses."""
+
+    def _watch(self, hours_left, env=None):
+        from jobs import worker
+
+        expiry = NOW + timedelta(hours=hours_left)
+        with (
+            patch("config.channels.active_channel_ids", return_value=["tapin"]),
+            patch("os.path.isfile", return_value=True),
+            patch("youtube.oauth.sign_in_expiry", return_value=expiry),
+            patch(
+                "youtube.oauth.sign_in_expiry_line",
+                return_value=""
+                if (env or {}).get("off")
+                else "lapses Wed 9:36 PM EDT unless the app is published",
+            ),
+            patch("core.win_notify.toast_daily") as toast,
+        ):
+            worker._sign_in_watch(now=NOW)
+        return toast
+
+    def test_inside_a_day_it_toasts_once_a_day(self):
+        toast = self._watch(20)
+        self.assertEqual(toast.call_args.args[0], "signin-soon:tapin")
+        self.assertIn("ops check-youtube", toast.call_args.args[2])
+
+    def test_earlier_or_switched_off_it_is_quiet(self):
+        self.assertFalse(self._watch(30).called)
+        self.assertFalse(self._watch(20, {"off": True}).called)
+
+
+class SignInModeTests(unittest.TestCase):
+    """#1443 and #1445: Testing or In production by the sign-in's age; the page for the click."""
+
+    def setUp(self):
+        import os
+        import tempfile
+
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.token = os.path.join(self.tmp.name, "token.json")
+        self.secrets = os.path.join(self.tmp.name, "client_secrets.json")
+        with open(self.secrets, "w", encoding="utf-8") as handle:
+            json.dump({"installed": {"project_id": "proj-123", "client_id": "x"}}, handle)
+        for p in (
+            patch("youtube.oauth.token_path_for_channel", return_value=self.token),
+            patch("youtube.oauth._client_secrets_path", return_value=self.secrets),
+            patch("youtube.oauth._now", return_value=NOW),
+            patch.dict(os.environ, {"SIGN_IN_REMINDER_DAYS": "5"}),
+        ):
+            p.start()
+            self.addCleanup(p.stop)
+
+    def _signed(self, days_ago):
+        with open(self.token, "w", encoding="utf-8") as handle:
+            json.dump(
+                {"token": "t", "signed_in_at": (NOW - timedelta(days=days_ago)).isoformat()}, handle
+            )
+
+    def test_the_mode_by_age(self):
+        from youtube import oauth
+
+        self._signed(3)
+        self.assertEqual(oauth.sign_in_mode("tapin"), "testing")
+        self._signed(9)
+        with patch.object(oauth, "load_credentials", return_value=object()):
+            self.assertEqual(oauth.sign_in_mode("tapin"), "production")
+            self.assertEqual(oauth.sign_in_reminder("tapin"), "")
+            self.assertIn("In production", oauth.sign_in_mode_line("tapin"))
+        with patch.object(oauth, "load_credentials", return_value=None):
+            self.assertEqual(oauth.sign_in_mode("tapin"), "lapsed")
+            self.assertIn("past that", oauth.sign_in_reminder("tapin"))
+
+    def test_the_page_for_the_publish_click(self):
+        import os
+
+        from youtube import oauth
+
+        self._signed(4)
+        hint = oauth.publish_app_hint("tapin")
+        self.assertIn("https://console.cloud.google.com/auth/audience?project=proj-123", hint)
+        self.assertIn("sign in once more", hint)
+        with patch.dict(os.environ, {"SIGN_IN_REMINDER_DAYS": "0"}):
+            self.assertEqual(oauth.publish_app_hint("tapin"), "")
+
+    def test_check_youtube_prints_it(self):
+        from youtube import check_setup
+
+        with (
+            patch.object(check_setup, "publish_app_hint", return_value="Publish the app: URL"),
+            patch.object(check_setup, "sign_in_mode_line", return_value="Testing - lapses Wed"),
+            patch.object(check_setup, "load_credentials", return_value=object()),
+        ):
+            report = check_setup.check_channel_setup("tapin")
+        self.assertIn("Publish the app: URL", report.hints)
+        self.assertIn("Sign-in: Testing - lapses Wed", report.hints)
 
 
 if __name__ == "__main__":

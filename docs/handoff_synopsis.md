@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-20: wave 117, the next ten
+# Handoff synopsis — 2026-10-20 evening: wave 118, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-20 (Claude Code): wave 117, the next ten
+## Last wave — 2026-10-20 evening (Claude Code): wave 118, the next ten
+
+Overnight rendered none of today's 3 drafts. Two waited only on "hard to say", which now
+warns, and whose rewrite now keeps a correct split. A cut had split run 176 at "Oct.": one
+abbreviation-aware splitter (`apis.topic_tokens.split_sentences`), and run 176 repaired. The
+Tonight line reads the shelf pause; the deadline names its day; `ops status` opens with
+"Yours today". Chapter Shorts fill an empty week, held while the shelf is full. Overnight
+renders nothing until the operator decides 3 finished videos. Open 216.
+
+## Previous — 2026-10-20 (Claude Code): wave 117, the next ten
 
 The PC was shut down at Mon 8:49 PM, so overnight could not wake at 5:00 and ran at 4:22 PM;
 the morning, `ops overnight-last` and `ops doctor` now read the cause from the event log, a
@@ -28,15 +37,6 @@ next 14 days in one line. Run 161 moved to Thu noon (the operator's yes). An end
 holds uploads (next free slot after), a toast comes 24 h before the Wed lapse, and `ops
 check-youtube` prints the publish page. The script check fails a garbled last line and a
 run-on; a failed Buffer send goes once more. Open 227.
-
-## Previous — 2026-10-19 evening (Claude Code): wave 115, the next ten
-
-Uploads stopped at 4 on 10-19 - three caption files took 1,200 of 8,629 units - so a caption
-file goes up only while an upload's worth remains. Every upload appends the AI line when it is
-missing, and the first compilation got it on YouTube (the operator's yes). The sync needs the
-analytics permission. `ops status` says when the sign-in lapses (Wed 9:36 PM EDT), what the
-worker last did, when overnight started, and names a 2+-subscriber video. A failed Buffer send
-and a missed overnight raise a toast once a day. Shorts link the compilation. Open 235.
 
 ## Pipeline order (operator)
 
@@ -112,7 +112,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1407 #1430 #1378 #1432 #1341 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1341 #1343 #1494 #1463 #1466 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

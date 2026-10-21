@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-19 evening (Claude Code): wave 115, the next ten
+
+Uploads stopped at 4 on 10-19 - three caption files took 1,200 of 8,629 units - so a caption
+file goes up only while an upload's worth remains. Every upload appends the AI line when it is
+missing, and the first compilation got it on YouTube (the operator's yes). The sync needs the
+analytics permission. `ops status` says when the sign-in lapses (Wed 9:36 PM EDT), what the
+worker last did, when overnight started, and names a 2+-subscriber video. A failed Buffer send
+and a missed overnight raise a toast once a day. Shorts link the compilation. Open 235.
+
 ## Previous — 2026-10-19 (Claude Code): wave 114, the next ten
 
 Two defects from wave 113 first: the unattended sync tried a channel with no sign-in, and

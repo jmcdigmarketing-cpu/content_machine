@@ -79,6 +79,8 @@ class OvernightResult:
     calls_line: str = ""  # wave 112: the week's marquee games called
     # #1253: how many drafts were already waiting, when that cut tonight's count.
     draft_line: str = ""
+    # #1430: chapter Shorts cut to fill an empty week.
+    chapter_lines: list[str] = field(default_factory=list)
 
 
 _DRAFT_WAIT_CAP = 8
@@ -344,6 +346,13 @@ def _run_overnight_body(
     except Exception as exc:
         logger.warning("overnight render step did not run: %s", exc)
 
+    try:  # #1430 (the operator: gaming and evergreen only): fill an empty week
+        from core.chapter_shorts import fill_empty_slots
+
+        result.chapter_lines = fill_empty_slots(channel)
+    except Exception as exc:
+        logger.warning("overnight chapter Shorts did not run: %s", exc)
+
     try:
         from core.channel_health import build_health, health_line
 
@@ -476,6 +485,7 @@ def render_overnight(result: OvernightResult) -> str:
             lines.append("Overnight skipped (quota gate). Nothing drafted.")
         else:
             lines.append("No topics to draft (best bets unavailable). Nothing done.")
+        lines.extend(result.chapter_lines)  # #1430: a night of no drafts can still cut
         if result.canary_line:
             lines.append("")
             lines.append(result.canary_line)
@@ -495,6 +505,7 @@ def render_overnight(result: OvernightResult) -> str:
     except Exception:
         lines.append(f"{result.drafted}/{result.requested} drafts saved")
     lines.extend(render_lines(result))
+    lines.extend(result.chapter_lines)  # #1430
     lines.append("")
     lines.append(f"Dossiers written to vault: {result.dossiers}")
     if result.corrections:

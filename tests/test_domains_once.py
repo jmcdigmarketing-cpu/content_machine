@@ -114,6 +114,7 @@ INFER_DOMAIN_CALLERS = {
     "apis/twitter_signal.py": "retired signal (enabled: false)",
     "core/batch_review.py": "news-domain check; the channel fallback is never a news domain",
     "core/best_bet.py": "best-bet history and domain rates are keyed by weighting domain",
+    "core/chapter_shorts.py": "#1430: a published title's domain - run 120 is stored as nba",
     "core/content_engine.py": "facts domain passes channel_id=None; trade check passes key_facts",
     "core/cross_channel_dup.py": "same subject on another channel; subject + facts",
     "core/engagement.py": "engagement history keyed by weighting domain",

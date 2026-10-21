@@ -447,3 +447,96 @@ def cut_chapter_shorts(
         )
         made.append(ChapterShort(i, span.title, short_run, dest))
     return made
+
+
+FILL_TARGET = 7  # S13: 7 a week
+FILL_PER_NIGHT = 2
+FILL_DOMAINS = frozenset({"gaming"})  # the operator: gaming and evergreen only (#1430)
+
+
+def _features_of(run: Any) -> dict[str, Any]:
+    try:
+        value = json.loads(getattr(run, "features_json", "") or "{}")
+    except (TypeError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def fill_candidates(channel_id: str) -> list[tuple[int, int]]:
+    """(parent run id, chapter index) of the chapters not cut yet that fit a Short, from published
+    all-angles videos whose title reads as gaming - oldest parent first. The domain is read
+    from the title: run 120 (Minecraft in Elden Ring) is stored as "nba"."""
+    from apis.topic_scorer import infer_domain
+
+    runs = list(get_content_run_repository().list_for_channel(channel_id) or [])
+    cut: set[tuple[int, int]] = set()
+    for run in runs:
+        features = _features_of(run)
+        if (
+            features.get("short_source") == "chapter_cut"
+            and features.get("chapter_index") is not None
+        ):
+            cut.add((int(features.get("parent_run_id") or 0), int(features["chapter_index"])))
+    out: list[tuple[int, int]] = []
+    for run in sorted(runs, key=lambda r: int(r.id)):
+        if not _features_of(run).get("all_angles") or str(run.status) != "published":
+            continue
+        if infer_domain(str(run.title or ""), channel_id) not in FILL_DOMAINS:
+            continue
+        _chapters, spans, _text = _record_spans(run, None)
+        out.extend(
+            (int(run.id), i)
+            for i, span in enumerate(spans)
+            if span.fits_shorts and (int(run.id), i) not in cut
+        )
+    return out
+
+
+def scheduled_next_days(channel_id: str, *, days: int = 7) -> int:
+    """Videos scheduled to go public in the next `days` (the publish queue)."""
+    from datetime import datetime, timedelta, timezone
+
+    from analytics.upload_queue import list_queue_entries
+
+    now = datetime.now(timezone.utc)
+    return sum(
+        1
+        for e in list_queue_entries(channel_id)
+        if now < e.publish_at <= now + timedelta(days=days)
+    )
+
+
+def fill_empty_slots(channel_id: str, *, cut: Any = None, queue: Any = None) -> list[str]:
+    """#1430 (wave 118, the operator: gaming and evergreen only): when fewer than 7 are scheduled
+    in the next 7 days, overnight cuts up to 2 chapters of a published all-angles video into
+    Shorts and queues each unlisted - it waits for review like every overnight render (decision
+    60), and the shelf pause holds it too. On 10-20 3 were scheduled in 14 days and 9 gaming
+    chapters fitted (runs 92 and 120). Fail-open: []."""
+    try:
+        from core.batch_review import _queue_unlisted, shelf_pause
+
+        scheduled = scheduled_next_days(channel_id)
+        want = min(FILL_PER_NIGHT, FILL_TARGET - scheduled)
+        if want <= 0:
+            return []
+        paused = shelf_pause(channel_id)
+        if paused:
+            return [f"Chapter Shorts: none cut - {paused}"]
+        picks = fill_candidates(channel_id)[:want]
+        if not picks:
+            return []
+        lines = [f"Chapter Shorts: {scheduled} scheduled in the next 7 days - cutting {len(picks)}"]
+        for parent, index in picks:
+            for short in (cut or cut_chapter_shorts)(parent, indices=[index]):
+                if short.run_id:
+                    (queue or _queue_unlisted)(int(short.run_id), channel_id)
+                    lines.append(
+                        f"  run {short.run_id}: chapter {index + 1} of run {parent} - queued "
+                        "unlisted, waits for you"
+                    )
+                else:
+                    lines.append(f"  run {parent} chapter {index + 1}: not cut - {short.skipped}")
+        return lines
+    except Exception as exc:
+        logger.warning("chapter Shorts skipped: %s", exc)
+        return []

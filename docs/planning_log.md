@@ -8994,3 +8994,35 @@ Batch B (one commit with A):
   preview due Friday. "Nothing by hand today" shows only when none of them is due.
 - All 13 new tests of A and B failed on clean HEAD. The deadline code went in before its test;
   the clean-HEAD run is its proof.
+
+Batch C:
+- #1430 (the operator: gaming and evergreen only): overnight cuts up to 2 chapter Shorts a
+  night when fewer than 7 are scheduled in the next 7 days, and the shelf pause holds them.
+  Live: 9 chapters fit, 3 are scheduled, held - 3 finished videos wait.
+- #1378 met and #1432 not built, by measurement (above).
+- All 4 new tests failed on clean HEAD.
+
+Audit (wave 118):
+- 17 tests in tests/test_wave118.py, all 17 seen failing on clean HEAD. 5 corpus cases.
+- The fix that matters most is not mine to make: overnight renders nothing until the
+  operator decides 3 finished videos (168 and 170 unlisted since 10-19, re-cut 171).
+- Own slips:
+  - wave 117's Tonight line promised renders the shelf held (fixed first, before the 8 PM
+    toast);
+  - the deadline code went in before its test;
+  - a heredoc patch lost its backslashes again (caught by its own assert; redone with
+    the Edit tool);
+  - one new mypy error in `yours_items` (an optional datetime), fixed before the export.
+- The first C export failed `test_domains_once`: `fill_candidates` is a new `infer_domain`
+  caller. It is on the allowlist with its reason - run 120's stored domain is wrong.
+- Found, left: run 174 waits on "no take found", which is the authenticity rule.
+- mypy 92. ruff clean on every export.
+- Live:
+  - `ops status`'s Yours today and the paused Tonight line;
+  - the deadline with its day;
+  - runs 175 and 176 through the render gate;
+  - run 176's draft repaired and read back;
+  - the chapter fill held by the shelf.
+  Nothing outward changed.
+
+`roadmap-index`: open 216, done 1552, numbered open 207.

@@ -227,5 +227,92 @@ class YoursTodayTests(unittest.TestCase):
         )
 
 
+class ChapterFillTests(unittest.TestCase):
+    """#1430 (the operator: gaming and evergreen only): chapter Shorts fill empty slots."""
+
+    def _run(self, run_id, title, *, status="published", features=None):
+        import json
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            id=run_id, title=title, status=status, features_json=json.dumps(features or {})
+        )
+
+    def test_the_candidates(self):
+        from types import SimpleNamespace
+
+        from core import chapter_shorts
+
+        runs = [
+            self._run(
+                92,
+                "GTA 6 Leaks, PC Rumors & Multiplayer Delay: All Angles",
+                features={"all_angles": True},
+            ),
+            self._run(99, "UFC week 2: Gane stops Pereira", features={"all_angles": True}),
+            self._run(
+                80,
+                "GTA 6 chapter",
+                status="rendered",
+                features={"short_source": "chapter_cut", "parent_run_id": 92, "chapter_index": 0},
+            ),
+        ]
+        spans = [SimpleNamespace(fits_shorts=ok) for ok in (True, True, False)]
+        with (
+            patch.object(
+                chapter_shorts,
+                "get_content_run_repository",
+                return_value=SimpleNamespace(list_for_channel=lambda c: runs),
+            ),
+            patch.object(chapter_shorts, "_record_spans", return_value=([], spans, "text")),
+            patch(
+                "apis.topic_scorer.infer_domain",
+                side_effect=lambda t, c=None: "gaming" if "GTA" in t else "ufc",
+            ),
+        ):
+            self.assertEqual(chapter_shorts.fill_candidates("tapin"), [(92, 1)])
+
+    def _fill(self, *, scheduled=3, paused="", picks=((92, 1), (92, 3), (120, 0))):
+        from core import chapter_shorts
+
+        made = []
+
+        def cut(parent, indices):
+            made.append((parent, indices[0]))
+            return [chapter_shorts.ChapterShort(indices[0], "t", 500 + len(made), "x.mp4")]
+
+        queued = []
+        with (
+            patch.object(chapter_shorts, "scheduled_next_days", return_value=scheduled),
+            patch("core.batch_review.shelf_pause", return_value=paused),
+            patch.object(chapter_shorts, "fill_candidates", return_value=list(picks)),
+        ):
+            lines = chapter_shorts.fill_empty_slots(
+                "tapin", cut=cut, queue=lambda rid, ch: queued.append(rid) or 9
+            )
+        return lines, made, queued
+
+    def test_two_a_night_queued_unlisted(self):
+        lines, made, queued = self._fill()
+        self.assertEqual(made, [(92, 1), (92, 3)])
+        self.assertEqual(queued, [501, 502])
+        self.assertIn("queued unlisted", " ".join(lines))
+
+    def test_held_by_the_shelf_or_a_full_week(self):
+        lines, made, _queued = self._fill(
+            paused="3 finished videos are waiting (overnight stops at 3)"
+        )
+        self.assertEqual(made, [])
+        self.assertIn("none cut - 3 finished videos are waiting", lines[0])
+        self.assertEqual(self._fill(scheduled=7), ([], [], []))
+
+    def test_the_overnight_report_says_it(self):
+        from core.overnight import OvernightResult, render_overnight
+
+        result = OvernightResult(channel_id="tapin")
+        result.chapter_lines = ["Chapter Shorts: 3 scheduled in the next 7 days - cutting 2"]
+        self.assertIn("Chapter Shorts: 3 scheduled", render_overnight(result))
+
+
 if __name__ == "__main__":
     unittest.main()

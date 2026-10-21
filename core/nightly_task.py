@@ -683,12 +683,25 @@ def wake_doctor(*, now: datetime | None = None) -> tuple[bool, str]:
     return True, line
 
 
-def tonight_text(drafts: int, renders: int, start: tuple[int, int] | None) -> str:
-    """#1337 (wave 117): what overnight will do, "" when nothing. The operator: an 8 PM toast."""
-    if drafts <= 0 and renders <= 0:
-        return ""
+def tonight_text(
+    drafts: int, renders: int, start: tuple[int, int] | None, *, paused: str = ""
+) -> str:
+    """#1337 (wave 117): what overnight will do, "" when nothing. The operator: an 8 PM toast.
+    #1534 (wave 118): `paused` is `batch_review.shelf_pause` - on 10-20 the line said "renders up
+    to 2" while 3 finished videos waiting held every render."""
     hour, minute = start or (5, 0)
     clock = _clock(datetime(2000, 1, 1, hour, minute))
+    if paused:
+        waiting = re.match(r"(\d+) finished videos", paused)
+        why = f"{waiting.group(1)} finished videos wait for you" if waiting else "renders paused"
+        if drafts <= 0:
+            return f"Tonight at {clock}: no drafts, no renders - {why} (ops shelf)"
+        return (
+            f"Tonight at {clock}: drafts {drafts}, no renders - {why} (ops shelf); leave the PC "
+            "asleep, not shut down"
+        )
+    if drafts <= 0 and renders <= 0:
+        return ""
     return (
         f"Tonight at {clock}: drafts {drafts}, renders up to {renders} - leave the PC asleep, "
         "not shut down"
@@ -700,7 +713,7 @@ def tonight_line(channel_id: str) -> str:
     (`overnight.draft_count` against the waiting drafts) and the renders it may make
     (`batch_review.overnight_render_limit`). Fail-open: ""."""
     try:
-        from core.batch_review import overnight_render_limit, pending_drafts
+        from core.batch_review import overnight_render_limit, pending_drafts, shelf_pause
         from core.output_paths import channel_output_root
         from core.overnight import draft_count
 
@@ -710,7 +723,8 @@ def tonight_line(channel_id: str) -> str:
         waiting = len(pending_drafts(channel_id, root=root)) if os.path.isdir(root) else 0
         drafts, _why = draft_count(waiting, count)
         renders, _more = overnight_render_limit(channel_id)
-        return tonight_text(drafts, renders, times.get("start"))
+        paused = shelf_pause(channel_id) if renders > 0 else ""  # #1534
+        return tonight_text(drafts, renders, times.get("start"), paused=paused)
     except Exception as exc:
         logger.debug("tonight line skipped: %s", exc)
         return ""

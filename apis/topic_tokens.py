@@ -183,6 +183,8 @@ COMMON_CAPITALISED = (
             "lose", "lost", "win", "wins",
             # #1160: sentence openers the grounding check reported as names (runs 93, 99).
             "expect", "guess", "sounds", "tweaks",
+            # #1531: a read-aloud split opens its new sentence with a pronoun, not a name.
+            "he", "she", "his", "her", "him", "both", "each", "yet",
         }
     )
 )  # fmt: skip
@@ -487,3 +489,79 @@ def place_words() -> frozenset[str]:
             city = parts[:-2] if full.endswith("Trail Blazers") else parts[:-1]
             words |= {w.lower() for w in city if len(w) > 3}
     return frozenset(words - _GENERIC_PLACE_WORDS)
+
+
+ABBREVIATIONS = frozenset(
+    {
+        "mr",
+        "mrs",
+        "ms",
+        "dr",
+        "prof",
+        "sr",
+        "jr",
+        "st",
+        "vs",
+        "etc",
+        "inc",
+        "ltd",
+        "co",
+        "corp",
+        "no",
+        "approx",
+        "fig",
+        "al",
+        "ave",
+        "gen",
+        "gov",
+        "sen",
+        "rep",
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "jun",
+        "jul",
+        "aug",
+        "sept",
+        "sep",
+        "oct",
+        "nov",
+        "dec",
+        "u.s",
+        "e.g",
+        "i.e",
+        "a.m",
+        "p.m",
+    }
+)
+# A sentence end is terminal punctuation (plus any closing quote/bracket) followed
+# by whitespace. Abbreviations are filtered out afterwards, not by the pattern.
+_SENTENCE_BOUNDARY = re.compile(r"([.!?][\"')\]]*)(\s+)")
+
+
+def ends_on_an_abbreviation(chunk: str) -> bool:
+    if not chunk.endswith("."):
+        return False
+    last = chunk.rsplit(" ", 1)[-1].rstrip(".").lower()
+    # "Nov." / "Inc." / a middle initial ("Rob J. Nelson").
+    return last in ABBREVIATIONS or (len(last) == 1 and last.isalpha())
+
+
+def split_sentences(text: str) -> list[str]:
+    """Sentences, not split at an abbreviation ("vs.", "Jr.", "No.", "Oct.", a middle initial).
+    Wave 109: `hook_score.extract_hook` read "Jets vs." as the first sentence of a preview.
+    #1532 (wave 118, moved from core.operator_facts): the one splitter - run 176's stock-phrase
+    pass split at "Oct." and dropped "... Saturday, Oct.", leaving "24 at Etihad Arena"."""
+    out: list[str] = []
+    start = 0
+    for match in _SENTENCE_BOUNDARY.finditer(text):
+        candidate = text[start : match.end(1)].strip()
+        if not candidate or ends_on_an_abbreviation(candidate):
+            continue
+        out.append(candidate)
+        start = match.end(2)
+    tail = text[start:].strip()
+    if tail:
+        out.append(tail)
+    return out

@@ -7,7 +7,8 @@ import re
 from itertools import pairwise
 from typing import Any
 
-_SENTENCE = re.compile(r"[^.!?]+[.!?]+")
+from apis.topic_tokens import split_sentences
+
 _CTA = re.compile(
     r"^\s*(like and subscribe|follow for more|smash (?:that )?like|tap in for more)\b",
     re.I,
@@ -42,7 +43,7 @@ def _syllables(word: str) -> int:
 
 def reading_grade(script: str) -> float | None:
     """Flesch-Kincaid grade. None when there is nothing to measure."""
-    parts = [p.strip() for p in _SENTENCE.findall(script or "") if p.strip()]
+    parts = [p.strip() for p in split_sentences(script or "") if p.strip()]
     words = re.findall(r"[A-Za-z']+", script or "")
     if not parts or not words:
         return None
@@ -53,7 +54,7 @@ def reading_grade(script: str) -> float | None:
 
 def sentence_rhythm_flags(script: str) -> list[str]:
     """Uniform sentence length is the clearest LLM tell. Warn-only."""
-    parts = [p.strip() for p in _SENTENCE.findall(script or "") if p.strip()]
+    parts = [p.strip() for p in split_sentences(script or "") if p.strip()]
     if len(parts) < 5:
         return []
     lengths = [len(p.split()) for p in parts]
@@ -153,7 +154,7 @@ def _why_hard(sentence: str) -> str:
 def hard_to_say(script: str) -> list[dict[str, str]]:
     """Sentences a voice will stumble on: [{sentence, why}], in order. Free; always runs."""
     out: list[dict[str, str]] = []
-    for part in _SENTENCE.findall(script or ""):
+    for part in split_sentences(script or ""):
         sentence = part.strip()
         why = _why_hard(sentence)
         if why:
@@ -169,10 +170,25 @@ def read_aloud_enabled() -> bool:
 def _names_in(text: str) -> set[str]:
     """Capitalised words that do not merely start a sentence."""
     names: set[str] = set()
-    for part in _SENTENCE.findall(text or "") or [text or ""]:
+    for part in split_sentences(text or "") or [text or ""]:
         words = re.findall(r"[\w'-]+", part)
         names.update(w for w in words[1:] if w[:1].isupper())
     return names
+
+
+def _names_kept(old: str, new: str) -> bool:
+    """#1531 (wave 118): every name the old sentence gives is still a word of the rewrite, and
+    the rewrite gives no name the old text lacks - wherever each now sits. It compared
+    `_names_in` sets, which leave out a sentence's first word, so the split the prompt asks for
+    ("Evloev is 19-0 ...") lost "Evloev" and was thrown away: 8 of 20 flagged sentences kept."""
+    from apis.topic_tokens import COMMON_CAPITALISED
+
+    old_words = {w.lower() for w in re.findall(r"[\w'-]+", old)}
+    new_words = {w.lower() for w in re.findall(r"[\w'-]+", new)}
+    if not all(n.lower() in new_words for n in _names_in(old)):
+        return False
+    capitals = {w for w in re.findall(r"[\w'-]+", new) if w[:1].isupper()}
+    return all(w.lower() in old_words or w.lower() in COMMON_CAPITALISED for w in capitals)
 
 
 def read_aloud_pass(script: str, call) -> tuple[str, dict[str, Any]]:
@@ -215,7 +231,7 @@ def read_aloud_pass(script: str, call) -> tuple[str, dict[str, Any]]:
             continue
         if hard_to_say(new) or _numbers_in(new) != _numbers_in(old):
             continue
-        if _names_in(new) - _names_in(old) or _names_in(old) - _names_in(new):
+        if not _names_kept(old, new):
             continue
         out = out.replace(old, new, 1)
         report["rewritten"] += 1
@@ -230,7 +246,6 @@ def read_aloud_pass(script: str, call) -> tuple[str, dict[str, Any]]:
 # the script, the claims with one rewrite and then a block. These are the free, deterministic
 # halves: what to cut, what slipped, which of the operator's points are missing.
 
-_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 CUT_MAX = 2
 # #1162: a cut of an unbacked sentence may leave the script this share of its minimum.
 CUT_FLOOR_SHARE = 0.85
@@ -238,7 +253,7 @@ POINT_SHARE = 0.6
 
 
 def script_sentences(text: str) -> list[str]:
-    return [s.strip() for s in _SENTENCE_SPLIT.split(text or "") if s.strip()]
+    return [s.strip() for s in split_sentences(text or "") if s.strip()]  # #1532
 
 
 def drop_sentences(script: str, doomed: list[str], *, min_words: int) -> tuple[str, list[str]]:

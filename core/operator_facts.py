@@ -12,6 +12,7 @@ import re
 from datetime import date
 from typing import Any
 
+from apis.topic_tokens import split_sentences as sentences  # #1532: moved to apis
 from core.logging import get_logger
 
 logger = get_logger("core.operator_facts")
@@ -99,55 +100,6 @@ def operator_key_fact_char_budget() -> int:
         return 12000
 
 
-_ABBREVIATIONS = frozenset(
-    {
-        "mr",
-        "mrs",
-        "ms",
-        "dr",
-        "prof",
-        "sr",
-        "jr",
-        "st",
-        "vs",
-        "etc",
-        "inc",
-        "ltd",
-        "co",
-        "corp",
-        "no",
-        "approx",
-        "fig",
-        "al",
-        "ave",
-        "gen",
-        "gov",
-        "sen",
-        "rep",
-        "jan",
-        "feb",
-        "mar",
-        "apr",
-        "jun",
-        "jul",
-        "aug",
-        "sept",
-        "sep",
-        "oct",
-        "nov",
-        "dec",
-        "u.s",
-        "e.g",
-        "i.e",
-        "a.m",
-        "p.m",
-    }
-)
-# A sentence end is terminal punctuation (plus any closing quote/bracket) followed
-# by whitespace. Abbreviations are filtered out afterwards, not by the pattern.
-_SENTENCE_BOUNDARY = re.compile(r"([.!?][\"')\]]*)(\s+)")
-
-
 def key_fact_split_width() -> int:
     """Width a fact line is split at. Env `MAX_KEY_FACT_CHARS`."""
     raw = os.getenv("MAX_KEY_FACT_CHARS", str(_MAX_KEY_FACT_CHARS)).strip()
@@ -155,31 +107,6 @@ def key_fact_split_width() -> int:
         return max(80, min(4000, int(raw)))
     except ValueError:
         return _MAX_KEY_FACT_CHARS
-
-
-def _ends_on_an_abbreviation(chunk: str) -> bool:
-    if not chunk.endswith("."):
-        return False
-    last = chunk.rsplit(" ", 1)[-1].rstrip(".").lower()
-    # "Nov." / "Inc." / a middle initial ("Rob J. Nelson").
-    return last in _ABBREVIATIONS or (len(last) == 1 and last.isalpha())
-
-
-def sentences(text: str) -> list[str]:
-    """Sentences, not split at an abbreviation ("vs.", "Jr.", "Dr.", a middle initial).
-    Wave 109: `hook_score.extract_hook` read "Jets vs." as the first sentence of a preview."""
-    out: list[str] = []
-    start = 0
-    for match in _SENTENCE_BOUNDARY.finditer(text):
-        candidate = text[start : match.end(1)].strip()
-        if not candidate or _ends_on_an_abbreviation(candidate):
-            continue
-        out.append(candidate)
-        start = match.end(2)
-    tail = text[start:].strip()
-    if tail:
-        out.append(tail)
-    return out
 
 
 def _word_chunks(text: str, limit: int) -> list[str]:

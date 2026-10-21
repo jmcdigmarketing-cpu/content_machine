@@ -104,6 +104,82 @@ def _overnight(channel_id: str) -> str:
     )
 
 
+_LAPSE_SOON_HOURS = 48
+
+
+def yours_text(items: list[str]) -> str:
+    """#1407 (wave 118): what is yours today, or "Nothing by hand today" when nothing is."""
+    return "Yours today: " + "; ".join(items) if items else "Nothing by hand today"
+
+
+def yours_items(channel_id: str) -> list[str]:
+    """The time-sensitive things only: a sign-in that lapses within 48 h, finished videos that
+    wait (overnight renders nothing while 3 do), and drafts with the soonest deadline. On 10-20
+    they sat in four commands' output - 3 drafts, 3 finished videos and a Wednesday lapse."""
+    import os
+    import re
+    from datetime import datetime, timezone
+
+    items: list[str] = []
+    try:
+        from analytics.post_timing import format_scheduled_local
+        from youtube.oauth import sign_in_expiry, sign_in_mode
+
+        when = sign_in_expiry(channel_id)
+        left = (when - datetime.now(timezone.utc)).total_seconds() if when else -1
+        soon = 0 < left <= _LAPSE_SOON_HOURS * 3600
+        if when is not None and soon and sign_in_mode(channel_id) == "testing":
+            items.append(
+                f"publish the Google app before {format_scheduled_local(when, channel_id)} "
+                "(ops check-youtube)"
+            )
+    except Exception as exc:
+        logger.debug("yours: sign-in skipped: %s", exc)
+    try:
+        from core.batch_review import shelf_max, shelf_pause
+        from core.stale_renders import shelf_rows
+
+        rows = [row for row in shelf_rows(channel_id) if not row.get("stale")]
+        if rows:
+            noun = "video" if len(rows) == 1 else "videos"
+            text = f"decide {len(rows)} finished {noun} (ops shelf)"
+            if shelf_pause(channel_id, waiting=len(rows)):
+                text += f" - overnight renders nothing until fewer than {shelf_max()} wait"
+            items.append(text)
+    except Exception as exc:
+        logger.debug("yours: shelf skipped: %s", exc)
+    try:
+        from core.batch_review import deadline_line, pending_drafts
+        from core.output_paths import channel_output_root
+
+        root = os.path.join(channel_output_root(channel_id), "drafts")  # read, never made here
+        waiting = (
+            [d for d in pending_drafts(channel_id, root=root) if not d.decision]
+            if os.path.isdir(root)
+            else []
+        )
+        if waiting:
+            noun = "draft" if len(waiting) == 1 else "drafts"
+            text = f"review {len(waiting)} {noun} (ops batch-review)"
+            found = re.search(
+                r"Decide first: (.+?) - kicks off .*?review it by (.+?) for its",
+                deadline_line(channel_id, root=root),
+            )
+            if found:
+                title = found.group(1)
+                if len(title) > 48:  # at a word, never mid-word
+                    title = title[:48].rsplit(" ", 1)[0] + "..."
+                text += f" - {title} by {found.group(2)}"
+            items.append(text)
+    except Exception as exc:
+        logger.debug("yours: drafts skipped: %s", exc)
+    return items
+
+
+def _yours(channel_id: str) -> str:
+    return yours_text(yours_items(channel_id))
+
+
 def _tonight(channel_id: str) -> str:
     """#1337: what overnight will do at 5:00, and to leave the PC asleep."""
     from core.nightly_task import tonight_line
@@ -112,6 +188,7 @@ def _tonight(channel_id: str) -> str:
 
 
 FAMILIES: list[tuple[str, str, Callable[[str], str]]] = [
+    ("Yours today", "ops batch-review", _yours),  # #1407
     ("Sign-in", "ops check-youtube", _sign_in),
     ("Worker", "ops worker-task", _worker),
     ("Overnight", "ops overnight-last", _overnight),

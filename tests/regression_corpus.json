@@ -5968,6 +5968,85 @@
         "equals": ""
       },
       "why": "an edit in the tree is not a commit anyone can check"
+    },
+    {
+      "id": "run176-oct-and-no-do-not-end-a-sentence",
+      "item": 1532,
+      "source": "run 176, 2026-10-20: the stock-phrase pass split at 'Oct.' and left '24 at Etihad Arena'",
+      "call": "apis.topic_tokens:split_sentences",
+      "args": [
+        "Aldo's logic: an undefeated No. 1 contender who wins decisions doesn't sell the way a name does. UFC 333 is Saturday, Oct. 24 at Etihad Arena in Abu Dhabi. The odds are dead even."
+      ],
+      "expect": {
+        "equals": [
+          "Aldo's logic: an undefeated No. 1 contender who wins decisions doesn't sell the way a name does.",
+          "UFC 333 is Saturday, Oct. 24 at Etihad Arena in Abu Dhabi.",
+          "The odds are dead even."
+        ]
+      },
+      "why": "a pass that drops a sentence must drop a whole one"
+    },
+    {
+      "id": "run176-the-script-splitter-is-the-same",
+      "item": 1532,
+      "source": "wave 118: the sibling - script_craft's splitter, used by every cut",
+      "call": "core.script_craft:script_sentences",
+      "args": [
+        "Aldo's logic: an undefeated No. 1 contender who wins decisions doesn't sell the way a name does. UFC 333 is Saturday, Oct. 24 at Etihad Arena in Abu Dhabi. The odds are dead even."
+      ],
+      "expect": {
+        "contains": "UFC 333 is Saturday, Oct. 24 at Etihad Arena in Abu Dhabi."
+      },
+      "why": "script_craft splits with the same function"
+    },
+    {
+      "id": "a-read-aloud-split-keeps-its-names",
+      "item": 1531,
+      "source": "run 176, 2026-10-20: the split rewrite was rejected for moving Evloev to a sentence's start",
+      "call": "core.script_craft:_names_kept",
+      "args": [
+        "Volkanovski, 28-4 with 13 knockouts, against Evloev, 19-0 with three KOs and four submissions.",
+        "Volkanovski is 28-4 with 13 knockouts. Evloev is 19-0, with three KOs and four submissions."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a name that moves to the front is still kept"
+    },
+    {
+      "id": "a-read-aloud-rewrite-may-not-add-a-name",
+      "item": 1531,
+      "source": "wave 118: the sibling - a new sentence that names someone new",
+      "call": "core.script_craft:_names_kept",
+      "args": [
+        "Volkanovski, 28-4 with 13 knockouts, against Evloev, 19-0 with three KOs and four submissions.",
+        "Volkanovski is 28-4 with 13 knockouts. Evloev is 19-0, with three KOs and four submissions. Holloway watches."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the rewrite keeps every name and adds none"
+    },
+    {
+      "id": "tonight-says-renders-are-paused",
+      "item": 1534,
+      "source": "live 2026-10-20: 'renders up to 2' while 3 finished videos waiting held every render",
+      "call": "core.nightly_task:tonight_text",
+      "args": [
+        3,
+        2,
+        [
+          5,
+          0
+        ]
+      ],
+      "kwargs": {
+        "paused": "3 finished videos are waiting (overnight stops at 3) - py -m scripts.ops shelf --channel tapin"
+      },
+      "expect": {
+        "equals": "Tonight at 5:00 AM: drafts 3, no renders - 3 finished videos wait for you (ops shelf); leave the PC asleep, not shut down"
+      },
+      "why": "the evening line must not promise renders the shelf will hold"
     }
   ]
 }

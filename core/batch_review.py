@@ -654,9 +654,12 @@ def deadline_line(channel_id: str, *, root: str | None = None, now: datetime | N
             f"--run-id {draft.run_id} --queue --private, then go-public with its video id"
         )
     slot = before[-1]
+    # #1533 (wave 118): it said "review it by 8:30 PM EDT for the 10:00 PM EDT slot" for Fri
+    # 10-23 - read on a Tuesday evening, that was tonight.
     return (
         f"Decide first: {draft.title} - kicks off {kickoff}; review it by "
-        f"{_zone_clock(slot - _FIRST_LEAD, channel_id)} for the {_zone_clock(slot, channel_id)} slot"
+        f"{_zone_clock(slot - _FIRST_LEAD, channel_id, day=True)} for its "
+        f"{_zone_clock(slot, channel_id)} slot"
     )
 
 
@@ -891,8 +894,11 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
         return "weak hook"
     check = meta.get("script_clean")
     if isinstance(check, dict) and check.get("ok") is False:
-        reasons = check.get("why") or ["not clean"]
-        return f"script check: {reasons[0]}"  # #1143
+        # #1535 (wave 118, the operator: warn only): "hard to say" alone held 9 of 58 drafts;
+        # the render goes up unlisted and is heard at review anyway (decision 60).
+        reasons = [r for r in check.get("why") or ["not clean"] if "hard to say" not in str(r)]
+        if reasons:
+            return f"script check: {reasons[0]}"  # #1143
     if meta.get("title_warnings"):
         return "its title says something the facts do not"  # #1150
     game = game_block_reason(meta, now=now)

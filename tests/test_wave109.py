@@ -137,7 +137,8 @@ class DeadlineTests(unittest.TestCase):
         line = self._line(NINE_EDT)
         self.assertIn("Decide first: Chargers' Pass Defense vs Chiefs' Offense", line)
         self.assertIn("kicks off Sun Oct 18 4:25 PM EDT", line)
-        self.assertIn("review it by 10:30 AM EDT for the 12:00 PM EDT slot", line)
+        # #1533 (wave 118): the deadline names its day.
+        self.assertIn("review it by Sun Oct 18 10:30 AM EDT for its 12:00 PM EDT slot", line)
 
     def test_past_the_last_slot_it_says_none_is_left(self):
         line = self._line(NINE_EDT + timedelta(hours=2))  # 11 AM EDT: noon is under 90 minutes

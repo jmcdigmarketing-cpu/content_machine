@@ -8957,3 +8957,40 @@ Audit (wave 117):
   5:00 - if the PC is asleep, not shut down).
 
 `roadmap-index`: open 220, done 1543, numbered open 211.
+
+## 2026-10-20 evening — wave 118, the next ten (Claude Code)
+
+**Prompt:** "next 10 up on the to do" (again). Answers, all three the recommended option:
+- "hard to say" warns, it does not hold a render;
+- chapter Shorts from gaming and evergreen videos;
+- repair run 176's sentence.
+
+Measured first (19:30 CDT):
+- Today's overnight made 3 drafts and rendered 0. Run 174 has no take; runs 175 and 176
+  waited only on "1 sentence hard to say" - 9 of the last 58 drafts did.
+- The read-aloud rewrite that should fix those kept 8 of 20: its name check left out a
+  sentence's first word, so a correct split lost a name and was rejected.
+- Run 176's draft read "... the way a name does. 24 at Etihad Arena". The stock-phrase
+  pass split at "Oct." and dropped "... Saturday, Oct.". 30 copies of that split remain.
+- Renders were paused anyway: 3 finished videos waiting (re-cut 171, plus 168 and 170 since
+  10-19) against `shelf_max` 3. My wave-117 Tonight line said "renders up to 2".
+- The decide-first deadline named no day; it is Fri 10-23.
+- #1378 met: the PC went back to sleep at 06:11 after the 10-19 wake. #1432 not needed:
+  9,284 units were left on 10-20.
+
+Batch A:
+- #1534 first, before the 8 PM toast: the Tonight line reads the shelf pause.
+- #1531: the read-aloud names check holds wherever a name sits.
+- #1535: "hard to say" warns only.
+- #1532: one abbreviation-aware splitter (`apis.topic_tokens.split_sentences`) in the passes
+  that cut, with a ratchet at 27.
+- Run 176 repaired with the operator's yes.
+- Live: runs 175 and 176 pass the render gate.
+
+Batch B (one commit with A):
+- #1533: the decide-first deadline names its day (Fri Oct 23).
+- #1407: a "Yours today" line opens the Machine block, from the time-sensitive things only -
+  the Wed lapse, 3 finished videos holding overnight's renders, 3 drafts with the UFC 333
+  preview due Friday. "Nothing by hand today" shows only when none of them is due.
+- All 13 new tests of A and B failed on clean HEAD. The deadline code went in before its test;
+  the clean-HEAD run is its proof.

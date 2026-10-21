@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from typing import Any
 
+from apis.topic_tokens import split_sentences
 from config.channels import resolve_channel_id
 from core.logging import get_logger
 from core.script_length import count_spoken_words
@@ -276,11 +277,11 @@ def rewrite_repeated(script: str, recent: list[str]) -> tuple[str, dict[str, Any
     The returned count is from before the drop. A script that does not repeat
     is returned unchanged. A second call does not drop again.
     """
-    sentences = [part.strip() for part in _SENTENCE_SPLIT.split(script or "") if part.strip()]
+    sentences = [part.strip() for part in split_sentences(script or "") if part.strip()]
     shapes = [
         _sentence_shape(part)
         for other in recent or []
-        for part in _SENTENCE_SPLIT.split(other)
+        for part in split_sentences(other)
         if part.strip() and not _STOCK_CLOSER.match(part.strip())
     ]
     counts: list[int] = []
@@ -312,7 +313,6 @@ def rewrite_repeated(script: str, recent: list[str]) -> tuple[str, dict[str, Any
 
 
 _STOCK_CLOSER = re.compile(r"^tap in for more\.?$", re.I)
-_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
 
 def payoff_closer(script: str) -> tuple[str, dict[str, Any]]:
@@ -329,7 +329,7 @@ def payoff_closer(script: str) -> tuple[str, dict[str, Any]]:
     """
     from apis.topic_tokens import content_tokens
 
-    sentences = [part.strip() for part in _SENTENCE_SPLIT.split(script or "") if part.strip()]
+    sentences = [part.strip() for part in split_sentences(script or "") if part.strip()]
     verdict = {"closer_answered": True, "rewritten": False}
     if len(sentences) < 2:
         return script, verdict
@@ -382,7 +382,7 @@ def drop_reused_opening(script: str, recent: list[str]) -> tuple[str, dict[str, 
     report: dict[str, Any] = {"before": before, "dropped": False}
     if before < 1:
         return text, report
-    parts = [part.strip() for part in _SENTENCE_SPLIT.split(text) if part.strip()]
+    parts = [part.strip() for part in split_sentences(text) if part.strip()]
     if len(parts) < 2:
         return text, report
     report["dropped"] = True
@@ -586,7 +586,7 @@ def ad_unfriendly_words(text: str) -> list[str]:
 
 def opening_sentence(script: str) -> str:
     """The script's first sentence - what the viewer hears first."""
-    parts = re.split(r"(?<=[.!?])\s+", (script or "").strip(), maxsplit=1)
+    parts = split_sentences((script or "").strip())  # #1532
     return parts[0] if parts else ""
 
 

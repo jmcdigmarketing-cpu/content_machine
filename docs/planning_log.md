@@ -9159,3 +9159,106 @@ Audit (wave 120):
 - Outward: nothing.
 
 `roadmap-index`: open 202, done 1570, numbered open 193.
+
+## 2026-10-22 — wave 121, the next ten from the latest main (Claude Code)
+
+**Prompt:** "can you work on the next 10? using the version of the project uploaded to git most
+recently?" This session's copy was wave 70 (`52822fe`); `origin/main` was 50 commits ahead at
+`9e03058` (waves 71-120, another Claude session). Local main had nothing of its own and was
+fast-forwarded; the ten were measured on `9e03058` before anything was built. Plan approved in
+plan mode, no other questions.
+
+Picked: the roadmap's five (#1538 #1539 #1472 #1475 #1390) and five neighbours from the same
+shortfalls (#1479 #1478 #1391 #1487 #1469). Measuring changed one: #1391 is not measurable -
+`snippet.thumbnails` lists the same URLs (`hqdefault.jpg`, and `maxresdefault.jpg` for any HD
+upload) for YouTube's own frame and a custom image - so it is closed by measurement and #1486
+(S19, broken-name cases for every league) takes its place; probing the title check for those
+cases found a real miss.
+
+Shipped (tests/test_wave121.py, 21 tests; batch A `c74cab7`, batch B `db00be1`):
+1. #1538 - `core/retention.py:339` `first_seconds_text(stayed=)`, `:364` `first_seconds_lines`
+   reads the synced `stayed_share`: "120% at 3 s (the opening was replayed); 64% stayed rather
+   than swiped".
+2. #1539 - `apis/topic_tokens.py:366` `trim_name` (possessive; "Dutys" -> "Duty" on a longer
+   name's last word only; `:345` `NAME_TAIL_WORDS`) in `core/facts/entity_lookup.py:91`
+   `names_for`, whose team restore also takes a team's tail. All five live fragments resolve.
+   The sibling `subject_terms` (`:461`, the news search) kept the same fragments and uses it.
+3. #1472 - `core/channel_health.py:39` `UNKNOWN`: a check that cannot read says "unknown -
+   could not read <source>", never RED, overall held at YELLOW, "unknown: cost" in the line.
+   $0.00 revenue on every video read RED "negative margin $-0.20"; it reads on cost alone.
+4. #1475 - `:560` `record_history` / `:584` `history_lines`: one line a day in
+   `data/health_history_<channel>.jsonl`, from `ops health` (`scripts/ops.py:1663`) and the
+   overnight run (`core/overnight.py:361`); `ops health --history` prints 14 days.
+5. #1390 - `analytics/privacy_sync.py:59` `fetch_status` asks for `status,snippet` (1 unit per
+   50, unchanged); `:209` `studio_edits` / `:227` `_read_back_edits` copy a Studio edit to the
+   run, the uploaded title kept as `title_uploaded`.
+6. #1479 - `core/channel_health.py:43` `THRESHOLDS` (11) and `THRESHOLDS_VERSION`; history
+   lines carry the version and mark a change; the table names it.
+7. #1478 - `:415` `_cost_sub` / `:393` `_entered_cost_sub` / `:376` `_uploaded_videos`: with
+   `ops spend` entries, "$1.35/video from the spend you entered ($54.00 over 40 videos, every
+   channel); API estimate $0.050/video", margin against it.
+8. #1487 - `apis/topic_tokens.py:416` `abbreviations_in`, `apis/nfl_entities.py:169`
+   `NFL_ABBR_TEAMS`, `apis/nba_teams.py:103` `NBA_ABBR_TEAMS`; `:402` `part_of_team` shared by
+   research and search names.
+9. #1469 - `core/nightly_task.py:339` `crash_frame`, `:367` `_crash_text`, `:386`
+   `stopped_line(crash_at=)`: "... heap corruption (0xC0000374) at video/render.py line 412
+   in _encode".
+10. #1486 - `core/title_generator.py:207` `broken_team_name` reads each mention; 12 corpus
+    cases across every three-word NFL and NBA team.
+
+Found on the way:
+- #599's thumbnail check (`youtube/thumbnails.py:27`) reads `maxres` as custom, and YouTube
+  lists `maxresdefault.jpg` for an HD upload's own frame - likely a guard that cannot fail.
+  Filed #1540 (confirm on one live video first).
+- The real thumbnail read-back compares the live image with ours (letterboxed for a Short) -
+  filed #1541 `[M]`.
+- An abbreviation both leagues use (DAL, DEN, MIA, LAC - 13 of them) is ambiguous on its own;
+  it now waits for the league's word or one of that league's own teams.
+- #1393 (a weekly full reconcile) is not needed at this size: every sync already reads every
+  video, 2 units for 60. Left open.
+
+Not done: NHL, MLB and EPL names (they wait on #1481's gazetteer); the voice reading "NE"
+(#1488); nothing was run live - this container has no data/ and no sign-in, so each item was
+replayed on synthetic data instead.
+
+Audit (wave 121):
+- 21 tests: 20 seen failing on clean `9e03058` (the editable finder removed); the 21st guards
+  the abbreviation reader against capitals and went red with that rule removed. 28 corpus
+  cases: 15 failed on the base; 13 hold there as guards - 11 on the title check (9 go red
+  with it switched off; the 2 whole-name cases expect nothing and stay green) and 2 on the
+  abbreviation reader.
+- Two older tests changed meaning on purpose: test_pillar5_agents' fail-open test pinned
+  yellow "n/a" and pins unknown; test_wave114's status read is unchanged because the snippet
+  keys appear only when YouTube sends a snippet.
+- mypy: batch A's first pass made one new error (the history row's type), found by diffing
+  against the base's 90 errors and fixed; 90 after both batches, the base's same 90. Baseline
+  file says 92. ruff and format clean.
+- Suite 6568 (+21) green in default, reverse and shuffle order; data/ and output/ untouched;
+  network probe 0; `ops regressions` green on every changed file.
+- Every new function has a production caller: `ops health`, overnight, the metrics sync,
+  `ops retention`, the morning's overnight line, the title check, research and news names.
+- Proof - the replay script on synthetic data, base -> tree:
+  - 3-second line: TypeError (no `stayed`) -> "120% at 3 s (the opening was replayed); 64%
+    stayed rather than swiped".
+  - names_for, "Los Angeles Chargers' playoff push": ["Los Angeles Chargers'", "Los Angeles
+    Chargers"] -> ["Los Angeles Chargers"]; "Call of Dutys new Modern Warfare Steam release":
+    ["Call of Dutys", "Modern Warfare Steam"] -> ["Call of Duty", "Modern Warfare"].
+  - A check that cannot read: "Health: YELLOW - watch: cost | n/a" -> "Health: YELLOW -
+    unknown: cost". $0.00 revenue: "red negative margin $-0.20" -> "green API estimate
+    $0.050/video (revenue $0.00 - not monetized yet)".
+  - History: none -> "10-22 GREEN   cadence +, engagement ~" / "10-21 YELLOW ...",
+    thresholds v1.
+  - Cost with $54 entered over 40 videos: "green $0.050/video" -> "yellow $1.35/video from the
+    spend you entered".
+  - Studio edit: part=status, "the record matches YouTube" -> part=status,snippet, 1 unit,
+    "Studio: 1 video(s) edited in Studio".
+  - "NE vs BUF week 7": [] -> ["New England Patriots", "Buffalo Bills"]. "NE Patriots trade
+    deadline": ["NE Patriots", "New England Patriots"] -> ["New England Patriots"].
+  - Morning line: "... heap corruption (0xC0000374). Its output" -> "... (0xC0000374) at
+    video/render.py line 412 in _encode. Its output".
+  - "New England Patriots fans meet England Patriots": "" -> "New England Patriots".
+- Live, on the PC: `py -m scripts.ops retention`, `py -m scripts.ops health --history`, the
+  next `ops sync-metrics` (the Studio line), the morning after the next overnight.
+- Outward: nothing.
+
+`roadmap-index`: open 193, done 1581, numbered open 184.

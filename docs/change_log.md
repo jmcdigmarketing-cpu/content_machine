@@ -8,6 +8,26 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 121 — whole names, honest health, Studio read back - 2026-10-22
+
+*mypy 90; ruff 0.15.8 clean; suite 6568; corpus cases 28 added. Waves 71-120 are written up in
+[planning_log.md](planning_log.md) and [handoff_synopsis.md](handoff_synopsis.md).*
+
+- **#1538** `ops retention` shows the share who stayed beside the 3-second number: "120% at 3 s
+  (the opening was replayed); 64% stayed rather than swiped".
+- **#1539 #1487** Research and news-search names are whole: "Los Angeles Chargers", not "Los
+  Angeles Chargers'"; "Call of Duty" and "Modern Warfare", not "Call of Dutys" and "Modern Warfare
+  Steam"; "New England Patriots", not "England Patriots" or "NE Patriots". NE, BUF, KC, LAL and the
+  rest are read as teams where the topic reads as a game.
+- **#1472 #1475 #1479 #1478** `ops health` says "unknown" instead of RED when it cannot read an
+  input, reads $0.00 revenue as not monetized, keeps a line a day (`--history`), keeps its
+  thresholds in one versioned table, and costs a video from the spend you entered.
+- **#1390** The metrics sync reads titles and descriptions edited in Studio back into the record,
+  for the same quota.
+- **#1469** The morning's "overnight stopped" line names the crash's Python line.
+- **#1486** The title check reads every mention of a team, so a full name no longer hides a broken
+  one.
+
 ### Wave 70 — slang read, two asks, research for the stance - 2026-10-10
 
 *mypy 121; ruff 0.15.8 clean; corpus 141 of 141.*

@@ -145,7 +145,9 @@ claims, with a replay sample confirming the holds.
 
 **Who:** Code. **Done when:** `py -m scripts.ops sync-metrics` - 0 records corrected for 2 weeks.
 
-**Ideas:** #1389-#1397 in [backlog.md](backlog.md) under "S09", and already open: #464.
+**Ideas:** #1389-#1397 in [backlog.md](backlog.md) under "S09", and already open: #464. Built in
+wave 121: #1390 (Studio titles and descriptions read back, same quota); #1391 closed by
+measurement - the API cannot say which thumbnail image is live (#1541 compares the image).
 
 ### S10 The last mile was manual
 
@@ -186,7 +188,7 @@ each, then you decide.
 average watch above 3 s; the intro split settled.
 
 **Ideas:** #1417-#1426 in [backlog.md](backlog.md) under "S12". Built in wave 113: #1417, #1418,
-#1419.
+#1419. Built in wave 121: #1538 (the share who stayed beside the 3-second number).
 
 ### S13 Volume
 
@@ -250,6 +252,7 @@ its Python line (faulthandler).
 **Who:** Code. **Done when:** the weekly report - 0 crashes over 4 weeks.
 
 **Ideas:** #1463-#1470 in [backlog.md](backlog.md) under "S17", and already open: #457, #445.
+Built in wave 121: #1469 (the crash's Python line in the morning).
 
 ### S18 Health read RED on a number nobody stored (Oct 16)
 
@@ -261,7 +264,9 @@ is.
 
 **Who:** Code. **Done when:** `py -m scripts.ops health` - no line built on a missing input.
 
-**Ideas:** #1471-#1480 in [backlog.md](backlog.md) under "S18".
+**Ideas:** #1471-#1480 in [backlog.md](backlog.md) under "S18". Built in wave 121: #1472
+(unknown, never RED), #1475 (a line a day), #1478 (cost from the spend entered), #1479 (the
+thresholds in one versioned table).
 
 ### S19 "New England" lost its "New" (Oct 16)
 
@@ -273,6 +278,8 @@ is.
 **Who:** Code. **Done when:** 0 broken names in titles, captions and thumbnails for a month.
 
 **Ideas:** #1481-#1488 in [backlog.md](backlog.md) under "S19", and already open: #334, #553.
+Built in wave 121: #1486 (every mention read, cases for every league), #1487 (NE -> New
+England), with #1539 (whole research names).
 
 ### S20 Engagement is softening (Oct 17)
 

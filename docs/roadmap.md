@@ -1,6 +1,6 @@
 # Content OS — roadmap
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-17
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-22
 
 **What to do now.** The full inventory, the desktop programme, and the history live
 in their own files — this one stays short enough to read at the start of every
@@ -83,19 +83,14 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-21 (Claude, wave 120).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
-first: sign in again - it lapsed at 9:36 PM EDT and uploads wait (publish the app first) - and
-review the 6 drafts. Next: **#1538** the share who stayed beside the 3-second number (5 of 8
-read over 100% from replays); **#1539** research names that are fragments; **#1472** "unknown"
-instead of RED when a health input is missing; **#1475** health history, one line a day;
-**#1390** titles and descriptions edited in Studio read back. #1335 waits for dated results.
-**2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
-push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
-the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
-#1255 answered) and TapIn keeps its colour grade (§61). Cursor's `29c280c` and `bef5a56` were
-read in full; three corrections. Filed #1263-#1269. The audit:
-[audit_2026-10-17.md](audit_2026-10-17.md).
-**2026-10-17 evening (Claude).** The angle-step crash fixed (#1278); crossposts unspaced, previews before kickoff, the evening slot and 3-minute Reels (§63-§64); no YouTube cadence cap (§65); ten ideas, five of them previews (§66). Wave 105: the seven stranded renders on public slots two a day (#1273), times in EDT (#1274), scheduled videos crossposted when they go live (#1275), no bare-name follow-up (#1276), crosspost status says why (#1277). Filed #1283-#1285, then did them: `requeue_upload --queue` public at a slot (#1283), a dead worker's job freed at once (#1284), taken slots skipped and a 6 PM slot for news (#1285). Wave 107: a preview from a headline knows its event (#1286), why engagement fell in `ops health` (#1271), menu 7 schedules a video for its slot (#1270), the morning says how many drafts to decide (#1272), facts dropped on the booth (#257). `roadmap-index`: open 259, done 1260, numbered open 207, highest #1269.
+**2026-10-22 (Claude, wave 121).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
+first: sign in again if you have not (it lapsed 10-21 at 9:36 PM EDT; publish the app first).
+Next: **#1482** and **#1483** names checked in the burned captions and the thumbnail text (the
+title check #1486 fixed, run where else a viewer reads a name); **#1481** a gazetteer for NHL,
+MLB and EPL; **#1468** a heartbeat file, so the morning reads how long overnight ran (beside
+#1469); **#1473** a test per health line that a production path writes what it reads. #1540
+wants one live video checked first; #1335 waits for dated results.
+Waves before 108 (the 10-17 grand audit, waves 103-107): [planning_log.md](planning_log.md).
 **2026-10-18 (Claude, wave 108).** Measured defects first, the roadmap's five unchanged: hook learning had joined 0 of 41 videos (#1287; decision 67 - the last 90 days, the rewrite's rules stay until n settles), the quota day is YouTube's Pacific date (#1288), the overnight task may wake the PC (#1289), goose3's date warning (#1267), the teaser (#1264), a caption scrim to 4.5:1 (#1268). Filed #1290 (the hook scorer runs against who stays) and #1291. `roadmap-index`: open 258, done 1266, numbered open 206, highest #1291.
 **2026-10-18 (Claude, wave 109).** Volume blockers: takes the detector missed (#1292 - run 164 renders tonight), a preview's hook cut at "vs." (#1293), when a game preview must be decided (#1294), today's quota entry corrected, health names its runs (#1291), facts from a voice note (#450). Filed #1295 #1296. `roadmap-index`: open 258, done 1271, numbered open 206, highest #1296.
 **2026-10-18 (Claude, wave 110).** Nothing by hand: prompts visible again (#1297), one slot rule and the Buffer round as the bare `crosspost` (#1298), scheduled videos changeable and sent at their slot (#1299), ideas ranked by outlets (#1300), previews with a call (#1301), `ops all` without the suite and `ops test` without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM. Filed #1303-#1306. `roadmap-index`: open 74, done 1465, numbered open 65, highest #1306.
@@ -109,6 +104,7 @@ read in full; three corrections. Filed #1263-#1269. The audit:
 **2026-10-20 (Claude, wave 118).** None of today's 3 drafts rendered: "hard to say" now warns only (#1535) and its rewrite keeps a correct split (#1531); one splitter that respects "Oct." and "No." (#1532, run 176 repaired); the Tonight line reads the shelf pause (#1534); the deadline names its day (#1533); a Yours today line (#1407); chapter Shorts for an empty week (#1430); #1378 met, #1432 not needed. `roadmap-index`: open 216, done 1552, numbered open 207.
 **2026-10-21 (Claude, wave 119).** With your yes before the lapse: 168 and 170 public, 171 retired - overnight renders again. A follow-up names the original's date and one that says "since" waits (#1536, run 179's last-season seed); "Yours today" says sign in again after the lapse (#1537); a crash keeps its log and the week counts them (#1466 #1463); each video's drop-off second (#1494); a cheap second read before an unattended render (#1341); "you typed / it wrote" (#1343 #1342). `roadmap-index`: open 210, done 1560, numbered open 201.
 **2026-10-21 (Claude, wave 120).** The lapse landed and "Yours today" says sign in again. Health names its runs, its dates and each line's source (#1474 #1476 #1471 #1395); the weekly report counts the drafts a claim held (#1381); the privacy sync says what it checked (#1389); `ops retention` gives each video's first 3 seconds (#1426); `ops ypp` a monthly card (#1320); the compilation's title names its biggest subjects (#1316); #1386 met by #1083. `roadmap-index`: open 202, done 1570, numbered open 193.
+**2026-10-22 (Claude, wave 121).** The next ten from the latest main, in two batches. The roadmap's five: the share who stayed beside the 3-second number (#1538), whole research names (#1539, and the news search's), "unknown" instead of RED (#1472), health history a line a day (#1475), Studio edits read back (#1390). Five neighbours: the thresholds in one versioned table (#1479), cost from the spend you entered (#1478), NE read as New England (#1487), the crash's Python line in the morning (#1469), every mention read in the title check (#1486, in place of #1391 - the API cannot say which thumbnail is live). Filed #1540 #1541. `roadmap-index`: open 193, done 1581, numbered open 184.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

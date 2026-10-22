@@ -1847,8 +1847,8 @@ Already open for S08: #547 (inline provenance); #555 (vault deduplication).
 ### S09 The record drifted from YouTube
 
 - [x] 1389. **Each sync prints how many records it corrected** *(S09.1, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `privacy_sync.sync_lines` says "Privacy: N videos checked - the record matches YouTube" when nothing changed; corrections already printed. Not seen live tonight - the sign-in lapsed, so the sync says "not checked".
-- [ ] 1390. **Titles and descriptions edited in Studio read back** *(S09.2, filed 2026-10-18)* `[S]`
-- [ ] 1391. **Thumbnails read back** *(S09.3, filed 2026-10-18)* `[S]`
+- [x] 1390. **Titles and descriptions edited in Studio read back** *(S09.2, filed 2026-10-18)* `[S]` **Done (2026-10-22, Claude, wave 121):** `privacy_sync.fetch_status` asks for `status,snippet` - still 1 unit per 50 videos, measured with a mocked `videos.list` - and `studio_edits` copies a title or description changed in Studio to its run (`title_uploaded` kept in features); the upload's own additions (disclosure line, the 100-character cut, laid-out blocks) are not an edit. The sync says "Studio: N video(s) edited in Studio - the record now has the live title/description (run X)". Not seen live yet.
+- [x] 1391. **Thumbnails read back** *(S09.3, filed 2026-10-18)* `[S]` **Closed 2026-10-22 (wave 121) by measurement:** `snippet.thumbnails` lists the same URLs (`hqdefault.jpg`, and `maxresdefault.jpg` for any HD upload) whether the image is YouTube's frame or a custom one, so the API cannot say which is live. Swapped for #1486. The real read-back compares the image itself (#1541); the check #599 built on the same field is #1540.
 - [x] 1392. **A scheduled publishAt read back after scheduling** *(S09.4, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117):** `go_public._read_back` - after a schedule change it reads YouTube once more when the first read shows another time (run 161 on 10-19), then says "YouTube shows Thu 12:00 PM EDT" or that it still shows the old one and the privacy sync corrects the record.
 - [ ] 1393. **A weekly full reconcile of every video; the daily sync keeps to the recent ones** *(S09.5, filed 2026-10-18)* `[S]`
 - [ ] 1394. **Playlist membership read back once playlists exist** *(S09.6, filed 2026-10-18)* `[S]`
@@ -1960,7 +1960,7 @@ Already open for S16: #50 (learned insight markers).
 - [x] 1466. **The last 200 log lines kept with a crash** *(S17.6, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 119):** `nightly_task.keep_crash_log` from each worker pass - a run that started 3+ hours ago and never finished keeps its log's last 200 lines in output/logs/crashes. The task's `> overnight-last.log` empties the file at the next 5:00 before Python runs, so it cannot be kept at the next start.
 - [ ] 1467. **A 2-second smoke render before the run** *(S17.7, filed 2026-10-18)* `[S]`
 - [ ] 1468. **A heartbeat file each minute; the morning reads the gap** *(S17.8, filed 2026-10-18)* `[S]`
-- [ ] 1469. **The crash's Python line in the morning line** *(S17.9, filed 2026-10-18)* `[S]`
+- [x] 1469. **The crash's Python line in the morning line** *(S17.9, filed 2026-10-18)* `[S]` **Done (2026-10-22, Claude, wave 121):** `nightly_task.crash_frame` reads the faulthandler block (#1216) or a traceback from the task's log, else from the copy `keep_crash_log` made, and the morning's stopped line ends "... heap corruption (0xC0000374) at video/render.py line 412 in _encode"; a library's top frame is followed by the project's frame that called it. Replayed on a synthetic log - no crash since 10-16.
 - [ ] 1470. **The GPU driver version in `ops doctor`** *(S17.10, filed 2026-10-18)* `[S]`
 
 Already open for S17: #457 (lockfile and reproducible install); #445 (resume an interrupted run from the ledger).
@@ -1968,14 +1968,14 @@ Already open for S17: #457 (lockfile and reproducible install); #445 (resume an 
 ### S18 Health read RED on a number nobody stored (Oct 16)
 
 - [x] 1471. **Each health line names its source and its age** *(S18.1, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** each health line ends with its source (`channel_health.HEALTH_SOURCES`, one per check - a test holds the two lists equal): "(from the publish log)", "(from the breakers and quota state, read now)" and so on. Engagement already gave its sync age; statuses unchanged.
-- [ ] 1472. **"Unknown" instead of RED when an input is missing** *(S18.2, filed 2026-10-18)* `[S]`
+- [x] 1472. **"Unknown" instead of RED when an input is missing** *(S18.2, filed 2026-10-18)* `[S]` **Done (2026-10-22, Claude, wave 121):** a check that cannot read its input says "unknown - could not read <its source>" (`channel_health.UNKNOWN`, mark "?"), never RED, and holds the overall at YELLOW; `health_line` adds "unknown: cost". $0.00 revenue on every video - a channel not monetized - read RED "negative margin $-0.20"; it reads on cost alone now. `test_pillar5_agents`' fail-open test pinned "yellow" and pins unknown.
 - [ ] 1473. **A test per health line that some production path writes the field it reads** *(S18.3, filed 2026-10-18)* `[M]`
 - [x] 1474. **Data quality lists the missing fields per run** *(S18.4, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `data_quality.warnings` names the runs behind a missing-field count - live "1/11 recent runs missing quality_json (run 171) - pre-ledger or scoring failed".
-- [ ] 1475. **Health history, one line a day** *(S18.5, filed 2026-10-18)* `[S]`
+- [x] 1475. **Health history, one line a day** *(S18.5, filed 2026-10-18)* `[S]` **Done (2026-10-22, Claude, wave 121):** `channel_health.record_history` keeps one line a day in `data/health_history_<channel>.jsonl` (the day's last read wins), from `ops health` and the overnight run; `ops health --history` prints 14 days: "10-22 GREEN   cadence +, engagement ~". The suite redirects the store.
 - [x] 1476. **Engagement's window printed with its dates and the newest measured video** *(S18.6, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `channel_health.window_text` - live "recent 40.1% (runs 157-169, Oct 16-19)", and "; newest measured run N (date)" when a newer measured video sits outside the window.
 - [x] 1477. **Health per format (Shorts and long videos)** *(S18.7, filed 2026-10-18)* `[S]` **Closed 2026-10-19 (wave 115) - shipped as #1491 (wave 114):** health reads Shorts against Shorts and counts long videos apart.
-- [ ] 1478. **Cost uses the spend you entered** *(S18.8, filed 2026-10-18)* `[S]`
-- [ ] 1479. **The thresholds in one place, versioned** *(S18.9, filed 2026-10-18)* `[S]`
+- [x] 1478. **Cost uses the spend you entered** *(S18.8, filed 2026-10-18)* `[S]` **Done (2026-10-22, Claude, wave 121):** with `ops spend` entries, cost reads "$1.35/video from the spend you entered ($54.00 over 40 videos, every channel); API estimate $0.050/video" (replayed), the margin is measured against it and the line's source says so; with none it says it is the API estimate and how to enter the spend.
+- [x] 1479. **The thresholds in one place, versioned** *(S18.9, filed 2026-10-18)* `[S]` **Done (2026-10-22, Claude, wave 121):** `channel_health.THRESHOLDS` holds all 11 colour thresholds, `THRESHOLDS_VERSION` 1; each history line carries the version, `--history` marks a day read on a new version ("[thresholds v2]"), and the health table ends with the version.
 - [ ] 1480. **A weekly fields-written-against-read audit** *(S18.10, filed 2026-10-18)* `[M]`
 
 ### S19 "New England" lost its "New" (Oct 16)
@@ -1985,8 +1985,8 @@ Already open for S17: #457 (lockfile and reproducible install); #445 (resume an 
 - [ ] 1483. **Names checked in the thumbnail text** *(S19.4, filed 2026-10-18)* `[S]`
 - [ ] 1484. **Player names spelled from ESPN rosters** *(S19.5, filed 2026-10-18)* `[M]`
 - [ ] 1485. **City and state collisions audited in topic_tokens** *(S19.6, filed 2026-10-18)* `[S]`
-- [ ] 1486. **Broken-name regression cases for every league** *(S19.7, filed 2026-10-18)* `[S]`
-- [ ] 1487. **Abbreviations expanded (NE -> New England)** *(S19.8, filed 2026-10-18)* `[S]`
+- [x] 1486. **Broken-name regression cases for every league** *(S19.7, filed 2026-10-18)* `[S]` **Done (2026-10-22, Claude, wave 121):** in #1391's place. The title check (`broken_team_name`) passed "New England Patriots fans meet England Patriots" - a full name anywhere hid the broken one; each mention is read now. Corpus cases for every three-word NFL and NBA team (12; 10 go red with the check switched off). NHL, MLB and EPL wait on the gazetteer (#1481).
+- [x] 1487. **Abbreviations expanded (NE -> New England)** *(S19.8, filed 2026-10-18)* `[S]` **Done (2026-10-22, Claude, wave 121):** `apis.topic_tokens.abbreviations_in` with `NFL_ABBR_TEAMS` and a new `NBA_ABBR_TEAMS`: "NE vs BUF week 7" named no team and names both; one both leagues use (DAL, DEN) waits for the league's own word or team; "NO WAY", "TOP TEN", "32 GB" and all-caps headlines are words. Research and news-search names share `part_of_team`: "NE Patriots" is New England Patriots, "Drake Maye NE" is Drake Maye.
 - [ ] 1488. **A pronunciation list for names in the voice** *(S19.10, filed 2026-10-18)* `[M]`
 
 Already open for S19: #334 (entity disambiguation ledger); #553 (entity-role check).
@@ -2072,5 +2072,10 @@ Already open for S21: #1290 (the hook scorer against who stays).
 
 ### Found in wave 120 (2026-10-21)
 
-- [ ] 1538. **The 3-second number counts replays** *(live 2026-10-21: 5 of 8 videos read over 100% at 3 s in `ops retention` - YouTube's ratio counts a replayed opening again; the share who stayed rather than swiped is `stayed_share`, engaged views over views)* `[S]` Show it beside the 3-second number.
-- [ ] 1539. **Research names keep fragments** *(2026-10-21: `entity_research.names` held "England Patriots", "Modern Warfare Steam", "Call of Dutys", "UFC Edmonton KO" and "Los Angeles Chargers'" - title phrases looked up as names; each is a wasted lookup, and #1316's title skips them only because they do not appear in the title)* `[S]`
+- [x] 1538. **The 3-second number counts replays** *(live 2026-10-21: 5 of 8 videos read over 100% at 3 s in `ops retention` - YouTube's ratio counts a replayed opening again; the share who stayed rather than swiped is `stayed_share`, engaged views over views)* `[S]` Show it beside the 3-second number. **Done (2026-10-22, Claude, wave 121):** `retention.first_seconds_text(stayed=)` and `first_seconds_lines` read the synced `stayed_share`: "120% at 3 s (the opening was replayed); 64% stayed rather than swiped". A video synced before the share existed keeps the old line.
+- [x] 1539. **Research names keep fragments** *(2026-10-21: `entity_research.names` held "England Patriots", "Modern Warfare Steam", "Call of Dutys", "UFC Edmonton KO" and "Los Angeles Chargers'" - title phrases looked up as names; each is a wasted lookup, and #1316's title skips them only because they do not appear in the title)* `[S]` **Done (2026-10-22, Claude, wave 121):** `apis.topic_tokens.trim_name` (possessive; "Dutys" -> "Duty" on a longer name's last word, so "Gladys" and "Blue Jays" stay; `NAME_TAIL_WORDS` such as Steam and KO) in `names_for`, and the team restore also takes a team's tail: all five names resolve ("Los Angeles Chargers", "Call of Duty", "Modern Warfare", "UFC Edmonton", "New England Patriots"). The sibling `subject_terms` - the news search - kept the same fragments and uses it too.
+
+### Found in wave 121 (2026-10-22)
+
+- [ ] 1540. **The thumbnail check (#599) reads `maxres` as custom** *(2026-10-22: `youtube/thumbnails._thumbnail_looks_custom` returns True whenever `snippet.thumbnails` has `maxres`; YouTube lists `maxresdefault.jpg` for an HD upload's own frame too, so after `thumbnails.set` the result is likely "set" for every Short whether or not the image took - a guard that cannot fail. Confirm on one live video with no custom thumbnail first)* `[S]`
+- [ ] 1541. **The live thumbnail compared with ours** *(2026-10-22, from #1391: the API cannot say which image is live; the image at `i.ytimg.com/vi/<id>/hqdefault.jpg` is the live one, letterboxed for a vertical Short - a small hash of it against the uploaded file, with the bars cut, says whether ours is showing)* `[M]`

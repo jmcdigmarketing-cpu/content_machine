@@ -53,33 +53,27 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-21 night · **HEAD at write:** `63376ee` (the code; the docs commit follows)
-· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
+**Written:** 2026-10-22 · **HEAD at write:** `db00be1` (the code; the docs commit follows)
+· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall** (the Story's
-22); their ideas are #1314-#1517 in the backlog. Decision 68: `test_docs_lint` holds the
-backlog at <= 300, and wave 113 alone was exempt from "close as many as you file".
+**The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall**; ideas
+#1314-#1517 in the backlog. Decision 68: the backlog stays <= 300 (`test_docs_lint`).
 
-**Wave 119 (two batches, two commits):**
-- `batch_generation.follow_up_topic` names the date, `_followed_up`; `batch_review.
-  follow_up_since` (#1536); `status_summary.yours_items` names a lapsed sign-in (#1537).
-- `nightly_task.keep_crash_log` / `crash_count` (#1466 #1463); `retention.
-  week_drop_off_lines` (#1494); `batch_review.second_read` before an unattended render
-  (#1341); `batch_review.typed_lines` (#1343 #1342).
+**Wave 121 (two batches, `c74cab7` `db00be1`), built on `9e03058`:**
+- `retention.first_seconds_text(stayed=)` (#1538); `topic_tokens.trim_name`, `part_of_team`,
+  `abbreviations_in`, `NFL_ABBR_TEAMS` / `NBA_ABBR_TEAMS` in `names_for` and `subject_terms`
+  (#1539 #1487); `title_generator.broken_team_name` reads each mention (#1486).
+- `channel_health`: `UNKNOWN` (#1472), `record_history` / `history_lines` + `ops health
+  --history` (#1475), `THRESHOLDS` / `THRESHOLDS_VERSION` (#1479), `_entered_cost_sub` (#1478).
+- `privacy_sync.fetch_status` reads `status,snippet`, `studio_edits` (#1390);
+  `nightly_task.crash_frame` in the stopped line (#1469). #1391 closed by measurement.
+- Changed on purpose: test_pillar5_agents' fail-open test pins unknown, not yellow "n/a".
 
-**Wave 120 (three batches, two commits):**
-- `data_quality._named` / public-without-run (#1474 #1395); `channel_health.window_text`,
-  `HEALTH_SOURCES` (#1476 #1471).
-- `weekly_report.claim_hold_lines` (#1381); `privacy_sync.sync_lines` count (#1389);
-  `retention.first_seconds_lines` (#1426); `ypp_readiness.monthly_card`, `history` (#1320).
-- `week_compile.compilation_title` / `subject_name` (#1316). #1386 met; #1335 open.
-
-**Live:** the sign-in lapsed at 9:36 PM EDT 10-21 - uploads hold until the operator signs in
-(publish the app first). Tonight renders 175 and cuts 2 chapter Shorts from run 92; their
-uploads wait. Run 179 held (since); run 176 held by the second read. **Defects first:** none
-open of mine.
+**Live:** nothing run on the PC this wave - each item was replayed on synthetic data. The
+sign-in lapsed 10-21 9:36 PM EDT; uploads hold until the operator signs in. **Defects first:**
+#1540 (the #599 thumbnail check likely cannot fail) is filed, not fixed; none open of mine.
 
 ## Slot — Cursor
 

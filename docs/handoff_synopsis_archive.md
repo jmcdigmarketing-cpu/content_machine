@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-20 evening (Claude Code): wave 118, the next ten
+
+Overnight rendered none of today's 3 drafts. Two waited only on "hard to say", which now
+warns, and whose rewrite now keeps a correct split. A cut had split run 176 at "Oct.": one
+abbreviation-aware splitter (`apis.topic_tokens.split_sentences`), and run 176 repaired. The
+Tonight line reads the shelf pause; the deadline names its day; `ops status` opens with
+"Yours today". Chapter Shorts fill an empty week, held while the shelf is full. Overnight
+renders nothing until the operator decides 3 finished videos. Open 216.
+
 ## Previous — 2026-10-20 (Claude Code): wave 117, the next ten
 
 The PC was shut down at Mon 8:49 PM, so overnight could not wake at 5:00 and ran at 4:22 PM;

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-21 night: wave 120, the next ten
+# Handoff synopsis — 2026-10-22: wave 121, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,18 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-21 night (Claude Code): wave 120, the next ten
+## Last wave — 2026-10-22 (Claude Code): wave 121, the next ten
+
+Built from the latest main (`9e03058`, waves 71-120). The 3-second line shows the share who
+stayed beside YouTube's replayed ratio; research and news names are whole ("Los Angeles
+Chargers", "Call of Duty", "New England Patriots"), and NE, BUF, KC and LAL are read as teams.
+Health says "unknown" instead of RED when it cannot read an input, reads $0.00 revenue as not
+monetized, keeps a line a day (`ops health --history`) with its thresholds in one versioned
+table, and costs a video from the spend you entered. The sync reads Studio edits back; the
+morning names the crash's Python line; the title check reads every mention of a team. #1391
+closed by measurement (the API cannot say which thumbnail is live). Open 193.
+
+## Previous — 2026-10-21 night (Claude Code): wave 120, the next ten
 
 The sign-in lapsed at 9:36 PM EDT and `ops status` says "Yours today: sign in again".
 Health names the run behind a warning, its window's dates and each line's source; the
@@ -27,15 +38,6 @@ season's "No. 1 seed" page; follow-ups now name the original's date and one that
 "since" waits. A cheap second read guards an unattended render; a crash keeps its log; the
 weekly report counts crashes and gives each video's drop-off second; review shows "you
 typed / it wrote". Open 210.
-
-## Previous — 2026-10-20 evening (Claude Code): wave 118, the next ten
-
-Overnight rendered none of today's 3 drafts. Two waited only on "hard to say", which now
-warns, and whose rewrite now keeps a correct split. A cut had split run 176 at "Oct.": one
-abbreviation-aware splitter (`apis.topic_tokens.split_sentences`), and run 176 repaired. The
-Tonight line reads the shelf pause; the deadline names its day; `ops status` opens with
-"Yours today". Chapter Shorts fill an empty week, held while the shelf is full. Overnight
-renders nothing until the operator decides 3 finished videos. Open 216.
 
 ## Pipeline order (operator)
 
@@ -111,7 +113,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1538 #1539 #1472 #1475 #1390 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1482 #1483 #1481 #1468 #1473 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

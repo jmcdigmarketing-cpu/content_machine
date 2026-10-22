@@ -9087,3 +9087,75 @@ Audit (wave 119):
   - tonight's 5:00 render.
 
 `roadmap-index`: open 210, done 1560, numbered open 201.
+
+## 2026-10-21 night — wave 120, the next ten (Claude Code)
+
+**Prompt:** "next 10 up on the to do" (again, 26 minutes after wave 119). No questions:
+nothing in the ten needed a decision.
+
+Picked: the roadmap's five were #1335 #1381 #1386 #1389 #1471. Measuring them reshaped it:
+- #1335 has nothing to stand on - Tavily's results carry no dates - and run 179's case is
+  already held by wave 119's since rule. It stays open with that note.
+- #1386 is met by #1083 (`ops verify-claim` writes the confirmed claim to the vault).
+- #1389 was nearly met: the sync printed corrections and was silent only when nothing changed.
+The rest came from the same shortfalls: S18 (health says what it read), S08 and S09, S12, S01.
+
+Live first: the sign-in lapsed at 20:36 CDT as forecast. At 20:52 `ops check-youtube` says
+NOT READY with the sign-in command, and `ops status` opens "Yours today: sign in again -
+uploads wait: py -m youtube.oauth_setup --channel tapin (publish the app first, or it lapses
+again in 7 days)" - wave 119's #1537, seen working.
+
+Shipped (tests/test_wave120.py, 10 tests):
+1. #1474 - `core/data_quality.py:232` `_named`: "1/11 recent runs missing quality_json (run 171)".
+2. #1476 - `core/channel_health.py:470` `window_text`: "runs 157-169, Oct 16-19", and the
+   newest measured run when it sits outside the window.
+3. #1471 - `core/channel_health.py:379` `HEALTH_SOURCES`: each line ends "(from the publish
+   log)" and so on; a test holds the sources and the checks equal.
+4. #1395 - `core/data_quality.py:93`: a public video with no run id is named (0 of 60 live).
+5. #1381 - `analytics/weekly_report.py:383` `claim_hold_lines`: "Held for a claim: 1 of 25
+   drafts this week (4%)" - run 162, "(rendered past it)" with the operator's override.
+6. #1389 - `analytics/privacy_sync.py:213`: "Privacy: N videos checked - the record matches
+   YouTube".
+7. #1426 - `core/retention.py:339` `first_seconds_text` / `:351` `first_seconds_lines` in
+   `ops retention`: run 164 "90% still watching at 3 s".
+8. #1320 - `core/ypp_readiness.py:58` keeps `history[YYYY-MM]`; `:83` `monthly_card` in
+   `ops ypp`: "This month: subscribers 70, long-form hours 10.2, organic Shorts views (90
+   days) 2,792, net subscribers (28 days) 65 - first month on record".
+9. #1316 - `video/week_compile.py:160` `compilation_title` / `:133` `subject_name`: the three
+   most-viewed Shorts' subjects by organic views. Dry run on last week: "Ben Affleck, Detroit
+   Pistons & Topuria - TapIn Media Week in Review (Oct 15-19)" (79 characters).
+10. #1386 closed as met by #1083; #1335 measured and left open.
+
+Found on the way:
+- 5 of 8 videos read over 100% at 3 seconds. YouTube's ratio counts a replayed opening
+  again, so the line says "(the opening was replayed)" rather than "140% still watching".
+  The honest share who stayed is `stayed_share` (engaged views over views) - filed #1538.
+- `title_phrases` on title-case titles reads "Ben Affleck Gets" and "Chargers' Pass
+  Defense", so the compilation title reads each run's researched names instead. Those keep
+  fragments ("England Patriots", "Modern Warfare Steam", "Call of Dutys") - filed #1539.
+- Run 162 was held for a claim and rendered past it with the operator's yes; the weekly line
+  says so.
+- `video/week_compile.py` had its own organic-views rule in the first draft; it now uses
+  `ypp_readiness._organic_views` with a lifetime fallback.
+
+Not done: #1335 (no dates to check against); the Story page's monthly card waits for the
+pages step; the YPP history starts at the next sync (5 AM), so the card says "first month on
+record" until November.
+
+Audit (wave 120):
+- 10 tests, all 10 seen failing on clean HEAD b50f317 (the editable finder removed). 9 corpus
+  cases; 385 of 385 held.
+- Order slip: #1316's code was written before its test; the clean-HEAD run is its proof.
+- Two older tests changed meaning on purpose: the privacy sync's matching record prints its
+  count (test_privacy_sync), the stored YPP numbers carry `history` (test_paid_views); and
+  wave 114's window assertion now carries dates.
+- mypy: the first pass made 10 new errors (an untyped dict in `_join_checks`, an Optional
+  sort key in `first_seconds_lines`); fixed, 92. ruff clean.
+- Suite 6547 forward and reversed, the 2 export-only test_wave13 errors; data/ untouched.
+- Every new function has a production caller: `ops health`, the weekly report, the metrics
+  sync, `ops retention`, `ops ypp`, `week_compile.plan_week`.
+- Live: the lapse in `ops status`; `ops health` with sources, run 171 and the dates; `ops
+  retention` with the first seconds; `ops ypp` with the card; the compilation title dry run.
+- Outward: nothing.
+
+`roadmap-index`: open 202, done 1570, numbered open 193.

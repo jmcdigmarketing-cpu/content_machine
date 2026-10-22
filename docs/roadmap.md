@@ -83,12 +83,12 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-21 (Claude, wave 119).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
-first: sign in again (the sign-in lapsed at 9:36 PM EDT; publish the app first) and review
-the 6 drafts. Next: **#1335** at render time a fact's date checked against the event (run 179's
-last-season seed); **#1381** the weekly rate of drafts held for unsupported claims; **#1386** a
-claim you confirmed once trusted in later runs; **#1389** each sync prints how many records it
-corrected; **#1471** each health line names its source and its age.
+**2026-10-21 (Claude, wave 120).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
+first: sign in again - it lapsed at 9:36 PM EDT and uploads wait (publish the app first) - and
+review the 6 drafts. Next: **#1538** the share who stayed beside the 3-second number (5 of 8
+read over 100% from replays); **#1539** research names that are fragments; **#1472** "unknown"
+instead of RED when a health input is missing; **#1475** health history, one line a day;
+**#1390** titles and descriptions edited in Studio read back. #1335 waits for dated results.
 **2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
 push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
 the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
@@ -108,6 +108,7 @@ read in full; three corrections. Filed #1263-#1269. The audit:
 **2026-10-20 (Claude, wave 117).** Overnight ran 11 h late because the PC was shut down, and the morning now says so from the event log (#1528 #1380), with a doctor wake check (#1371), a Tonight line and an 8 PM toast (#1337); the day-5 sign-in line keeps its date (#1529); `ops agents` reads the slots again (#1530); a follow-up draft for a video that brought subscribers (#1452); a toast when a video goes public (#1404); a schedule read back (#1392); cadence by its own rule (#1435). `roadmap-index`: open 220, done 1543, numbered open 211.
 **2026-10-20 (Claude, wave 118).** None of today's 3 drafts rendered: "hard to say" now warns only (#1535) and its rewrite keeps a correct split (#1531); one splitter that respects "Oct." and "No." (#1532, run 176 repaired); the Tonight line reads the shelf pause (#1534); the deadline names its day (#1533); a Yours today line (#1407); chapter Shorts for an empty week (#1430); #1378 met, #1432 not needed. `roadmap-index`: open 216, done 1552, numbered open 207.
 **2026-10-21 (Claude, wave 119).** With your yes before the lapse: 168 and 170 public, 171 retired - overnight renders again. A follow-up names the original's date and one that says "since" waits (#1536, run 179's last-season seed); "Yours today" says sign in again after the lapse (#1537); a crash keeps its log and the week counts them (#1466 #1463); each video's drop-off second (#1494); a cheap second read before an unattended render (#1341); "you typed / it wrote" (#1343 #1342). `roadmap-index`: open 210, done 1560, numbered open 201.
+**2026-10-21 (Claude, wave 120).** The lapse landed and "Yours today" says sign in again. Health names its runs, its dates and each line's source (#1474 #1476 #1471 #1395); the weekly report counts the drafts a claim held (#1381); the privacy sync says what it checked (#1389); `ops retention` gives each video's first 3 seconds (#1426); `ops ypp` a monthly card (#1320); the compilation's title names its biggest subjects (#1316); #1386 met by #1083. `roadmap-index`: open 202, done 1570, numbered open 193.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-20 (Claude Code): wave 117, the next ten
+
+The PC was shut down at Mon 8:49 PM, so overnight could not wake at 5:00 and ran at 4:22 PM;
+the morning, `ops overnight-last` and `ops doctor` now read the cause from the event log, a
+Tonight line says what overnight will do, and an 8 PM toast says to leave the PC asleep. The
+day-5 sign-in line keeps its date and the publish page. `ops agents` reads the mailbox again.
+A video that brings 2+ subscribers gets a follow-up draft; a video going public raises a
+toast; a schedule change is read back; cadence counts the last 7 days. Open 220.
+
 ## Previous — 2026-10-19 night (Claude Code): wave 116, the next ten
 
 Job 74 was held by the quota while the morning called it overdue and asked for a command;

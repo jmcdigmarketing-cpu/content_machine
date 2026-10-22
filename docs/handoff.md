@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-21 · **HEAD at write:** `80f2054` (batch A; the batch B commit follows)
+**Written:** 2026-10-21 night · **HEAD at write:** `63376ee` (the code; the docs commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
@@ -62,13 +62,6 @@ nothing broken, say that explicitly rather than leaving it implied.
 22); their ideas are #1314-#1517 in the backlog. Decision 68: `test_docs_lint` holds the
 backlog at <= 300, and wave 113 alone was exempt from "close as many as you file".
 
-**Wave 118 (three batches, two commits):**
-- `nightly_task.tonight_text(paused=)` (#1534); `script_craft._names_kept` (#1531);
-  `batch_review.unattended_block_reason` warns on "hard to say" (#1535);
-  `apis.topic_tokens.split_sentences` in `authenticity` / `script_craft`, ratchet 27 (#1532).
-- `deadline_line` names its day (#1533); `status_summary.yours_items` (#1407).
-- `chapter_shorts.fill_empty_slots` from overnight (#1430). #1378 met, #1432 not built.
-
 **Wave 119 (two batches, two commits):**
 - `batch_generation.follow_up_topic` names the date, `_followed_up`; `batch_review.
   follow_up_since` (#1536); `status_summary.yours_items` names a lapsed sign-in (#1537).
@@ -76,9 +69,17 @@ backlog at <= 300, and wave 113 alone was exempt from "close as many as you file
   week_drop_off_lines` (#1494); `batch_review.second_read` before an unattended render
   (#1341); `batch_review.typed_lines` (#1343 #1342).
 
-**Live:** 168 and 170 public, 171 retired (the operator's yes) - the shelf is 0. The sign-in
-lapsed at 9:36 PM EDT 10-21: uploads hold until the operator signs in. Run 179 held (since);
-run 176 held by the second read. **Defects first:** none open of mine.
+**Wave 120 (three batches, two commits):**
+- `data_quality._named` / public-without-run (#1474 #1395); `channel_health.window_text`,
+  `HEALTH_SOURCES` (#1476 #1471).
+- `weekly_report.claim_hold_lines` (#1381); `privacy_sync.sync_lines` count (#1389);
+  `retention.first_seconds_lines` (#1426); `ypp_readiness.monthly_card`, `history` (#1320).
+- `week_compile.compilation_title` / `subject_name` (#1316). #1386 met; #1335 open.
+
+**Live:** the sign-in lapsed at 9:36 PM EDT 10-21 - uploads hold until the operator signs in
+(publish the app first). Tonight renders 175 and cuts 2 chapter Shorts from run 92; their
+uploads wait. Run 179 held (since); run 176 held by the second read. **Defects first:** none
+open of mine.
 
 ## Slot — Cursor
 

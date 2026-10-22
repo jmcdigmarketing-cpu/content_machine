@@ -6047,6 +6047,21 @@
         "equals": "Tonight at 5:00 AM: drafts 3, no renders - 3 finished videos wait for you (ops shelf); leave the PC asleep, not shut down"
       },
       "why": "the evening line must not promise renders the shelf will hold"
+    },
+    {
+      "id": "after-the-lapse-yours-today-names-the-sign-in",
+      "item": 1537,
+      "source": "2026-10-21: yours_items listed the sign-in only inside its Testing window",
+      "call": "core.status_summary:yours_text",
+      "args": [
+        [
+          "sign in again - uploads wait: py -m youtube.oauth_setup --channel tapin"
+        ]
+      ],
+      "expect": {
+        "contains": "sign in again - uploads wait"
+      },
+      "why": "after the lapse the morning's first line names the sign-in"
     }
   ]
 }

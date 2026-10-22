@@ -175,14 +175,27 @@ def follow_up_topic(channel_id: str, *, now: datetime | None = None) -> str:
                 get_content_run_repository().get(int(row["run_id"])) if row.get("run_id") else None
             )
             title = str(getattr(run, "title", "") or row.get("title") or "").strip()
-            if not title:
+            if not title or _followed_up(channel_id, title):  # once per video, in any wording
                 continue
-            topic = f'Follow-up to "{title}": what has happened since'
-            if not series_drafted(channel_id, topic):  # once per video
-                return topic
+            # #1536 (wave 118 drafted it, wave 119): the original's date - "what has happened
+            # since" drew last season's "clinched the No. 1 seed" into run 179.
+            day = f"{published:%b} {published.day}"
+            return f'Follow-up to "{title}" ({day}): what has happened since {day}'
     except Exception as exc:
         logger.debug("follow-up topic skipped: %s", exc)
     return ""
+
+
+def _followed_up(channel_id: str, title: str) -> bool:
+    """A follow-up on this title was drafted already - wave 118's words or wave 119's."""
+    from core.channel_context import recent_input_topics
+
+    prefix = f'follow-up to "{title}"'.lower()
+    if any(
+        str(t).strip().lower().startswith(prefix) for t in recent_input_topics(channel_id, limit=60)
+    ):
+        return True
+    return unreviewed_draft(channel_id, f'Follow-up to "{title}"') is not None
 
 
 def _with_follow_up(

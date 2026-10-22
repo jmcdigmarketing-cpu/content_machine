@@ -9026,3 +9026,31 @@ Audit (wave 118):
   Nothing outward changed.
 
 `roadmap-index`: open 216, done 1552, numbered open 207.
+
+## 2026-10-21 evening — wave 119, the next ten (Claude Code)
+
+**Prompt:** "next 10 up on the to do" (again). Answers, all the recommended option:
+- make 168 and 170 public now, before the sign-in lapsed at 9:36 PM EDT;
+- retire re-cut 171;
+- a follow-up that says "since" waits for review.
+
+Measured first (19:23 CDT):
+- Last night was Sleep: the PC woke at 5:00, overnight ran 05:00-05:08 and Windows slept again
+  at 05:08:26.
+- Renders were paused again by the shelf (168, 170, 171).
+- Overnight's first follow-up (run 179) said "Since then, Detroit clinched the No. 1 seed" from
+  last season's playoff page. The claim check passed it because the source supports it, and
+  only "hard to say" stood between it and an unattended render.
+
+Live, with the operator's yes, at 19:51 CDT before the lapse:
+- 168 (qMYEL3pY2NA) and 170 (Rc7zawxbWzo) made public and read back public; their TikTok and
+  Instagram posts were scheduled for 10 PM EDT.
+- Re-cut 171 retired; the file stays.
+- The shelf is 0, and tonight reads "drafts 2, renders up to 2".
+
+Batch A:
+- #1536: the follow-up topic carries the original's date, once per video in any wording, and
+  a follow-up that says "since" is held. Live: run 179 held; 175 and 176 render tonight.
+- #1537: after the lapse "Yours today" says to sign in again.
+- Two earlier tests changed meaning on purpose: wave 117's follow-up topic and wave 118's
+  "Yours today" items.

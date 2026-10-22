@@ -873,6 +873,18 @@ def arc_counter_reason(meta: dict[str, Any]) -> str:
     return ""
 
 
+def follow_up_since(draft: PendingDraft) -> str:
+    """#1536 (wave 119, the operator: hold for review): a follow-up that says "since" waits for a
+    person. Run 179 said "Since then, Detroit clinched the No. 1 seed" from last season's playoff
+    page - the claim check passed it, as the source supports it; it does not check when."""
+    topic = str(draft.meta.get("topic") or "")
+    if not topic.startswith('Follow-up to "') or not re.search(
+        r"\bsince\b", draft.script or "", re.I
+    ):
+        return ""
+    return 'a follow-up says "since" - check its source is newer than the original video'
+
+
 def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None) -> str:
     """Why a draft must wait for a person, or "" when it may render unattended."""
     meta = draft.meta
@@ -883,6 +895,8 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
         return dead
     if _blocking_claims(draft):
         return "a claim is not supported"
+    if follow_up_since(draft):
+        return follow_up_since(draft)
     verdict, why = authenticity_now(draft)
     if verdict != "ok":
         return f"authenticity check says {verdict}" + (f" ({why})" if why else "")

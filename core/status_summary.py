@@ -122,6 +122,16 @@ def yours_items(channel_id: str) -> list[str]:
 
     items: list[str] = []
     try:
+        from youtube.oauth import sign_in_status
+
+        if sign_in_status(channel_id):  # #1537: lapsed - the 48 h line below goes quiet then
+            items.append(
+                f"sign in again - uploads wait: py -m youtube.oauth_setup --channel {channel_id} "
+                "(publish the app first, or it lapses again in 7 days)"
+            )
+    except Exception as exc:
+        logger.debug("yours: sign-in status skipped: %s", exc)
+    try:
         from analytics.post_timing import format_scheduled_local
         from youtube.oauth import sign_in_expiry, sign_in_mode
 

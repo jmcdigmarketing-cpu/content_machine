@@ -290,15 +290,18 @@ class FollowUpTests(unittest.TestCase):
             patch(
                 "storage.repositories.content_runs.get_content_run_repository", return_value=repo
             ),
-            patch.object(batch_generation, "series_drafted", return_value=drafted),
+            # wave 119 (#1536): once per video is `_followed_up`, in any wording
+            patch.object(batch_generation, "_followed_up", return_value=drafted),
         ):
             return batch_generation.follow_up_topic("tapin")
 
     def test_the_topic(self):
+        rows = self._rows()
+        day = f"{rows[0]['published']:%b} {rows[0]['published'].day}"
         self.assertEqual(
-            self._topic(self._rows()),
-            'Follow-up to "Detroit Pistons bench outplays Boston Celtics reserves in key stretch": '
-            "what has happened since",
+            self._topic(rows),
+            'Follow-up to "Detroit Pistons bench outplays Boston Celtics reserves in key stretch" '
+            f"({day}): what has happened since {day}",  # wave 119: the date
         )
 
     def test_once_recent_and_two_or_more(self):

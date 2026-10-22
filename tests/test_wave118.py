@@ -205,6 +205,7 @@ class YoursTodayTests(unittest.TestCase):
             "23 8:30 PM EDT for its 10:00 PM EDT slot"
         )
         with (
+            patch("youtube.oauth.sign_in_status", return_value=""),  # wave 119: signed in
             patch("youtube.oauth.sign_in_expiry", return_value=soon),
             patch("youtube.oauth.sign_in_mode", return_value="testing"),
             patch("core.stale_renders.shelf_rows", return_value=rows),

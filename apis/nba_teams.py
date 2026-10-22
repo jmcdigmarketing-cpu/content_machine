@@ -99,15 +99,38 @@ _SPORT_CUES = re.compile(
 )
 
 
+# #1487 (S19): ESPN's abbreviations, and the ones fans also type.
+NBA_ABBR_TEAMS = {
+    "ATL": "Atlanta Hawks", "BOS": "Boston Celtics", "BKN": "Brooklyn Nets",
+    "CHA": "Charlotte Hornets", "CHI": "Chicago Bulls", "CLE": "Cleveland Cavaliers",
+    "DAL": "Dallas Mavericks", "DEN": "Denver Nuggets", "DET": "Detroit Pistons",
+    "GSW": "Golden State Warriors", "HOU": "Houston Rockets", "IND": "Indiana Pacers",
+    "LAC": "Los Angeles Clippers", "LAL": "Los Angeles Lakers", "MEM": "Memphis Grizzlies",
+    "MIA": "Miami Heat", "MIL": "Milwaukee Bucks", "MIN": "Minnesota Timberwolves",
+    "NOP": "New Orleans Pelicans", "NYK": "New York Knicks", "OKC": "Oklahoma City Thunder",
+    "ORL": "Orlando Magic", "PHI": "Philadelphia 76ers", "PHX": "Phoenix Suns",
+    "POR": "Portland Trail Blazers", "SAC": "Sacramento Kings", "SAS": "San Antonio Spurs",
+    "TOR": "Toronto Raptors", "UTA": "Utah Jazz", "WAS": "Washington Wizards",
+}  # fmt: skip
+_BASKETBALL_ONLY = re.compile(r"\b(?:nba|basketball|finals|conference|nba cup)\b", re.I)
+
+
 def team_names_in(text: str) -> list[str]:
     """#1002: NBA teams a text names, lower-case too, as full names - only when the text
     reads as basketball ("the heat wave in phoenix" names no team)."""
+    from apis.nfl_entities import NFL_ABBR_TEAMS
+    from apis.topic_tokens import abbreviations_in
+
     lower = (text or "").lower()
     found: list[str] = []
     for match in re.finditer(r"[a-z0-9]+", lower):
         full = NBA_TEAM_NAMES.get(match.group(0))
         if full and full not in found:
             found.append(full)
+    # #1487: "LAL at BOS" - an abbreviation the NFL shares ("DAL") needs basketball's word.
+    own = {a: t for a, t in NBA_ABBR_TEAMS.items() if a not in NFL_ABBR_TEAMS}
+    ours = _BASKETBALL_ONLY.search(lower) or found or abbreviations_in(text, own)
+    found += [t for t in abbreviations_in(text, NBA_ABBR_TEAMS if ours else own) if t not in found]
     if found and (len(found) > 1 or _SPORT_CUES.search(lower)):
         return found
     return []

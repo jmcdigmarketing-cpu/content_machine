@@ -6466,6 +6466,296 @@
         ]
       },
       "why": "the news search reads the same phrases as the research"
+    },
+    {
+      "id": "broken-nfl-green-bay",
+      "item": 1486,
+      "source": "wave 121: the title check, NFL",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Why the Bay Packers are 5-1"
+      ],
+      "expect": {
+        "equals": "Green Bay Packers"
+      },
+      "why": "Green Bay lost its Green"
+    },
+    {
+      "id": "broken-nfl-kansas-city",
+      "item": 1486,
+      "source": "wave 121: the title check, NFL",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "City Chiefs at home again"
+      ],
+      "expect": {
+        "equals": "Kansas City Chiefs"
+      },
+      "why": "Kansas City lost its Kansas"
+    },
+    {
+      "id": "broken-nfl-san-francisco",
+      "item": 1486,
+      "source": "wave 121: the title check, NFL",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Francisco 49ers injury report"
+      ],
+      "expect": {
+        "equals": "San Francisco 49ers"
+      },
+      "why": "San Francisco lost its San"
+    },
+    {
+      "id": "broken-nfl-new-york-giants",
+      "item": 1486,
+      "source": "wave 121: the title check, NFL",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "York Giants fall to 1-6"
+      ],
+      "expect": {
+        "equals": "New York Giants"
+      },
+      "why": "New York lost its New"
+    },
+    {
+      "id": "broken-nfl-tampa-bay",
+      "item": 1486,
+      "source": "wave 121: the title check, NFL",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Bay Buccaneers QB battle"
+      ],
+      "expect": {
+        "equals": "Tampa Bay Buccaneers"
+      },
+      "why": "Tampa Bay lost its Tampa"
+    },
+    {
+      "id": "broken-nba-golden-state",
+      "item": 1486,
+      "source": "wave 121: the title check, NBA",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "State Warriors without Curry"
+      ],
+      "expect": {
+        "equals": "Golden State Warriors"
+      },
+      "why": "Golden State lost its Golden"
+    },
+    {
+      "id": "broken-nba-oklahoma-city",
+      "item": 1486,
+      "source": "wave 121: the title check, NBA",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "City Thunder are for real"
+      ],
+      "expect": {
+        "equals": "Oklahoma City Thunder"
+      },
+      "why": "Oklahoma City lost its Oklahoma"
+    },
+    {
+      "id": "broken-nba-san-antonio",
+      "item": 1486,
+      "source": "wave 121: the title check, NBA",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Antonio Spurs rookie Wembanyama"
+      ],
+      "expect": {
+        "equals": "San Antonio Spurs"
+      },
+      "why": "San Antonio lost its San"
+    },
+    {
+      "id": "broken-nba-new-york-knicks",
+      "item": 1486,
+      "source": "wave 121: the title check, NBA",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "York Knicks trade rumors"
+      ],
+      "expect": {
+        "equals": "New York Knicks"
+      },
+      "why": "New York lost its New"
+    },
+    {
+      "id": "whole-nfl-green-bay",
+      "item": 1486,
+      "source": "wave 121: the title check, NFL",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Green Bay Packers are 5-1"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "a whole name is not broken"
+    },
+    {
+      "id": "whole-nba-golden-state",
+      "item": 1486,
+      "source": "wave 121: the title check, NBA",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Golden State Warriors without Curry"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "a whole name is not broken"
+    },
+    {
+      "id": "a-whole-name-does-not-hide-a-broken-one",
+      "item": 1486,
+      "source": "wave 121: 'New England Patriots fans meet England Patriots' passed the title check",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "New England Patriots fans meet England Patriots"
+      ],
+      "expect": {
+        "equals": "New England Patriots"
+      },
+      "why": "each mention is read, not whether the whole name is somewhere"
+    },
+    {
+      "id": "nfl-abbreviations-are-teams",
+      "item": 1487,
+      "source": "wave 121: 'NE vs BUF week 7' named no team",
+      "call": "apis.nfl_entities:team_names_in",
+      "args": [
+        "NE vs BUF week 7"
+      ],
+      "expect": {
+        "equals": [
+          "New England Patriots",
+          "Buffalo Bills"
+        ]
+      },
+      "why": "NE is New England where the topic reads as football"
+    },
+    {
+      "id": "nba-abbreviations-are-teams",
+      "item": 1487,
+      "source": "wave 121: the NBA had no abbreviation table",
+      "call": "apis.nba_teams:team_names_in",
+      "args": [
+        "LAL at BOS"
+      ],
+      "expect": {
+        "equals": [
+          "Los Angeles Lakers",
+          "Boston Celtics"
+        ]
+      },
+      "why": "two NBA-only abbreviations name two teams"
+    },
+    {
+      "id": "a-shared-abbreviation-waits-for-its-league",
+      "item": 1487,
+      "source": "wave 121: DAL and PHI are both leagues'",
+      "call": "apis.nba_teams:team_names_in",
+      "args": [
+        "DAL vs PHI week 7"
+      ],
+      "expect": {
+        "equals": []
+      },
+      "why": "'week 7' is football - the NBA reads no team"
+    },
+    {
+      "id": "a-capital-word-is-not-a-team",
+      "item": 1487,
+      "source": "wave 121: NO is the Saints' abbreviation",
+      "call": "apis.nfl_entities:team_names_in",
+      "args": [
+        "NO WAY the Bills win"
+      ],
+      "expect": {
+        "equals": [
+          "Buffalo Bills"
+        ]
+      },
+      "why": "a word in capitals counts only beside a matchup word or another team"
+    },
+    {
+      "id": "research-name-from-an-abbreviation",
+      "item": 1487,
+      "source": "wave 121: 'NE Patriots' was researched beside 'New England Patriots'",
+      "call": "core.facts.entity_lookup:names_for",
+      "args": [
+        "NE Patriots trade deadline"
+      ],
+      "expect": {
+        "equals": [
+          "New England Patriots"
+        ]
+      },
+      "why": "the abbreviated name is the team"
+    },
+    {
+      "id": "search-names-from-an-abbreviation",
+      "item": 1487,
+      "source": "wave 121: the news search kept 'KC Chiefs' and 'LV'",
+      "call": "apis.topic_tokens:subject_terms",
+      "args": [
+        "KC Chiefs at LV"
+      ],
+      "expect": {
+        "equals": [
+          "Kansas City Chiefs",
+          "Las Vegas Raiders"
+        ]
+      },
+      "why": "the sibling reads the same rule"
+    },
+    {
+      "id": "crash-frame-from-faulthandler",
+      "item": 1469,
+      "source": "2026-10-16: the morning said 'Python crashed: heap corruption' and not where",
+      "call": "core.nightly_task:crash_frame",
+      "args": [
+        "Windows fatal exception: code 0xc0000374\n\nCurrent thread 0x000035e4 (most recent call first):\n  File \"C:\\dev\\content_machine\\video\\render.py\", line 412 in _encode\n  File \"C:\\dev\\content_machine\\scripts\\ops.py\", line 4500 in <module>\n"
+      ],
+      "expect": {
+        "equals": "video/render.py line 412 in _encode"
+      },
+      "why": "the current thread's top frame is where it died"
+    },
+    {
+      "id": "crash-frame-none-in-a-plain-log",
+      "item": 1469,
+      "source": "2026-10-16: the log ended at a warning",
+      "call": "core.nightly_task:crash_frame",
+      "args": [
+        "16:32:13 [WARNING] Quote attribution: 1 quoted sentence lacks a source"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "no frame, nothing invented"
+    },
+    {
+      "id": "an-unknown-line-holds-health-at-yellow",
+      "item": 1472,
+      "source": "wave 121: a check that could not read its input read yellow 'n/a'; one that read $0.00 revenue read RED",
+      "call": "core.channel_health:_worst",
+      "args": [
+        [
+          "green",
+          "unknown",
+          "green"
+        ]
+      ],
+      "expect": {
+        "equals": "yellow"
+      },
+      "why": "a line that read nothing is never red and cannot let the channel read green"
     }
   ]
 }

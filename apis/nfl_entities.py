@@ -129,12 +129,20 @@ def team_names_in(text: str) -> list[str]:
     football: a record ("0-4"), a league word, a second team, a known player. "best phone
     chargers 2026" names no team.
     """
+    from apis.nba_teams import NBA_ABBR_TEAMS
+    from apis.topic_tokens import abbreviations_in
+
     lower = (text or "").lower()
     found: list[str] = []
     for match in re.finditer(r"[a-z0-9]+", lower):
         full = NFL_TEAM_NAMES.get(match.group(0))
         if full and full not in found:
             found.append(full)
+    # #1487 (S19): "NE vs BUF" - an abbreviation the NBA shares ("DAL") needs football's word.
+    # Once a nickname or an NFL-only abbreviation says football, "DEN vs KC" is both teams.
+    own = {a: t for a, t in NFL_ABBR_TEAMS.items() if a not in NBA_ABBR_TEAMS}
+    ours = _FOOTBALL_ONLY.search(lower) or found or abbreviations_in(text, own)
+    found += [t for t in abbreviations_in(text, NFL_ABBR_TEAMS if ours else own) if t not in found]
     if not found:
         return []
     players = any(re.search(rf"\b{re.escape(p)}\b", lower) for p in PLAYER_TO_TEAM)
@@ -157,3 +165,12 @@ NFL_TEAM_ABBR = {
     "Carolina Panthers": "car", "Tampa Bay Buccaneers": "tb", "Arizona Cardinals": "ari",
     "Los Angeles Rams": "lar", "Seattle Seahawks": "sea",
 }  # fmt: skip
+# #1487: an abbreviation as written in a topic - ESPN's, and the ones fans also type.
+NFL_ABBR_TEAMS = {
+    **{abbr.upper(): team for team, abbr in NFL_TEAM_ABBR.items()},
+    "WAS": "Washington Commanders", "JAC": "Jacksonville Jaguars",
+    "LVR": "Las Vegas Raiders", "SFO": "San Francisco 49ers",
+}  # fmt: skip
+_FOOTBALL_ONLY = re.compile(
+    r"\b(?:nfl|afc|nfc|super bowl|week \d+|qb|quarterback|touchdown|football)\b", re.I
+)

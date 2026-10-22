@@ -206,7 +206,8 @@ _TWO_WORD_NICKNAMES = frozenset({"Portland Trail Blazers"})
 
 def broken_team_name(title: str) -> str:
     """A three-word team named without its first word ("England Patriots", "York Jets"), as the
-    full name, or "" (#1224, run 159)."""
+    full name, or "" (#1224, run 159). #1486: each mention is read - "New England Patriots fans
+    meet England Patriots" has one whole and one broken."""
     from apis.nba_teams import NBA_TEAM_NAMES
     from apis.nfl_entities import NFL_TEAM_NAMES
 
@@ -216,9 +217,7 @@ def broken_team_name(title: str) -> str:
         if len(parts) < 3 or full in _TWO_WORD_NICKNAMES:
             continue
         tail = " ".join(parts[1:])
-        if re.search(rf"\b{re.escape(tail)}\b", text) and not re.search(
-            rf"\b{re.escape(full)}\b", text
-        ):
+        if re.search(rf"(?<!\b{re.escape(parts[0])} )\b{re.escape(tail)}\b", text):
             return full
     return ""
 

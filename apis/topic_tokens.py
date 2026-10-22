@@ -368,8 +368,9 @@ def trim_name(name: str) -> str:
 
     "Los Angeles Chargers'" -> "Los Angeles Chargers", "Herbert's" -> "Herbert", "Call of
     Dutys" -> "Call of Duty" (a possessive typed without its apostrophe; only the last word
-    of a longer name, so "Gladys" and "Rhys" stay), "UFC Edmonton KO" -> "UFC Edmonton".
-    "Blue Jays" and "Guys" stay: a vowel before the "ys" is a plural, not a typo.
+    of a longer name, so "Gladys" and "Rhys" stay), "UFC Edmonton KO" -> "UFC Edmonton",
+    "Drake Maye NE" -> "Drake Maye" (#1487). "Blue Jays" and "Guys" stay: a vowel before the
+    "ys" is a plural, not a typo.
     """
     words = (name or "").strip().split()
     if not words:
@@ -377,10 +378,69 @@ def trim_name(name: str) -> str:
     words[-1] = _POSSESSIVE.sub("", words[-1]) or words[-1]
     while len(words) > 1 and words[-1].lower() in NAME_TAIL_WORDS:
         words.pop()
+    if len(words) > 2 and words[-1] in _team_abbreviations():  # #1487: "Drake Maye NE"
+        words.pop()
     stem = words[-1][:-2]
     if len(words) > 1 and re.search(r"[aeiou]", stem, re.IGNORECASE):
         words[-1] = _TYPED_POSSESSIVE.sub(lambda m: m.group(0)[0], words[-1])
     return " ".join(words)
+
+
+# #1487 (S19): a team abbreviation that is also a word or a unit in capitals ("NO WAY", "TOP
+# TEN", "16 GB") counts only beside a matchup word, another abbreviation or its nickname.
+ABBREVIATION_WORDS = frozenset({"NO", "MIN", "TEN", "CAR", "SEA", "DEN", "SAC", "GB", "TB"})
+MATCHUP_WORDS = frozenset({"vs", "v", "at", "versus"})
+
+
+def _team_abbreviations() -> dict[str, str]:
+    from apis.nba_teams import NBA_ABBR_TEAMS
+    from apis.nfl_entities import NFL_ABBR_TEAMS
+
+    return {**NBA_ABBR_TEAMS, **NFL_ABBR_TEAMS}
+
+
+def part_of_team(name: str, team: str) -> bool:
+    """#1539/#1487: "Patriots", "England Patriots", "NE Patriots" and "NE" all name the New
+    England Patriots - a phrase that is the tail of the team's name, after its abbreviation."""
+    from apis.nba_teams import NBA_ABBR_TEAMS
+    from apis.nfl_entities import NFL_ABBR_TEAMS
+
+    words = (name or "").split()
+    if words and team in (NFL_ABBR_TEAMS.get(words[0]), NBA_ABBR_TEAMS.get(words[0])):
+        words = words[1:]
+        if not words:
+            return True
+    return bool(words) and f" {team.lower()}".endswith(f" {' '.join(words).lower()}")
+
+
+def abbreviations_in(text: str, table: dict[str, str]) -> list[str]:
+    """#1487: the full names the upper-case abbreviations in `text` stand for, in order.
+
+    `table` maps "NE" -> "New England Patriots". Case is read from the raw text, so "ne" and
+    an all-caps headline count for nothing; a number before one is a unit ("32 GB").
+    """
+    raw = text or ""
+    if not any(ch.islower() for ch in raw):
+        return []
+    words = [m.group(0).strip(".-") for m in _WORD.finditer(raw)]
+    out: list[str] = []
+    for i, word in enumerate(words):
+        full = table.get(word)
+        if not full or not word.isupper():
+            continue
+        before = words[i - 1] if i else ""
+        after = words[i + 1] if i + 1 < len(words) else ""
+        if before[:1].isdigit():
+            continue
+        if word in ABBREVIATION_WORDS and not (
+            {before, after} & set(table)
+            or {before.lower(), after.lower()} & MATCHUP_WORDS
+            or after.lower() == full.split()[-1].lower()
+        ):
+            continue
+        if full not in out:
+            out.append(full)
+    return out
 
 
 def name_phrases(text: str, *, max_words: int = 3, connectors: bool = False) -> list[str]:
@@ -412,8 +472,11 @@ def subject_terms(topic: str, *, limit: int = 4) -> list[str]:
         if term not in out:
             out.append(term)
     covered = " ".join(out).lower()
+    teams = list(out)
     for phrase in name_phrases(topic, max_words=5, connectors=True):
         phrase = trim_name(phrase)  # #1539: "Los Angeles Chargers'" is the team named
+        if any(part_of_team(phrase, team) for team in teams):  # #1487: "KC Chiefs", "LV"
+            continue
         if phrase and phrase.lower() not in covered and phrase not in out:
             out.append(phrase)
     return out[:limit]

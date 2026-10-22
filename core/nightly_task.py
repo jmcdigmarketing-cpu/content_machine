@@ -319,8 +319,73 @@ def result_words(code: int) -> str:
     return f"it stopped (0x{unsigned:08X})"
 
 
-def stopped_line(times: dict[str, Any], *, drafts_made: int | None) -> str:
-    """What the operator should know when the last run did not finish, else ""."""
+_FRAME = re.compile(r'^\s*File "([^"]+)", line (\d+),? in (\S+)\s*$', re.M)
+_LIBRARY = re.compile(r"(?:site-packages|dist-packages)/|/lib/(?:python[\d.]*/)?[^/]+\.py$", re.I)
+
+
+def _is_library(path: str) -> bool:
+    return bool(_LIBRARY.search(path.replace("\\", "/")))
+
+
+def _where(frame: tuple[str, str, str]) -> str:
+    """ "C:\\dev\\content_machine\\video\\render.py" -> "video/render.py line 412 in _encode";
+    a package's file keeps its package ("PIL/Image.py"), the standard library's its name."""
+    path, line, func = frame
+    parts = path.replace("\\", "/").split("/")
+    stdlib = _is_library(path) and "-packages/" not in "/".join(parts)
+    return f"{parts[-1] if stdlib else '/'.join(parts[-2:])} line {line} in {func}"
+
+
+def crash_frame(text: str) -> str:
+    """#1469 (S17): the Python line a crash was at, from what faulthandler (#1216) or a traceback
+    left in the log - "video/render.py line 412 in _encode". When the top frame is a library's,
+    the project's frame that called it follows. "" when the log has neither."""
+    raw = text or ""
+    exception = ""
+    if "(most recent call first)" in raw:
+        at = raw.rfind("Current thread")
+        block = raw[at:] if at >= 0 else raw[raw.find("(most recent call first)") :]
+        block = block.split("\n\n", 1)[0]
+        frames = _FRAME.findall(block)
+    elif "Traceback (most recent call last)" in raw:
+        block = raw[raw.rfind("Traceback (most recent call last)") :]
+        frames = list(reversed(_FRAME.findall(block)))
+        tail = [ln for ln in block.splitlines()[1:] if ln.strip() and not ln.startswith(" ")]
+        exception = tail[0].strip()[:80] if tail else ""
+    else:
+        return ""
+    if not frames:
+        return ""
+    where = _where(frames[0])
+    if _is_library(frames[0][0]):
+        ours = next((f for f in frames[1:] if not _is_library(f[0])), None)
+        if ours is not None:
+            where += f", called from {_where(ours)}"
+    return f"{exception} at {where}" if exception else where
+
+
+def _crash_text(started: datetime | None, log_path: str) -> str:
+    """The log of the run that stopped - the task's own while it is from that run, else the copy
+    `keep_crash_log` made."""
+    try:
+        if started is None or datetime.fromtimestamp(os.path.getmtime(log_path)) >= started:
+            with open(log_path, encoding="utf-8", errors="replace") as handle:
+                return handle.read()[-200_000:]
+    except OSError:
+        pass
+    if started is None:
+        return ""
+    kept = os.path.join(REPO_ROOT, CRASH_DIR, f"overnight-{started:%Y%m%d-%H%M}.log")
+    try:
+        with open(kept, encoding="utf-8", errors="replace") as handle:
+            return handle.read()
+    except OSError:
+        return ""
+
+
+def stopped_line(times: dict[str, Any], *, drafts_made: int | None, crash_at: str = "") -> str:
+    """What the operator should know when the last run did not finish, else "". #1469:
+    `crash_at` is where the crash was (`crash_frame`)."""
     code = times.get("result")
     if code is None or (int(code) & 0xFFFFFFFF) in _QUIET_RESULTS:
         return ""
@@ -330,8 +395,9 @@ def stopped_line(times: dict[str, Any], *, drafts_made: int | None) -> str:
     started = f" at {_clock(last)} on {last:%b %d}" if last else ""
     made = f" after {drafts_made} of {count} drafts" if drafts_made is not None else ""
     again = "py -m scripts.ops overnight" + (f" --channel {channel}" if channel else "")
+    where = f" at {crash_at}" if crash_at else ""
     return (
-        f"Overnight started{started} and stopped{made} - {result_words(code)}. "
+        f"Overnight started{started} and stopped{made} - {result_words(code)}{where}. "
         f"Its output: {OVERNIGHT_LOG}. Run it again: {again} --count {count}"
     )
 
@@ -503,7 +569,8 @@ def overnight_stop_line(*, root: str | None = None, log_path: str | None = None)
             made = drafts_made_since(str(times["channel"]), last, until=until, root=root)
         except Exception as exc:
             logger.debug("overnight drafts uncounted: %s", exc)
-    return stopped_line(times, drafts_made=made)
+    log = log_path or os.path.join(REPO_ROOT, OVERNIGHT_LOG)
+    return stopped_line(times, drafts_made=made, crash_at=crash_frame(_crash_text(last, log)))
 
 
 def enable_crash_traceback(stream: Any = None) -> bool:

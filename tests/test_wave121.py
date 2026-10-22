@@ -13,6 +13,19 @@ Measured first, on 9e03058:
 - health kept no history: one run's colours were all there was (#1475).
 - the sync asked YouTube for each video's status only, so a title or description edited in
   Studio never reached the record the learning reads (#1390).
+
+Batch B - five neighbours, measured the same way:
+- health's colour thresholds sat in six functions with no version, so two days of #1475's
+  history could not say they were read on the same rules (#1479).
+- the cost line read the runs' API estimate ($0.05 a video) and never the spend entered with
+  `ops spend` (subscriptions, credits) (#1478).
+- "NE vs BUF week 7" and "Can NE win the AFC East?" named no team, and "NE Patriots" was
+  researched beside "New England Patriots" (#1487).
+- the morning said "Python crashed: heap corruption" and never where - the log faulthandler
+  wrote names the Python line (#1469).
+- the title check passed "New England Patriots fans meet England Patriots": a team named in
+  full once hid the broken one (#1486, in #1391's place - the API cannot say which thumbnail
+  image is live).
 """
 
 from __future__ import annotations
@@ -280,6 +293,203 @@ class StudioReadBackTests(unittest.TestCase):
         }
         self.assertEqual(studio_edits(run, live), {})
         self.assertEqual(studio_edits(run, {"title": "", "description": ""}), {})
+
+
+class ThresholdTests(unittest.TestCase):
+    """#1479: one table, one version."""
+
+    def _auth(self, mean):
+        from core import channel_health as ch
+
+        runs = [SimpleNamespace(id=i, quality_json="{}") for i in range(5)]
+        repo = SimpleNamespace(list_for_channel=lambda c: runs)
+        with (
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository", return_value=repo
+            ),
+            patch("core.run_quality.authenticity_gate_value", return_value=mean),
+        ):
+            return ch._authenticity_sub("tapin")
+
+    def test_the_checks_read_the_table(self):
+        from core import channel_health as ch
+
+        self.assertEqual(self._auth(60).status, ch.YELLOW)
+        with patch.dict(ch.THRESHOLDS, {"authenticity_yellow_under": 58}):
+            self.assertEqual(self._auth(60).status, ch.GREEN)
+        self.assertIsInstance(ch.THRESHOLDS_VERSION, int)
+
+    def test_the_history_carries_the_version(self):
+        from core import channel_health as ch
+
+        with tempfile.TemporaryDirectory() as tmp:
+            template = os.path.join(tmp, "health_history_{channel}.jsonl")
+            report = ch.HealthReport(channel_id="tapin", overall=ch.GREEN)
+            report.subs = [ch.HealthSub("cadence", ch.GREEN, "y")]
+            with patch.object(ch, "HISTORY_TEMPLATE", template):
+                ch.record_history(report, today=date(2026, 10, 21))
+                with patch.object(ch, "THRESHOLDS_VERSION", ch.THRESHOLDS_VERSION + 1):
+                    ch.record_history(report, today=date(2026, 10, 22))
+                with open(template.format(channel="tapin"), encoding="utf-8") as handle:
+                    rows = [json.loads(line) for line in handle]
+                lines = ch.history_lines("tapin")
+        self.assertEqual(rows[0]["thresholds"], ch.THRESHOLDS_VERSION)
+        self.assertIn(f"thresholds v{ch.THRESHOLDS_VERSION + 1}", lines[0])
+        self.assertNotIn("thresholds", lines[1])
+
+
+class SpendCostTests(unittest.TestCase):
+    """#1478: the spend entered with `ops spend`, when there is any."""
+
+    def _cost(self, revenue, spent):
+        from core import channel_health as ch
+        from core.unit_economics import ChannelEconomics, VideoEconomics
+
+        econ = ChannelEconomics(channel_id="tapin")
+        econ.videos = [
+            VideoEconomics(run_id=i, title="t", cost_usd=0.05, revenue_usd=revenue, views=300,
+                           engaged_rate=0.4)
+            for i in range(1, 5)
+        ]  # fmt: skip
+        with (
+            patch("core.unit_economics.channel_economics", return_value=econ),
+            patch("core.money.ledger.total_spent", return_value=spent),
+            patch.object(ch, "_uploaded_videos", return_value=40),
+        ):
+            return ch._cost_sub("tapin")
+
+    def test_the_entered_spend_is_the_cost(self):
+        from core import channel_health as ch
+
+        sub = self._cost(None, {"total": 54.0, "by_kind": {}, "count": 2})
+        self.assertIn("$1.35/video from the spend you entered", sub.detail)
+        self.assertIn("API estimate $0.050/video", sub.detail)
+        self.assertIn("ops spend", sub.source)
+        self.assertEqual(sub.status, ch.YELLOW)
+        self.assertEqual(self._cost(2.0, {"total": 54.0, "by_kind": {}, "count": 2}).status,
+                         ch.GREEN)  # fmt: skip
+        loss = self._cost(0.5, {"total": 54.0, "by_kind": {}, "count": 2})
+        self.assertEqual(loss.status, ch.RED)
+        self.assertIn("the spend you entered", loss.detail)
+
+    def test_with_nothing_entered_it_says_it_is_the_estimate(self):
+        sub = self._cost(None, {"total": 0.0, "by_kind": {}, "count": 0})
+        self.assertIn("API estimate", sub.detail)
+        self.assertIn("ops spend add", sub.detail)
+
+
+class AbbreviationTests(unittest.TestCase):
+    """#1487: NE is New England - where a topic reads as a game."""
+
+    def test_the_leagues(self):
+        from apis.nba_teams import team_names_in as nba
+        from apis.nfl_entities import team_names_in as nfl
+
+        self.assertEqual(nfl("NE vs BUF week 7"), ["New England Patriots", "Buffalo Bills"])
+        self.assertEqual(nfl("Can NE win the AFC East?"), ["New England Patriots"])
+        self.assertEqual(nfl("DEN vs KC"), ["Denver Broncos", "Kansas City Chiefs"])
+        self.assertEqual(nba("LAL at BOS"), ["Los Angeles Lakers", "Boston Celtics"])
+        # an abbreviation both leagues use waits for the league's own word
+        self.assertEqual(nba("DAL vs PHI week 7"), [])
+        self.assertEqual(nba("DAL vs PHI NBA tonight"), ["Dallas Mavericks", "Philadelphia 76ers"])
+
+    def test_words_in_capitals_are_words(self):
+        from apis.nfl_entities import team_names_in as nfl
+
+        self.assertEqual(nfl("NO WAY the Bills win"), ["Buffalo Bills"])
+        self.assertEqual(nfl("32 GB vs 16 GB"), [])
+        self.assertEqual(nfl("TOP TEN QBs of the season"), [])
+        self.assertEqual(nfl("NE VS BUF WEEK 7"), [])  # an all-caps headline
+
+    def test_the_research_and_search_names(self):
+        from apis.topic_tokens import subject_terms
+        from core.facts.entity_lookup import names_for
+
+        self.assertEqual(names_for("NE vs BUF week 7"), ["Buffalo Bills", "New England Patriots"])
+        self.assertEqual(names_for("NE Patriots trade deadline"), ["New England Patriots"])
+        self.assertEqual(names_for("Drake Maye NE comeback"), ["Drake Maye"])
+        self.assertEqual(
+            subject_terms("KC Chiefs at LV"), ["Kansas City Chiefs", "Las Vegas Raiders"]
+        )
+
+
+FAULT = """16:32:12 [INFO] Rendering run 156
+Windows fatal exception: code 0xc0000374
+
+Thread 0x00002a1c (most recent call first):
+  File "C:\\Python311\\Lib\\threading.py", line 324 in wait
+  File "C:\\Python311\\Lib\\threading.py", line 600 in wait
+
+Current thread 0x000035e4 (most recent call first):
+  File "C:\\dev\\content_machine\\video\\render.py", line 412 in _encode
+  File "C:\\dev\\content_machine\\video\\render.py", line 200 in render
+  File "C:\\dev\\content_machine\\scripts\\ops.py", line 4500 in <module>
+"""
+LIBRARY_TOP = """Fatal Python error: Aborted
+
+Current thread 0x000035e4 (most recent call first):
+  File "C:\\venv\\Lib\\site-packages\\PIL\\Image.py", line 3100 in open
+  File "C:\\dev\\content_machine\\video\\thumbs.py", line 77 in frame
+"""
+TRACEBACK = """Traceback (most recent call last):
+  File "C:\\dev\\content_machine\\scripts\\ops.py", line 4500, in <module>
+    main()
+  File "C:\\dev\\content_machine\\video\\compose.py", line 88, in compose
+    clip = build(frames)
+MemoryError
+"""
+
+
+class CrashLineTests(unittest.TestCase):
+    """#1469: the morning names the Python line the crash was at."""
+
+    def test_the_frame(self):
+        from core.nightly_task import crash_frame
+
+        self.assertEqual(crash_frame(FAULT), "video/render.py line 412 in _encode")
+        self.assertEqual(
+            crash_frame(LIBRARY_TOP),
+            "PIL/Image.py line 3100 in open, called from video/thumbs.py line 77 in frame",
+        )
+        self.assertEqual(
+            crash_frame(TRACEBACK), "MemoryError at video/compose.py line 88 in compose"
+        )
+        self.assertEqual(crash_frame("16:32:13 [WARNING] Quote attribution: 1 lacks a source"), "")
+
+    def test_the_morning_line_reads_the_log(self):
+        from datetime import datetime
+
+        from core import nightly_task
+        from tests.test_stops_and_facts import CRASHED
+
+        with tempfile.TemporaryDirectory() as tmp:
+            log = os.path.join(tmp, "overnight-last.log")
+            with open(log, "w", encoding="utf-8") as handle:
+                handle.write(FAULT)
+            died = datetime(2026, 10, 16, 16, 32, 13).timestamp()
+            os.utime(log, (died, died))
+            with (
+                patch.dict(os.environ, {"OVERNIGHT_RECORD_FILE": os.path.join(tmp, "r.json")}),
+                patch.object(
+                    nightly_task, "_queried_times", return_value=nightly_task.task_times(CRASHED)
+                ),
+            ):
+                line = nightly_task.overnight_stop_line(root=tmp, log_path=log)
+        self.assertIn("heap corruption", line)
+        self.assertIn("at video/render.py line 412 in _encode", line)
+
+
+class BrokenTeamNameTests(unittest.TestCase):
+    """#1486: the title check, every league - and a full name does not hide a broken one."""
+
+    def test_a_full_name_does_not_hide_a_broken_one(self):
+        from core.title_generator import broken_place_name
+
+        self.assertEqual(
+            broken_place_name("New England Patriots fans meet England Patriots"),
+            "New England Patriots",
+        )
+        self.assertEqual(broken_place_name("New England Patriots fans meet the Patriots"), "")
 
 
 if __name__ == "__main__":

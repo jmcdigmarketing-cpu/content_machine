@@ -94,7 +94,7 @@ def names_for(topic: str, *, angle: str = "") -> list[str]:
     from apis.nba_teams import team_names_in as nba_team_names_in
     from apis.nfl_entities import team_names_in as nfl_team_names_in
     from apis.topic_scorer import sport_names_in
-    from apis.topic_tokens import name_phrases, phrase_is_ordinary, trim_name
+    from apis.topic_tokens import name_phrases, part_of_team, phrase_is_ordinary, trim_name
 
     out: list[str] = []
     seen: set[str] = set()
@@ -116,12 +116,12 @@ def names_for(topic: str, *, angle: str = "") -> list[str]:
     for text in (topic, angle):
         for phrase in name_phrases(text or "", max_words=5, connectors=True):
             add(phrase)
+
     # #1002: a team by its full name - "Lakers" becomes "Los Angeles Lakers" where it was
     # typed, and a lower-case topic's team ("0-4 chargers") is found at all.
     # #1539: so is the tail of one - "England Patriots" from "the new England Patriots".
     for team in nfl_team_names_in(both) + nba_team_names_in(both):
-        full = f" {team.lower()}"
-        at = [i for i, name in enumerate(out) if full.endswith(f" {name.lower()}")]
+        at = [i for i, name in enumerate(out) if part_of_team(name, team)]  # #1487: "BUF"
         if not at:
             add(team)
             continue

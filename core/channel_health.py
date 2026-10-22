@@ -26,6 +26,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from typing import Any
 
 from config.paths import DATA_DIR
 from core.logging import get_logger
@@ -36,8 +37,22 @@ GREEN, YELLOW, RED = "green", "yellow", "red"
 # #1472 (S18): a line whose input could not be read says so - it is never RED, and it holds
 # the overall at YELLOW, since a check that read nothing cannot call the channel green.
 UNKNOWN = "unknown"
-CADENCE_GOAL = 7  # S13: 7 a week (#1435)
-CADENCE_YELLOW_UNDER = 5
+# #1479 (S18): every colour's threshold, in one place. Changing one bumps THRESHOLDS_VERSION;
+# each day's history line carries it, so two days are compared on the same rules.
+THRESHOLDS_VERSION = 1
+THRESHOLDS: dict[str, float] = {
+    "engagement_min_views": 20,  # #1238: run 119 - 3 views, 0% engaged - turned it RED alone
+    "long_video_seconds": 180.0,  # #1491: past a Short's limit, read apart
+    "engagement_yellow_drop": 0.01,  # recent under the baseline by more than 1pp: softening
+    "engagement_red_drop": 0.05,  # by more than 5pp: declining
+    "cadence_goal": 7,  # S13: 7 a week (#1435)
+    "cadence_yellow_under": 5,
+    "cadence_near_cap_room": 1,  # with a cap set: this many left or fewer is near it
+    "authenticity_red_under": 55,  # #815: the binary gate sum
+    "authenticity_yellow_under": 72,
+    "cost_yellow_over_usd": 0.10,  # a video's cost, estimated or entered
+    "data_quality_red_at": 3,  # warnings
+}
 _RANK = {GREEN: 0, UNKNOWN: 1, YELLOW: 1, RED: 2}
 _MARK = {GREEN: "+", YELLOW: "~", RED: "!", UNKNOWN: "?"}  # cp1252-safe (no forced UTF-8)
 HISTORY_TEMPLATE = os.path.join(DATA_DIR, "health_history_{channel}.jsonl")  # #1475
@@ -64,9 +79,8 @@ def _worst(statuses: list[str]) -> str:
     return YELLOW if worst == UNKNOWN else worst
 
 
-# #1238: run 119 - 3 views, 0% engaged - turned engagement RED on its own.
-HEALTH_MIN_VIEWS = 20
-LONG_VIDEO_SECONDS = 180.0  # #1491: past a Short's limit
+def _t(name: str) -> float:
+    return THRESHOLDS[name]
 
 
 def _seconds(info: dict[str, object] | None) -> float:
@@ -79,14 +93,15 @@ def _seconds(info: dict[str, object] | None) -> float:
 def _engagement_sub(channel_id: str) -> HealthSub:
     from core.engagement_predictor import run_engagement_map
 
-    measured = run_engagement_map(channel_id, min_views=HEALTH_MIN_VIEWS)  # {run_id: rate}
+    min_views = int(_t("engagement_min_views"))
+    measured = run_engagement_map(channel_id, min_views=min_views)  # {run_id: rate}
     everything = run_engagement_map(channel_id)
     left = len(everything) - len(measured)
     # #1491 (wave 114): the engaged rate is the average view % (#920), which falls with length;
     # run 120, a 406 s NBA video at 11%, sat in the same baseline as 40 s Shorts. Shorts are read
     # against Shorts; long videos are counted apart.
     info = _engagement_info(list(measured))
-    long_ids = {rid for rid in measured if _seconds(info.get(rid)) > LONG_VIDEO_SECONDS}
+    long_ids = {rid for rid in measured if _seconds(info.get(rid)) > _t("long_video_seconds")}
     rates = {rid: rate for rid, rate in measured.items() if rid not in long_ids}
     if len(rates) < 3:
         return HealthSub("engagement", YELLOW, f"collecting ({len(rates)} measured)")
@@ -111,7 +126,7 @@ def _engagement_sub(channel_id: str) -> HealthSub:
         )
     if left > 0:
         plural = "video" if left == 1 else "videos"
-        detail += f"; {left} {plural} under {HEALTH_MIN_VIEWS} views left out"
+        detail += f"; {left} {plural} under {min_views} views left out"
     unmeasured = _unmeasured_recent(channel_id, measured=set(everything))
     if unmeasured:
         plural = "video" if len(unmeasured) == 1 else "videos"
@@ -125,9 +140,10 @@ def _engagement_sub(channel_id: str) -> HealthSub:
             detail += f" - {sync_note(channel_id)}"
         except Exception as exc:
             logger.debug("sync note skipped: %s", exc)
-    if delta < -0.01:
+    if delta < -_t("engagement_yellow_drop"):
         why = engagement_why(rates, {rid: info[rid] for rid in rates if rid in info})
-        status, word = (RED, "declining") if delta < -0.05 else (YELLOW, "softening")
+        red = delta < -_t("engagement_red_drop")
+        status, word = (RED, "declining") if red else (YELLOW, "softening")
         return HealthSub("engagement", status, f"{word} - " + detail, why=why)
     return HealthSub("engagement", GREEN, "steady/up - " + detail)
 
@@ -283,16 +299,17 @@ def _cadence_sub(channel_id: str) -> HealthSub:
             f"{c.recent} published in the last {c.window_days} days, {c.upcoming} scheduled in "
             f"the next {c.window_days}"
         )
-        if c.recent < CADENCE_YELLOW_UNDER:
-            return HealthSub("cadence", YELLOW, f"{detail} - under {CADENCE_YELLOW_UNDER} a week")
-        if c.recent < CADENCE_GOAL:
-            detail += f" - short of {CADENCE_GOAL} a week"
+        floor, goal = int(_t("cadence_yellow_under")), int(_t("cadence_goal"))
+        if c.recent < floor:
+            return HealthSub("cadence", YELLOW, f"{detail} - under {floor} a week")
+        if c.recent < goal:
+            detail += f" - short of {goal} a week"
         return HealthSub("cadence", GREEN, detail)
     room = c.cap - c.total
     detail = f"{c.total}/{c.cap} in the {c.window_days}-day window"
     if c.total > c.cap:
         return HealthSub("cadence", RED, f"over cap - {detail} (authenticity/policy risk)")
-    if room <= 1:
+    if room <= _t("cadence_near_cap_room"):
         return HealthSub("cadence", YELLOW, f"near cap - {detail}")
     return HealthSub("cadence", GREEN, f"room for {room} more - {detail}")
 
@@ -321,9 +338,9 @@ def _authenticity_sub(channel_id: str) -> HealthSub:
         return HealthSub("authenticity", YELLOW, f"collecting ({len(scores)} scored)")
     mean = sum(scores) / len(scores)
     detail = f"mean {mean:.0f}/100 over {len(scores)} recent"
-    if mean < 55:
+    if mean < _t("authenticity_red_under"):
         return HealthSub("authenticity", RED, "thin/synthetic - " + detail)
-    if mean < 72:
+    if mean < _t("authenticity_yellow_under"):
         return HealthSub("authenticity", YELLOW, "watch - " + detail)
     return HealthSub("authenticity", GREEN, "solid - " + detail)
 
@@ -356,26 +373,78 @@ def _reliability_sub() -> HealthSub:
     return HealthSub("reliability", status, "; ".join(problems))
 
 
+def _uploaded_videos() -> int:
+    """#1478: videos uploaded on every channel - the spend entered is the project's."""
+    from config.channels import list_channel_ids
+    from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+
+    repo = get_publish_log_repository()
+    return sum(
+        1
+        for channel in list_channel_ids()
+        for row in repo.list_uploaded_for_channel(channel) or []
+        if str(getattr(row, "youtube_video_id", "") or "").strip() and not is_seeded(row)
+    )
+
+
+_SPEND_SOURCE = "the spend you entered (ops spend), shared over every video, and the runs' API cost"
+
+
+def _entered_cost_sub(econ: Any, spent: dict[str, Any], videos: int) -> HealthSub:
+    """#1478 (S18): what was paid - subscriptions, credits, ads - over every video made."""
+    per_video = float(spent["total"]) / videos
+    estimate = econ.total_cost / len(econ.videos)
+    detail = (
+        f"${per_video:.2f}/video from the spend you entered (${float(spent['total']):.2f} over "
+        f"{videos} videos, every channel); API estimate ${estimate:.3f}/video"
+    )
+    revenue = econ.total_revenue if isinstance(econ.total_revenue, (int, float)) else None
+    if revenue:
+        covered = sum(1 for v in econ.videos if getattr(v, "revenue_usd", None) is not None)
+        margin = revenue - per_video * covered
+        if margin < 0:
+            return HealthSub("cost", RED, f"negative margin ${margin:+.2f} against the spend "
+                             f"you entered - {detail}", source=_SPEND_SOURCE)  # fmt: skip
+        return HealthSub("cost", GREEN, f"positive margin ${margin:+.2f} - {detail}",
+                         source=_SPEND_SOURCE)  # fmt: skip
+    note = " (revenue $0.00 - not monetized yet)" if revenue == 0 else " (revenue not synced)"
+    status = GREEN if per_video <= _t("cost_yellow_over_usd") else YELLOW
+    return HealthSub("cost", status, detail + note, source=_SPEND_SOURCE)
+
+
 def _cost_sub(channel_id: str) -> HealthSub:
+    from core.money.ledger import total_spent
     from core.unit_economics import channel_economics
 
     econ = channel_economics(channel_id)
     if not econ.videos:
         return HealthSub("cost", YELLOW, "collecting (no uploaded videos)")
-    n = len(econ.videos)
-    avg = econ.total_cost / n
+    try:
+        spent = total_spent()
+        videos = _uploaded_videos() if spent.get("count") and spent.get("total") else 0
+    except Exception as exc:
+        logger.debug("entered spend unread: %s", exc)
+        spent, videos = {}, 0
+    if videos:
+        return _entered_cost_sub(econ, spent, videos)
+    avg = econ.total_cost / len(econ.videos)
+    cheap = avg <= _t("cost_yellow_over_usd")
     margin = econ.total_margin
     if margin is not None and all(getattr(v, "revenue_usd", None) == 0 for v in econ.videos):
         # #1472: YouTube reports $0.00 for a channel that is not monetized - no revenue, not a
         # loss, so the line reads on cost alone.
-        status = GREEN if avg <= 0.10 else YELLOW
-        return HealthSub("cost", status, f"${avg:.3f}/video (revenue $0.00 - not monetized yet)")
+        return HealthSub("cost", GREEN if cheap else YELLOW,
+                         f"API estimate ${avg:.3f}/video (revenue $0.00 - not monetized yet)")  # fmt: skip
     if margin is not None:
         if margin < 0:
             return HealthSub("cost", RED, f"negative margin ${margin:+.2f} (rev < cost)")
         return HealthSub("cost", GREEN, f"positive margin ${margin:+.2f}, ${avg:.3f}/video")
-    status = GREEN if avg <= 0.10 else YELLOW
-    return HealthSub("cost", status, f"${avg:.3f}/video (revenue not synced)")
+    return HealthSub(
+        "cost",
+        GREEN if cheap else YELLOW,
+        f"API estimate ${avg:.3f}/video (revenue not synced; what you paid is not entered - "
+        "py -m scripts.ops spend add)",
+    )
 
 
 def _data_quality_sub(channel_id: str) -> HealthSub:
@@ -384,7 +453,7 @@ def _data_quality_sub(channel_id: str) -> HealthSub:
     warns = warnings(channel_id=channel_id)
     if not warns:
         return HealthSub("data quality", GREEN, "no issues")
-    status = RED if len(warns) >= 3 else YELLOW
+    status = RED if len(warns) >= _t("data_quality_red_at") else YELLOW
     return HealthSub("data quality", status, f"{len(warns)} warning(s): {warns[0]}")
 
 
@@ -449,6 +518,7 @@ def render_health(report: HealthReport) -> str:
             f"  {_MARK.get(s.status, '~')} {s.name:<13} {s.status.upper():<7} {s.detail}{source}"
         )
         lines.extend(f"      why: {line}" for line in s.why)
+    lines.append(f"  (thresholds v{THRESHOLDS_VERSION}: core/channel_health.THRESHOLDS)")  # #1479
     return "\n".join(lines)
 
 
@@ -496,6 +566,7 @@ def record_history(report: HealthReport, *, today: date | None = None) -> None:
             "date": day,
             "overall": str(report.overall),
             "subs": {str(s.name): str(s.status) for s in report.subs},
+            "thresholds": THRESHOLDS_VERSION,  # #1479
         }
         rows = [r for r in _history_rows(str(report.channel_id)) if r.get("date") != day]
         rows.append(row)
@@ -511,16 +582,21 @@ def record_history(report: HealthReport, *, today: date | None = None) -> None:
 
 
 def history_lines(channel_id: str, *, days: int = 14) -> list[str]:
-    """#1475: newest first - "10-22 GREEN  engagement +, cadence ~, cost ?"."""
+    """#1475: newest first - "10-22 GREEN  engagement +, cadence ~, cost ?". #1479: a day read
+    on other thresholds than the day before it says so - "[thresholds v2]"."""
     out: list[str] = []
     rows = sorted(_history_rows(channel_id), key=lambda r: str(r["date"]), reverse=True)
-    for row in rows[:days]:
+    for at, row in enumerate(rows[:days]):
         subs = row.get("subs")
         marks = ", ".join(
             f"{name} {_MARK.get(str(status), '~')}"
             for name, status in (subs.items() if isinstance(subs, dict) else ())
         )
-        out.append(f"{str(row['date'])[5:]} {str(row.get('overall', '')).upper():<7} {marks}")
+        line = f"{str(row['date'])[5:]} {str(row.get('overall', '')).upper():<7} {marks}"
+        older = rows[at + 1] if at + 1 < len(rows) else None
+        if older is not None and older.get("thresholds") != row.get("thresholds"):
+            line += f" [thresholds v{row.get('thresholds', '?')}]"
+        out.append(line)
     return out
 
 

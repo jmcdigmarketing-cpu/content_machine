@@ -1661,9 +1661,15 @@ def cmd_coach(args: argparse.Namespace) -> int:
 
 @_register("health", "Channel health — Green/Yellow/Red across engagement/cadence/cost (Pillar 5)")
 def cmd_health(args: argparse.Namespace) -> int:
-    from core.channel_health import build_health, render_health
+    from core.channel_health import build_health, history_lines, record_history, render_health
 
-    print(render_health(build_health(args.channel)))
+    report = build_health(args.channel)
+    record_history(report)  # #1475: one line a day
+    print(render_health(report))
+    if getattr(args, "history", False):
+        lines = history_lines(report.channel_id)
+        print("\nHistory (one line a day), newest first:")
+        print("\n".join(f"  {line}" for line in lines) or "  none yet")
     return 0
 
 
@@ -4033,6 +4039,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--domain", default="gaming", help="Domain for compute_weights (default: gaming)"
     )
     parser.add_argument("--init-db", action="store_true", help="Pass --init-db to seed")
+    parser.add_argument(
+        "--history", action="store_true", help="health: the last 14 days, one line a day (#1475)"
+    )
     parser.add_argument(
         "--loop",
         type=int,

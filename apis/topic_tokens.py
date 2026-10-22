@@ -339,6 +339,50 @@ def phrase_is_ordinary(phrase: str) -> bool:
     )
 
 
+# #1539: a word typed after a name that is not part of it - "Modern Warfare Steam", "UFC
+# Edmonton KO". Dropped from a name's end while another word is left. "Switch" is not here:
+# "Nintendo Switch" is the console.
+NAME_TAIL_WORDS = frozenset(
+    {
+        "steam",
+        "pc",
+        "ps5",
+        "ps4",
+        "xbox",
+        "mobile",
+        "ko",
+        "tko",
+        "submission",
+        "decision",
+        "highlights",
+        "recap",
+        "preview",
+    }
+)
+_POSSESSIVE = re.compile(r"(?:['’]s|['’])$")
+_TYPED_POSSESSIVE = re.compile(r"(?<=[^\W\daeiouy_])ys$", re.IGNORECASE)
+
+
+def trim_name(name: str) -> str:
+    """#1539: the name a phrase means, without what was typed around it.
+
+    "Los Angeles Chargers'" -> "Los Angeles Chargers", "Herbert's" -> "Herbert", "Call of
+    Dutys" -> "Call of Duty" (a possessive typed without its apostrophe; only the last word
+    of a longer name, so "Gladys" and "Rhys" stay), "UFC Edmonton KO" -> "UFC Edmonton".
+    "Blue Jays" and "Guys" stay: a vowel before the "ys" is a plural, not a typo.
+    """
+    words = (name or "").strip().split()
+    if not words:
+        return ""
+    words[-1] = _POSSESSIVE.sub("", words[-1]) or words[-1]
+    while len(words) > 1 and words[-1].lower() in NAME_TAIL_WORDS:
+        words.pop()
+    stem = words[-1][:-2]
+    if len(words) > 1 and re.search(r"[aeiou]", stem, re.IGNORECASE):
+        words[-1] = _TYPED_POSSESSIVE.sub(lambda m: m.group(0)[0], words[-1])
+    return " ".join(words)
+
+
 def name_phrases(text: str, *, max_words: int = 3, connectors: bool = False) -> list[str]:
     """`title_phrases` without the phrases made only of common words (#1005).
 
@@ -369,7 +413,8 @@ def subject_terms(topic: str, *, limit: int = 4) -> list[str]:
             out.append(term)
     covered = " ".join(out).lower()
     for phrase in name_phrases(topic, max_words=5, connectors=True):
-        if phrase.lower() not in covered and phrase not in out:
+        phrase = trim_name(phrase)  # #1539: "Los Angeles Chargers'" is the team named
+        if phrase and phrase.lower() not in covered and phrase not in out:
             out.append(phrase)
     return out[:limit]
 

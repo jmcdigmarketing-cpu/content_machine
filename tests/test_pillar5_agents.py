@@ -110,8 +110,9 @@ class TestChannelHealth(unittest.TestCase):
             patch("core.cadence.cadence_status", side_effect=RuntimeError("x")),
         ):
             report = channel_health.build_health("tapin")
-        # Never raises; every sub degrades to yellow n/a.
-        self.assertTrue(all(s.status == "yellow" for s in report.subs))
+        # Never raises; every sub reads unknown (#1472, wave 121 - it was yellow "n/a"), and
+        # the overall holds at yellow: nothing read cannot be green.
+        self.assertTrue(all(s.status == channel_health.UNKNOWN for s in report.subs))
         self.assertEqual(report.overall, "yellow")
         # cp1252-safe render.
         channel_health.render_health(report).encode("cp1252")

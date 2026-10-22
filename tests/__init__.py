@@ -196,6 +196,7 @@ from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
 from config import seo as _seo
 from core import angle_intent as _angle_intent
+from core import channel_health as _channel_health
 from core import correction_dossier as _correction_dossier
 from core import counterfactual as _counterfactual
 from core import incident_ledger as _incident_ledger
@@ -335,6 +336,10 @@ _SUITE_STORE_PATCHES = (
     patch.object(_preview_calls, "CALLS_FILE", _suite_store("preview_calls.json")),
     # #83: the holdout count.
     patch.object(_holdouts, "HOLDOUT_FILE", _suite_store("holdouts.json")),
+    # Wave 121 (#1475): health keeps one line a day.
+    patch.object(
+        _channel_health, "HISTORY_TEMPLATE", _suite_store("health_history_{channel}.jsonl")
+    ),
     # Wave 112: the doctor's last result.
     patch.object(_ops_doctor, "DOCTOR_LAST_FILE", _suite_store("doctor_last.json")),
     # Wave 113: when the metrics sync last ran (overnight and the worker sync once a day).

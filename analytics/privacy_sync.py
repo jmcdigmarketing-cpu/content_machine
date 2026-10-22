@@ -7,12 +7,19 @@ public - so "finished, not public" counted five videos that were live, and cost 
 minute left eleven out. The operator found it: asked about three "unlisted" videos, the answer
 was "all 3 were published".
 
-One `videos.list(part="status")` per 50 videos, 1 quota unit each, inside the metrics sync.
-A video YouTube no longer returns is reported and left alone - nothing here deletes a row.
+One `videos.list(part="status,snippet")` per 50 videos, 1 quota unit each (a part costs
+nothing extra), inside the metrics sync. A video YouTube no longer returns is reported and left
+alone - nothing here deletes a row.
+
+#1390 (S09): the same read brings back each video's title and description. One edited in
+Studio is copied to its run, so what the learning reads is what is live; the uploaded title
+stays in the run's features as `title_uploaded`.
 """
 
 from __future__ import annotations
 
+import json
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -50,22 +57,30 @@ def drift(
 
 
 def fetch_status(service: Any, video_ids: list[str]) -> dict[str, dict[str, str]] | None:
-    """{video_id: {"privacy", "publish_at"}} for the ids YouTube returns, or None when the read
-    failed. `publish_at` (#1519) is YouTube's scheduled slot, "" when none is set."""
+    """{video_id: {"privacy", "publish_at", "title"?, "description"?}} for the ids YouTube
+    returns, or None when the read failed. `publish_at` (#1519) is YouTube's scheduled slot,
+    "" when none is set; the title and description (#1390) are there when a snippet came back."""
     live: dict[str, dict[str, str]] = {}
     try:
         for start in range(0, len(video_ids), 50):
             chunk = video_ids[start : start + 50]
             _spend(1)
             reply = (
-                service.videos().list(part="status", id=",".join(chunk), maxResults=50).execute()
+                service.videos()
+                .list(part="status,snippet", id=",".join(chunk), maxResults=50)
+                .execute()
             )
             for item in reply.get("items") or []:
                 status = item.get("status") or {}
-                live[str(item.get("id") or "")] = {
+                entry = {
                     "privacy": str(status.get("privacyStatus") or "").lower(),
                     "publish_at": str(status.get("publishAt") or ""),
                 }
+                snippet = item.get("snippet")
+                if isinstance(snippet, dict):  # #1390
+                    entry["title"] = str(snippet.get("title") or "")
+                    entry["description"] = str(snippet.get("description") or "")
+                live[str(item.get("id") or "")] = entry
     except Exception as exc:
         logger.warning("privacy read failed: %s", exc)
         return None
@@ -183,7 +198,73 @@ def sync_privacy(channel_id: str, *, service: Any = None, apply: bool = True) ->
         if r.content_run_id and live.get(str(r.youtube_video_id)) == "public"
     ]
     report["runs_published"] = _publish_runs(public_runs, apply=apply)
+    report["edited"] = _read_back_edits(rows, status, apply=apply)
     return report
+
+
+def _flat(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+def studio_edits(run: Any, live: dict[str, str]) -> dict[str, str]:
+    """#1390: {"title"?, "description"?} where YouTube's differs from the run's record.
+
+    The upload sends the title cut to 100 characters, so that is what is compared. The upload
+    adds to the description (the AI disclosure, a compilation link) and lays its blocks out
+    (#1206), so a description is edited only when the run's own text is no longer in it.
+    """
+    fix: dict[str, str] = {}
+    title = str(live.get("title") or "").strip()
+    if title and title != str(getattr(run, "title", "") or "").strip()[:100]:
+        fix["title"] = title
+    description = str(live.get("description") or "")
+    ours = _flat(str(getattr(run, "description", "") or ""))
+    if description.strip() and ours and ours not in _flat(description):
+        fix["description"] = description
+    return fix
+
+
+def _read_back_edits(
+    rows: list[Any], status: dict[str, dict[str, str]], *, apply: bool
+) -> list[dict[str, Any]]:
+    """#1390: copy a title or description edited in Studio to its run's record."""
+    from core.run_features import merge_features
+    from storage.repositories.content_runs import get_content_run_repository
+
+    edited: list[dict[str, Any]] = []
+    try:
+        repo = get_content_run_repository()
+        for row in rows:
+            live = status.get(str(row.youtube_video_id))
+            run = repo.get(int(row.content_run_id)) if live and row.content_run_id else None
+            if run is None:
+                continue
+            fix = studio_edits(run, live or {})
+            if not fix:
+                continue
+            old_title = str(getattr(run, "title", "") or "")
+            edited.append(
+                {"run_id": int(row.content_run_id), "video_id": str(row.youtube_video_id),
+                 "fields": sorted(fix), "was": old_title, "now": fix.get("title", old_title)}
+            )  # fmt: skip
+            if not apply:
+                continue
+            repo.update(int(row.content_run_id), fix)
+            try:
+                features = json.loads(getattr(run, "features_json", "") or "{}") or {}
+            except (TypeError, ValueError):
+                features = {}
+            merge_features(
+                int(row.content_run_id),
+                {
+                    "title_uploaded": features.get("title_uploaded") or old_title,
+                    "studio_edit": {"fields": sorted(fix), "seen": datetime.now(timezone.utc)
+                                    .date().isoformat()},
+                },
+            )  # fmt: skip
+    except Exception as exc:
+        logger.warning("Studio edits not read back: %s", exc)
+    return edited
 
 
 def _publish_runs(run_ids: list[int], *, apply: bool) -> list[int]:
@@ -237,6 +318,12 @@ def sync_lines(report: dict[str, Any]) -> list[str]:
         slots = ", ".join(f"run {e['run_id']} {str(e['slot'])[:16]}Z" for e in rescheduled)
         lines.append(f"Schedule: {len(rescheduled)} video(s) YouTube publishes at another time - "
                      f"the record now has YouTube's slot ({slots})")  # fmt: skip
+    edited = report.get("edited") or []
+    if edited:
+        lines.append(
+            f"Studio: {len(edited)} video(s) edited in Studio - the record now has the live "
+            f"title/description ({_runs(edited)})"
+        )
     if not lines and report.get("checked"):  # #1389: silence read as "not checked"
         lines.append(f"Privacy: {report['checked']} videos checked - the record matches YouTube")
     return lines

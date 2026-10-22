@@ -354,9 +354,11 @@ def _run_overnight_body(
         logger.warning("overnight chapter Shorts did not run: %s", exc)
 
     try:
-        from core.channel_health import build_health, health_line
+        from core.channel_health import build_health, health_line, record_history
 
-        result.health_line = health_line(build_health(channel))
+        report = build_health(channel)
+        result.health_line = health_line(report)
+        record_history(report)  # #1475: the night's read is the day's line (never raises)
     except Exception:
         result.health_line = ""
 

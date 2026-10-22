@@ -94,18 +94,19 @@ def names_for(topic: str, *, angle: str = "") -> list[str]:
     from apis.nba_teams import team_names_in as nba_team_names_in
     from apis.nfl_entities import team_names_in as nfl_team_names_in
     from apis.topic_scorer import sport_names_in
-    from apis.topic_tokens import name_phrases, phrase_is_ordinary
+    from apis.topic_tokens import name_phrases, phrase_is_ordinary, trim_name
 
     out: list[str] = []
     seen: set[str] = set()
 
     def add(name: str) -> None:
-        name = re.sub(r"['’]s$", "", name.strip())
+        name = trim_name(name)  # #1539: "Call of Dutys" is Call of Duty
         key = name.lower()
         if len(key) < 3 or key in seen or phrase_is_ordinary(name):
             return
-        # "LeBron" after "LeBron James" adds nothing.
-        if any(key in s.split() or key == s for s in seen):
+        # "LeBron" after "LeBron James" adds nothing, nor "England Patriots" after "New
+        # England Patriots" (#1539).
+        if any(f" {key} " in f" {s} " for s in seen):
             return
         seen.add(key)
         out.append(name)
@@ -117,15 +118,17 @@ def names_for(topic: str, *, angle: str = "") -> list[str]:
             add(phrase)
     # #1002: a team by its full name - "Lakers" becomes "Los Angeles Lakers" where it was
     # typed, and a lower-case topic's team ("0-4 chargers") is found at all.
+    # #1539: so is the tail of one - "England Patriots" from "the new England Patriots".
     for team in nfl_team_names_in(both) + nba_team_names_in(both):
-        nickname = team.split()[-1].lower()
-        at = next((i for i, name in enumerate(out) if name.lower() == nickname), None)
-        if at is not None:
-            seen.discard(out[at].lower())
-            out[at] = team
-            seen.add(team.lower())
-        else:
+        full = f" {team.lower()}"
+        at = [i for i, name in enumerate(out) if full.endswith(f" {name.lower()}")]
+        if not at:
             add(team)
+            continue
+        for i in reversed(at):
+            seen.discard(out.pop(i).lower())
+        out.insert(at[0], team)
+        seen.add(team.lower())
     for name in sport_names_in(both):
         add(name)
     return out[:MAX_NAMES]

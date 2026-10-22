@@ -337,15 +337,28 @@ def _render_seconds(run) -> float | None:
 
 
 def first_seconds_text(
-    curve: list[tuple[float, float]], seconds: float | None, *, at: float = 3.0
+    curve: list[tuple[float, float]],
+    seconds: float | None,
+    *,
+    at: float = 3.0,
+    stayed: float | None = None,
 ) -> str:
-    """#1426: the share still watching `at` seconds in - a Short is kept or swiped there."""
+    """#1426: the share still watching `at` seconds in - a Short is kept or swiped there.
+
+    #1538: YouTube's ratio counts a replayed opening again, so it reads over 100% on most
+    Shorts; `stayed` (engaged views over views, synced as `stayed_share`) is the share who
+    did not swipe, and it is shown beside it when the sync stored one.
+    """
     if not curve or not seconds or seconds <= at:
         return ""
     share = round(_at(curve, at / seconds) * 100)
-    if share > 100:  # YouTube's ratio counts a replayed opening again
-        return f"{share}% at {at:g} s (the opening was replayed)"
-    return f"{share}% still watching at {at:g} s"
+    if share > 100:
+        text = f"{share}% at {at:g} s (the opening was replayed)"
+    else:
+        text = f"{share}% still watching at {at:g} s"
+    if isinstance(stayed, (int, float)) and 0 <= stayed <= 1:
+        text += f"; {round(stayed * 100)}% stayed rather than swiped"
+    return text
 
 
 def first_seconds_lines(channel_id: str, *, limit: int = 8) -> list[str]:
@@ -364,15 +377,19 @@ def first_seconds_lines(channel_id: str, *, limit: int = 8) -> list[str]:
     out: list[str] = []
     for _when, run_id, log in sorted(dated, key=lambda d: (d[0], d[1]), reverse=True):
         try:
-            curve = _parse_curve(
-                (json.loads(log.metrics_json or "{}") or {}).get("retention_curve")
-            )
-        except (ValueError, TypeError):
+            metrics = json.loads(log.metrics_json or "{}") or {}
+            curve = _parse_curve(metrics.get("retention_curve"))
+        except (ValueError, TypeError, AttributeError):
             continue
         if not curve:
             continue
+        stayed = metrics.get("stayed_share")
         run = get_content_run_repository().get(run_id)
-        text = first_seconds_text(curve, _render_seconds(run))
+        text = first_seconds_text(
+            curve,
+            _render_seconds(run),
+            stayed=float(stayed) if isinstance(stayed, (int, float)) else None,
+        )
         if text:
             title = str(getattr(run, "title", "") or "")[:45]
             out.append(f"run {run_id} {title}: {text}")

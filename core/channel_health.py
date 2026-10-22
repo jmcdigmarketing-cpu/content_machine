@@ -3,7 +3,7 @@
 Composes the signals the other pillars already expose into a single operational
 health verdict - the "is this channel OK right now?" glance. Rules only, no LLM;
 read-only and fail-open per sub-score (the `creator_coach` pattern): a subsystem
-that errors reads **yellow "n/a"**, never crashes the view.
+that errors reads **"unknown"** (#1472), never RED and never crashes the view.
 
 Sub-scores (each `green|yellow|red` + a one-line rationale):
 - **engagement** - recent engaged-rate vs the channel baseline (trend).
@@ -16,23 +16,31 @@ Sub-scores (each `green|yellow|red` + a one-line rationale):
 Overall folds worst-first (any red ⇒ red, any yellow ⇒ yellow). **Thin data reads
 yellow "collecting," never green** - health is earned, not defaulted on.
 
-Surfaced via `py -m scripts.ops health` and a line in `ops daily-brief`.
+Surfaced via `py -m scripts.ops health` and a line in `ops daily-brief`. Each run keeps one
+line a day in `data/health_history_<channel>.jsonl` (#1475); `ops health --history` prints it.
 """
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 
+from config.paths import DATA_DIR
 from core.logging import get_logger
 
 logger = get_logger("core.channel_health")
 
 GREEN, YELLOW, RED = "green", "yellow", "red"
+# #1472 (S18): a line whose input could not be read says so - it is never RED, and it holds
+# the overall at YELLOW, since a check that read nothing cannot call the channel green.
+UNKNOWN = "unknown"
 CADENCE_GOAL = 7  # S13: 7 a week (#1435)
 CADENCE_YELLOW_UNDER = 5
-_RANK = {GREEN: 0, YELLOW: 1, RED: 2}
-_MARK = {GREEN: "+", YELLOW: "~", RED: "!"}  # cp1252-safe (ops doesn't force UTF-8)
+_RANK = {GREEN: 0, UNKNOWN: 1, YELLOW: 1, RED: 2}
+_MARK = {GREEN: "+", YELLOW: "~", RED: "!", UNKNOWN: "?"}  # cp1252-safe (no forced UTF-8)
+HISTORY_TEMPLATE = os.path.join(DATA_DIR, "health_history_{channel}.jsonl")  # #1475
 
 
 @dataclass
@@ -52,7 +60,8 @@ class HealthReport:
 
 
 def _worst(statuses: list[str]) -> str:
-    return max(statuses, key=lambda s: _RANK.get(s, 1)) if statuses else YELLOW
+    worst = max(statuses, key=lambda s: _RANK.get(s, 1)) if statuses else YELLOW
+    return YELLOW if worst == UNKNOWN else worst
 
 
 # #1238: run 119 - 3 views, 0% engaged - turned engagement RED on its own.
@@ -356,6 +365,11 @@ def _cost_sub(channel_id: str) -> HealthSub:
     n = len(econ.videos)
     avg = econ.total_cost / n
     margin = econ.total_margin
+    if margin is not None and all(getattr(v, "revenue_usd", None) == 0 for v in econ.videos):
+        # #1472: YouTube reports $0.00 for a channel that is not monetized - no revenue, not a
+        # loss, so the line reads on cost alone.
+        status = GREEN if avg <= 0.10 else YELLOW
+        return HealthSub("cost", status, f"${avg:.3f}/video (revenue $0.00 - not monetized yet)")
     if margin is not None:
         if margin < 0:
             return HealthSub("cost", RED, f"negative margin ${margin:+.2f} (rev < cost)")
@@ -407,14 +421,15 @@ def build_health(channel_id: str | None = None) -> HealthReport:
             report.subs.append(check(channel))
         except Exception as exc:
             logger.debug("health sub '%s' skipped: %s", name, exc)
-            report.subs.append(HealthSub(name, YELLOW, "n/a"))
+            source = HEALTH_SOURCES.get(name, "its input")
+            report.subs.append(HealthSub(name, UNKNOWN, f"unknown - could not read {source}"))
     for sub in report.subs:
         sub.source = sub.source or HEALTH_SOURCES.get(sub.name, "")  # #1471
     report.overall = _worst([s.status for s in report.subs])
     # Thin data must not read green: if every informative sub is "collecting/n/a",
     # hold at yellow.
     if report.overall == GREEN and all(
-        ("collecting" in s.detail or s.detail == "n/a")
+        ("collecting" in s.detail or s.status == UNKNOWN)
         for s in report.subs
         if s.name in ("engagement", "authenticity", "cost")
     ):
@@ -431,7 +446,7 @@ def render_health(report: HealthReport) -> str:
     for s in report.subs:
         source = f" (from {s.source})" if s.source else ""  # #1471
         lines.append(
-            f"  {_MARK.get(s.status, '~')} {s.name:<13} {s.status.upper():<6} {s.detail}{source}"
+            f"  {_MARK.get(s.status, '~')} {s.name:<13} {s.status.upper():<7} {s.detail}{source}"
         )
         lines.extend(f"      why: {line}" for line in s.why)
     return "\n".join(lines)
@@ -441,12 +456,72 @@ def health_line(report: HealthReport) -> str:
     """One-line summary for embedding (e.g. daily-brief)."""
     reds = [s.name for s in report.subs if s.status == RED]
     yellows = [s.name for s in report.subs if s.status == YELLOW]
+    unknown = [s.name for s in report.subs if s.status == UNKNOWN]
     tail = ""
     if reds:
         tail = " - red: " + ", ".join(reds)
     elif yellows:
         tail = " - watch: " + ", ".join(yellows)
+    if unknown:  # #1472
+        tail += " - unknown: " + ", ".join(unknown)
     return f"Health: {report.overall.upper()}{tail}"
+
+
+def _history_path(channel_id: str) -> str:
+    return HISTORY_TEMPLATE.format(channel=channel_id)
+
+
+def _history_rows(channel_id: str) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    try:
+        with open(_history_path(channel_id), encoding="utf-8") as handle:
+            for line in handle:
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(row, dict) and row.get("date"):
+                    rows.append(row)
+    except OSError:
+        return []
+    return rows
+
+
+def record_history(report: HealthReport, *, today: date | None = None) -> None:
+    """#1475 (S18): one line a day per channel - the day's last read replaces its earlier one,
+    so a run on Tuesday morning and another at night leave Tuesday's last colours."""
+    try:  # fail-open, as every read here is: a history that cannot be written loses one day
+        day = (today or date.today()).isoformat()
+        row: dict[str, object] = {
+            "date": day,
+            "overall": str(report.overall),
+            "subs": {str(s.name): str(s.status) for s in report.subs},
+        }
+        rows = [r for r in _history_rows(str(report.channel_id)) if r.get("date") != day]
+        rows.append(row)
+        rows.sort(key=lambda r: str(r.get("date")))
+        path = _history_path(str(report.channel_id))
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        tmp = f"{path}.tmp"
+        with open(tmp, "w", encoding="utf-8") as handle:
+            handle.writelines(json.dumps(r, sort_keys=True) + "\n" for r in rows)
+        os.replace(tmp, path)
+    except Exception as exc:
+        logger.debug("health history not written: %s", exc)
+
+
+def history_lines(channel_id: str, *, days: int = 14) -> list[str]:
+    """#1475: newest first - "10-22 GREEN  engagement +, cadence ~, cost ?"."""
+    out: list[str] = []
+    rows = sorted(_history_rows(channel_id), key=lambda r: str(r["date"]), reverse=True)
+    for row in rows[:days]:
+        subs = row.get("subs")
+        marks = ", ".join(
+            f"{name} {_MARK.get(str(status), '~')}"
+            for name, status in (subs.items() if isinstance(subs, dict) else ())
+        )
+        out.append(f"{str(row['date'])[5:]} {str(row.get('overall', '')).upper():<7} {marks}")
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:

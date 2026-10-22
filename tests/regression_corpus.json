@@ -6322,6 +6322,150 @@
         "equals": " (run 171)"
       },
       "why": "a warning names the run it counted"
+    },
+    {
+      "id": "first-seconds-beside-the-stayed-share",
+      "item": 1538,
+      "source": "live 2026-10-21: 5 of 8 videos read over 100% at 3 s in `ops retention`, and the share who stayed was not shown",
+      "call": "core.retention:first_seconds_text",
+      "args": [
+        [
+          [
+            0.0,
+            1.2
+          ],
+          [
+            0.05,
+            0.98
+          ],
+          [
+            0.1,
+            0.9
+          ],
+          [
+            0.5,
+            0.5
+          ]
+        ],
+        300.0
+      ],
+      "kwargs": {
+        "stayed": 0.64
+      },
+      "expect": {
+        "equals": "120% at 3 s (the opening was replayed); 64% stayed rather than swiped"
+      },
+      "why": "the replayed ratio needs the share who did not swipe beside it"
+    },
+    {
+      "id": "first-seconds-no-stayed-share-no-clause",
+      "item": 1538,
+      "source": "wave 121: a video synced before stayed_share existed",
+      "call": "core.retention:first_seconds_text",
+      "args": [
+        [
+          [
+            0.0,
+            1.2
+          ],
+          [
+            0.05,
+            0.98
+          ],
+          [
+            0.1,
+            0.9
+          ],
+          [
+            0.5,
+            0.5
+          ]
+        ],
+        60.0
+      ],
+      "kwargs": {
+        "stayed": null
+      },
+      "expect": {
+        "equals": "98% still watching at 3 s"
+      },
+      "why": "no stored share, nothing invented"
+    },
+    {
+      "id": "research-name-drops-the-possessive",
+      "item": 1539,
+      "source": "live 2026-10-21: entity research looked up \"Los Angeles Chargers'\"",
+      "call": "core.facts.entity_lookup:names_for",
+      "args": [
+        "Los Angeles Chargers' playoff push"
+      ],
+      "expect": {
+        "equals": [
+          "Los Angeles Chargers"
+        ]
+      },
+      "why": "the apostrophe is the topic's grammar, not the team's name"
+    },
+    {
+      "id": "research-name-drops-platform-and-result-words",
+      "item": 1539,
+      "source": "live 2026-10-21: \"Call of Dutys\", \"Modern Warfare Steam\" and \"UFC Edmonton KO\" were looked up",
+      "call": "core.facts.entity_lookup:names_for",
+      "args": [
+        "Call of Dutys new Modern Warfare Steam release"
+      ],
+      "expect": {
+        "equals": [
+          "Call of Duty",
+          "Modern Warfare"
+        ]
+      },
+      "why": "a platform after a game's name is where it is sold, not part of the name"
+    },
+    {
+      "id": "research-name-restores-new-england",
+      "item": 1539,
+      "source": "live 2026-10-21: \"the new England Patriots\" researched \"England Patriots\"",
+      "call": "core.facts.entity_lookup:names_for",
+      "args": [
+        "Can the new England Patriots win the AFC East?"
+      ],
+      "expect": {
+        "equals": [
+          "New England Patriots",
+          "AFC East"
+        ]
+      },
+      "why": "the tail of a team's name is the team"
+    },
+    {
+      "id": "trim-name-leaves-a-plural-name",
+      "item": 1539,
+      "source": "wave 121: the 'ys' rule must not touch Blue Jays",
+      "call": "apis.topic_tokens:trim_name",
+      "args": [
+        "Blue Jays"
+      ],
+      "expect": {
+        "equals": "Blue Jays"
+      },
+      "why": "a vowel before 'ys' is a plural, not a missing apostrophe"
+    },
+    {
+      "id": "search-names-drop-the-fragment-too",
+      "item": 1539,
+      "source": "wave 121: the sibling - `subject_terms` sent \"Modern Warfare Steam\" to the news search",
+      "call": "apis.topic_tokens:subject_terms",
+      "args": [
+        "Call of Dutys new Modern Warfare Steam release"
+      ],
+      "expect": {
+        "equals": [
+          "Call of Duty",
+          "Modern Warfare"
+        ]
+      },
+      "why": "the news search reads the same phrases as the research"
     }
   ]
 }

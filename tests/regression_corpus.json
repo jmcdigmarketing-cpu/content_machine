@@ -6062,6 +6062,34 @@
         "contains": "sign in again - uploads wait"
       },
       "why": "after the lapse the morning's first line names the sign-in"
+    },
+    {
+      "id": "a-drop-off-second-with-its-length",
+      "item": 1494,
+      "source": "wave 119: the weekly review gave the channel's cliff only",
+      "call": "core.retention:drop_off_text",
+      "args": [
+        0.5,
+        42.0
+      ],
+      "expect": {
+        "equals": "half gone at 0:21 of 0:42"
+      },
+      "why": "a second, not a ratio, is what an editor acts on"
+    },
+    {
+      "id": "your-words-in-its-first-two-sentences",
+      "item": 1342,
+      "source": "wave 119: the review said only 'your own idea, written as angle 1'",
+      "call": "core.batch_review:typed_lines",
+      "args": [
+        "Pereira should fight Ankalaev again in March",
+        "Pereira wants Ankalaev again. March is the date he named. Everything else is noise."
+      ],
+      "expect": {
+        "contains": "    4 of your 5 words are in its first two sentences"
+      },
+      "why": "the review shows how much of the typed idea survived"
     }
   ]
 }

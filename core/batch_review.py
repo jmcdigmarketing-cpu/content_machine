@@ -332,6 +332,8 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     print_fn(f"    angle: {draft.topic}")
     if meta.get("own_idea"):  # #1159
         print_fn("    your own idea, written as angle 1")
+        for line in typed_lines(str(meta.get("topic") or ""), draft.script):  # #1343
+            print_fn(line)
     hook = meta.get("hook_score")
     verdict, reasons = authenticity_now(draft)
     print_fn(
@@ -873,6 +875,58 @@ def arc_counter_reason(meta: dict[str, Any]) -> str:
     return ""
 
 
+_SECOND_READ = (
+    "You read a short video's title and its first sentence, before it is rendered with nobody "
+    'watching. Answer JSON {"ok": false, "why": "<ten words>"} only when the first sentence is '
+    "cut off or garbled, or the title and the first sentence are about different stories. A "
+    "first sentence that opens on one part of the title's story is fine - it need not name "
+    "everyone the title names, and a team may be its city or its nickname. Otherwise answer "
+    '{"ok": true}.'
+)
+
+
+def second_read(title: str, script: str, *, call: Callable[[str, str], Any] | None = None) -> str:
+    """#1341 (wave 119): a cheap second read of an unattended render's title and first sentence -
+    "" when it reads fine, can't be read, or in the suite; else why (a "no" holds the render
+    for a person, and the next eligible draft takes its place). One cheap-tier call a draft."""
+    from apis.topic_tokens import split_sentences
+
+    first = (split_sentences(script or "") or [""])[0]
+    if call is None:
+        if os.environ.get("CONTENT_SUITE") == "1":
+            return ""
+
+        def call(system: str, user: str) -> Any:
+            from core.llm_router import complete_json
+
+            return complete_json(user, system=system, tier="cheap", temperature=0.0, max_tokens=120)
+
+    try:
+        payload = call(_SECOND_READ, f"TITLE: {title}\nFIRST SENTENCE: {first}")
+    except Exception as exc:
+        logger.debug("second read skipped: %s", exc)
+        return ""
+    if isinstance(payload, dict) and payload.get("ok") is False:
+        return str(payload.get("why") or "the title and first sentence disagree")[:120]
+    return ""
+
+
+def typed_lines(idea: str, script: str) -> list[str]:
+    """#1343 and #1342 (wave 119): your typed idea beside the first two sentences it became, and
+    how many of your words they kept - the review said only "your own idea, written as angle 1"."""
+    from apis.topic_tokens import content_tokens, split_sentences
+
+    first_two = " ".join(split_sentences(script or "")[:2])
+    yours = list(dict.fromkeys(content_tokens(idea or "")))
+    kept = set(content_tokens(first_two))
+    hits = sum(1 for word in yours if word in kept)
+    return [
+        f"    you typed: {idea.strip()}",
+        f"    it wrote:  {first_two}",
+        f"    {hits} of your {len(yours)} words are in its first two sentences",
+    ]
+
+
 def follow_up_since(draft: PendingDraft) -> str:
     """#1536 (wave 119, the operator: hold for review): a follow-up that says "since" waits for a
     person. Run 179 said "Since then, Detroit clinched the No. 1 seed" from last season's playoff
@@ -1035,11 +1089,19 @@ def render_unattended(
     eligible, skipped = unattended_candidates(channel_id, root=root)
     out["waiting"] = [(d.run_id, why) for d, why in skipped]
     on_shelf = (shelf or shelf_waiting)(channel_id) if shelf_max() > 0 else 0
-    for draft in eligible[:limit]:
+    tried = 0
+    for draft in eligible:
+        if tried >= limit:
+            break
         paused = shelf_pause(channel_id, waiting=on_shelf)
         if paused:
             out["paused"] = paused
             break
+        doubt = second_read(draft.title, draft.script)  # #1341: the next draft takes its place
+        if doubt:
+            out["waiting"].append((draft.run_id, f"second read: {doubt}"))
+            continue
+        tried += 1
         try:
             (render or _render)(draft, False)
         except Exception as exc:

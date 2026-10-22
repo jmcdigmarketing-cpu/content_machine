@@ -472,6 +472,27 @@ def _format_body(report: dict[str, Any]) -> str:
     except Exception as exc:
         logger.debug("prediction ledger line skipped: %s", exc)
 
+    try:  # #1463 (wave 119): runs that never finished, from the logs #1466 keeps
+        from core.nightly_task import crash_count
+
+        crashes = crash_count()
+        lines.append(
+            f"  Overnight crashes: {crashes} in 7 days (output/logs/crashes)"
+            if crashes
+            else "  Overnight crashes: none in 7 days"
+        )
+    except Exception as exc:
+        logger.debug("crash count skipped: %s", exc)
+    try:  # #1494 (wave 119): where each of the week's videos lost half its viewers
+        from core.retention import week_drop_off_lines
+
+        drops = week_drop_off_lines(report["channel_id"])
+        if drops:
+            lines.append("  Where each video lost half its viewers:")
+            lines.extend(f"    {line}" for line in drops)
+    except Exception as exc:
+        logger.debug("drop-off lines skipped: %s", exc)
+
     actions = report.get("next_actions") or []
     if actions:
         lines.append("")

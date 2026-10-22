@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-20 evening · **HEAD at write:** `9792810` (batches A-B; the batch C commit follows)
+**Written:** 2026-10-21 · **HEAD at write:** `80f2054` (batch A; the batch B commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after each batch.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
@@ -62,14 +62,6 @@ nothing broken, say that explicitly rather than leaving it implied.
 22); their ideas are #1314-#1517 in the backlog. Decision 68: `test_docs_lint` holds the
 backlog at <= 300, and wave 113 alone was exempt from "close as many as you file".
 
-**Wave 117 (four batches, two commits):**
-- `nightly_task.power_events` / `power_off_before` (wevtutil, skipped in the suite),
-  `late_short`, `wake_doctor`, `worker_gap`, `tonight_line`; `worker._tonight_watch` (#1528
-  #1380 #1371 #1337).
-- `oauth.sign_in_reminder` keeps the date (#1529); `agent_comms.blame_sha` (#1530).
-- `batch_generation.follow_up_topic` (#1452); `worker._toast_public` (#1404);
-  `go_public._read_back` (#1392); health's cadence rule (#1435).
-
 **Wave 118 (three batches, two commits):**
 - `nightly_task.tonight_text(paused=)` (#1534); `script_craft._names_kept` (#1531);
   `batch_review.unattended_block_reason` warns on "hard to say" (#1535);
@@ -77,9 +69,16 @@ backlog at <= 300, and wave 113 alone was exempt from "close as many as you file
 - `deadline_line` names its day (#1533); `status_summary.yours_items` (#1407).
 - `chapter_shorts.fill_empty_slots` from overnight (#1430). #1378 met, #1432 not built.
 
-**Live:** overnight renders nothing until the operator decides 3 finished videos (168, 170
-unlisted; re-cut 171). The sign-in lapses Wed 10-21 9:36 PM EDT unless the app is published.
-Run 176's draft was repaired. **Defects first:** none open of mine.
+**Wave 119 (two batches, two commits):**
+- `batch_generation.follow_up_topic` names the date, `_followed_up`; `batch_review.
+  follow_up_since` (#1536); `status_summary.yours_items` names a lapsed sign-in (#1537).
+- `nightly_task.keep_crash_log` / `crash_count` (#1466 #1463); `retention.
+  week_drop_off_lines` (#1494); `batch_review.second_read` before an unattended render
+  (#1341); `batch_review.typed_lines` (#1343 #1342).
+
+**Live:** 168 and 170 public, 171 retired (the operator's yes) - the shelf is 0. The sign-in
+lapsed at 9:36 PM EDT 10-21: uploads hold until the operator signs in. Run 179 held (since);
+run 176 held by the second read. **Defects first:** none open of mine.
 
 ## Slot — Cursor
 

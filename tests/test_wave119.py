@@ -110,5 +110,134 @@ class YoursAfterTheLapseTests(unittest.TestCase):
         )
 
 
+class CrashLogTests(unittest.TestCase):
+    """#1466 and #1463: a run that never finished keeps its log; the week counts them."""
+
+    def setUp(self):
+        import os
+        import tempfile
+
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.log = os.path.join(self.tmp.name, "overnight-last.log")
+        self.crashes = os.path.join(self.tmp.name, "crashes")
+        with open(self.log, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(f"line {i}" for i in range(300)))
+
+    def _keep(self, started, finished, now):
+        from core import nightly_task
+
+        with (
+            patch.object(nightly_task, "_recorded_start", return_value=started),
+            patch.object(nightly_task, "_recorded_finish", return_value=finished),
+        ):
+            return nightly_task.keep_crash_log(now=now, log_path=self.log, crash_dir=self.crashes)
+
+    def test_an_unfinished_run_keeps_its_last_200_lines(self):
+        import os
+
+        started = datetime.now() - timedelta(hours=4)
+        os.utime(self.log, None)
+        kept = self._keep(started, None, datetime.now())
+        self.assertTrue(kept.endswith(f"overnight-{started:%Y%m%d-%H%M}.log"))
+        with open(kept, encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+        self.assertEqual((len(lines), lines[0], lines[-1]), (200, "line 100", "line 299"))
+        self.assertEqual(self._keep(started, None, datetime.now()), "")  # once
+
+    def test_a_finished_or_running_run_keeps_nothing(self):
+        started = datetime.now() - timedelta(hours=4)
+        self.assertEqual(self._keep(started, started + timedelta(minutes=8), datetime.now()), "")
+        self.assertEqual(
+            self._keep(datetime.now() - timedelta(minutes=30), None, datetime.now()), ""
+        )
+
+    def test_the_week_counts_them(self):
+        import os
+
+        from core.nightly_task import crash_count
+
+        os.makedirs(self.crashes)
+        now = datetime(2026, 10, 21, 20, 0)
+        for name in (
+            "overnight-20261020-0500.log",
+            "overnight-20261016-0500.log",
+            "overnight-20261010-0500.log",
+        ):
+            open(os.path.join(self.crashes, name), "w").close()
+        self.assertEqual(crash_count(now=now, crash_dir=self.crashes), 2)
+
+
+class DropOffTests(unittest.TestCase):
+    """#1494: each video's drop-off second - where it fell under half its viewers."""
+
+    def test_the_second(self):
+        from core.retention import drop_off_position, drop_off_text
+
+        curve = [(0.0, 1.1), (0.2, 0.8), (0.4, 0.55), (0.5, 0.45), (0.8, 0.3)]
+        self.assertEqual(drop_off_position(curve), 0.5)
+        self.assertEqual(drop_off_text(0.5, 42.0), "half gone at 0:21 of 0:42")
+        self.assertEqual(drop_off_text(0.5, None), "half gone at 50%")
+        self.assertIsNone(drop_off_position([(0.0, 1.0), (0.5, 0.9), (1.0, 0.6)]))
+
+
+class SecondReadTests(unittest.TestCase):
+    """#1341: a cheap second read of an overnight render's title and first sentence."""
+
+    def test_a_no_holds_and_a_yes_passes(self):
+        from core.batch_review import second_read
+
+        bad = second_read(
+            "Pistons win",
+            "The bench went 23-0 and",
+            call=lambda s, u: {"ok": False, "why": "cut off"},
+        )
+        self.assertEqual(bad, "cut off")
+        self.assertEqual(
+            second_read("Pistons win", "Detroit won.", call=lambda s, u: {"ok": True}), ""
+        )
+        self.assertEqual(
+            second_read("t", "s", call=lambda s, u: (_ for _ in ()).throw(RuntimeError("x"))), ""
+        )
+
+    def test_the_render_waits_on_a_no(self):
+        from core import batch_review
+
+        draft = SimpleNamespace(run_id=175, title="T", script="S.", meta={})
+        with (
+            patch.object(batch_review, "unattended_candidates", return_value=([draft], [])),
+            patch.object(batch_review, "shelf_max", return_value=0),
+            patch.object(
+                batch_review,
+                "second_read",
+                return_value="the title says more than the first sentence",
+            ),
+        ):
+            out = batch_review.render_unattended(
+                "tapin", 1, render=lambda d, q: (_ for _ in ()).throw(AssertionError("rendered"))
+            )
+        self.assertEqual(out["rendered"], [])
+        self.assertIn(
+            (175, "second read: the title says more than the first sentence"), out["waiting"]
+        )
+
+
+class YouTypedTests(unittest.TestCase):
+    """#1343 and #1342: your idea beside what it wrote, with the share of your words it kept."""
+
+    def test_the_lines(self):
+        from core.batch_review import typed_lines
+
+        lines = typed_lines(
+            "Pereira should fight Ankalaev again in March",
+            "Pereira wants Ankalaev again. March is the date he named. Everything else is noise.",
+        )
+        self.assertEqual(lines[0], "    you typed: Pereira should fight Ankalaev again in March")
+        self.assertEqual(
+            lines[1], "    it wrote:  Pereira wants Ankalaev again. March is the date he named."
+        )
+        self.assertIn("4 of your 5 words", lines[2])
+
+
 if __name__ == "__main__":
     unittest.main()

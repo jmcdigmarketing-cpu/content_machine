@@ -83,12 +83,12 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-20 (Claude, wave 118).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
-first: decide the 3 finished videos (`ops shelf`) - overnight renders nothing until fewer than
-3 wait - and publish the app before Wed 9:36 PM EDT. Next: **#1341** a cheap second read of the
-title and first sentence on overnight renders; **#1343** the review shows "you typed / it
-wrote"; **#1494** each video's drop-off second in the weekly review; **#1463** crashes counted
-in the weekly report; **#1466** the last 200 log lines kept with a crash.
+**2026-10-21 (Claude, wave 119).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
+first: sign in again (the sign-in lapsed at 9:36 PM EDT; publish the app first) and review
+the 6 drafts. Next: **#1335** at render time a fact's date checked against the event (run 179's
+last-season seed); **#1381** the weekly rate of drafts held for unsupported claims; **#1386** a
+claim you confirmed once trusted in later runs; **#1389** each sync prints how many records it
+corrected; **#1471** each health line names its source and its age.
 **2026-10-17 (Claude, the grand audit).** CI on `main` had failed the type check on every
 push since 10-11; mypy now checks the Windows build everywhere (decision §62). #1247 is done:
 the suite cannot reach the real database. The operator: overnight renders wait for them (§60,
@@ -107,6 +107,7 @@ read in full; three corrections. Filed #1263-#1269. The audit:
 **2026-10-19 (Claude, wave 116).** A held upload named its reset instead of "overdue" (#1526); the queue listed three public videos, so the next slot was Sat - now Fri, every time in one zone, the two weeks at a glance (#1527 #1429); run 161 off run 156's minute with your yes; the lapsed sign-in holds uploads, a toast a day before, the console page and the mode (#1439 #1438 #1445 #1443); the last line and run-ons in the script check (#1334 #1352); a failed Buffer send retried once (#1400). `roadmap-index`: open 227, done 1533, numbered open 218.
 **2026-10-20 (Claude, wave 117).** Overnight ran 11 h late because the PC was shut down, and the morning now says so from the event log (#1528 #1380), with a doctor wake check (#1371), a Tonight line and an 8 PM toast (#1337); the day-5 sign-in line keeps its date (#1529); `ops agents` reads the slots again (#1530); a follow-up draft for a video that brought subscribers (#1452); a toast when a video goes public (#1404); a schedule read back (#1392); cadence by its own rule (#1435). `roadmap-index`: open 220, done 1543, numbered open 211.
 **2026-10-20 (Claude, wave 118).** None of today's 3 drafts rendered: "hard to say" now warns only (#1535) and its rewrite keeps a correct split (#1531); one splitter that respects "Oct." and "No." (#1532, run 176 repaired); the Tonight line reads the shelf pause (#1534); the deadline names its day (#1533); a Yours today line (#1407); chapter Shorts for an empty week (#1430); #1378 met, #1432 not needed. `roadmap-index`: open 216, done 1552, numbered open 207.
+**2026-10-21 (Claude, wave 119).** With your yes before the lapse: 168 and 170 public, 171 retired - overnight renders again. A follow-up names the original's date and one that says "since" waits (#1536, run 179's last-season seed); "Yours today" says sign in again after the lapse (#1537); a crash keeps its log and the week counts them (#1466 #1463); each video's drop-off second (#1494); a cheap second read before an unattended render (#1341); "you typed / it wrote" (#1343 #1342). `roadmap-index`: open 210, done 1560, numbered open 201.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

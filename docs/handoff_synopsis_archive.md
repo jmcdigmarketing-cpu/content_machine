@@ -7,6 +7,16 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-19 night (Claude Code): wave 116, the next ten
+
+Job 74 was held by the quota while the morning called it overdue and asked for a command;
+it now names the 3:05 AM EDT reset. The queue had listed three public videos at their jobs'
+old slots, so the next free slot was Sat noon; it is Fri 6 PM, every time in EDT, with the
+next 14 days in one line. Run 161 moved to Thu noon (the operator's yes). An ended sign-in
+holds uploads (next free slot after), a toast comes 24 h before the Wed lapse, and `ops
+check-youtube` prints the publish page. The script check fails a garbled last line and a
+run-on; a failed Buffer send goes once more. Open 227.
+
 ## Previous — 2026-10-19 evening (Claude Code): wave 115, the next ten
 
 Uploads stopped at 4 on 10-19 - three caption files took 1,200 of 8,629 units - so a caption

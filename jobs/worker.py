@@ -609,12 +609,15 @@ def drain_due(cap: int = PASS_CAP) -> int:
 def _overnight_watch() -> None:
     """#1372: a toast, once a day, when overnight has not started for 26 hours. Fail-open."""
     try:
-        from core.nightly_task import overdue_line
+        from core.nightly_task import keep_crash_log, overdue_line
         from core.win_notify import toast_daily
 
         line = overdue_line()
         if line:
             toast_daily("overnight-missed", "Content OS: overnight", line)
+        kept = keep_crash_log()  # #1466: before the next 5:00 empties the log
+        if kept:
+            print(f"Overnight never finished - its log is kept: {kept}")
     except Exception as exc:
         logger.debug("overnight watch skipped: %s", exc)
 

@@ -1776,12 +1776,12 @@ Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content
 - [ ] 1338. **`ops overnight --pause-until DATE` - one line to stop it while you are away** *(S03.7, filed 2026-10-18)* `[S]`
 - [ ] 1339. **The two Oct 13 drafts kept as regression fixtures** *(S03.8, filed 2026-10-18)* `[S]`
 - [ ] 1340. **A render whose game is under 6 hours away goes up unlisted for a look** *(S03.9, filed 2026-10-18)* `[S]`
-- [ ] 1341. **A cheap second read of the title and first sentence on overnight renders only** *(S03.10, filed 2026-10-18)* `[M]`
+- [x] 1341. **A cheap second read of the title and first sentence on overnight renders only** *(S03.10, filed 2026-10-18)* `[M]` **Done (2026-10-21, Claude, wave 119):** `batch_review.second_read` - one cheap-tier call before each unattended render; a garbled first sentence, or a title about a different story, holds the render and the next eligible draft takes its place. The first prompt held 4 of 16 recent runs, wrongly ("Washington" vs "Commanders"); the tightened one holds 1 of 24 - run 176, whose opener is Aldo's while its title is Volkanovski's. Skipped in the suite; fail-open.
 
 ### S04 The proof of "your own idea" was wrong (Oct 13)
 
-- [ ] 1342. **Idea fidelity: the share of the typed idea's content words in the first two sentences, printed at review** *(S04.1, filed 2026-10-18)* `[S]`
-- [ ] 1343. **The review shows "you typed / it wrote" side by side** *(S04.2, filed 2026-10-18)* `[S]`
+- [x] 1342. **Idea fidelity: the share of the typed idea's content words in the first two sentences, printed at review** *(S04.1, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 119, with #1343):** "N of your M words are in its first two sentences" (`topic_tokens.content_tokens`).
+- [x] 1343. **The review shows "you typed / it wrote" side by side** *(S04.2, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 119):** `batch_review.typed_lines` at review - "you typed" beside "it wrote" (the first two sentences) for an own-idea draft, with how many of your words they kept.
 - [ ] 1344. **Own-idea runs tagged and compared with menu picks in `ops growth`** *(S04.3, filed 2026-10-18)* `[S]`
 - [ ] 1345. **An idea inbox file overnight drafts from first** *(S04.4, filed 2026-10-18)* `[M]`
 - [ ] 1346. **Each claim a typed idea makes becomes a fact to check before the script** *(S04.5, filed 2026-10-18)* `[M]`
@@ -1954,10 +1954,10 @@ Already open for S16: #50 (learned insight markers).
 
 ### S17 Overnight crashed, and the morning said it ran (Oct 16)
 
-- [ ] 1463. **Crashes counted in the weekly report** *(S17.1, filed 2026-10-18)* `[S]`
+- [x] 1463. **Crashes counted in the weekly report** *(S17.1, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 119):** `nightly_task.crash_count` in the weekly report - "Overnight crashes: none in 7 days" (from the logs #1466 keeps).
 - [ ] 1464. **Each render in its own process** *(S17.2, filed 2026-10-18)* `[M]`
 - [ ] 1465. **A memory check between renders** *(S17.5, filed 2026-10-18)* `[S]`
-- [ ] 1466. **The last 200 log lines kept with a crash** *(S17.6, filed 2026-10-18)* `[S]`
+- [x] 1466. **The last 200 log lines kept with a crash** *(S17.6, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 119):** `nightly_task.keep_crash_log` from each worker pass - a run that started 3+ hours ago and never finished keeps its log's last 200 lines in output/logs/crashes. The task's `> overnight-last.log` empties the file at the next 5:00 before Python runs, so it cannot be kept at the next start.
 - [ ] 1467. **A 2-second smoke render before the run** *(S17.7, filed 2026-10-18)* `[S]`
 - [ ] 1468. **A heartbeat file each minute; the morning reads the gap** *(S17.8, filed 2026-10-18)* `[S]`
 - [ ] 1469. **The crash's Python line in the morning line** *(S17.9, filed 2026-10-18)* `[S]`
@@ -1998,7 +1998,7 @@ Already open for S19: #334 (entity disambiguation ledger); #553 (entity-role che
 - [x] 1491. **Engagement per format: a long video against a long-video baseline** *(S20.3, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114):** `channel_health._engagement_sub` reads Shorts against Shorts; a video over 180 s is counted apart with its own median. Live: with run 120 (406 s, 11%) apart, recent is 32.1% (runs 99-133) against a 32.9% baseline, -0.7pp - **GREEN**. The "softening" of 10-17 (27.4% against 32.3%) was that one long video.
 - [ ] 1492. **Stayed share by domain over time** *(S20.4, filed 2026-10-18)* `[S]`
 - [ ] 1493. **A video's first-hour views against its stayed share** *(S20.5, filed 2026-10-18)* `[S]`
-- [ ] 1494. **Each video's drop-off second in the weekly review** *(S20.6, filed 2026-10-18)* `[S]`
+- [x] 1494. **Each video's drop-off second in the weekly review** *(S20.6, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 119):** `retention.week_drop_off_lines` in the weekly report - live (14 days): "run 164 Cristian Perez's 27-second KO: half gone at 0:06 of 1:00", "run 131 Chargers' brutal 0-4 start: half gone at 0:08 of 1:03", 6 more; the length is the render's.
 - [ ] 1495. **What changed this week: prompt version, presets, voices** *(S20.7, filed 2026-10-18)* `[M]`
 - [ ] 1496. **A toast after three videos under 20% in a row** *(S20.8, filed 2026-10-18)* `[S]`
 - [ ] 1497. **Holdouts against ranked picks in health** *(S20.9, filed 2026-10-18)* `[S]`

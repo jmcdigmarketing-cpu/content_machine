@@ -9054,3 +9054,36 @@ Batch A:
 - #1537: after the lapse "Yours today" says to sign in again.
 - Two earlier tests changed meaning on purpose: wave 117's follow-up topic and wave 118's
   "Yours today" items.
+
+Batch B, the roadmap's five:
+- #1466 / #1463: a run that never finished keeps its log; the weekly report counts them. The
+  task's own redirect empties the log before Python runs, so it is kept by the worker pass,
+  not at the next start.
+- #1494: each video's drop-off second in the weekly report - run 164 lost half its viewers
+  at 0:06 of 1:00.
+- #1341: a cheap second read before an unattended render. The first prompt held 4 of 16
+  recent runs, wrongly ("Washington" vs "Commanders"). The tightened one holds 1 of 24 -
+  run 176, whose opener is about Aldo while its title is about Volkanovski. Tonight renders
+  175 alone.
+- #1343 / #1342: "you typed / it wrote" at review, with the share of the idea's words kept.
+- All 7 new tests failed on clean HEAD.
+
+Audit (wave 119):
+- 17 tests in tests/test_wave119.py; 15 were seen failing on clean HEAD, the 2 others are
+  guards (the old wording counts as followed up; other drafts render). 3 corpus cases.
+- Order slip: the follow-up and the second read went in before their tests passed; the
+  clean-HEAD runs are their proof. The second read's first prompt was measured and
+  changed before it shipped.
+- mypy 92, ruff clean.
+- Live:
+  - 168 and 170 public, read back;
+  - 171 retired, the shelf at 0;
+  - run 179 held by the since rule;
+  - the drop-off lines on real curves;
+  - a real second read on 175 and 176.
+- Outward: 168 and 170 made public (the operator's yes).
+- Not seen yet:
+  - the lapse itself at 9:36 PM EDT, and "Yours today" naming it then;
+  - tonight's 5:00 render.
+
+`roadmap-index`: open 210, done 1560, numbered open 201.

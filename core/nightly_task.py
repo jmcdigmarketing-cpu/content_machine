@@ -413,6 +413,59 @@ def _recorded_finish() -> datetime | None:
     return _recorded("finished")
 
 
+CRASH_DIR = os.path.join("output", "logs", "crashes")
+_UNFINISHED_HOURS = 3.0  # the task's limit is 2 hours
+_CRASH_LINES = 200
+
+
+def keep_crash_log(
+    *, now: datetime | None = None, log_path: str | None = None, crash_dir: str | None = None
+) -> str:
+    """#1466 (wave 119): the last 200 lines of a run that started and never finished, kept in
+    output/logs/crashes - the task's `> overnight-last.log` empties the file at the next 5:00
+    before Python runs, so the 10-16 crash's evidence was gone by morning. Called from each
+    worker pass; once per run; "" when there is nothing to keep."""
+    started, finished = _recorded_start(), _recorded_finish()
+    if started is None or (finished is not None and finished >= started):
+        return ""
+    if ((now or datetime.now()) - started).total_seconds() < _UNFINISHED_HOURS * 3600:
+        return ""  # it may still be running
+    src = log_path or os.path.join(REPO_ROOT, OVERNIGHT_LOG)
+    try:
+        if datetime.fromtimestamp(os.path.getmtime(src)) < started:
+            return ""  # the log is from before this run
+        folder = crash_dir or os.path.join(REPO_ROOT, CRASH_DIR)
+        dest = os.path.join(folder, f"overnight-{started:%Y%m%d-%H%M}.log")
+        if os.path.exists(dest):
+            return ""
+        with open(src, encoding="utf-8", errors="replace") as handle:
+            tail = handle.read().splitlines()[-_CRASH_LINES:]
+        os.makedirs(folder, exist_ok=True)
+        with open(dest, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(tail) + "\n")
+        return dest
+    except OSError as exc:
+        logger.debug("crash log not kept: %s", exc)
+        return ""
+
+
+def crash_count(*, days: int = 7, now: datetime | None = None, crash_dir: str | None = None) -> int:
+    """#1463 (wave 119): overnight runs that never finished, in the last `days` - from the logs
+    `keep_crash_log` kept."""
+    folder = crash_dir or os.path.join(REPO_ROOT, CRASH_DIR)
+    cutoff = (now or datetime.now()) - timedelta(days=days)
+    count = 0
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return 0
+    for name in names:
+        found = re.fullmatch(r"overnight-(\d{8}-\d{4})\.log", name)
+        if found and datetime.strptime(found.group(1), "%Y%m%d-%H%M") >= cutoff:
+            count += 1
+    return count
+
+
 def _recorded_start() -> datetime | None:
     return _recorded("started")
 

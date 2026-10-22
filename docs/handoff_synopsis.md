@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-20 evening: wave 118, the next ten
+# Handoff synopsis — 2026-10-21: wave 119, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-20 evening (Claude Code): wave 118, the next ten
+## Last wave — 2026-10-21 (Claude Code): wave 119, the next ten
+
+Before the 9:36 PM EDT lapse, with the operator's yes, 168 and 170 went public and 171 was
+retired, so overnight renders again. Run 179 (the first follow-up) had leaned on last
+season's "No. 1 seed" page; follow-ups now name the original's date and one that says
+"since" waits. A cheap second read guards an unattended render; a crash keeps its log; the
+weekly report counts crashes and gives each video's drop-off second; review shows "you
+typed / it wrote". Open 210.
+
+## Previous — 2026-10-20 evening (Claude Code): wave 118, the next ten
 
 Overnight rendered none of today's 3 drafts. Two waited only on "hard to say", which now
 warns, and whose rewrite now keeps a correct split. A cut had split run 176 at "Oct.": one
@@ -27,16 +36,6 @@ Tonight line says what overnight will do, and an 8 PM toast says to leave the PC
 day-5 sign-in line keeps its date and the publish page. `ops agents` reads the mailbox again.
 A video that brings 2+ subscribers gets a follow-up draft; a video going public raises a
 toast; a schedule change is read back; cadence counts the last 7 days. Open 220.
-
-## Previous — 2026-10-19 night (Claude Code): wave 116, the next ten
-
-Job 74 was held by the quota while the morning called it overdue and asked for a command;
-it now names the 3:05 AM EDT reset. The queue had listed three public videos at their jobs'
-old slots, so the next free slot was Sat noon; it is Fri 6 PM, every time in EDT, with the
-next 14 days in one line. Run 161 moved to Thu noon (the operator's yes). An ended sign-in
-holds uploads (next free slot after), a toast comes 24 h before the Wed lapse, and `ops
-check-youtube` prints the publish page. The script check fails a garbled last line and a
-run-on; a failed Buffer send goes once more. Open 227.
 
 ## Pipeline order (operator)
 
@@ -112,7 +111,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1341 #1343 #1494 #1463 #1466 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1335 #1381 #1386 #1389 #1471 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

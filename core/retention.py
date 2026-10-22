@@ -255,3 +255,62 @@ def retention_diff_lines(
     else:
         lines.append("  the two curves track each other - no stretch stands out")
     return lines
+
+
+def drop_off_position(curve: list[tuple[float, float]], floor: float | None = None) -> float | None:
+    """#1494 (wave 119): the first position (0-1) where a video's curve falls under the floor
+    (half the viewers by default), or None when it never does."""
+    limit = _retained_floor() if floor is None else floor
+    for position, ratio in sorted(curve):
+        if ratio < limit:
+            return position
+    return None
+
+
+def drop_off_text(position: float, seconds: float | None) -> str:
+    """ "half gone at 0:21 of 0:42", or the share of the video without its length."""
+    if not seconds:
+        return f"half gone at {round(position * 100)}%"
+    at = round(position * seconds)
+    total = round(seconds)
+    return f"half gone at {at // 60}:{at % 60:02d} of {total // 60}:{total % 60:02d}"
+
+
+def week_drop_off_lines(channel_id: str, *, days: int = 7, limit: int = 8) -> list[str]:
+    """#1494: each of the week's measured videos and where it lost half its viewers - the weekly
+    review had the channel's average cliff only. The length is the render's (ffprobe)."""
+    from datetime import datetime, timedelta, timezone
+
+    from storage.repositories.content_runs import get_content_run_repository
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    out: list[str] = []
+    for log in get_publish_log_repository().list_timed_outcomes(channel_id) or []:
+        when = getattr(log, "published_at", None)
+        if not log.content_run_id or not isinstance(when, datetime):
+            continue
+        when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+        if when < cutoff:
+            continue
+        try:
+            curve = _parse_curve(
+                (json.loads(log.metrics_json or "{}") or {}).get("retention_curve")
+            )
+        except (ValueError, TypeError):
+            continue
+        position = drop_off_position(curve) if curve else None
+        if position is None:
+            continue
+        run = get_content_run_repository().get(int(log.content_run_id))
+        seconds = None
+        try:
+            from core.chapter_shorts import _probe_duration
+
+            path = str(getattr(run, "mp4_path", "") or "")
+            seconds = _probe_duration(path) if path and os.path.isfile(path) else None
+        except Exception as exc:
+            logger.debug("render length unread for run %s: %s", log.content_run_id, exc)
+        title = str(getattr(run, "title", "") or "")[:45]
+        out.append(f"run {log.content_run_id} {title}: {drop_off_text(position, seconds)}")
+    return out[:limit]

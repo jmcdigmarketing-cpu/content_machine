@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
@@ -108,8 +109,82 @@ def week_shorts(channel_id: str, *, now: datetime | None = None) -> list[dict[st
         out.append({"run_id": int(run_id), "title": str(getattr(run, "title", "") or ""),
                     "path": path, "published_at": when,
                     "offset": hook_offset(run_opening(run), channel_id,
-                                          default=_intro_offset(channel_id))})  # fmt: skip
+                                          default=_intro_offset(channel_id)),
+                    # #1316 (wave 120): what the compilation's title names, and in which order
+                    "names": list((_features(run).get("entity_research") or {}).get("names") or []),
+                    "views": _organic_views(getattr(row, "metrics_json", None))})  # fmt: skip
     return sorted(out, key=lambda s: s["published_at"])
+
+
+def _organic_views(metrics_json: Any) -> int:
+    """The window's views less the paid ones - ads say nothing about what people look for -
+    or the lifetime count when the window has not synced."""
+    from core.ypp_readiness import _organic_views as window_organic
+
+    try:
+        metrics = json.loads(metrics_json or "{}") or {}
+        if metrics.get("views") is not None:
+            return int(window_organic(metrics))
+        return int(metrics.get("lifetime_views") or 0)
+    except (TypeError, ValueError, AttributeError):
+        return 0
+
+
+def subject_name(title: str, names: list[str]) -> str:
+    """#1316: the name a Short is about - the researched name that comes first in its title,
+    a team by its last word ("Kansas City Chiefs" -> "Chiefs") when only that is in it, with a
+    number that follows it ("GTA 6"); the title's first name when research named none of it."""
+    from apis.topic_tokens import title_phrases
+
+    found: list[tuple[int, int, str]] = []
+    for raw in names:
+        name = re.sub(r"(?:'s|')$", "", str(raw).strip())
+        if not name:
+            continue
+        for form in (name, name.split()[-1]):
+            if form != name and len(form) < 4 and not any(c.isdigit() for c in form):
+                continue
+            hit = re.search(rf"(?<!\w){re.escape(form)}(?!\w)", title, flags=re.I)
+            if hit:
+                number = re.match(r"\s+(\d+)\b", title[hit.end() :])
+                found.append(
+                    (hit.start(), -len(form), form + (f" {number.group(1)}" if number else ""))
+                )
+                break
+    if found:
+        return min(found)[2]
+    phrases = title_phrases(title, max_words=2)
+    return re.sub(r"(?:'s|')$", "", phrases[0]) if phrases else ""
+
+
+def compilation_title(
+    name: str, items: list[dict[str, Any]], span: str, *, limit: int = 100
+) -> str:
+    """#1316: "Pereira, Mahomes & GTA 6 - TapIn Week in Review (Oct 19-25)" - the most-viewed
+    Shorts' names, within YouTube's 100 characters; the dates alone when none is named."""
+    ordered = sorted(enumerate(items), key=lambda pair: (-int(pair[1].get("views") or 0), pair[0]))
+    chosen: list[str] = []
+    for _i, item in ordered:
+        subject = subject_name(str(item.get("title") or ""), list(item.get("names") or []))
+        low = subject.lower()
+        if subject and not any(low in c.lower() or c.lower() in low for c in chosen):
+            chosen.append(subject)
+        if len(chosen) == 3:
+            break
+    while chosen:
+        named = ", ".join(chosen[:-1]) + f" & {chosen[-1]}" if len(chosen) > 1 else chosen[0]
+        title = f"{named} - {name} Week in Review ({span})"
+        if len(title) <= limit:
+            return title
+        chosen.pop()
+    return f"{name} Week in Review ({span})"[:limit]
+
+
+def short_span(began: datetime, ended: datetime) -> str:
+    """ "Oct 15-18", or "Oct 28-Nov 3" across a month."""
+    if began.month == ended.month:
+        return f"{began:%b} {began.day}-{ended.day}"
+    return f"{began:%b} {began.day}-{ended:%b} {ended.day}"
 
 
 def _clock(seconds: float) -> str:
@@ -158,7 +233,8 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
         disclosure = ""
     if disclosure:
         description += f"\n{disclosure}\n"
-    return WeekPlan(channel_id=channel_id, week=monday, title=f"{name} Week in Review: {span}",
+    title = compilation_title(name, items, short_span(first, last))
+    return WeekPlan(channel_id=channel_id, week=monday, title=title,
                     description=description, items=items, seconds=at)  # fmt: skip
 
 
@@ -273,11 +349,7 @@ def make_thumbnail(plan: WeekPlan, video_path: str) -> str:
     began, ended = plan.items[0].get("published_at"), plan.items[-1].get("published_at")
     span = ""
     if isinstance(began, datetime) and isinstance(ended, datetime):
-        span = (
-            f"{began:%b} {began.day}-{ended.day}"
-            if began.month == ended.month
-            else f"{began:%b} {began.day}-{ended:%b} {ended.day}"
-        )
+        span = short_span(began, ended)
     try:
         from PIL import Image
 

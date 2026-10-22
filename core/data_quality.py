@@ -92,11 +92,15 @@ def _signal_checks(traces: list[dict[str, Any]]) -> dict[str, Any]:
 
 def _join_checks(channel_id: str | None, limit: int = 25) -> dict[str, Any]:
     """Run↔quality/features/metrics join assertions over recent runs."""
-    out = {
+    out: dict[str, Any] = {
         "runs_checked": 0,
         "missing_quality": 0,
         "missing_features": 0,
         "uploads_without_metrics": 0,
+        # #1474 / #1395 (wave 120): the runs and videos behind each count
+        "missing_quality_runs": [],
+        "missing_features_runs": [],
+        "public_without_run": [],
     }
     try:
         from config.channels import resolve_channel_id
@@ -108,16 +112,17 @@ def _join_checks(channel_id: str | None, limit: int = 25) -> dict[str, Any]:
             if run.status not in ("drafted", "rendered"):
                 continue
             out["runs_checked"] += 1
-            try:
-                if not json.loads(run.quality_json or "{}"):
-                    out["missing_quality"] += 1
-            except Exception:
-                out["missing_quality"] += 1
-            try:
-                if not json.loads(run.features_json or "{}"):
-                    out["missing_features"] += 1
-            except Exception:
-                out["missing_features"] += 1
+            for field, key in (
+                ("quality_json", "missing_quality"),
+                ("features_json", "missing_features"),
+            ):
+                try:
+                    empty = not json.loads(getattr(run, field, None) or "{}")
+                except Exception:
+                    empty = True
+                if empty:
+                    out[key] += 1
+                    out[f"{key}_runs"].append(int(run.id))
         from storage.repositories.publish_log import get_publish_log_repository
 
         for row in get_publish_log_repository().list_uploaded_for_channel(channel):
@@ -127,6 +132,10 @@ def _join_checks(channel_id: str | None, limit: int = 25) -> dict[str, Any]:
                 metrics = {}
             if not metrics:
                 out["uploads_without_metrics"] += 1
+            if str(getattr(row, "privacy_status", "") or "").lower() == "public" and not getattr(
+                row, "content_run_id", None
+            ):
+                out["public_without_run"].append(str(row.youtube_video_id))
     except Exception as exc:
         logger.debug("resolve_channel_id skipped: %s", exc)
     return out
@@ -167,12 +176,20 @@ def warnings(data: dict[str, Any] | None = None, *, channel_id: str | None = Non
     if joins.get("missing_quality"):
         out.append(
             f"{joins['missing_quality']}/{joins.get('runs_checked', 0)} recent runs "
-            "missing quality_json (pre-ledger or scoring failed)"
+            f"missing quality_json{_named(joins.get('missing_quality_runs'))} - pre-ledger or "
+            "scoring failed"
         )
     if joins.get("missing_features"):
         out.append(
             f"{joins['missing_features']}/{joins.get('runs_checked', 0)} recent runs "
-            "missing features_json (run backfill-features)"
+            f"missing features_json{_named(joins.get('missing_features_runs'))} - run "
+            "backfill-features"
+        )
+    lost = joins.get("public_without_run") or []
+    if lost:  # #1395: the learning reads runs; a public video with none is invisible to it
+        shown = ", ".join(lost[:3]) + (f" and {len(lost) - 3} more" if len(lost) > 3 else "")
+        out.append(
+            f"{len(lost)} public video(s) have no run id ({shown}) - the learning cannot see them"
         )
     if joins.get("uploads_without_metrics"):
         out.append(
@@ -210,3 +227,12 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def _named(run_ids: list[int] | None) -> str:
+    """ " (run 171)" / " (runs 171, 165)" - #1474: the warning said how many, never which."""
+    ids = list(run_ids or [])
+    if not ids:
+        return ""
+    noun = "run" if len(ids) == 1 else "runs"
+    return f" ({noun} {', '.join(str(i) for i in ids[:3])}{' ...' if len(ids) > 3 else ''})"

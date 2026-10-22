@@ -1743,11 +1743,11 @@ its heading rather than filed twice. Decision 68 holds the backlog under 300.
 
 - [x] 1314. **`ops ypp` counts what each weekly compilation added to long-form hours, and the weeks to 4,000 at that rate** *(S01.1, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114):** `ypp_readiness.compilation_line` in `ops ypp`: compilations made, their measured long-form hours, and the weeks to 4,000 at that rate. Live: "none made yet - overnight makes the first on Monday".
 - [ ] 1315. **A written long-form format: a 6-8 minute "Week in UFC / NFL" scripted from the week's facts, not only the Shorts stitched together** *(S01.2, filed 2026-10-18)* `[L]`
-- [ ] 1316. **Compilation titles and chapters written for search ("UFC Week in Review: Pereira, Topuria ...") - long videos are found by search, Shorts by the feed** *(S01.3, filed 2026-10-18)* `[S]`
+- [x] 1316. **Compilation titles and chapters written for search ("UFC Week in Review: Pereira, Topuria ...") - long videos are found by search, Shorts by the feed** *(S01.3, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `week_compile.compilation_title` - the three most-viewed Shorts' subjects (organic views; `subject_name` from the run's researched names, a team by its last word, "GTA 6" with its number), within 100 characters. Dry run on last week: "Ben Affleck, Detroit Pistons & Topuria - TapIn Media Week in Review (Oct 15-19)". Chapters stay the Shorts' titles; Monday's compilation is the first.
 - [x] 1317. **Each Short's description links the week's compilation, so a Shorts viewer can reach the long video** *(S01.4, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 115; the operator: new uploads only):** `prepublish.with_compilation_link` - an upload adds "Full week: https://youtu.be/<id>" once a compilation is public (`week_compile.latest_public_compilation`), not on the compilation itself. Live: none public until Wed 10-21 16:00Z.
 - [ ] 1318. **The 11 playlists made on YouTube (550 quota units; your yes) - a playlist keeps a long-form session going** *(S01.5, filed 2026-10-18)* `[S]`
 - [x] 1319. **Advertiser-safe titles and first lines: a draft whose title, thumbnail text or first sentence would limit ads waits for you** *(S01.6, filed 2026-10-18)* `[S]` **Done (2026-10-18, Claude, wave 113; the operator: an overnight draft waits, py main.py warns):** `authenticity.ad_limit_reason` reads the title (the thumbnail's headline comes from it) and the first sentence for sexual terms, strong profanity, hard drugs, self-harm and mass-casualty words; fight and game violence is not listed. `unattended_block_reason` and `backlog_gate` hold the draft with the word named; `py main.py` prints a warning beside the authenticity report. Live: run 166's "Hot Dads & Horny Art: Why Belmont's Curse Is Fixable" -> "its title or first line would limit ads (\"horny\")". Slurs are not listed in code.
-- [ ] 1320. **A monthly YPP card: the four numbers against last month, organic only, on the Story page** *(S01.9, filed 2026-10-18)* `[S]`
+- [x] 1320. **A monthly YPP card: the four numbers against last month, organic only, on the Story page** *(S01.9, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `save_ypp_numbers` keeps `history[YYYY-MM]` of the four numbers; `ypp_readiness.monthly_card` in `ops ypp` - live "This month: subscribers 70, long-form hours 10.2, organic Shorts views (90 days) 2,792, net subscribers (28 days) 65 - first month on record". The history starts at the next sync; the Story page shows the card.
 - [ ] 1321. **A day-one YPP checklist in operator_guide.md: what to switch on when the threshold is met (ads, Super Thanks, memberships)** *(S01.10, filed 2026-10-18)* `[S]`
 
 Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content-ID pre-check).
@@ -1770,7 +1770,7 @@ Already open for S01: #79 (affiliate spike with a kill criterion); #434 (Content
 - [ ] 1332. **A "pulled before public" count in the weekly report - each pull is a gate that missed** *(S03.1, filed 2026-10-18)* `[S]`
 - [ ] 1333. **Post-render transcript check: the render's audio transcribed and compared with the script (the garbled ending)** *(S03.2, filed 2026-10-18)* `[M]`
 - [x] 1334. **The final sentence must be complete and on the topic before a render** *(S03.3, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 116):** `script_craft.unfinished_ending` in `script_check` - a last sentence without a stop, or a team's city or state in lowercase (`topic_tokens.place_words`; run 136's "...in convincing fashion on tennessee."). Replayed on the 78 stored tapin scripts: run 136 alone. "On the topic" was not built, by measurement: 29 of the 78 closing lines share no word with the title and read fine.
-- [ ] 1335. **At render time the facts' dates are re-checked against the event (a fact older than the game it previews)** *(S03.4, filed 2026-10-18)* `[S]`
+- [ ] 1335. **At render time the facts' dates are re-checked against the event (a fact older than the game it previews)** *(S03.4, filed 2026-10-18)* `[S]` **Measured 2026-10-21 (wave 120):** Tavily's results carry no dates, so there is nothing to check a fact's age against yet; run 179's case (last season's seed) is held by wave 119's since rule (#1536). Open.
 - [ ] 1336. **A frame check of the finished video's first and last 3 seconds (black, frozen, the wrong clip) - #1044 checks stretches, not the ends** *(S03.5, filed 2026-10-18)* `[M]`
 - [x] 1337. **The evening line says what overnight would render** *(S03.6, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117; the operator: an 8 PM toast):** `nightly_task.tonight_line` - a Tonight line in `ops status` (live: "Tonight at 5:00 AM: drafts 3, renders up to 2 - leave the PC asleep, not shut down") and `worker._tonight_watch`, one toast a day from 8 PM. Built from overnight's own `draft_count` and `overnight_render_limit`.
 - [ ] 1338. **`ops overnight --pause-until DATE` - one line to stop it while you are away** *(S03.7, filed 2026-10-18)* `[S]`
@@ -1833,12 +1833,12 @@ Already open for S05: #537 (per-section regeneration).
 
 ### S08 Good research blocked good drafts
 
-- [ ] 1381. **The weekly rate of drafts held for unsupported claims, with five replayed** *(S08.1, filed 2026-10-18)* `[S]`
+- [x] 1381. **The weekly rate of drafts held for unsupported claims, with five replayed** *(S08.1, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `weekly_report.claim_hold_lines` - live "Held for a claim: 1 of 25 drafts this week (4%)" and "run 162: Payton Pritchard signed a two-year, $44.2 million extension with Boston. (rendered past it)". Up to 5, the run and its first claim; "replayed" is the run named, not a re-run.
 - [ ] 1382. **Claims labelled "from research" or "from facts"** *(S08.3, filed 2026-10-18)* `[S]`
 - [ ] 1383. **Which claim kinds fail most (dates, records, quotes) in `ops auto-research`** *(S08.4, filed 2026-10-18)* `[S]`
 - [ ] 1384. **One targeted search for an unsupported claim before it holds the draft** *(S08.5, filed 2026-10-18)* `[M]`
 - [ ] 1385. **A quote needs its words on the linked page (the Brady line)** *(S08.6, filed 2026-10-18)* `[S]`
-- [ ] 1386. **A claim you confirmed once is trusted in later runs** *(S08.7, filed 2026-10-18)* `[S]`
+- [x] 1386. **A claim you confirmed once is trusted in later runs** *(S08.7, filed 2026-10-18)* `[S]` **Closed 2026-10-21 (wave 120) - met by #1083:** `ops verify-claim` saves a confirmed claim to the vault as an operator fact, which later runs' research reads (the Rakhmonov note `2026-10-18_shavkat-rakhmonov-...-verify-claim.md` is there). No later run on those subjects yet.
 - [ ] 1387. **The 5-of-5 replay kept as regression cases** *(S08.8, filed 2026-10-18)* `[S]`
 - [ ] 1388. **The research brief capped and deduplicated before the prompt** *(S08.10, filed 2026-10-18)* `[S]`
 
@@ -1846,13 +1846,13 @@ Already open for S08: #547 (inline provenance); #555 (vault deduplication).
 
 ### S09 The record drifted from YouTube
 
-- [ ] 1389. **Each sync prints how many records it corrected** *(S09.1, filed 2026-10-18)* `[S]`
+- [x] 1389. **Each sync prints how many records it corrected** *(S09.1, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `privacy_sync.sync_lines` says "Privacy: N videos checked - the record matches YouTube" when nothing changed; corrections already printed. Not seen live tonight - the sign-in lapsed, so the sync says "not checked".
 - [ ] 1390. **Titles and descriptions edited in Studio read back** *(S09.2, filed 2026-10-18)* `[S]`
 - [ ] 1391. **Thumbnails read back** *(S09.3, filed 2026-10-18)* `[S]`
 - [x] 1392. **A scheduled publishAt read back after scheduling** *(S09.4, filed 2026-10-18)* `[S]` **Done (2026-10-20, Claude, wave 117):** `go_public._read_back` - after a schedule change it reads YouTube once more when the first read shows another time (run 161 on 10-19), then says "YouTube shows Thu 12:00 PM EDT" or that it still shows the old one and the privacy sync corrects the record.
 - [ ] 1393. **A weekly full reconcile of every video; the daily sync keeps to the recent ones** *(S09.5, filed 2026-10-18)* `[S]`
 - [ ] 1394. **Playlist membership read back once playlists exist** *(S09.6, filed 2026-10-18)* `[S]`
-- [ ] 1395. **Every public video has a run id (a check)** *(S09.7, filed 2026-10-18)* `[S]`
+- [x] 1395. **Every public video has a run id (a check)** *(S09.7, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `data_quality` warns "N public video(s) have no run id (<ids>) - the learning cannot see them". Live 0 of 60, so it is quiet.
 - [ ] 1396. **Buffer's real post state read back** *(S09.8, filed 2026-10-18)* `[S]`
 - [ ] 1397. **Videos made outside the pipeline imported so the learning sees them** *(S09.9, filed 2026-10-18)* `[M]`
 
@@ -1896,7 +1896,7 @@ Already open for S11: #1058 (CTR into the learning loop).
 - [x] 1423. **INTRO_TEST read with a stop rule (#354) at 3 each** *(S12.7, filed 2026-10-18)* `[S]` **Done (2026-10-19, Claude, wave 114, with #354):** `growth.intro_verdict` - `ops growth`'s intro line reads at 6 each and says which side holds more and how sure, or "no real difference at 10 each"; dropping the intro stays the operator's call. Live: 1 without, 5 with - the line says when it will read.
 - [ ] 1424. **Open on the clip's most moving frame** *(S12.8, filed 2026-10-18)* `[M]`
 - [ ] 1425. **No silence at t=0** *(S12.9, filed 2026-10-18)* `[S]`
-- [ ] 1426. **Retention at seconds 1-3 per video in `ops retention`** *(S12.10, filed 2026-10-18)* `[S]`
+- [x] 1426. **Retention at seconds 1-3 per video in `ops retention`** *(S12.10, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `retention.first_seconds_lines` in `ops retention`, newest first, the length the render's - live run 164 "90% still watching at 3 s"; 5 of 8 read over 100% ("140% at 3 s (the opening was replayed)") because YouTube's ratio counts a replayed opening again (#1538).
 
 ### S13 Volume
 
@@ -1967,12 +1967,12 @@ Already open for S17: #457 (lockfile and reproducible install); #445 (resume an 
 
 ### S18 Health read RED on a number nobody stored (Oct 16)
 
-- [ ] 1471. **Each health line names its source and its age** *(S18.1, filed 2026-10-18)* `[S]`
+- [x] 1471. **Each health line names its source and its age** *(S18.1, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** each health line ends with its source (`channel_health.HEALTH_SOURCES`, one per check - a test holds the two lists equal): "(from the publish log)", "(from the breakers and quota state, read now)" and so on. Engagement already gave its sync age; statuses unchanged.
 - [ ] 1472. **"Unknown" instead of RED when an input is missing** *(S18.2, filed 2026-10-18)* `[S]`
 - [ ] 1473. **A test per health line that some production path writes the field it reads** *(S18.3, filed 2026-10-18)* `[M]`
-- [ ] 1474. **Data quality lists the missing fields per run** *(S18.4, filed 2026-10-18)* `[S]`
+- [x] 1474. **Data quality lists the missing fields per run** *(S18.4, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `data_quality.warnings` names the runs behind a missing-field count - live "1/11 recent runs missing quality_json (run 171) - pre-ledger or scoring failed".
 - [ ] 1475. **Health history, one line a day** *(S18.5, filed 2026-10-18)* `[S]`
-- [ ] 1476. **Engagement's window printed with its dates and the newest measured video** *(S18.6, filed 2026-10-18)* `[S]`
+- [x] 1476. **Engagement's window printed with its dates and the newest measured video** *(S18.6, filed 2026-10-18)* `[S]` **Done (2026-10-21, Claude, wave 120):** `channel_health.window_text` - live "recent 40.1% (runs 157-169, Oct 16-19)", and "; newest measured run N (date)" when a newer measured video sits outside the window.
 - [x] 1477. **Health per format (Shorts and long videos)** *(S18.7, filed 2026-10-18)* `[S]` **Closed 2026-10-19 (wave 115) - shipped as #1491 (wave 114):** health reads Shorts against Shorts and counts long videos apart.
 - [ ] 1478. **Cost uses the spend you entered** *(S18.8, filed 2026-10-18)* `[S]`
 - [ ] 1479. **The thresholds in one place, versioned** *(S18.9, filed 2026-10-18)* `[S]`
@@ -2069,3 +2069,8 @@ Already open for S21: #1290 (the hook scorer against who stays).
 
 - [x] 1536. **A follow-up's "since then" leaned on last season** *(run 179, 2026-10-21: "Since then, Detroit clinched the No. 1 seed ... Cade Cunningham's collapsed lung" from Bleacher Report's "NBA Playoff Picture 2026" - the claim check passed it 12/12 because the source supports it; it does not check when; only "hard to say" stood between it and an unattended render)* `[S]` **Done (2026-10-21, Claude, wave 119; the operator: hold for review):** `follow_up_topic` names the original's date (`Follow-up to "<title>" (Oct 18): what has happened since Oct 18`), once per video in any wording (`_followed_up`); `batch_review.follow_up_since` holds a follow-up that says "since". Live: run 179 held.
 - [x] 1537. **After the lapse, "Yours today" would drop the sign-in** *(2026-10-21: `yours_items` listed it only while `sign_in_mode` was "testing"; the sign-in lapses at 9:36 PM EDT and uploads then wait)* `[S]` **Done (2026-10-21, Claude, wave 119):** when `sign_in_status` names a problem it says "sign in again - uploads wait: py -m youtube.oauth_setup --channel tapin (publish the app first, or it lapses again in 7 days)".
+
+### Found in wave 120 (2026-10-21)
+
+- [ ] 1538. **The 3-second number counts replays** *(live 2026-10-21: 5 of 8 videos read over 100% at 3 s in `ops retention` - YouTube's ratio counts a replayed opening again; the share who stayed rather than swiped is `stayed_share`, engaged views over views)* `[S]` Show it beside the 3-second number.
+- [ ] 1539. **Research names keep fragments** *(2026-10-21: `entity_research.names` held "England Patriots", "Modern Warfare Steam", "Call of Dutys", "UFC Edmonton KO" and "Los Angeles Chargers'" - title phrases looked up as names; each is a wasted lookup, and #1316's title skips them only because they do not appear in the title)* `[S]`

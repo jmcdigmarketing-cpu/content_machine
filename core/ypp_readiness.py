@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 
 from config.paths import DATA_DIR
@@ -46,6 +47,8 @@ class YppReport:
     checks: list[YppCheck] = field(default_factory=list)
     # #1144: how far each bar is at the pace of the last four weeks.
     path: list[str] = field(default_factory=list)
+    # #1320: the four numbers against last month's.
+    monthly: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -53,13 +56,56 @@ class YppReport:
 
 
 def save_ypp_numbers(channel_id: str, numbers: dict[str, Any]) -> None:
-    """Keep the sync's YPP numbers (#954) for `ops ypp`."""
+    """Keep the sync's YPP numbers (#954) for `ops ypp`, and the month's last snapshot (#1320)."""
     path = YPP_TEMPLATE.format(channel=channel_id)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    data = {k: v for k, v in dict(numbers).items() if k != "history"}
+    history = dict((load_ypp_numbers(channel_id) or {}).get("history") or {})
+    month = str(data.get("as_of") or "")[:7]
+    if month:
+        history[month] = {key: data.get(key) for key, _label in MONTHLY_NUMBERS}
+    data["history"] = history
     tmp = f"{path}.tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(dict(numbers), f, indent=2)
+        json.dump(data, f, indent=2)
     os.replace(tmp, path)
+
+
+# #1320: the four numbers the monthly card compares, in its order.
+MONTHLY_NUMBERS = (
+    ("subscribers", "subscribers"),
+    ("long_hours_365d", "long-form hours"),
+    ("shorts_views_90d", "organic Shorts views (90 days)"),
+    ("subs_net_28d", "net subscribers (28 days)"),
+)
+
+
+def monthly_card(numbers: dict[str, Any] | None) -> list[str]:
+    """#1320: this month's four numbers against the last month on record."""
+    if not numbers:
+        return []
+    month = str(numbers.get("as_of") or "")[:7]
+    history = numbers.get("history") or {}
+    earlier = sorted(m for m in history if m < month) if month else []
+    before = history.get(earlier[-1]) if earlier else None
+    parts: list[str] = []
+    for key, label in MONTHLY_NUMBERS:
+        value = numbers.get(key)
+        if value is None:
+            continue
+        hours = key == "long_hours_365d"
+        text = f"{label} {float(value):,.1f}" if hours else f"{label} {int(value):,}"
+        prior = (before or {}).get(key)
+        if prior is not None:
+            delta = float(value) - float(prior)
+            change = f"{delta:+,.1f}" if hours else f"{int(delta):+,}"
+            if not parts:
+                change += f" on {datetime.strptime(earlier[-1], '%Y-%m').strftime('%b')}"
+            text += f" ({change})"
+        parts.append(text)
+    if not parts:
+        return []
+    return [f"This month: {', '.join(parts)}" + ("" if before else " - first month on record")]
 
 
 def load_ypp_numbers(channel_id: str) -> dict[str, Any] | None:
@@ -348,6 +394,7 @@ def inspect_ypp(
             line = compilation_line(cid)
             if line:
                 report.path.append(line)
+            report.monthly = monthly_card(numbers)
     else:
         report.checks.append(_estimated_threshold(cid, metrics_rows))
 
@@ -397,4 +444,5 @@ def render_report(report: YppReport) -> str:
     if report.path:
         lines.append("  At the pace of the last 28 days:")
         lines.extend(f"    {line}" for line in report.path)
+    lines.extend(f"  {line}" for line in report.monthly)
     return "\n".join(lines)

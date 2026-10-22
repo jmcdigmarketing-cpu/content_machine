@@ -22,6 +22,7 @@ Surfaced via `py -m scripts.ops health` and a line in `ops daily-brief`.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from core.logging import get_logger
 
@@ -40,6 +41,7 @@ class HealthSub:
     status: str
     detail: str
     why: list[str] = field(default_factory=list)  # #1271: what a falling metric has in common
+    source: str = ""  # #1471: where the number came from
 
 
 @dataclass
@@ -86,9 +88,10 @@ def _engagement_sub(channel_id: str) -> HealthSub:
     delta = recent_mean - baseline
     span = sorted(rates)[-5:]
     # #1291: "recent" was runs 109-133 (Oct 1-10) while four newer videos had no rate yet.
+    # #1476 (wave 120): with their dates, and the newest video that has a rate at all.
     detail = (
-        f"recent {recent_mean * 100:.1f}% (runs {span[0]}-{span[-1]}) vs baseline "
-        f"{baseline * 100:.1f}% ({delta * 100:+.1f}pp)"
+        f"recent {recent_mean * 100:.1f}% ({window_text(span, _made([*span, max(measured)]), newest=max(measured))}) "
+        f"vs baseline {baseline * 100:.1f}% ({delta * 100:+.1f}pp)"
     )
     if long_ids:
         held = sorted(measured[rid] for rid in long_ids)
@@ -371,6 +374,18 @@ def _data_quality_sub(channel_id: str) -> HealthSub:
     return HealthSub("data quality", status, f"{len(warns)} warning(s): {warns[0]}")
 
 
+# #1471 (wave 120): where each line's number comes from - health read RED on a number
+# nobody stored (S18), and no line said what it had read.
+HEALTH_SOURCES = {
+    "engagement": "the publish log's synced metrics",
+    "cadence": "the publish log",
+    "authenticity": "the last 15 runs' quality",
+    "reliability": "the breakers and quota state, read now",
+    "cost": "the runs' recorded API cost",
+    "data quality": "the last 25 runs, the publish log and signal traces",
+}
+
+
 _CHECKS = (
     ("engagement", lambda ch: _engagement_sub(ch)),
     ("cadence", lambda ch: _cadence_sub(ch)),
@@ -393,6 +408,8 @@ def build_health(channel_id: str | None = None) -> HealthReport:
         except Exception as exc:
             logger.debug("health sub '%s' skipped: %s", name, exc)
             report.subs.append(HealthSub(name, YELLOW, "n/a"))
+    for sub in report.subs:
+        sub.source = sub.source or HEALTH_SOURCES.get(sub.name, "")  # #1471
     report.overall = _worst([s.status for s in report.subs])
     # Thin data must not read green: if every informative sub is "collecting/n/a",
     # hold at yellow.
@@ -412,7 +429,10 @@ def render_health(report: HealthReport) -> str:
         "=" * 52,
     ]
     for s in report.subs:
-        lines.append(f"  {_MARK.get(s.status, '~')} {s.name:<13} {s.status.upper():<6} {s.detail}")
+        source = f" (from {s.source})" if s.source else ""  # #1471
+        lines.append(
+            f"  {_MARK.get(s.status, '~')} {s.name:<13} {s.status.upper():<6} {s.detail}{source}"
+        )
         lines.extend(f"      why: {line}" for line in s.why)
     return "\n".join(lines)
 
@@ -441,3 +461,37 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def _day(when: datetime) -> str:
+    return f"{when:%b} {when.day}"
+
+
+def window_text(span: list[int], made: dict[int, datetime], *, newest: int | None = None) -> str:
+    """#1476 (wave 120): "runs 131-157, Oct 9-17; newest measured run 169 (Oct 19)" - the window
+    said its run numbers only, and nobody reads a run number as a date."""
+    text = f"runs {span[0]}-{span[-1]}"
+    first, last = made.get(span[0]), made.get(span[-1])
+    if first and last:
+        same = first.month == last.month
+        text += f", {_day(first)}-{last.day if same else _day(last)}"
+    if newest is not None and newest != span[-1]:
+        text += f"; newest measured run {newest}" + (
+            f" ({_day(made[newest])})" if made.get(newest) else ""
+        )
+    return text
+
+
+def _made(run_ids: list[int]) -> dict[int, datetime]:
+    from storage.repositories.content_runs import get_content_run_repository
+
+    repo = get_content_run_repository()
+    out: dict[int, datetime] = {}
+    for run_id in set(run_ids):
+        try:
+            when = getattr(repo.get(int(run_id)), "created_at", None)
+        except Exception:
+            when = None
+        if isinstance(when, datetime):
+            out[int(run_id)] = when
+    return out

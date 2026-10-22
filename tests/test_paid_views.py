@@ -480,7 +480,10 @@ class SyncWiringTests(_Log):
             redirect_stdout(buf),
         ):
             sync_metrics.sync_channel("tapin")
-        self.assertEqual(load_ypp_numbers("tapin"), numbers)
+        stored = load_ypp_numbers("tapin") or {}
+        # wave 120: the month's snapshot is kept beside them (#1320)
+        self.assertEqual({k: v for k, v in stored.items() if k != "history"}, numbers)
+        self.assertEqual(stored["history"]["2026-10"]["subscribers"], 37)
         self.assertIn("ads excluded", buf.getvalue())
 
     def test_the_channel_sync_keeps_the_paid_days(self):

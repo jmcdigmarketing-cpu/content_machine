@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+from typing import Any
 
 from core.logging import get_logger
 
@@ -154,6 +155,15 @@ def display_retention(channel_id: str, *, print_fn=print) -> None:
             f"\n    ↳ Drop-off below {int(_retained_floor() * 100)}% by ~{int(pos * 100)}% "
             "in — front-load the payoff."
         )
+    try:  # #1426 (wave 120): the first seconds, video by video
+        firsts = first_seconds_lines(channel_id)
+    except Exception as exc:
+        logger.debug("first-seconds lines skipped: %s", exc)
+        firsts = []
+    if firsts:
+        print_fn("\n  The first 3 seconds (newest first):")
+        for line in firsts:
+            print_fn(f"    {line}")
 
 
 # --- #565: diff two videos' curves ----------------------------------------------------
@@ -303,14 +313,69 @@ def week_drop_off_lines(channel_id: str, *, days: int = 7, limit: int = 8) -> li
         if position is None:
             continue
         run = get_content_run_repository().get(int(log.content_run_id))
-        seconds = None
-        try:
-            from core.chapter_shorts import _probe_duration
-
-            path = str(getattr(run, "mp4_path", "") or "")
-            seconds = _probe_duration(path) if path and os.path.isfile(path) else None
-        except Exception as exc:
-            logger.debug("render length unread for run %s: %s", log.content_run_id, exc)
+        seconds = _render_seconds(run)
         title = str(getattr(run, "title", "") or "")[:45]
         out.append(f"run {log.content_run_id} {title}: {drop_off_text(position, seconds)}")
     return out[:limit]
+
+
+def _render_seconds(run) -> float | None:
+    """The render's length: ffprobe on its file, else the length technical QC measured."""
+    try:
+        from core.chapter_shorts import _probe_duration
+
+        path = str(getattr(run, "mp4_path", "") or "")
+        if path and os.path.isfile(path):
+            return _probe_duration(path)
+    except Exception as exc:
+        logger.debug("render length unread for run %s: %s", getattr(run, "id", "?"), exc)
+    try:
+        features = json.loads(getattr(run, "features_json", "") or "{}") or {}
+        return float((features.get("technical_qc") or {}).get("video_duration") or 0) or None
+    except (TypeError, ValueError, AttributeError):
+        return None
+
+
+def first_seconds_text(
+    curve: list[tuple[float, float]], seconds: float | None, *, at: float = 3.0
+) -> str:
+    """#1426: the share still watching `at` seconds in - a Short is kept or swiped there."""
+    if not curve or not seconds or seconds <= at:
+        return ""
+    share = round(_at(curve, at / seconds) * 100)
+    if share > 100:  # YouTube's ratio counts a replayed opening again
+        return f"{share}% at {at:g} s (the opening was replayed)"
+    return f"{share}% still watching at {at:g} s"
+
+
+def first_seconds_lines(channel_id: str, *, limit: int = 8) -> list[str]:
+    """#1426: the newest measured videos' retention at 3 seconds, from each one's curve."""
+    from datetime import datetime, timezone
+
+    from storage.repositories.content_runs import get_content_run_repository
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    dated: list[tuple[datetime, int, Any]] = []
+    for log in get_publish_log_repository().list_timed_outcomes(channel_id) or []:
+        when = getattr(log, "published_at", None)
+        if log.content_run_id and isinstance(when, datetime):
+            when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+            dated.append((when, int(log.content_run_id), log))
+    out: list[str] = []
+    for _when, run_id, log in sorted(dated, key=lambda d: (d[0], d[1]), reverse=True):
+        try:
+            curve = _parse_curve(
+                (json.loads(log.metrics_json or "{}") or {}).get("retention_curve")
+            )
+        except (ValueError, TypeError):
+            continue
+        if not curve:
+            continue
+        run = get_content_run_repository().get(run_id)
+        text = first_seconds_text(curve, _render_seconds(run))
+        if text:
+            title = str(getattr(run, "title", "") or "")[:45]
+            out.append(f"run {run_id} {title}: {text}")
+        if len(out) >= limit:
+            break
+    return out

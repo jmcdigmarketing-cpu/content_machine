@@ -6090,6 +6090,238 @@
         "contains": "    4 of your 5 words are in its first two sentences"
       },
       "why": "the review shows how much of the typed idea survived"
+    },
+    {
+      "id": "compilation-title-names-its-subjects",
+      "item": 1316,
+      "source": "wave 120: the title was 'TapIn Media Week in Review: Oct 13 - Oct 19' - it named nothing anyone searches for",
+      "call": "video.week_compile:compilation_title",
+      "args": [
+        "TapIn",
+        [
+          {
+            "title": "Fans react to GTA 6 launch trailer with hype and cautious optimism",
+            "names": [
+              "GTA"
+            ],
+            "views": 300
+          },
+          {
+            "title": "Chargers' Pass Defense vs Chiefs' Offense: Key Preview for Oct 18",
+            "names": [
+              "Los Angeles Chargers",
+              "Kansas City Chiefs",
+              "Los Angeles Chargers'"
+            ],
+            "views": 500
+          },
+          {
+            "title": "Bo Nickal's UFC 335 bout with Joe Pyfer elevated to main event in Cleveland",
+            "names": [
+              "Bo Nickal",
+              "UFC",
+              "Joe Pyfer",
+              "Cleveland"
+            ],
+            "views": 900
+          },
+          {
+            "title": "Ben Affleck Gets Destroyed by 12-Year-Olds in Fortnite",
+            "names": [
+              "Ben Affleck",
+              "Fortnite"
+            ],
+            "views": 10
+          }
+        ],
+        "Oct 13-19"
+      ],
+      "expect": {
+        "equals": "Bo Nickal, Chargers & GTA 6 - TapIn Week in Review (Oct 13-19)"
+      },
+      "why": "the week's most-viewed subjects lead the title, most viewed first"
+    },
+    {
+      "id": "subject-name-takes-a-team-by-its-last-word",
+      "item": 1316,
+      "source": "wave 120 dry run: title_phrases read \"Chargers' Pass Defense\" from a title-case title",
+      "call": "video.week_compile:subject_name",
+      "args": [
+        "Chargers' Pass Defense vs Chiefs' Offense: Key Preview for Oct 18",
+        [
+          "Los Angeles Chargers",
+          "Kansas City Chiefs",
+          "Los Angeles Chargers'"
+        ]
+      ],
+      "expect": {
+        "equals": "Chargers"
+      },
+      "why": "a researched name, shortened to the word the title uses"
+    },
+    {
+      "id": "subject-name-keeps-the-number-after-it",
+      "item": 1316,
+      "source": "wave 120 dry run: run 170 is about Modern Warfare 4, research named 'Steam' first",
+      "call": "video.week_compile:subject_name",
+      "args": [
+        "Modern Warfare 4 campaign praised by Steam players as return to form",
+        [
+          "Steam",
+          "Modern Warfare"
+        ]
+      ],
+      "expect": {
+        "equals": "Modern Warfare 4"
+      },
+      "why": "the name that comes first in the title, with the number that follows it"
+    },
+    {
+      "id": "first-seconds-over-100-is-a-replay",
+      "item": 1426,
+      "source": "live 2026-10-21: run 153 read '140% still watching at 3 s'",
+      "call": "core.retention:first_seconds_text",
+      "args": [
+        [
+          [
+            0.0,
+            1.4
+          ],
+          [
+            0.02,
+            1.4
+          ],
+          [
+            0.05,
+            0.98
+          ],
+          [
+            0.5,
+            0.5
+          ]
+        ],
+        150.0
+      ],
+      "expect": {
+        "equals": "140% at 3 s (the opening was replayed)"
+      },
+      "why": "YouTube's ratio counts a replayed opening again - it is not more viewers than started"
+    },
+    {
+      "id": "first-seconds-under-100",
+      "item": 1426,
+      "source": "wave 120: seconds 1-3 were shown nowhere",
+      "call": "core.retention:first_seconds_text",
+      "args": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          [
+            0.05,
+            0.9
+          ],
+          [
+            0.1,
+            0.8
+          ],
+          [
+            0.5,
+            0.5
+          ]
+        ],
+        60.0
+      ],
+      "expect": {
+        "equals": "90% still watching at 3 s"
+      },
+      "why": "a Short is kept or swiped in its first seconds"
+    },
+    {
+      "id": "privacy-sync-says-what-it-checked",
+      "item": 1389,
+      "source": "wave 120: a sync that changed nothing printed nothing, which read as 'not checked'",
+      "call": "analytics.privacy_sync:sync_lines",
+      "args": [
+        {
+          "checked": 60,
+          "changed": [],
+          "gone": [],
+          "runs_published": []
+        }
+      ],
+      "expect": {
+        "equals": [
+          "Privacy: 60 videos checked - the record matches YouTube"
+        ]
+      },
+      "why": "the sync says it looked"
+    },
+    {
+      "id": "ypp-monthly-card-first-month",
+      "item": 1320,
+      "source": "wave 120: data/ypp_tapin.json kept only today's snapshot",
+      "call": "core.ypp_readiness:monthly_card",
+      "args": [
+        {
+          "as_of": "2026-10-21",
+          "subscribers": 70,
+          "long_hours_365d": 10.2,
+          "shorts_views_90d": 2792,
+          "subs_net_28d": 65
+        }
+      ],
+      "expect": {
+        "equals": [
+          "This month: subscribers 70, long-form hours 10.2, organic Shorts views (90 days) 2,792, net subscribers (28 days) 65 - first month on record"
+        ]
+      },
+      "why": "with no earlier month the card says so"
+    },
+    {
+      "id": "ypp-monthly-card-against-last-month",
+      "item": 1320,
+      "source": "wave 120: nothing compared one month's YPP numbers with the last",
+      "call": "core.ypp_readiness:monthly_card",
+      "args": [
+        {
+          "as_of": "2026-11-20",
+          "subscribers": 95,
+          "long_hours_365d": 12.0,
+          "shorts_views_90d": 3500,
+          "subs_net_28d": 20,
+          "history": {
+            "2026-10": {
+              "subscribers": 70,
+              "long_hours_365d": 10.2,
+              "shorts_views_90d": 2792,
+              "subs_net_28d": 65
+            }
+          }
+        }
+      ],
+      "expect": {
+        "equals": [
+          "This month: subscribers 95 (+25 on Oct), long-form hours 12.0 (+1.8), organic Shorts views (90 days) 3,500 (+708), net subscribers (28 days) 20 (-45)"
+        ]
+      },
+      "why": "each number against the last month on record"
+    },
+    {
+      "id": "data-quality-names-the-run",
+      "item": 1474,
+      "source": "live 2026-10-21: health said '1/10 recent runs missing quality_json' and not which",
+      "call": "core.data_quality:_named",
+      "args": [
+        [
+          171
+        ]
+      ],
+      "expect": {
+        "equals": " (run 171)"
+      },
+      "why": "a warning names the run it counted"
     }
   ]
 }

@@ -182,11 +182,13 @@ class LineTests(unittest.TestCase):
         self.assertIn("1 video(s) are no longer on YouTube (run 12)", lines[1])
         self.assertIn('2 run(s) were still "scheduled" - now published', lines[2])
 
-    def test_a_record_that_matches_prints_nothing(self):
+    def test_a_record_that_matches_says_what_it_checked(self):
         from analytics.privacy_sync import sync_lines
 
+        # wave 120: silence read as "not checked" (#1389)
         self.assertEqual(
-            sync_lines({"checked": 43, "changed": [], "gone": [], "runs_published": []}), []
+            sync_lines({"checked": 43, "changed": [], "gone": [], "runs_published": []}),
+            ["Privacy: 43 videos checked - the record matches YouTube"],
         )
 
     def test_the_metrics_sync_calls_it(self):

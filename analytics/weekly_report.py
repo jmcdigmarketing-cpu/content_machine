@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -379,6 +380,44 @@ def format_report(report: dict[str, Any]) -> str:
     return _scoreboard_head(channel_id) + _format_body(report) + _buffer_tail(channel_id)
 
 
+def claim_hold_lines(
+    runs: list[Any], *, now: datetime | None = None, days: int = 7, limit: int = 5
+) -> list[str]:
+    """#1381: the share of the week's checked drafts an unsupported claim held, and up to
+    `limit` of them (run and its first claim)."""
+    from core.claim_types import blocking_unsupported
+
+    cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=days)
+    checked = 0
+    held: list[tuple[int, str]] = []
+    for run in runs:
+        made = getattr(run, "created_at", None)
+        if not isinstance(made, datetime):
+            continue
+        if (made if made.tzinfo else made.replace(tzinfo=timezone.utc)) < cutoff:
+            continue
+        try:
+            features = json.loads(getattr(run, "features_json", "") or "{}") or {}
+        except (TypeError, ValueError):
+            continue
+        verification = features.get("claim_verification") if isinstance(features, dict) else None
+        if not isinstance(verification, dict):
+            continue
+        checked += 1
+        claims = blocking_unsupported(verification)
+        if claims:
+            past = " (rendered past it)" if features.get("grounding_override") else ""
+            held.append((int(run.id), f"{claims[0]}{past}"))
+    if not checked:
+        return []
+    lines = [
+        f"Held for a claim: {len(held)} of {checked} drafts this week "
+        f"({round(100 * len(held) / checked)}%)"
+    ]
+    lines.extend(f"  run {run_id}: {claim}" for run_id, claim in sorted(held, reverse=True)[:limit])
+    return lines
+
+
 def _format_body(report: dict[str, Any]) -> str:
     if not report.get("ready"):
         return (
@@ -492,6 +531,13 @@ def _format_body(report: dict[str, Any]) -> str:
             lines.extend(f"    {line}" for line in drops)
     except Exception as exc:
         logger.debug("drop-off lines skipped: %s", exc)
+    try:  # #1381 (wave 120): how often an unsupported claim held a draft
+        from storage.repositories.content_runs import get_content_run_repository
+
+        runs = get_content_run_repository().list_for_channel(report["channel_id"]) or []
+        lines.extend(f"  {line}" for line in claim_hold_lines(runs))
+    except Exception as exc:
+        logger.debug("claim hold lines skipped: %s", exc)
 
     actions = report.get("next_actions") or []
     if actions:

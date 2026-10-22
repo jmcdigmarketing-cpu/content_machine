@@ -154,7 +154,7 @@ class FormatTests(unittest.TestCase):
         ):
             sub = channel_health._engagement_sub("tapin")
         self.assertEqual(sub.status, channel_health.GREEN, sub.detail)
-        self.assertIn("(runs 98-111)", sub.detail)
+        self.assertIn("(runs 98-111", sub.detail)  # wave 120: the window goes on (#1476)
         self.assertIn("1 long video read apart (median 11%", sub.detail)
 
     def test_subscribers_per_1000_by_domain_and_format(self):

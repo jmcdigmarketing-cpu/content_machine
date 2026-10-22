@@ -211,7 +211,7 @@ def _runs(entries: list[dict[str, Any]]) -> str:
 
 
 def sync_lines(report: dict[str, Any]) -> list[str]:
-    """What the metrics sync prints. Nothing when the record already matches."""
+    """What the metrics sync prints; when the record already matches, how many it checked."""
     if report.get("error"):
         return [f"Privacy: not checked ({report['error']})"]
     lines: list[str] = []
@@ -237,4 +237,6 @@ def sync_lines(report: dict[str, Any]) -> list[str]:
         slots = ", ".join(f"run {e['run_id']} {str(e['slot'])[:16]}Z" for e in rescheduled)
         lines.append(f"Schedule: {len(rescheduled)} video(s) YouTube publishes at another time - "
                      f"the record now has YouTube's slot ({slots})")  # fmt: skip
+    if not lines and report.get("checked"):  # #1389: silence read as "not checked"
+        lines.append(f"Privacy: {report['checked']} videos checked - the record matches YouTube")
     return lines

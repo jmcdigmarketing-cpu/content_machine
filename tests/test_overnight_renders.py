@@ -127,16 +127,18 @@ class EligibilityTests(_DraftsCase):
         old = (datetime.now() - timedelta(days=20)).isoformat(timespec="seconds")
         self.assertIn("past its window", self._reason(created_at=old))
 
-    def test_the_best_hook_goes_first_then_the_newest(self):
+    def test_the_newest_goes_first_not_the_best_hook(self):
+        # Decision 70 (#1499): over 22 videos the hook score ran against who stayed.
         from core.batch_review import unattended_candidates
 
-        older = (datetime.now() - timedelta(days=1)).isoformat(timespec="seconds")
-        self._draft(1, hook_score=70, created_at=older)
-        self._draft(2, hook_score=90, created_at=older)
+        day = (datetime.now() - timedelta(days=1)).isoformat(timespec="seconds")
+        two = (datetime.now() - timedelta(days=2)).isoformat(timespec="seconds")
+        self._draft(1, hook_score=70, created_at=day)
+        self._draft(2, hook_score=90, created_at=two)
         self._draft(3, hook_score=70)
         self._draft(4, authenticity_verdict="review")
         eligible, skipped = unattended_candidates("tapin", root=self.tmp.name)
-        self.assertEqual([d.run_id for d in eligible], [2, 3, 1])
+        self.assertEqual([d.run_id for d in eligible], [3, 1, 2])
         self.assertEqual(
             [(d.run_id, why) for d, why in skipped], [(4, "authenticity check says review")]
         )
@@ -161,8 +163,9 @@ class RenderTests(_DraftsCase):
         )
 
     def test_it_renders_up_to_the_limit_and_queues_each_one(self):
-        for run_id, hook in ((1, 60), (2, 90), (3, 80)):
-            self._draft(run_id, hook_score=hook)
+        for run_id, hook, days in ((1, 60, 2), (2, 90, 0), (3, 80, 1)):  # newest first
+            made = (datetime.now() - timedelta(days=days)).isoformat(timespec="seconds")
+            self._draft(run_id, hook_score=hook, created_at=made)
         out, rendered, queued = self._run(2)
         self.assertEqual(rendered, [2, 3])
         self.assertEqual(out["rendered"], [2, 3])

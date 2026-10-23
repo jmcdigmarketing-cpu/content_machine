@@ -173,6 +173,32 @@ def last_checks(channel_id: str, *, max_age_hours: float = FRESH_HOURS) -> list[
     return list(checks) if isinstance(checks, list) else None
 
 
+def gpu_rows(cuda: dict[str, Any]) -> list[tuple[str, bool, str]]:
+    """The doctor's cuda, gpu (#1470: the card and its driver) and nvenc rows from
+    `cuda_probe.probe()`."""
+    from core import cuda_probe
+
+    rendered = cuda_probe.render(cuda)
+    detail = rendered.splitlines()[1].strip() if rendered else "probed"
+    rows: list[tuple[str, bool, str]] = []
+    if cuda.get("nvidia_smi") and not cuda.get("cuda_available"):
+        tv = cuda.get("torch_version") or "not installed"
+        rows.append(
+            (
+                "cuda",
+                False,
+                f"nvidia-smi present; torch {tv} is CPU (install CUDA wheel when ready)",
+            )
+        )
+    else:
+        rows.append(("cuda", True, detail))
+    ok, line = cuda_probe.driver_check(cuda)
+    rows.append(("gpu", ok, line))
+    nvenc = "h264_nvenc yes" if cuda.get("nvenc_capable") else "h264_nvenc no (CPU libx264)"
+    rows.append(("nvenc", True, nvenc))
+    return rows
+
+
 def gather(
     channel_id: str = "tapin",
     *,
@@ -250,22 +276,9 @@ def gather(
         from core import cuda_probe
 
         cuda = cuda_probe.probe()
-        rendered = cuda_probe.render(cuda)
-        detail = rendered.splitlines()[1].strip() if rendered else "probed"
-        smi = bool(cuda.get("nvidia_smi"))
-        avail = bool(cuda.get("cuda_available"))
-        if smi and not avail:
-            tv = cuda.get("torch_version") or "not installed"
-            add(
-                "cuda",
-                False,
-                f"nvidia-smi present; torch {tv} is CPU (install CUDA wheel when ready)",
-            )
-        else:
-            add("cuda", True, detail)
+        for name, ok, detail in gpu_rows(cuda):
+            add(name, ok, detail)
         out["cuda"] = cuda
-        nvenc_ok = bool(cuda.get("nvenc_capable"))
-        add("nvenc", True, "h264_nvenc yes" if nvenc_ok else "h264_nvenc no (CPU libx264)")
     except Exception as exc:
         logger.debug("doctor cuda skipped: %s", exc)
         add("cuda", True, f"n/a ({type(exc).__name__})")

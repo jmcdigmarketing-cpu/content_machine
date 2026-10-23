@@ -54,7 +54,11 @@ class TestGradeFromParts(unittest.TestCase):
     def test_run_74s_actual_scores_no_longer_grade_an_A(self):
         """The acceptance criterion the item was filed with, not a proxy for it:
         run 74's real component scores (hook 61, authenticity 100, grounding
-        clean, composite 92) graded **A 87** at 277 words against a 300 floor."""
+        clean, composite 92) graded **A 87** at 277 words against a 300 floor.
+
+        v6 (decision 70, 2026-10-23): the hook (61) no longer pulls the card down, so the short
+        script grades A 91 again - still 8 points under the same script in range, which is what
+        #645 asked: that the floor is graded."""
         run_74 = {
             "hook_score": 61,
             "hook_verdict": "weak",
@@ -68,7 +72,11 @@ class TestGradeFromParts(unittest.TestCase):
             quality={**run_74, "word_count": 277, "min_words": 300, "max_words": 380},
             composite_score=92.0,
         )
-        self.assertNotEqual(graded.letter, "A", f"{graded.letter} {graded.score}")
+        in_range = grade_from_parts(
+            quality={**run_74, "word_count": 320, "min_words": 300, "max_words": 380},
+            composite_score=92.0,
+        )
+        self.assertGreaterEqual(in_range.score - graded.score, 5.0, (graded, in_range))
 
     def test_length_is_a_named_component_when_the_data_is_there(self):
         graded = grade_from_parts(
@@ -148,10 +156,16 @@ class TestGradeFromParts(unittest.TestCase):
         self.assertIn("tier warning", grounding.note)
 
     def test_missing_components_renormalize(self):
-        grade = grade_from_parts(quality={"hook_score": 60}, composite_score=0)
+        grade = grade_from_parts(quality={"authenticity_score": 60}, composite_score=0)
         self.assertEqual(len(grade.components), 1)
         self.assertEqual(grade.components[0].weight, 1.0)
         self.assertEqual(grade.score, 60.0)
+
+    def test_a_card_with_only_the_hook_has_nothing_counted(self):
+        # v6 (decision 70): the hook is shown, not counted - it divided by zero alone.
+        grade = grade_from_parts(quality={"hook_score": 60}, composite_score=0)
+        self.assertEqual([(c.name, c.weight) for c in grade.components], [("hook", 0.0)])
+        self.assertEqual((grade.score, grade.letter), (0.0, "F"))
 
     def test_thumbnail_joins_when_present(self):
         grade = grade_from_parts(
@@ -395,6 +409,10 @@ class TestEngagementPredictor(unittest.TestCase):
 class TestCalibration(unittest.TestCase):
     def test_correlation_over_measured_runs(self):
         runs, engagement = _measured_runs(8)
+        for run in runs:  # v6: the hook is not counted, so authenticity carries the spread
+            quality = json.loads(run.quality_json)
+            quality["authenticity_score"] = quality["hook_score"]
+            run.quality_json = json.dumps(quality)
         repo = MagicMock()
         repo.list_for_channel.return_value = runs
         with (
@@ -408,7 +426,7 @@ class TestCalibration(unittest.TestCase):
             report = grade_calibration.build_calibration("tapin")
         self.assertEqual(report.measured, 8)
         self.assertIsNotNone(report.grade_correlation)
-        self.assertGreater(report.grade_correlation, 0.5)  # hook drives both
+        self.assertGreater(report.grade_correlation, 0.5)  # one score drives both
         line = grade_calibration.summary_line(report)
         self.assertIn("r=+", line)
 

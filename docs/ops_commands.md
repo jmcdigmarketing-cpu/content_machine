@@ -87,6 +87,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `grounding-corpus` | Replay frozen grounding verdicts (no LLM) |
 | `growth` | Where the views go: stayed share, cadence, feed, paid - the 3 biggest gaps (#983) |
 | `health` | Channel health — Green/Yellow/Red across engagement/cadence/cost (Pillar 5) |
+| `hooks` | Each opener trait against who stayed, the first 3 s and TikTok (#1500) |
 | `incidents` | Rank recent signal/provider failures by count x recency |
 | `ingest` | Ingest a URL / PDF path / YouTube link into the vault as a provenance note |
 | `ingest-clips` | Copy capture clips into video/backgrounds (dry-run default; --apply remuxes) |

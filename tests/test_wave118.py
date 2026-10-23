@@ -22,8 +22,8 @@ class TonightPausedTests(unittest.TestCase):
 
         self.assertEqual(
             tonight_text(3, 2, (5, 0), paused=self.PAUSE),
-            "Tonight at 5:00 AM: drafts 3, no renders - 3 finished videos wait for you (ops shelf); "
-            "leave the PC asleep, not shut down",
+            "Tonight at 5:00 AM (or when the PC is next on): drafts 3, no renders - 3 finished "
+            "videos wait for you (ops shelf)",
         )
 
     def test_the_line_asks_the_shelf(self):

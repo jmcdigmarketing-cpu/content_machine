@@ -275,9 +275,39 @@ def _parse_publish_at(payload: dict):
         return None
 
 
+def _after_its_game(job, channel_id: str) -> bool:
+    """#1547 (2026-10-23): run 181, the Cavaliers-76ers "Opening Tip" preview, was held through
+    the lapsed sign-in past its 7 PM EDT tip-off; after the sign-in it would have uploaded (1,600
+    units) and waited unlisted for a game already played. A preview whose game has started is
+    taken off the queue before any call - the file stays, and `requeue_upload --run-id N
+    --queue` still takes it by id."""
+    if not job.content_run_id:
+        return False
+    try:
+        from core.batch_review import _zone_clock
+        from core.stale_renders import started_event
+
+        run = get_content_run_repository().get(int(job.content_run_id))
+        when = started_event(run, channel_id)
+        if when is None:
+            return False
+        note = (
+            f"its game started {_zone_clock(when, channel_id, day=True)} - nothing uploads it "
+            "(the file stays)"
+        )
+    except Exception as exc:
+        logger.debug("game check skipped for job %s: %s", job.id, exc)
+        return False
+    get_job_repository().update(job.id, {"status": JOB_FAILED, "last_error": note[:500]})
+    print(f"Upload job {job.id} (run {job.content_run_id}) taken off the queue: {note}")
+    return True
+
+
 def _process_upload(job) -> None:
     payload = json.loads(job.payload_json or "{}")
     channel_id = resolve_channel_id(job.channel_id)
+    if _after_its_game(job, channel_id):
+        return
 
     try:
         from core.rpm_cost_gate import next_retry_utc, rpm_cost_gate_reason
@@ -654,8 +684,7 @@ _TONIGHT_HOUR = 20  # the operator: one toast at 8 PM
 
 def _tonight_watch(now: datetime | None = None) -> None:
     """#1337 (wave 117, the operator: an 8 PM toast): from 8 PM, once a day, what overnight will
-    do and to leave the PC asleep - it was shut down on 10-19 at 8:49 PM and the 5:00 run started
-    at 4:22 PM. Fail-open."""
+    do. Decision 69 (2026-10-23, power-on is fine): it no longer asks for Sleep. Fail-open."""
     moment = now or datetime.now()
     if moment.hour < _TONIGHT_HOUR:
         return

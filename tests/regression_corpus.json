@@ -5921,9 +5921,9 @@
         ]
       ],
       "expect": {
-        "equals": "Tonight at 5:00 AM: drafts 3, renders up to 2 - leave the PC asleep, not shut down"
+        "equals": "Tonight at 5:00 AM (or when the PC is next on): drafts 3, renders up to 2"
       },
-      "why": "the evening line names the work and the one thing that stops it"
+      "why": "the evening line names the work and when it runs - decision 69 (2026-10-23) dropped the Sleep ask"
     },
     {
       "id": "tonight-is-quiet-with-nothing-to-do",
@@ -6044,7 +6044,7 @@
         "paused": "3 finished videos are waiting (overnight stops at 3) - py -m scripts.ops shelf --channel tapin"
       },
       "expect": {
-        "equals": "Tonight at 5:00 AM: drafts 3, no renders - 3 finished videos wait for you (ops shelf); leave the PC asleep, not shut down"
+        "equals": "Tonight at 5:00 AM (or when the PC is next on): drafts 3, no renders - 3 finished videos wait for you (ops shelf)"
       },
       "why": "the evening line must not promise renders the shelf will hold"
     },
@@ -7085,6 +7085,64 @@
         ]
       },
       "why": "#1482's cues read the same names"
+    },
+    {
+      "id": "a-queued-preview-after-its-game-is-over",
+      "item": 1547,
+      "source": "live 2026-10-23: run 181, a Cavaliers-76ers preview, read 'queued - the YouTube sign-in has expired' a day after its tip-off; the worker would have uploaded it",
+      "call": "core.stale_renders:shelf_state",
+      "kwargs": {
+        "signed_out": true,
+        "reset": "",
+        "days": 30,
+        "window": 2.0,
+        "queued": true,
+        "started": true,
+        "ahead": false,
+        "age": 1.0
+      },
+      "expect": {
+        "equals": "started"
+      },
+      "why": "a started game is asked before the queue"
+    },
+    {
+      "id": "a-rendered-preview-is-current-until-its-game",
+      "item": 1547,
+      "source": "wave 124, #1548's sibling on the shelf: a 5-day-old render on a 2-day window read past its window with its game ahead",
+      "call": "core.stale_renders:shelf_state",
+      "kwargs": {
+        "signed_out": true,
+        "reset": "",
+        "days": 30,
+        "window": 2.0,
+        "queued": false,
+        "started": false,
+        "ahead": true,
+        "age": 5.0
+      },
+      "expect": {
+        "equals": "rendered"
+      },
+      "why": "a preview's window is its game"
+    },
+    {
+      "id": "a-draft-preview-is-current-until-its-event",
+      "item": 1548,
+      "source": "live 2026-10-23: run 176, the UFC 333 preview for Sat, read '3 days old, past its window' and Enter at batch-review's set-aside question would have dropped it",
+      "call": "core.batch_review:dead_reason",
+      "args": [
+        {
+          "created_at": "2026-10-20T16:22:00",
+          "topic": "Volkanovski's Experience vs Evloev's Momentum in UFC 333 Preview",
+          "title": "Volkanovski's Experience vs Evloev's Momentum in UFC 333 Preview",
+          "event_at": "2099-10-24T17:00Z"
+        }
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "a preview is current until its event"
     }
   ]
 }

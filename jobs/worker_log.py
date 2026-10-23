@@ -25,6 +25,8 @@ def summarize_pass(lines: list[str]) -> str:
     # "for the quota reset": #1526 (wave 116) - the pass names the uploads it holds.
     if any(k in low for k in ("upload blocked today", "waiting for youtube quota", "quota reset")):
         return "uploads blocked by quota until the reset"
+    if "taken off the queue: its game started" in low:  # #1547: not a failure to look into
+        return "a preview after its game taken off the queue (ops shelf)"
     if "failed" in text.lower():
         return "a job failed - see data/logs/worker_task.log"
     return "nothing waiting"

@@ -20,6 +20,9 @@ OPEN_RE = re.compile(r"^\s*- \[ \]")
 DONE_RE = re.compile(r"^\s*- \[x\]")
 SIZE_RE = re.compile(r"`\[(XL|L|M|S)\]`")
 NUM_RE = re.compile(r"^\s*- \[ \] \*{0,2}(\d+)\.")
+# #1510: an idea filed for one of the hands-off plan's shortfalls carries "*(S21.3, filed ...".
+SHORTFALL_RE = re.compile(r"\*\(S(\d{2})\.\d+, filed")
+PLAN_HEADING_RE = re.compile(r"^### (S\d{2}) (.+?)\s*$")
 
 FILES = ("roadmap.md", "desktop_app.md", "backlog.md", "roadmap_archive.md")
 SIZES = ("XL", "L", "M", "S")
@@ -58,6 +61,7 @@ def counts() -> dict[str, object]:
                 numbers.append(int(num.group(1)))
 
     return {
+        "by_shortfall": shortfall_counts(_lines("backlog.md")),
         "per_file": per_file,
         "by_size": by_size,
         "untagged": untagged,
@@ -66,6 +70,30 @@ def counts() -> dict[str, object]:
         "numbered_open": len(numbers),
         "highest_number": max(numbers) if numbers else 0,
     }
+
+
+def shortfall_counts(lines: list[str]) -> dict[str, int]:
+    """#1510: open backlog items per shortfall of the hands-off plan, "S01" to "S22" - an item
+    that names none is not counted."""
+    out: dict[str, int] = {}
+    for line in lines:
+        if not OPEN_RE.match(line):
+            continue
+        tag = SHORTFALL_RE.search(line)
+        if tag:
+            key = f"S{tag.group(1)}"
+            out[key] = out.get(key, 0) + 1
+    return dict(sorted(out.items()))
+
+
+def shortfall_names(lines: list[str]) -> dict[str, str]:
+    """{"S21": "The hook score is backwards (Oct 18)"} from the plan's section headings."""
+    out: dict[str, str] = {}
+    for line in lines:
+        match = PLAN_HEADING_RE.match(line)
+        if match:
+            out[match.group(1)] = match.group(2)
+    return out
 
 
 def open_numbered(lines: list[str]) -> list[tuple[int, str]]:
@@ -80,7 +108,9 @@ def open_numbered(lines: list[str]) -> list[tuple[int, str]]:
     return out
 
 
-def render(data: dict[str, object] | None = None, *, list_open: bool = False) -> str:
+def render(
+    data: dict[str, object] | None = None, *, list_open: bool = False, by_shortfall: bool = False
+) -> str:
     """Operator-facing report. ASCII only (candidate 250).
 
     The open numbered lines are behind `list_open` (#1257). The default is the
@@ -108,6 +138,23 @@ def render(data: dict[str, object] | None = None, *, list_open: bool = False) ->
     if data["untagged"]:
         out.append(f"  untagged     : {data['untagged']} open item(s) carry no size")
     out.append(f"  numbered     : {data['numbered_open']} open, highest #{data['highest_number']}")
+    shortfalls: dict[str, int] = data.get("by_shortfall") or {}  # type: ignore[assignment]
+    if shortfalls:
+        # #1510: the plan says "falling after this wave" per shortfall; the five with the most
+        # open on one line, all of them behind --by-shortfall.
+        top = sorted(shortfalls.items(), key=lambda kv: (-kv[1], kv[0]))[:5]
+        out.append(
+            f"  by shortfall : {sum(shortfalls.values())} open across {len(shortfalls)} - most "
+            + ", ".join(f"{k} {v}" for k, v in top)
+            + " (--by-shortfall for each)"
+        )
+    if by_shortfall:
+        names = shortfall_names(_lines("hands_off_plan.md"))
+        out.append("Open by shortfall (hands_off_plan.md)")
+        for key in sorted(set(names) | set(shortfalls)):
+            out.append(
+                f"  {key} {names.get(key, '(no section)')[:66]:66} {shortfalls.get(key, 0):3}"
+            )
     if list_open:
         out.append("Open numbered")
         for number, title in open_numbered(_lines("backlog.md")):

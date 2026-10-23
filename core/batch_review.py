@@ -686,6 +686,8 @@ def expire_old_drafts(
         game = game_block_reason(draft.meta)
         if game.startswith("its game has started"):
             reason = game  # #1173: a preview after its game can never render
+        elif _event_ahead(draft.meta, datetime.now(timezone.utc)) is not None:
+            continue  # #1548: current until its event
         elif age is None or age <= 2 * window:
             continue
         else:
@@ -1002,6 +1004,11 @@ def dead_reason(meta: dict[str, Any], *, now: datetime | None = None) -> str:
     game = game_block_reason(meta, now=now)
     if game.startswith("its game has started"):
         return game
+    if _event_ahead(meta, now or datetime.now(timezone.utc)) is not None:
+        # #1548: run 176, the UFC 333 preview, read "3 days old, past its window" the day before
+        # the card while "Decide first" asked for it - and Enter at the set-aside question would
+        # have dropped it. A preview is current until its event.
+        return ""
     age = draft_age_days(meta)
     if age is not None and age > freshness_window_days(meta):
         return f"{age:.0f} days old, past its window"
@@ -1015,7 +1022,8 @@ def _is_dead(why: str) -> bool:
 def unattended_candidates(
     channel_id: str, *, root: str | None = None
 ) -> tuple[list[PendingDraft], list[tuple[PendingDraft, str]]]:
-    """(drafts that may render, best hook first then newest; the rest with their reason)."""
+    """(drafts that may render, a game first by kickoff then the newest - decision 70; the rest
+    with their reason)."""
     eligible: list[PendingDraft] = []
     skipped: list[tuple[PendingDraft, str]] = []
     for draft in pending_drafts(channel_id, root=root):
@@ -1025,13 +1033,17 @@ def unattended_candidates(
         else:
             eligible.append(draft)
 
-    def rank(draft: PendingDraft) -> tuple[float, float]:
-        try:
-            hook = float(draft.meta.get("hook_score") or 0)
-        except (TypeError, ValueError):
-            hook = 0.0
+    moment = datetime.now(timezone.utc)
+
+    def rank(draft: PendingDraft) -> tuple[int, float]:
+        # Decision 70 (#1499, the operator 2026-10-23): not the hook score - over 22 videos it ran
+        # against the share who stayed (r = -0.48). A game first, soonest kickoff first; then the
+        # newest.
+        event = _event_ahead(draft.meta, moment)
+        if event is not None:
+            return (0, event.timestamp())
         age = draft_age_days(draft.meta)
-        return (-hook, age if age is not None else 1e9)
+        return (1, age if age is not None else 1e9)
 
     return sorted(eligible, key=rank), skipped
 

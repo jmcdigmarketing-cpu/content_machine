@@ -194,7 +194,7 @@ def _yours(channel_id: str) -> str:
 
 
 def _tonight(channel_id: str) -> str:
-    """#1337: what overnight will do at 5:00, and to leave the PC asleep."""
+    """#1337: what overnight will do at 5:00 (or at the next power-on, decision 69)."""
     from core.nightly_task import tonight_line
 
     return tonight_line(channel_id) or "Tonight: overnight has nothing to do"

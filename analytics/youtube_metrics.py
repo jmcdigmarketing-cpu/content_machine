@@ -51,8 +51,17 @@ def _fetch_retention_curve(video_id, service, start_date, end_date) -> list | No
     low-watch videos return no rows (common on small channels), so it never breaks
     the main sync. Feeds the pacing model in core/retention.py.
     """
+    return _curve_with_state(video_id, service, start_date, end_date)[0]
+
+
+def _curve_with_state(
+    video_id, service, start_date, end_date
+) -> tuple[list | None, dict[str, Any] | None]:
+    """(curve, why) - #1546: 8 of 20 recent videos had no curve and nothing said whether
+    YouTube gave none or the query failed (both were a debug line). `why` is {"asked": the
+    sync's end date, "rows": n} or {"asked": ..., "error": ...}; None when the sync is off."""
     if not _curve_sync_enabled():
-        return None
+        return None, None
     try:
         resp = (
             service.reports()
@@ -68,14 +77,14 @@ def _fetch_retention_curve(video_id, service, start_date, end_date) -> list | No
         )
     except Exception as exc:
         logger.debug("retention curve fetch failed for %s: %s", video_id, exc)
-        return None
+        return None, {"asked": end_date, "error": str(exc)[:120]}
     curve: list[list[float]] = []
     for row in resp.get("rows") or []:
         try:
             curve.append([round(float(row[0]), 3), round(float(row[1]), 4)])
         except (ValueError, IndexError, TypeError):
             continue
-    return curve or None
+    return curve or None, {"asked": end_date, "rows": len(curve)}
 
 
 def _fetch_estimated_revenue(video_id, service, start_date, end_date) -> float | None:
@@ -613,9 +622,11 @@ def fetch_video_metrics(
         "period_start": start_date,
         "period_end": end_date,
     }
-    curve = _fetch_retention_curve(youtube_video_id, service, start_date, end_date)
+    curve, curve_state = _curve_with_state(youtube_video_id, service, start_date, end_date)
     if curve:
         result["retention_curve"] = curve
+    if curve_state is not None:
+        result["retention_curve_state"] = curve_state  # #1546
     engaged = _fetch_engaged_views(youtube_video_id, service, start_date, end_date)
     if engaged is not None:
         result["engaged_views"] = engaged  # #951

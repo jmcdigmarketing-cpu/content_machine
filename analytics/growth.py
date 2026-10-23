@@ -640,9 +640,10 @@ def render(channel_id: str) -> str:
     except Exception as exc:
         logger.debug("shorts line skipped: %s", exc)
     try:
-        from analytics.hook_learning import render_line
+        from analytics.hook_learning import length_line, render_line
 
         lines.append(f"  {render_line(channel_id)}")  # #985: which openers held viewers
+        lines.append(f"  {length_line(channel_id)} (ops hooks: each trait)")  # #1505
     except Exception as exc:
         logger.debug("hook learning line skipped: %s", exc)
     found = levers(rep)

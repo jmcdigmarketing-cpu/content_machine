@@ -32,19 +32,19 @@ QUALITY = {
 
 
 class TestV5(unittest.TestCase):
-    def test_the_version_is_v5(self) -> None:
-        self.assertEqual(GRADE_VERSION, "v5")
+    def test_the_version_is_v5_or_later(self) -> None:
+        self.assertGreaterEqual(int(GRADE_VERSION.lstrip("v")), 5)
 
     def test_the_topic_share_is_small(self) -> None:
         grade = grade_from_parts(quality=QUALITY, composite_score=94.6)
         topic = next(c for c in grade.components if c.name == "topic")
-        self.assertLess(topic.weight, 0.06, grade.components)
+        self.assertLess(topic.weight, 0.08, grade.components)  # v6: 0.05 of the 0.65 counted
         self.assertGreater(topic.weight, 0.04)
 
     def test_the_composite_moves_the_grade_by_at_most_a_few_points(self) -> None:
         low = grade_from_parts(quality=QUALITY, composite_score=1.0).score
         high = grade_from_parts(quality=QUALITY, composite_score=100.0).score
-        self.assertLess(high - low, 6.0, (low, high))
+        self.assertLess(high - low, 8.0, (low, high))  # v6: 7.6 points without the hook
         self.assertGreater(high - low, 3.0)
 
 
@@ -54,7 +54,7 @@ class TestCalibrationAcrossTheBump(unittest.TestCase):
 
         q = {
             "hook_score": 40 + 10 * i,
-            "authenticity_score": 80,
+            "authenticity_score": 70 + 3 * i,  # v6 counts this, not the hook
             "ungrounded_count": 0,
             "grade_version": version,
             "grade_score": 60.0 + i,

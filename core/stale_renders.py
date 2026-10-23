@@ -59,16 +59,13 @@ def shelf(channel_id: str, *, days: int = STALE_DAYS) -> dict[str, int]:
     waiting = _queued_runs(channel_id)
     stale = queued = past = 0
     for run in renders:
-        if int(run.id) in waiting:  # #1131: queued is waiting on the worker, not on a decision
+        state = _state(run, channel_id, waiting, days=days)
+        if state in ("signed_out", "quota", "queued"):  # #1131: waiting on the worker
             queued += 1
-            continue
-        age = render_age_days(run)
-        if age is not None and age >= days:
+        elif state == "stale":
             stale += 1
-        elif age is not None and age > 2 * _news_window(run, channel_id):
-            past += 1  # #1237: run 114 was "recent - requeue_upload" at 12 days of a 2-day story
-        elif _event_started(run, channel_id, age):
-            past += 1  # #1286: a preview of a game that has started
+        elif state in ("past_window", "started"):  # #1237 run 114; #1286 and #1547 a started game
+            past += 1
     held = unlisted_holds(channel_id)
     claim = sum(1 for row in held if override_held(getattr(row, "content_run_id", None)))
     counts = {
@@ -99,6 +96,52 @@ def _queued_runs(channel_id: str) -> dict[int, Any]:
     except Exception as exc:
         logger.debug("queued uploads not read: %s", exc)
         return {}
+
+
+def shelf_state(
+    *,
+    queued: bool,
+    signed_out: bool,
+    reset: str,
+    started: bool,
+    ahead: bool,
+    age: float | None,
+    days: int,
+    window: float,
+) -> str:
+    """Where one finished video stands - the one ladder `shelf` and `shelf_rows` read.
+
+    #1547 (2026-10-23): run 181, a Cavaliers-76ers preview, sat queued through the lapsed
+    sign-in past its tip-off and read "queued - the YouTube sign-in has expired", because
+    "queued" was asked before the game. A started game comes first. #1548's sibling: a preview
+    whose game is ahead is not past its news window.
+    """
+    if started:
+        return "started"
+    if queued:
+        return "signed_out" if signed_out else "quota" if reset else "queued"
+    if age is not None and age >= days:
+        return "stale"
+    if not ahead and age is not None and age > 2 * window:
+        return "past_window"
+    return "rendered"
+
+
+def _state(run: Any, channel_id: str, queued: dict[int, Any], *, days: int, signed_out: bool = False,
+           reset: str = "") -> str:  # fmt: skip
+    age = render_age_days(run)
+    event = run_event(run, channel_id, age)
+    now = _now()
+    return shelf_state(
+        queued=int(run.id) in queued,
+        signed_out=signed_out,
+        reset=reset,
+        started=event is not None and event <= now,
+        ahead=event is not None and event > now,
+        age=age,
+        days=days,
+        window=_news_window(run, channel_id),
+    )
 
 
 def _signed_out(channel_id: str) -> bool:
@@ -136,7 +179,21 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
             "title": str(getattr(run, "title", "") or "(untitled)"),
             "age_days": age,
         }
-        if int(run.id) in queued and signed_out:
+        state = _state(run, channel_id, queued, days=days, signed_out=signed_out, reset=reset)
+        if state == "started":
+            # #1286: run 160, a Malott-Buckley preview, was offered a slot after the card;
+            # #1547: run 181 was still queued after its tip-off.
+            rows.append(
+                dict(
+                    base,
+                    state="its game has started - nothing uploads it",
+                    command=f"py -m scripts.ops retire-renders --channel {channel_id} "
+                    f"--run-id {run.id} --apply",
+                    stale=True,
+                    event_started=True,
+                )
+            )
+        elif state == "signed_out":
             rows.append(
                 dict(
                     base,
@@ -144,7 +201,7 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
                     command=f"py -m youtube.oauth_setup --channel {channel_id}",
                 )
             )
-        elif int(run.id) in queued and reset:  # #1526
+        elif state == "quota":  # #1526
             rows.append(
                 dict(
                     base,
@@ -152,7 +209,7 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
                     command="nothing to do - the worker sends it then",
                 )
             )
-        elif int(run.id) in queued:
+        elif state == "queued":
             rows.append(
                 dict(
                     base,
@@ -160,7 +217,7 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
                     command="py -m scripts.ops worker",
                 )
             )
-        elif age is not None and age >= days:
+        elif state == "stale" and age is not None:
             rows.append(
                 dict(
                     base,
@@ -170,7 +227,7 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
                     stale=True,
                 )
             )
-        elif age is not None and age > 2 * _news_window(run, channel_id):
+        elif state == "past_window" and age is not None:
             # #1231: run 114 (UFC news, a 2-day window) sat 12 days on the shelf and held one of
             # overnight's three places. It no longer counts; its file stays.
             rows.append(
@@ -180,18 +237,6 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
                     command=f"py -m scripts.ops retire-renders --channel {channel_id} "
                     f"--run-id {run.id} --apply",
                     stale=True,
-                )
-            )
-        elif _event_started(run, channel_id, age):
-            # #1286: run 160, a Malott-Buckley preview, was offered a slot after the card.
-            rows.append(
-                dict(
-                    base,
-                    state="its game has started - nothing uploads it",
-                    command=f"py -m scripts.ops retire-renders --channel {channel_id} "
-                    f"--run-id {run.id} --apply",
-                    stale=True,
-                    event_started=True,
                 )
             )
         else:
@@ -207,6 +252,20 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
             )
     for row in unlisted_holds(channel_id):
         run_id = getattr(row, "content_run_id", None)
+        if run_id and _hold_after_its_game(int(run_id), channel_id):
+            # #1547: go-public refuses it, so the shelf does not offer it
+            rows.append(
+                {
+                    "run_id": int(run_id),
+                    "title": _upload_title(row),
+                    "age_days": None,
+                    "state": "unlisted - its game has started, so it stays unlisted",
+                    "command": "nothing to do",
+                    "stale": True,
+                    "event_started": True,
+                }
+            )
+            continue
         held = override_held(run_id)
         rows.append(
             {
@@ -229,20 +288,42 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _event_started(run: Any, channel_id: str, age: float | None) -> bool:
-    """#1286: a preview whose game or card has started - its draft's `event_at`, else the event
-    its title names (`spaced_queue.preview_event`)."""
+def run_event(run: Any, channel_id: str, age: float | None) -> datetime | None:
+    """The start of the event a render previews - its draft's `event_at`, else the event its
+    title names (`spaced_queue.preview_event`) - or None."""
     try:
         from core.spaced_queue import preview_event
 
-        now = _now()
-        rendered = now - timedelta(days=age or 0.0)
+        rendered = _now() - timedelta(days=age or 0.0)
         title = str(getattr(run, "title", "") or "")
-        event = preview_event(channel_id, int(run.id), title, rendered=rendered)
+        return preview_event(channel_id, int(run.id), title, rendered=rendered)
     except Exception as exc:
         logger.debug("event unread for run %s: %s", getattr(run, "id", "?"), exc)
+        return None
+
+
+def started_event(run: Any, channel_id: str, *, age: float | None = None) -> datetime | None:
+    """#1547: when the game or card a render previews started, if it has - else None. The
+    worker, go-public and the shelf read it."""
+    if run is None:
+        return None
+    event = run_event(run, channel_id, render_age_days(run) if age is None else age)
+    return event if event is not None and event <= _now() else None
+
+
+def _hold_after_its_game(run_id: int, channel_id: str) -> bool:
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        return started_event(get_content_run_repository().get(run_id), channel_id) is not None
+    except Exception as exc:
+        logger.debug("unlisted run %s unread: %s", run_id, exc)
         return False
-    return event is not None and event <= now
+
+
+def _event_started(run: Any, channel_id: str, age: float | None) -> bool:
+    """#1286: a preview whose game or card has started."""
+    return started_event(run, channel_id, age=age) is not None
 
 
 def _news_window(run: Any, channel_id: str) -> float:

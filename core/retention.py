@@ -336,6 +336,16 @@ def _render_seconds(run) -> float | None:
         return None
 
 
+def share_at(
+    curve: list[tuple[float, float]], seconds: float | None, *, at: float = 3.0
+) -> float | None:
+    """YouTube's watch ratio `at` seconds into a video `seconds` long, or None (#1501). Over 1.0
+    when the opening was replayed (#1538)."""
+    if not curve or not seconds or seconds <= at:
+        return None
+    return _at(curve, at / seconds)
+
+
 def first_seconds_text(
     curve: list[tuple[float, float]],
     seconds: float | None,
@@ -349,9 +359,10 @@ def first_seconds_text(
     Shorts; `stayed` (engaged views over views, synced as `stayed_share`) is the share who
     did not swipe, and it is shown beside it when the sync stored one.
     """
-    if not curve or not seconds or seconds <= at:
+    ratio = share_at(curve, seconds, at=at)
+    if ratio is None:
         return ""
-    share = round(_at(curve, at / seconds) * 100)
+    share = round(ratio * 100)
     if share > 100:
         text = f"{share}% at {at:g} s (the opening was replayed)"
     else:

@@ -43,11 +43,15 @@ logger = get_logger("core.video_grade")
 # composite is computed once per topic and copied to every angle (run 98: five
 # angles, all 94.61), and on 23 measured videos it does not predict engagement
 # (r=-0.05). It stays in, small, rather than being removed.
-GRADE_VERSION = "v5"
+# v6 (2026-10-23, decision 70 - #1499, the operator's call): the hook score is shown, not
+# counted. Over 22 measured videos it ran against the share who stayed (r = -0.48, past p<0.05);
+# openers it rewards - 12 words or fewer, a number - held fewer viewers. It stays on the card so
+# its calibration keeps reading it.
+GRADE_VERSION = "v6"
 
 # Component weights (renormalized over the components actually present).
 _WEIGHTS = {
-    "hook": 0.28,
+    "hook": 0.0,  # v6; was 0.28
     "authenticity": 0.28,
     "grounding": 0.22,
     "topic": 0.05,  # v5; was 0.12
@@ -184,11 +188,9 @@ def grade_from_parts(
 
     hook = quality.get("hook_score")
     if hook is not None:
-        raw.append(
-            GradeComponent(
-                "hook", float(hook), _WEIGHTS["hook"], str(quality.get("hook_verdict", ""))
-            )
-        )
+        verdict = str(quality.get("hook_verdict", ""))
+        note = "not counted (v6, decision 70)" + (f"; {verdict}" if verdict else "")
+        raw.append(GradeComponent("hook", float(hook), _WEIGHTS["hook"], note))
     auth = quality.get("authenticity_score")
     if auth is not None:
         auth_note = str(quality.get("authenticity_verdict", ""))
@@ -228,10 +230,13 @@ def grade_from_parts(
             )
         )
 
-    if not raw:
-        grade = VideoGrade(score=0.0, letter="F", components=[])
+    total_weight = sum(c.weight for c in raw)
+    if not raw or total_weight <= 0:
+        # v6: a card that holds only the uncounted hook has nothing to grade, like an empty one
+        grade = VideoGrade(score=0.0, letter="F", components=[
+            GradeComponent(c.name, c.score, 0.0, c.note) for c in raw
+        ])  # fmt: skip
     else:
-        total_weight = sum(c.weight for c in raw)
         components = [
             GradeComponent(c.name, c.score, round(c.weight / total_weight, 4), c.note) for c in raw
         ]

@@ -2326,6 +2326,14 @@ def cmd_retention(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("hooks", "Each opener trait against who stayed, the first 3 s and TikTok (#1500)")
+def cmd_hooks(args: argparse.Namespace) -> int:
+    from analytics.hook_learning import hook_table_lines
+
+    print("\n".join(hook_table_lines(args.channel)))
+    return 0
+
+
 @_register(
     "intelligence-report",
     "Content Intelligence Report (signals + brief + competitors, no render)",
@@ -2907,7 +2915,10 @@ def cmd_roadmap_index(args: argparse.Namespace) -> int:
 
     _emit_text(
         "Roadmap index",
-        render(list_open=bool(getattr(args, "list_open", False))),
+        render(
+            list_open=bool(getattr(args, "list_open", False)),
+            by_shortfall=bool(getattr(args, "by_shortfall", False)),
+        ),
         args,
     )
     return 0
@@ -4047,6 +4058,11 @@ def build_parser() -> argparse.ArgumentParser:
         dest="list_open",
         action="store_true",
         help="roadmap-index: print each open numbered item (the default is the counts)",
+    )
+    parser.add_argument(
+        "--by-shortfall",
+        action="store_true",
+        help="roadmap-index: open items for each of the hands-off plan's shortfalls (#1510)",
     )
     parser.add_argument("--channel", default="tapin", help="Channel id (default: tapin)")
     parser.add_argument(

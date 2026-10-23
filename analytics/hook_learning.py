@@ -92,12 +92,22 @@ def traits_of(hook: str) -> set[str]:
     return out
 
 
-def _rows(channel_id: str) -> list[dict[str, Any]]:
+def _rows(channel_id: str, *, detail: bool = False) -> list[dict[str, Any]]:
+    """Each measured video's opening line and stayed share; `detail` (the hook table) adds its
+    length, its 3-second share and TikTok's watch time - a render's length is an ffprobe each."""
     from analytics.packaging import packaging_figures
     from core.hook_score import extract_hook, score_hook
     from core.runs.script_report import script_of
     from storage.repositories.publish_log import is_seeded
 
+    platform: dict[str, Any] = {}
+    if detail:
+        try:
+            from publishing.platform_metrics import load
+
+            platform = load(channel_id).get("rows") or {}
+        except Exception as exc:
+            logger.debug("platform metrics unread for the hook table: %s", exc)
     runs = _run_repo()
     days = learn_days()
     since = _now() - timedelta(days=days) if days else None
@@ -120,12 +130,142 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
         hook = extract_hook(script_of(run))
         if not hook:
             continue
-        out.append({
+        row_out: dict[str, Any] = {
+            "run_id": int(run_id),
             "hook": hook,
             "score": float(score_hook(hook).score),
             "traits": traits_of(hook),
             "stayed": float(stayed),
-        })  # fmt: skip
+        }
+        if detail:
+            from core.retention import _render_seconds
+
+            row_out.update(
+                detail_of(hook, metrics, platform.get(str(run_id)) or {}, _render_seconds(run))
+            )
+        out.append(row_out)
+    return out
+
+
+def detail_of(
+    hook: str, metrics: dict[str, Any], platforms: dict[str, Any], seconds: float | None
+) -> dict[str, Any]:
+    """One video's hook-table fields: words, `first3` (YouTube's share 3 s in - None over 100%,
+    which is a replayed opening, #1538) and `tiktok_s` (TikTok's average watch, #1418)."""
+    from core.retention import _parse_curve, share_at
+
+    first3 = share_at(_parse_curve(metrics.get("retention_curve")), seconds)
+    tiktok = platforms.get("tiktok") if isinstance(platforms, dict) else None
+    watch = (
+        tiktok.get("avg_watch_s") if isinstance(tiktok, dict) and tiktok.get("measured") else None
+    )
+    return {
+        "words": len(hook.split()),
+        "first3": first3 if first3 is not None and first3 <= 1.0 else None,
+        "first3_replayed": first3 is not None and first3 > 1.0,
+        "tiktok_s": float(watch) if isinstance(watch, (int, float)) else None,
+    }
+
+
+# #1505: the rewrite's rule is "under 12 words"; the bins put 12 on its side.
+_LENGTH_BINS = (
+    (8, "8 words or fewer"),
+    (12, "9-12 words"),
+    (16, "13-16 words"),
+    (10**6, "17+ words"),
+)
+_MEASURES = (("stayed", "stayed"), ("first3", "3 s"), ("tiktok", "TikTok s"))
+
+
+def _side(rows: list[dict[str, Any]], key: str, trait: str) -> dict[str, Any]:
+    with_t = [float(x[key]) for x in rows if trait in x["traits"] and x.get(key) is not None]
+    without = [float(x[key]) for x in rows if trait not in x["traits"] and x.get(key) is not None]
+
+    def median(values: list[float]) -> float | None:
+        return round(statistics.median(values), 3) if len(values) >= _MIN_SIDE else None
+
+    return {"with": median(with_t), "without": median(without),
+            "n_with": len(with_t), "n_without": len(without)}  # fmt: skip
+
+
+def hook_table(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """#1500 #1501 #1506: every opener trait - the scorer's and "a call" (the first-line rule,
+    #1311) - with and without, against the share who stayed, the 3-second share and TikTok's
+    watch time; #1505: the opener's length in bins and its r with stayed. A side under
+    `_MIN_SIDE` videos has no median. Report-only: the rewrite's guidance is `learn`'s."""
+    from core.authenticity import first_line_take
+    from core.grade_calibration import _pearson
+
+    marked = [
+        {**x, "traits": set(x["traits"]) | ({"a call"} if first_line_take(x["hook"]) else set()),
+         "tiktok": x.get("tiktok_s")}
+        for x in rows
+    ]  # fmt: skip
+    traits = []
+    for trait in sorted({t for x in marked for t in x["traits"]} | {"a call"}):
+        traits.append({"trait": trait, **{key: _side(marked, key, trait) for key, _l in _MEASURES}})
+    length = []
+    low = 0
+    for top, label in _LENGTH_BINS:
+        stayed = [x["stayed"] for x in marked if low < int(x.get("words") or 0) <= top]
+        length.append({"bin": label, "n": len(stayed),
+                       "stayed": round(statistics.median(stayed), 3) if stayed else None})  # fmt: skip
+        low = top
+    worded = [x for x in marked if x.get("words")]
+    r = _pearson([float(x["words"]) for x in worded], [x["stayed"] for x in worded])
+    return {"n": len(marked), "traits": traits, "length": length,
+            "length_r": round(r, 3) if r is not None else None,
+            "first3_readable": sum(1 for x in marked if x.get("first3") is not None),
+            "first3_replayed": sum(1 for x in marked if x.get("first3_replayed")),
+            "tiktok_measured": sum(1 for x in marked if x.get("tiktok") is not None)}  # fmt: skip
+
+
+def _pair(side: dict[str, Any]) -> str:
+    if side["with"] is None or side["without"] is None:
+        return f"n {side['n_with']}/{side['n_without']}, too few"
+    fmt = "{:.0%}" if max(side["with"], side["without"]) <= 1.0 else "{:.1f}"
+    return (f"{fmt.format(side['with'])} vs {fmt.format(side['without'])} "
+            f"(n {side['n_with']}/{side['n_without']})")  # fmt: skip
+
+
+def length_text(table: dict[str, Any]) -> str:
+    bins = "; ".join(
+        f"{b['bin']} {b['stayed']:.0%} (n {b['n']})" for b in table["length"] if b["n"]
+    )
+    r = table.get("length_r")
+    return f"Hook length vs stayed: {bins}" + (
+        f"; r={r:+.2f} over {table['n']}" if r is not None else ""
+    )
+
+
+def length_line(channel_id: str) -> str:
+    """#1505: one line for `ops growth`."""
+    return length_text(hook_table(_rows(channel_id)))
+
+
+def hook_table_lines(channel_id: str) -> list[str]:
+    """`ops hooks`: the table, one line a trait, then length."""
+    table = hook_table(_rows(channel_id, detail=True))
+    out = [
+        f"Hooks - {channel_id}: {table['n']} videos with an opening line and a stayed share "
+        f"(the last {learn_days() or 'all'} days). With the trait vs without; a side under "
+        f"{_MIN_SIDE} videos is too few.",
+        f"  {'trait':20} {'stayed':24} {'3 s (YouTube)':24} TikTok s (avg watch)",
+    ]
+    for t in table["traits"]:
+        out.append(
+            f"  {t['trait']:20} {_pair(t['stayed']):24} {_pair(t['first3']):24} {_pair(t['tiktok'])}"
+        )
+    out.append(f"  {length_text(table)}")
+    out.append(
+        f"  3 s readable on {table['first3_readable']} of {table['n']} "
+        f"({table['first3_replayed']} read over 100% - a replayed opening, #1538); TikTok's "
+        f"watch time on {table['tiktok_measured']}"
+    )
+    out.append(
+        "  The hook score is out of the grade and overnight's order (decision 70); "
+        "`ops growth` prints its r."
+    )
     return out
 
 

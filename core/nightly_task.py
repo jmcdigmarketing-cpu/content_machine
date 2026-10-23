@@ -295,9 +295,10 @@ def missed_line(
         # #1528: the event log says which - it had guessed "shut down, or wake timers are off"
         # with wake timers on.
         kind, when = off
+        # Decision 69 (the operator, 2026-10-23: power-on is fine) - a fact, not an ask.
         why = (
             f"the PC was {kind} at {when:%a} {_clock(when)} - a {kind.replace(' ', '-')} PC cannot "
-            f"wake; Sleep keeps the {_clock(due)} start"
+            "wake, so it runs when the PC comes on"
         )
     elif wakes is False:
         why = f"the PC was asleep, and the task is not allowed to wake the PC: {fix}"
@@ -330,12 +331,20 @@ def late_short(
     last, due = times.get("last"), _due(times, now)
     if last is None or due is None:
         return ""
-    cause = f" - {_off_words(off)} (Sleep keeps the {_clock(due)} start)" if off else ""
+    # Decision 69 (the operator, 2026-10-23: power-on is fine): shut down 3 of 4 nights, it ran
+    # when the PC came on - said as what happened, with no "use Sleep".
+    off_now = off is not None and off[0] != "asleep"
     if last < due - timedelta(minutes=5):
+        if off_now and off is not None:
+            return f"did not run at {_clock(due)} {due:%a} - {_off_words(off)}; it runs when the PC comes on"
+        cause = f" - {_off_words(off)} and it did not wake (ops doctor)" if off else ""
         return f"did not run at {_clock(due)} {due:%a}{cause}"
     late = (last - due).total_seconds() / 3600
     if late < 1:
         return ""
+    if off_now and off is not None:
+        return f"ran {last:%a} {_clock(last)}, when the PC came on - {_off_words(off)}"
+    cause = f" - {_off_words(off)} and it did not wake (ops doctor)" if off else ""
     return f"started {last:%a} {_clock(last)}, {round(late)} h after {_clock(due)}{cause}"
 
 
@@ -990,7 +999,7 @@ def wake_doctor(*, now: datetime | None = None) -> tuple[bool, str]:
         kind, when = off
         line += (
             f"; before the last {_clock(_due(times or {}, moment) or moment)} start the PC was "
-            f"{kind} {when:%a} {_clock(when)} - use Sleep, not Shut down"
+            f"{kind} {when:%a} {_clock(when)}, so overnight ran when it came on (decision 69)"
         )
     return True, line
 
@@ -1002,22 +1011,18 @@ def tonight_text(
     #1534 (wave 118): `paused` is `batch_review.shelf_pause` - on 10-20 the line said "renders up
     to 2" while 3 finished videos waiting held every render."""
     hour, minute = start or (5, 0)
-    clock = _clock(datetime(2000, 1, 1, hour, minute))
+    # Decision 69 (the operator, 2026-10-23: power-on is fine): when it runs, not how to keep
+    # the PC.
+    clock = f"{_clock(datetime(2000, 1, 1, hour, minute))} (or when the PC is next on)"
     if paused:
         waiting = re.match(r"(\d+) finished videos", paused)
         why = f"{waiting.group(1)} finished videos wait for you" if waiting else "renders paused"
         if drafts <= 0:
             return f"Tonight at {clock}: no drafts, no renders - {why} (ops shelf)"
-        return (
-            f"Tonight at {clock}: drafts {drafts}, no renders - {why} (ops shelf); leave the PC "
-            "asleep, not shut down"
-        )
+        return f"Tonight at {clock}: drafts {drafts}, no renders - {why} (ops shelf)"
     if drafts <= 0 and renders <= 0:
         return ""
-    return (
-        f"Tonight at {clock}: drafts {drafts}, renders up to {renders} - leave the PC asleep, "
-        "not shut down"
-    )
+    return f"Tonight at {clock}: drafts {drafts}, renders up to {renders}"
 
 
 def tonight_line(channel_id: str) -> str:

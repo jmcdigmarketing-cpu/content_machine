@@ -58,6 +58,13 @@ def _has(data: dict[str, Any], dotted: str) -> bool:
     return True
 
 
+def _synced(metrics: dict[str, Any]) -> bool:
+    """The Analytics sync read this video - it stores the period it read. The Data API's
+    `lifetime_views` alone is not a sync: 8 of 23 rows held only that on 10-23 and were counted
+    as videos missing every field."""
+    return bool(metrics.get("views_until") or metrics.get("period_end"))
+
+
 def _aware(when: Any) -> datetime | None:
     if not isinstance(when, datetime):
         return None
@@ -86,21 +93,22 @@ def audit_lines(
         ],
     }
     recent: list[tuple[Any, dict[str, Any]]] = []
+    never: list[int] = []
     for row in rows:
         when = _aware(getattr(row, "published_at", None))
         metrics = _load(getattr(row, "metrics_json", None))
         # YouTube's numbers lag 2-3 days: a video younger than that has none yet
         lagged = moment - timedelta(days=_STALE_DAYS)
-        if (
-            when is None
-            or not metrics
-            or not moment - timedelta(days=_RECENT_DAYS) < when <= lagged
-        ):
+        if when is None or not moment - timedelta(days=_RECENT_DAYS) < when <= lagged:
             continue
-        if str(getattr(row, "privacy_status", "") or "").lower() == "public":
+        if str(getattr(row, "privacy_status", "") or "").lower() != "public":
+            continue
+        if _synced(metrics):
             recent.append((row, metrics))
+        else:  # #1546: 9 public videos from 10-17 on had never synced - the sign-in had lapsed
+            never.append(int(getattr(row, "content_run_id", 0) or 0))
     stores["metrics"] = [m for _row, m in recent]
-    if not any(stores.values()):
+    if not any(stores.values()) and not never:
         return []
     thin: list[str] = []
     for store, field, _reader, why in FIELDS:
@@ -116,6 +124,16 @@ def audit_lines(
         if thin
         else f"Fields health and the learning read: all {len(FIELDS)} written this week"
     ]
+    why = curve_gaps(recent)
+    if why:
+        lines.append(why)
+    if never:
+        listed = ", ".join(str(r) for r in sorted(never)[:6]) + (", ..." if len(never) > 6 else "")
+        noun = "video" if len(never) == 1 else "videos"
+        lines.append(
+            f"Metrics: {len(never)} public {noun} under {_RECENT_DAYS} days never synced "
+            f"(run{'s' if len(never) > 1 else ''} {listed}) - the sync needs the YouTube sign-in"
+        )
     stale: list[tuple[int, date]] = []
     for row, metrics in recent:
         try:
@@ -133,6 +151,39 @@ def audit_lines(
             "running? (#1542)"
         )
     return lines
+
+
+def _curve_gap(row: Any, metrics: dict[str, Any]) -> str:
+    """Why one synced video has no retention curve (#1546)."""
+    state = metrics.get("retention_curve_state")
+    if isinstance(state, dict) and state.get("error"):
+        return "failed"
+    if isinstance(state, dict) and state.get("rows") == 0:
+        return "YouTube gave no curve"
+    when = _aware(getattr(row, "published_at", None))
+    try:
+        until = date.fromisoformat(str(metrics.get("views_until") or "")[:10])
+    except ValueError:
+        until = None
+    if when is not None and until is not None and (until - when.date()).days <= _STALE_DAYS:
+        return f"synced only in its first {_STALE_DAYS} days"  # YouTube's curve lags its views
+    return "unknown (synced before the sync said why)"
+
+
+def curve_gaps(recent: list[tuple[Any, dict[str, Any]]]) -> str:
+    """#1546: the videos without a retention curve, by why - "" when every one has one. On
+    10-22 it was 8 of 20, and the drop-off and 3-second lines read only the other 12."""
+    missing = [(row, m) for row, m in recent if not _has(m, "retention_curve")]
+    if not missing:
+        return ""
+    counts: dict[str, int] = {}
+    for row, metrics in missing:
+        reason = _curve_gap(row, metrics)
+        counts[reason] = counts.get(reason, 0) + 1
+    parts = ", ".join(
+        f"{n} {reason}" for reason, n in sorted(counts.items(), key=lambda kv: -kv[1])
+    )
+    return f"retention_curve missing on {len(missing)} of {len(recent)} videos: {parts}"
 
 
 def field_audit_lines(channel_id: str) -> list[str]:

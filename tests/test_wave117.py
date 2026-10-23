@@ -95,8 +95,7 @@ class LateOvernightTests(unittest.TestCase):
 
         self.assertEqual(
             late_short(TIMES, now=NOW, off=SHUT),
-            "started Tue 4:22 PM, 11 h after 5:00 AM - the PC was shut down Mon 8:49 PM "
-            "(Sleep keeps the 5:00 AM start)",
+            "ran Tue 4:22 PM, when the PC came on - the PC was shut down Mon 8:49 PM",
         )
         on_time = dict(TIMES, last=datetime(2026, 10, 20, 5, 0, 2))
         self.assertEqual(late_short(on_time, now=NOW, off=SHUT), "")
@@ -166,14 +165,14 @@ class TonightTests(unittest.TestCase):
 
         self.assertEqual(
             tonight_text(3, 3, (5, 0)),
-            "Tonight at 5:00 AM: drafts 3, renders up to 3 - leave the PC asleep, not shut down",
+            "Tonight at 5:00 AM (or when the PC is next on): drafts 3, renders up to 3",
         )
         self.assertEqual(tonight_text(0, 0, (5, 0)), "")
 
     def test_the_evening_toast(self):
         from jobs import worker
 
-        line = "Tonight at 5:00 AM: drafts 3, renders up to 3 - leave the PC asleep, not shut down"
+        line = "Tonight at 5:00 AM (or when the PC is next on): drafts 3, renders up to 3"
         with (
             patch("core.nightly_task.tonight_line", return_value=line),
             patch("core.win_notify.toast_daily") as toast,

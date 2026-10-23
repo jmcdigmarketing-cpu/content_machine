@@ -115,6 +115,30 @@ def _run_for_hold(run_id: int | None):
         return None
 
 
+def _after_its_game(run_id: int | None, channel_id: str, video_id: str, title: str):
+    """#1547: a GoPublicResult refusing a preview whose game has started, else None. Run 181,
+    the Cavaliers-76ers preview, would have been offered for go-public after its tip-off."""
+    try:
+        from core.batch_review import _zone_clock
+        from core.stale_renders import started_event
+
+        when = started_event(_run_for_hold(run_id), channel_id) if run_id else None
+        if when is None:
+            return None
+        started = _zone_clock(when, channel_id, day=True)
+    except Exception as exc:
+        logger.debug("game check skipped for run %s: %s", run_id, exc)
+        return None
+    return GoPublicResult(
+        "refused",
+        f"run {run_id} previews a game that has been played - its game started {started}; it "
+        "stays unlisted (Studio can still change it)",
+        video_id,
+        run_id=run_id,
+        title=title,
+    )
+
+
 def hold_summary(row, run) -> str:
     """File, length and grade for one unlisted video (#1248)."""
     features: dict[str, Any] = {}
@@ -256,6 +280,9 @@ def apply_schedule_public(
             run_id=run_id,
             title=title,
         )
+    played = _after_its_game(run_id, channel_id, video_id, title)
+    if played is not None:
+        return played
     change: dict[str, Any] = {"privacyStatus": "private", "publishAt": _to_publish_at_rfc3339(when)}
     body: dict[str, Any] = {"id": video_id, "status": change}
     if dry_run:
@@ -413,6 +440,9 @@ def apply_go_public(
             run_id=run_id,
             title=title,
         )
+    played = _after_its_game(run_id, channel_id, target, title)
+    if played is not None:
+        return played
     body = go_public_plan(target)
     if dry_run:
         return GoPublicResult(

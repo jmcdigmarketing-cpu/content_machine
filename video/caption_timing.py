@@ -101,6 +101,39 @@ def two_line_split_index(n: int, max_words: int) -> int | None:
     return min(max(n - max_words, mid), max_words)
 
 
+def line_bounds(texts: list[str], max_words: int) -> list[tuple[int, int]]:
+    """One sentence's cue ranges: the #505 two-line wrap, else greedy fill - and #1482, never a
+    cue that ends inside a name ("Can the New | England Patriots"). A name longer than a cue is
+    cut where it must be."""
+    from apis.topic_tokens import name_spans
+
+    n = len(texts)
+    inside = {k for start, end in name_spans(texts) if end - start <= max_words
+              for k in range(start + 1, end)}  # fmt: skip
+    idx = two_line_split_index(n, max_words)
+    if idx is not None:
+        splits = [k for k in range(1, n) if k not in inside and max(k, n - k) <= max_words]
+        if splits:
+            best = min(splits, key=lambda k: (abs(k - idx), k))
+            return [(0, best), (best, n)]
+    bounds: list[tuple[int, int]] = []
+    i = 0
+    while i < n:
+        end = min(i + max_words, n)
+        if end < n and end in inside:
+            end = max((k for k in range(i + 1, end) if k not in inside), default=end)
+        bounds.append((i, end))
+        i = end
+    return bounds
+
+
+def splits_a_name(texts: list[str], at: int) -> bool:
+    """#1482: True when a cue boundary before word `at` falls inside a name."""
+    from apis.topic_tokens import name_spans
+
+    return any(start < at < end for start, end in name_spans(texts))
+
+
 def group_into_lines(words: list[dict], max_words: int) -> list[list[dict]]:
     """Sentence/length-aware grouping: break on sentence-end punctuation or length."""
     sentences: list[list[dict]] = []
@@ -114,15 +147,8 @@ def group_into_lines(words: list[dict], max_words: int) -> list[list[dict]]:
         sentences.append(cur)
     lines: list[list[dict]] = []
     for sent in sentences:
-        idx = two_line_split_index(len(sent), max_words)
-        if idx is not None:
-            lines.append(sent[:idx])
-            lines.append(sent[idx:])
-            continue
-        for i in range(0, len(sent), max_words):
-            chunk = sent[i : i + max_words]
-            if chunk:
-                lines.append(chunk)
+        texts = [str(w.get("word") or "") for w in sent]
+        lines.extend(sent[a:b] for a, b in line_bounds(texts, max_words) if b > a)
     return _rebalance_orphan_line(lines)
 
 
@@ -140,6 +166,9 @@ def _rebalance_orphan_line(lines: list[list[dict]]) -> list[list[dict]]:
     if len(lines[-1]) != 1 or len(lines[-2]) < 2:
         return lines
     if _ends_sentence(lines[-2][-1]):
+        return lines
+    pair = [str(w.get("word") or "") for w in (*lines[-2], *lines[-1])]
+    if splits_a_name(pair, len(lines[-2]) - 1):  # #1482: the stolen word ends a name
         return lines
     lines[-1].insert(0, lines[-2].pop())
     return lines

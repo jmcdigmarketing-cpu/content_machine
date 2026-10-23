@@ -6756,6 +6756,261 @@
         "equals": "yellow"
       },
       "why": "a line that read nothing is never red and cannot let the channel read green"
+    },
+    {
+      "id": "nhl-york-rangers-lost-new",
+      "item": 1481,
+      "source": "wave 122: the title check knew NFL and NBA teams only",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "York Rangers fall to 2-5"
+      ],
+      "expect": {
+        "equals": "New York Rangers"
+      },
+      "why": "a hockey team that lost its New is broken"
+    },
+    {
+      "id": "mlb-diego-padres-lost-san",
+      "item": 1481,
+      "source": "wave 122: the title check knew NFL and NBA teams only",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Diego Padres trade rumors"
+      ],
+      "expect": {
+        "equals": "San Diego Padres"
+      },
+      "why": "a baseball team that lost its San is broken"
+    },
+    {
+      "id": "epl-ham-united-lost-west",
+      "item": 1481,
+      "source": "wave 122: the title check knew NFL and NBA teams only",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Ham United sack their manager"
+      ],
+      "expect": {
+        "equals": "West Ham United"
+      },
+      "why": "a Premier League club that lost its West is broken"
+    },
+    {
+      "id": "vegas-golden-knights-is-whole",
+      "item": 1481,
+      "source": "wave 122: 'Vegas Golden Knights' read as a broken 'Las Vegas'",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Vegas Golden Knights win again"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "the team's own name is Vegas, not Las Vegas"
+    },
+    {
+      "id": "maple-leafs-is-whole",
+      "item": 1481,
+      "source": "wave 122: a three-word rule would have broken Maple Leafs",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Toronto Maple Leafs open at home"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "a two-word nickname stands alone"
+    },
+    {
+      "id": "caption-cue-keeps-new-england-whole",
+      "item": 1482,
+      "source": "wave 122: at the karaoke style's 4 words a cue read 'Can the New England' then 'Patriots win the AFC'",
+      "call": "video.subtitles:split_script_into_lines",
+      "args": [
+        "Can the New England Patriots win the AFC East this year without a run game.",
+        4
+      ],
+      "expect": {
+        "equals": [
+          "Can the",
+          "New England Patriots win",
+          "the AFC East this",
+          "year without a",
+          "run game."
+        ]
+      },
+      "why": "a cue never ends inside a name"
+    },
+    {
+      "id": "name-spans-in-a-sentence",
+      "item": 1482,
+      "source": "wave 122: the cue cut knew no names",
+      "call": "apis.topic_tokens:name_spans",
+      "args": [
+        [
+          "Can",
+          "the",
+          "New",
+          "England",
+          "Patriots",
+          "win",
+          "the",
+          "AFC",
+          "East",
+          "this",
+          "year",
+          "without",
+          "a",
+          "run",
+          "game."
+        ]
+      ],
+      "select": 0,
+      "expect": {
+        "equals": [
+          2,
+          5
+        ]
+      },
+      "why": "New England Patriots (words 2-5) is one name a cue must keep whole"
+    },
+    {
+      "id": "script-check-names-a-broken-team",
+      "item": 1482,
+      "source": "wave 122: nothing read the script for a broken name, and the captions show it as written",
+      "call": "core.script_craft:script_check",
+      "kwargs": {
+        "script": "Can the England Patriots win the AFC East? Maybe."
+      },
+      "select": "why",
+      "expect": {
+        "includes_all": [
+          "the script breaks a name: \"New England Patriots\" has lost a word, and so do the captions"
+        ]
+      },
+      "why": "a broken name in the script is a broken caption"
+    },
+    {
+      "id": "script-check-leaves-vegas-alone",
+      "item": 1482,
+      "source": "wave 122: a fight script says 'in Vegas' and 'the Orleans Arena'",
+      "call": "core.script_craft:script_check",
+      "kwargs": {
+        "script": "UFC 333 is in Vegas this weekend at the Orleans Arena. Big night."
+      },
+      "select": "why",
+      "expect": {
+        "excludes_any": [
+          "the script breaks a name: \"Las Vegas\" has lost a word, and so do the captions",
+          "the script breaks a name: \"New Orleans\" has lost a word, and so do the captions"
+        ]
+      },
+      "why": "spoken Vegas is the city, not a broken name"
+    },
+    {
+      "id": "thumbnail-short-arm-keeps-the-team",
+      "item": 1483,
+      "source": "wave 122: the short arm read 'Why the New'",
+      "call": "assets.thumbnail_compose:short_headline",
+      "args": [
+        [
+          "Why",
+          "the",
+          "New",
+          "England",
+          "Patriots"
+        ],
+        3
+      ],
+      "expect": {
+        "equals": [
+          "New",
+          "England",
+          "Patriots"
+        ]
+      },
+      "why": "a cut inside a team's name gives the name"
+    },
+    {
+      "id": "thumbnail-headline-runs-on-to-the-nickname",
+      "item": 1483,
+      "source": "wave 122: five words read 'Why are the New York'",
+      "call": "assets.thumbnail_compose:headline_words",
+      "args": [
+        "Why are the New York Jets so bad this year"
+      ],
+      "expect": {
+        "equals": [
+          "Why",
+          "are",
+          "the",
+          "New",
+          "York",
+          "Jets"
+        ]
+      },
+      "why": "the headline ends on the team's last word"
+    },
+    {
+      "id": "team-spans-find-the-whole-name",
+      "item": 1483,
+      "source": "wave 122: the thumbnail's cut knew no team names",
+      "call": "apis.team_gazetteer:team_spans",
+      "args": [
+        [
+          "Why",
+          "the",
+          "New",
+          "England",
+          "Patriots",
+          "Can",
+          "Still",
+          "Win"
+        ]
+      ],
+      "select": 0,
+      "expect": {
+        "equals": [
+          2,
+          5
+        ]
+      },
+      "why": "the cut must not end inside words 2-5"
+    },
+    {
+      "id": "cue-bounds-step-back-before-a-name",
+      "item": 1482,
+      "source": "wave 122: the karaoke cue read 'Can the New England'",
+      "call": "video.caption_timing:line_bounds",
+      "args": [
+        [
+          "Can",
+          "the",
+          "New",
+          "England",
+          "Patriots",
+          "win",
+          "the",
+          "AFC",
+          "East",
+          "this",
+          "year",
+          "without",
+          "a",
+          "run",
+          "game."
+        ],
+        4
+      ],
+      "select": 0,
+      "expect": {
+        "equals": [
+          0,
+          2
+        ]
+      },
+      "why": "the first cue stops before New England Patriots"
     }
   ]
 }

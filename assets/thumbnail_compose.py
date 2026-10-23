@@ -52,10 +52,32 @@ def headline_words(title: str) -> list[str]:
         dash_next = i + 1 < len(words) and words[i + 1] in ("-", "\u2013", "\u2014")
         if i >= 1 and (word[-1] in ":;," or dash_next):
             return [*words[:i], word.rstrip(":;,")]
-    head = words[:5]
+    head = _whole_names(words, 5, grow=2)
     while len(head) > 3 and head[-1].lower().strip(".,!?'") in FUNCTION_WORDS:
         head.pop()
     return head
+
+
+def _whole_names(words: list[str], n: int, *, grow: int) -> list[str]:
+    """#1483: the first `n` words, never ending inside a team's name - "Why are the New York"
+    runs on to "Jets" when that adds `grow` words or fewer, else stops before the name."""
+    from apis.team_gazetteer import team_spans
+
+    for start, end in team_spans(words):
+        if start < n < end:
+            return words[:end] if end - n <= grow else words[:start] or words[:n]
+    return words[:n]
+
+
+def short_headline(words: list[str], n: int = 3) -> list[str]:
+    """#1483: the short arm's `n` words. "Why the New" broke the New England Patriots; a cut
+    inside a team's name gives the name itself ("New England Patriots") when it fits in n + 1."""
+    from apis.team_gazetteer import team_spans
+
+    for start, end in team_spans(words):
+        if start < n < end:
+            return words[start:end] if end - start <= n + 1 else words[:start] or words[:n]
+    return words[:n]
 
 
 def contrast_ratio(a: tuple[int, int, int], b: tuple[int, int, int]) -> float:

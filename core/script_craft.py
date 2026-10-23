@@ -545,7 +545,7 @@ def script_check(
     {ok, why: [...], points: {total, used, missing}, cut: [...]}. `ok` is what an unattended
     render requires.
     """
-    from core.title_generator import title_label
+    from core.title_generator import SPOKEN_SPLIT_PLACES, broken_place_name, title_label
 
     why: list[str] = []
     blocking = [str(c) for c in unsupported or []]
@@ -571,6 +571,9 @@ def script_check(
     if run_on:  # #1352
         why.append(f'a sentence runs into the next ("{run_on[0][:60]}")')
     why.extend(unfinished_ending(script))  # #1334
+    broken = broken_place_name(script, places=SPOKEN_SPLIT_PLACES)
+    if broken:  # #1482: the captions show the script's words as written
+        why.append(f'the script breaks a name: "{broken}" has lost a word, and so do the captions')
     if reading_target is not None:
         grade = reading_grade(script)
         if grade is not None and grade > float(reading_target):

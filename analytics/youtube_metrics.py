@@ -777,6 +777,9 @@ def refresh_publish_metrics(
                     metrics["surprise"] = residual
         except Exception as exc:
             logger.debug("engagement surprise skipped: %s", exc)
+    if log_id:
+        # #1542: every sync stores what it fetched. Wave 60 put this write inside the first-day
+        # block, so a video's views and engaged rate froze once its 24h snapshot existed.
         repo.update(log_id, {"metrics_json": json.dumps(metrics)})
 
     record_publish_outcome(

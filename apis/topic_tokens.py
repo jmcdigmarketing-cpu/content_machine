@@ -324,6 +324,29 @@ def title_phrases(text: str, *, max_words: int = 3, connectors: bool = False) ->
     return phrases
 
 
+def _span_word(word: str) -> str:
+    return _POSSESSIVE.sub("", word.strip('.,:;!?"()')).lower()
+
+
+def name_spans(words: list[str]) -> list[tuple[int, int]]:
+    """#1482: (start, end) word ranges of the names of two or more words in a sentence written in
+    ordinary case - "New England Patriots" and "AFC East" in "Can the New England Patriots win
+    the AFC East". A caption cue must not end inside one."""
+    clean = [_span_word(w) for w in words]
+    spans: list[tuple[int, int]] = []
+    at = 0
+    for phrase in title_phrases(" ".join(words), max_words=5, connectors=True):
+        parts = [_span_word(p) for p in phrase.split()]
+        if len(parts) < 2:
+            continue
+        for i in range(at, len(clean) - len(parts) + 1):
+            if clean[i : i + len(parts)] == parts:
+                spans.append((i, i + len(parts)))
+                at = i + len(parts)
+                break
+    return spans
+
+
 def phrase_is_ordinary(phrase: str) -> bool:
     """True when every part of `phrase` is a common word, including across a hyphen.
 

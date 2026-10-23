@@ -15,7 +15,7 @@ import os
 import re
 
 from core.logging import get_logger
-from video.caption_timing import two_line_split_index
+from video.caption_timing import line_bounds, splits_a_name
 
 logger = get_logger("video.subtitles")
 
@@ -53,15 +53,8 @@ def split_script_into_lines(script: str, max_words: int | None = None) -> list[s
         words = sentence.split()
         if not words:
             continue
-        idx = two_line_split_index(len(words), max_words)
-        if idx is not None:
-            chunks = [" ".join(words[:idx]), " ".join(words[idx:])]
-        else:
-            chunks = []
-            for i in range(0, len(words), max_words):
-                chunk = " ".join(words[i : i + max_words]).strip()
-                if chunk:
-                    chunks.append(chunk)
+        # #1482: the same cue ranges as the word-timed path - never one ending inside a name.
+        chunks = [" ".join(words[a:b]) for a, b in line_bounds(words, max_words) if b > a]
         # Rebalance THIS sentence's own chunks. Rebalancing the running list
         # instead would let a one-word sentence steal the previous sentence's
         # last word into its cue, merging two sentences into one caption line --
@@ -80,6 +73,8 @@ def _rebalance_orphan(chunks: list[str]) -> list[str]:
         return chunks
     prev = chunks[-2].split()
     if len(prev) < 2:
+        return chunks
+    if splits_a_name([*prev, *last], len(prev) - 1):  # #1482: the stolen word ends a name
         return chunks
     stolen = prev.pop()
     chunks[-2] = " ".join(prev)

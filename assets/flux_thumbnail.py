@@ -547,13 +547,13 @@ def generate_dual_thumbnails(
     os.makedirs(output_dir, exist_ok=True)
     run_tag = f"run{content_run_id}" if content_run_id else "thumb"
     if text_variants:
-        from assets.thumbnail_compose import headline_words
+        from assets.thumbnail_compose import headline_words, short_headline
 
         words = headline_words(title) or [part for part in (title or topic).split() if part]
-        short = " ".join(words[:3] or words)
+        short = " ".join(short_headline(words, 3) or words)  # #1483: never "Why the New"
         full = (title or topic).strip() or short
         if short == full and len(words) > 2:
-            short = " ".join(words[:2])
+            short = " ".join(short_headline(words, 2))
         rows: list[dict] = []
         for arm, headline in (("text_short", short), ("text_full", full)):
             filename = _thumbnail_basename(title, topic, suffix=f"{arm}_pillow_{run_tag}")

@@ -189,35 +189,38 @@ _FRAME_CUT_MIN = 20
 _SPLIT_PLACES = {"Angeles": "Los", "Vegas": "Las", "Orleans": "New"}
 
 
-def broken_place_name(title: str) -> str:
+# #1482: a script says "in Vegas" and "the Orleans Arena" - only "Angeles" never stands alone.
+SPOKEN_SPLIT_PLACES = {"Angeles": "Los"}
+
+
+def broken_place_name(title: str, *, places: dict[str, str] | None = None) -> str:
     """The place name a title has broken ("Los Angeles" for "Loss Angeles"), or "". #1224: or
-    the team name that lost its first word ("New England Patriots" for "England Patriots")."""
+    the team name that lost its first word ("New England Patriots" for "England Patriots").
+    #1481: a word that starts a team's name is not a broken place - "Vegas Golden Knights".
+    `places` replaces `_SPLIT_PLACES` (the script check passes `SPOKEN_SPLIT_PLACES`)."""
+    from apis.team_gazetteer import team_spans
+
+    split_places = _SPLIT_PLACES if places is None else places
     words = re.findall(r"[A-Za-z']+", title or "")
+    starts = {start for start, _end in team_spans(words)}
     for i, word in enumerate(words):
-        first = _SPLIT_PLACES.get(word)
-        if first and (i == 0 or words[i - 1] != first):
+        first = split_places.get(word)
+        if first and i not in starts and (i == 0 or words[i - 1] != first):
             return f"{first} {word}"
     return broken_team_name(title)
 
 
-# A nickname of two words: "Trail Blazers" stands alone and has lost nothing.
-_TWO_WORD_NICKNAMES = frozenset({"Portland Trail Blazers"})
-
-
 def broken_team_name(title: str) -> str:
-    """A three-word team named without its first word ("England Patriots", "York Jets"), as the
-    full name, or "" (#1224, run 159). #1486: each mention is read - "New England Patriots fans
-    meet England Patriots" has one whole and one broken."""
-    from apis.nba_teams import NBA_TEAM_NAMES
-    from apis.nfl_entities import NFL_TEAM_NAMES
+    """A team named without its city's first word ("England Patriots", "York Rangers", "Ham
+    United"), as the full name, or "" (#1224, run 159). #1486: each mention is read - "New
+    England Patriots fans meet England Patriots" has one whole and one broken. #1481: every
+    league in `apis.team_gazetteer`; a two-word nickname ("Maple Leafs") has lost nothing."""
+    from apis.team_gazetteer import broken_tails
 
     text = title or ""
-    for full in sorted({*NFL_TEAM_NAMES.values(), *NBA_TEAM_NAMES.values()}):
-        parts = full.split()
-        if len(parts) < 3 or full in _TWO_WORD_NICKNAMES:
-            continue
-        tail = " ".join(parts[1:])
-        if re.search(rf"(?<!\b{re.escape(parts[0])} )\b{re.escape(tail)}\b", text):
+    for tail, full, prefixes in broken_tails():
+        whole = "".join(f"(?<!\\b{re.escape(prefix)})" for prefix in prefixes)
+        if re.search(rf"{whole}\b{re.escape(tail)}\b", text):
             return full
     return ""
 

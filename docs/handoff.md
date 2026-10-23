@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-22 night · **HEAD at write:** `9d4610d` (the code; the docs commit follows)
+**Written:** 2026-10-22 evening · **HEAD at write:** `f4351fe` (the code; the docs commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
@@ -61,18 +61,17 @@ nothing broken, say that explicitly rather than leaving it implied.
 **The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall**; ideas
 #1314-#1517 in the backlog. Decision 68: the backlog stays <= 300 (`test_docs_lint`).
 
-**Wave 122 (two batches, `d67b929` `9d4610d`), built on `053978c`:**
-- **#1542, a defect:** `youtube_metrics.refresh_publish_metrics` stored nothing after a video's
-  24h snapshot since 10-05 - fixed; the next `sync-metrics` on the PC heals the rows.
-- `apis/team_gazetteer` (NHL/MLB/EPL) in `title_generator.broken_team_name` (#1481);
-  `script_check` names a broken team, `caption_timing.line_bounds` + `topic_tokens.name_spans`
-  keep names on one cue (#1482); `thumbnail_compose.short_headline` (#1483).
-- `nightly_task.start_beat` / `beat_gap_line` from `ops overnight`, read by `ops status` and the
-  morning (#1468; `OVERNIGHT_BEAT=false` in the suite); `tests/test_health_writers.py` (#1473).
+**Wave 123 (one code commit, then docs), built on the cloud's `ab47464` (waves 121-122):**
+- The pop-ups: `win_shell.hide_child_windows` (+ `share_std`) in every `.pyw`; `nightly_task`'s
+  four console calls flagged; `scripts/ops_task.pyw` + `schedule-drafts --windowless` - the
+  operator's overnight task now runs `pythonw ... ops_task.pyw overnight` (read back).
+- #1544 painted words; #1485 `topic_tokens._whole_teams`; #1465 #1467 + a disk check in
+  `render_unattended`; #1480 `analytics/field_audit.py` in the weekly report.
 
-**Live:** nothing run on the PC this wave - replayed on synthetic data. **Defects first:** #1542
-is fixed in code and waits for one sync to heal the stored rows; #1540 (the #599 thumbnail check
-likely cannot fail) is still filed, not fixed. None open of mine otherwise.
+**Live:** 16 console windows in the 20:37 worker pass, 0 after. The sign-in is still lapsed -
+uploads 175, 180, 181 hold; #1542's rows heal at the first sync after it. C: was at 0 GB free
+(old suite copies, deleted; 11 GB free) - **delete scratch exports each wave**.
+**Defects first:** none open of mine.
 
 ## Slot — Cursor
 

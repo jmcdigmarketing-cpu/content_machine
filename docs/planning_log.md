@@ -9343,3 +9343,88 @@ Audit (wave 122):
 - Outward: nothing.
 
 `roadmap-index`: open 190, done 1587, numbered open 181.
+
+## 2026-10-22 evening — wave 123, the console pop-ups and the cloud's next five (Claude Code)
+
+**Prompt:** "you have got to cut it out with system 32 window popup spams, idk if that is a
+start up apps thing but no go. next 5 too, cloud has updated so catch up."
+
+Caught up first:
+- A Claude cloud session had shipped waves 121 and 122 to `main` (6 commits, `c74cab7..ab47464`).
+- Local `main` was at wave 120 and fast-forwarded.
+- The pulled tree: 6590 tests forward and reversed, the 2 export-only test_wave13 errors.
+
+The pop-ups are ours, not a startup app. The startup list holds games, Docker, Edge, OneDrive and
+Ollama; none of them is a System32 console. Measured:
+- **The overnight task** ran `cmd /c ... python.exe -m scripts.ops overnight`. That is a
+  `C:\WINDOWS\system32\cmd.exe` window for the whole run - on 10-22 from 16:52, because the
+  PC missed 5:00.
+- **Every 15-minute worker pass**, under `pythonw`, started console tools, each in a window
+  of its own:
+  - importing `jobs.worker` runs `ver` through `cmd` - Python 3.11's `platform` module;
+  - ffmpeg probes;
+  - from 8 PM, `schtasks`, with `wevtutil`, `powercfg` and PowerShell beside it in
+    `nightly_task`, none with `CREATE_NO_WINDOW`.
+- An EnumWindows watcher saw **16 new windows** in the 5 seconds after the 20:37 pass
+  started: 10 Windows Terminal (Windows 11 hosts console tools there) and 6 ffmpeg.
+
+Shipped (tests/test_wave123.py, 21 tests):
+1. `core/win_shell.hide_child_windows`: in a process with no console, every child starts
+   with CREATE_NO_WINDOW unless it asks for a console of its own.
+   - It is the first thing in `scripts/worker_task.pyw` after the log redirect, the new
+     `scripts/ops_task.pyw`, `content_os.pyw` and `booth_os.pyw`.
+   - `share_std` hands a child with no output of its own the launcher's fds 1 and 2, so
+     the overnight draft subprocess and its crash traceback still land in the log. Without
+     it, a child's lines were lost under `pythonw` - measured.
+2. The four `nightly_task` calls carry the flag (`win_shell.no_window`).
+3. `scripts/ops_task.pyw` runs an `ops` command under `pythonw` with its log.
+   - `task_command` builds it.
+   - `ops schedule-drafts --windowless` changed the installed task in place with
+     Set-ScheduledTask; WakeToRun, the 2-hour limit and start-when-available were kept, and
+     it read the action back.
+   - Live: `pythonw scripts\ops_task.pyw ... status` exit 0, 43 lines in its log.
+4. #1544: the thumbnail record holds the painted words (`headline_words` of the first 80
+   characters) and `headline_asked` beside them. The text_full lever no longer says "the full
+   title".
+5. #1485: 3 of 144 teams lost their name in `title_phrases` / `search_query` - the 76ers
+   and 49ers to the bare city, Brighton & Hove Albion split at "&". `_whole_teams` puts the
+   name back. The sibling `name_spans` (the caption cues) had the same defect, `(2, 4)` for
+   "San Francisco", and now gives `(2, 5)`.
+6. #1465 / #1467, plus a disk check:
+   - before the first unattended render, a 2-second smoke render (live: 0.5 s);
+   - before each, free memory (`OVERNIGHT_MIN_FREE_GB`, 3) and free disk
+     (`OVERNIGHT_MIN_DISK_GB`, 5);
+   - a failure stops the night with the drafts in place.
+7. #1480: `analytics/field_audit.py` in the weekly report. Live: retention_curve on 12 of
+   20 videos (#1546), and 8 of 20 videos under 28 days last synced 3+ days ago (run 98: Oct
+   6) - #1542's frozen rows, waiting for a sync and so for the sign-in.
+
+Found on the way:
+- **C: was at 0 GB free** during the suite run. About 11 GB of it was this session's own
+  suite copies in the scratchpad, kept from wave 101 on. They are deleted; 11.3 GB is free.
+  - `output/` is 10.4 GB with retention dry (no cap); `video/` is 17 GB.
+  - Overnight renders now stop under 5 GB free instead of failing mid-render.
+- My own slip: the worker launcher first called the switch before its log redirect, so
+  `core.logging` bound its handler to `pythonw`'s `None` stderr.
+  - The 20:52 pass logged a "Logging error" for its sign-in line.
+  - Fixed, and the launcher test now fails on that order - checked by running it against
+    the bad order.
+- The PC slept 19:42-20:19, so the 19:52 and 20:07 passes never ran.
+
+Audit (wave 123):
+- 21 tests in tests/test_wave123.py; 20 written first and all 20 seen failing on clean HEAD
+  `ab47464`. The disk check's test came with its code.
+- 4 corpus cases (the 76ers, Brighton, the 49ers search, `name_spans`); 430 of 430 held.
+  - `regression_corpus._members` now turns a list of tuples into lists, as JSON has them.
+- One test changed meaning on purpose: wave 19's install line names the launcher.
+- The reverse run caught an order-dependence of mine: the launcher test leaked
+  `PYTHONIOENCODING` into `test_child_encoding`. Fixed with `patch.dict`.
+- mypy 92, ruff clean; the new env keys are documented in `.env.example`.
+- **Live:**
+  - 16 windows in the 20:37 pass, none in the 20:52 pass;
+  - the 21:07 pass: no console windows and a clean log (the 20:52 pass's Logging error gone);
+  - the overnight task read back;
+  - the three render guards and the smoke render on this PC.
+- **Outward:** the operator's overnight task's action changed - asked for, and read back.
+
+`roadmap-index`: open 186, done 1593, numbered open 177.

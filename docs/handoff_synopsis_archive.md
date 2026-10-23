@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-21 night (Claude Code): wave 120, the next ten
+
+The sign-in lapsed at 9:36 PM EDT and `ops status` says "Yours today: sign in again".
+Health names the run behind a warning, its window's dates and each line's source; the
+weekly report counts drafts a claim held (1 of 25); the privacy sync says what it checked;
+`ops retention` gives each video's first 3 seconds (over 100% is replays - #1538); `ops ypp`
+keeps a month's snapshot; the compilation's title names its three most-viewed subjects.
+Open 202.
+
 ## Previous — 2026-10-21 (Claude Code): wave 119, the next ten
 
 Before the 9:36 PM EDT lapse, with the operator's yes, 168 and 170 went public and 171 was

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-22 night: wave 122, the next five
+# Handoff synopsis — 2026-10-22 evening: wave 123, the pop-ups and the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-22 night (Claude Code): wave 122, the next five
+## Last wave — 2026-10-22 evening (Claude Code): wave 123, the pop-ups and the next five
+
+The operator's System32 pop-ups were ours: the overnight task ran in a `cmd` window and each
+15-minute worker pass opened ~16 console windows (`cmd /c ver` at import, ffmpeg, schtasks).
+A windowless process now starts its children with no window, and the overnight task runs
+`pythonw scripts\ops_task.pyw` (changed in place). Then the cloud's five: painted thumbnail
+words, whole team names, a memory check, a smoke render and a disk check before renders, and
+a weekly fields audit. C: had reached 0 GB free (11 GB of it old suite copies). Open 186.
+
+## Previous — 2026-10-22 night (Claude Code): wave 122, the next five
 
 A defect first: since 10-05 the metrics sync stored nothing after a video's first-day snapshot,
 so views, engaged rate and revenue froze at day 1 for every video whose analytics came in early;
@@ -30,15 +39,6 @@ monetized, keeps a line a day (`ops health --history`) with its thresholds in on
 table, and costs a video from the spend you entered. The sync reads Studio edits back; the
 morning names the crash's Python line; the title check reads every mention of a team. #1391
 closed by measurement (the API cannot say which thumbnail is live). Open 193.
-
-## Previous — 2026-10-21 night (Claude Code): wave 120, the next ten
-
-The sign-in lapsed at 9:36 PM EDT and `ops status` says "Yours today: sign in again".
-Health names the run behind a warning, its window's dates and each line's source; the
-weekly report counts drafts a claim held (1 of 25); the privacy sync says what it checked;
-`ops retention` gives each video's first 3 seconds (over 100% is replays - #1538); `ops ypp`
-keeps a month's snapshot; the compilation's title names its three most-viewed subjects.
-Open 202.
 
 ## Pipeline order (operator)
 
@@ -114,7 +114,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1544 #1485 #1465 #1467 #1480 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1546 #1501 #1505 #1470 #1510 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

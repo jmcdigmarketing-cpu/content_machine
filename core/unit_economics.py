@@ -102,6 +102,8 @@ class VideoEconomics:
     minutes_source: str = ""
     # #1072: public videos only. An unlisted upload is finished, not published.
     published: bool = False
+    # #1473: False when the run stored no cost - `cost_usd` then reads 0.0, not a free video.
+    cost_recorded: bool = True
 
     @property
     def rpm_usd(self) -> float | None:
@@ -157,11 +159,12 @@ def _run_costs_and_titles(
 
         for run in get_content_run_repository().list_for_channel(channel_id):
             features = _load_json(run.features_json)
-            cost = features.get("cost") or {}
-            try:
-                costs[run.id] = float(cost.get("total") or 0.0)
-            except (TypeError, ValueError):
-                costs[run.id] = 0.0
+            cost = features.get("cost")
+            if isinstance(cost, dict) and "total" in cost:  # #1473: none stored is not $0.00
+                try:
+                    costs[run.id] = float(cost.get("total") or 0.0)
+                except (TypeError, ValueError):
+                    costs[run.id] = 0.0
             titles[run.id] = (run.title or run.selected_topic or "").strip()
             domains[run.id] = str(features.get("domain") or "").strip()
             if not domains[run.id] and (run.selected_topic or run.input_topic):
@@ -239,6 +242,7 @@ def channel_economics(channel_id: str | None = None, *, limit: int = 25) -> Chan
                 minutes=minutes.get(row.content_run_id or 0, (None, ""))[0],
                 minutes_source=minutes.get(row.content_run_id or 0, (None, ""))[1],
                 published=str(getattr(row, "privacy_status", "") or "").strip().lower() == "public",
+                cost_recorded=row.content_run_id in costs,
             )
         )
     return econ

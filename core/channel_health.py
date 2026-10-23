@@ -426,7 +426,19 @@ def _cost_sub(channel_id: str) -> HealthSub:
         logger.debug("entered spend unread: %s", exc)
         spent, videos = {}, 0
     if videos:
-        return _entered_cost_sub(econ, spent, videos)
+        return _with_unrecorded(_entered_cost_sub(econ, spent, videos), econ)
+    return _with_unrecorded(_estimated_cost_sub(econ), econ)
+
+
+def _with_unrecorded(sub: HealthSub, econ: Any) -> HealthSub:
+    """#1473: a run with no stored cost read as $0.00 - a free video, leaning GREEN."""
+    missing = sum(1 for v in econ.videos if getattr(v, "cost_recorded", True) is False)
+    if missing:
+        sub.detail += f"; {missing} of {len(econ.videos)} with no recorded cost (read as $0.00)"
+    return sub
+
+
+def _estimated_cost_sub(econ: Any) -> HealthSub:
     avg = econ.total_cost / len(econ.videos)
     cheap = avg <= _t("cost_yellow_over_usd")
     margin = econ.total_margin
@@ -460,11 +472,11 @@ def _data_quality_sub(channel_id: str) -> HealthSub:
 # #1471 (wave 120): where each line's number comes from - health read RED on a number
 # nobody stored (S18), and no line said what it had read.
 HEALTH_SOURCES = {
-    "engagement": "the publish log's synced metrics",
+    "engagement": "the publish log's synced metrics, and the runs' features and quality",
     "cadence": "the publish log",
     "authenticity": "the last 15 runs' quality",
     "reliability": "the breakers and quota state, read now",
-    "cost": "the runs' recorded API cost",
+    "cost": "the runs' recorded API cost and the synced revenue",
     "data quality": "the last 25 runs, the publish log and signal traces",
 }
 

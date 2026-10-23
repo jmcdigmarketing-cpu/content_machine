@@ -246,6 +246,8 @@ os.environ["OVERNIGHT_RENDERS"] = "0"
 os.environ["OVERNIGHT_SHELF_MAX"] = "0"
 # #1167 / #1168: never query the operator's scheduled task or set aside their drafts.
 os.environ["NIGHTLY_TASK_QUERY"] = "false"
+os.environ["OVERNIGHT_BEAT"] = "false"  # #1468: no beat thread from a real cmd_overnight
+os.environ["OVERNIGHT_BEAT_FILE"] = _suite_store("overnight_beat.json")
 os.environ["OVERNIGHT_EXPIRE_DRAFTS"] = "false"
 # #1190: never post to the operator's TikTok or Instagram. A test of the round sets it itself.
 os.environ["CROSSPOST_AUTO"] = "false"

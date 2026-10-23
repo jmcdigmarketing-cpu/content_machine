@@ -1686,18 +1686,22 @@ def cmd_overnight(args: argparse.Namespace) -> int:
     from datetime import datetime
 
     from config.channels import resolve_channel_id
-    from core.nightly_task import enable_crash_traceback, record_overnight
+    from core.nightly_task import enable_crash_traceback, record_overnight, start_beat, stop_beat
     from core.overnight import render_overnight, run_overnight
 
     enable_crash_traceback()  # #1216: a native crash names its Python line in the task's log
     channel, started = resolve_channel_id(args.channel), datetime.now()
     record_overnight(channel, started=started)  # #1223: a run that dies leaves no finish
-    result = run_overnight(
-        args.channel,
-        count=args.count or 3,
-        file=getattr(args, "file", None),
-        facts_file=getattr(args, "facts_file", None),
-    )
+    start_beat(started)  # #1468: a beat each minute - the last one is when it died
+    try:
+        result = run_overnight(
+            args.channel,
+            count=args.count or 3,
+            file=getattr(args, "file", None),
+            facts_file=getattr(args, "facts_file", None),
+        )
+    finally:
+        stop_beat()
     record_overnight(
         channel, started=started, finished=datetime.now(), drafts=getattr(result, "drafted", None)
     )

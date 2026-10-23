@@ -87,9 +87,12 @@ def _worker(channel_id: str) -> str:
 
 
 def _overnight(channel_id: str) -> str:
-    """#1372: when overnight last started, or that it is overdue."""
-    from core.nightly_task import _recorded_start, overdue_line, overnight_late_short
+    """#1372: when overnight last started, or that it is overdue. #1468: or that it stopped."""
+    from core.nightly_task import _recorded_start, beat_gap_line, overdue_line, overnight_late_short
 
+    stopped = beat_gap_line()
+    if stopped:
+        return stopped
     overdue = overdue_line()
     if overdue:
         return overdue

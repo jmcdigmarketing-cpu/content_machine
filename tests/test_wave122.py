@@ -12,14 +12,26 @@ Measured first, on 053978c:
   karaoke style's 4 words, "Can the New England | Patriots win the AFC | East ..." (#1482).
 - the thumbnail's short arm cut the title at 3 words: "Why the New", "How the Golden", "Can the
   Tampa" (#1483).
+
+Batch B:
+- overnight left no sign of life between its start and its finish: the 10-16 crash was known
+  from Task Scheduler's exit code and the log's last write, a hand run had neither, and `ops
+  status` said only "last started" (#1468).
+- the health lines' tests fed hand-made shapes; none wrote a field the way production writes it
+  and read it back, which is how the frozen metrics (#1542) went unseen (#1473,
+  tests/test_health_writers.py).
 """
 
 from __future__ import annotations
 
 import json
+import os
+import tempfile
+import threading
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from tests import test_first_day as first_day
 
@@ -167,6 +179,91 @@ class ThumbnailNameTests(unittest.TestCase):
             ("Topuria Knocks Out Holloway Again Tonight", "Topuria Knocks Out"),  # no name: 3
         ):
             self.assertEqual(" ".join(short_headline(headline_words(title), 3)), want, title)
+
+
+class BeatTests(unittest.TestCase):
+    """#1468: overnight writes a beat each minute; the morning and `ops status` read the gap."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.beat = os.path.join(tmp.name, "overnight_beat.json")
+        self.record = os.path.join(tmp.name, "overnight_last.json")
+        env = patch.dict(
+            os.environ,
+            {"OVERNIGHT_BEAT_FILE": self.beat, "OVERNIGHT_RECORD_FILE": self.record,
+             "OVERNIGHT_BEAT": "true"},
+        )  # fmt: skip
+        env.start()
+        self.addCleanup(env.stop)
+
+    def _write(self, path, payload):
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+
+    def test_the_beat_is_written_and_stops(self):
+        from core import nightly_task
+
+        started = datetime(2026, 10, 16, 4, 30, 7)
+        self.assertTrue(nightly_task.start_beat(started, seconds=0.01))
+        nightly_task.beat_step("drafting 1 of 3: Chargers week 7")
+        threading.Event().wait(0.1)
+        nightly_task.stop_beat()
+        beat = nightly_task.last_beat()
+        self.assertEqual(beat["started"], started.isoformat(timespec="seconds"))
+        self.assertEqual(beat["step"], "drafting 1 of 3: Chargers week 7")
+        self.assertFalse(any(t.name == "overnight-beat" for t in threading.enumerate()))
+
+    def test_the_gap_is_said(self):
+        from core import nightly_task
+
+        self._write(self.record, {"channel": "tapin", "started": "2026-10-16T04:30:07",
+                                  "finished": "", "drafts": None})  # fmt: skip
+        self._write(self.beat, {"started": "2026-10-16T04:30:07", "beat": "2026-10-16T04:32:13",
+                                "step": "rendering run 175"})  # fmt: skip
+        line = nightly_task.beat_gap_line(now=datetime(2026, 10, 16, 9, 0))
+        self.assertEqual(
+            line,
+            "Overnight's last sign of life was 4:32 AM on Oct 16, rendering run 175 "
+            "(started 4:30 AM) - it never finished",
+        )
+        # still beating, finished, or a beat from another run: nothing to say
+        self.assertEqual(nightly_task.beat_gap_line(now=datetime(2026, 10, 16, 4, 33)), "")
+        self._write(self.beat, {"started": "2026-10-15T05:00:00", "beat": "2026-10-15T05:09:00",
+                                "step": ""})  # fmt: skip
+        self.assertEqual(nightly_task.beat_gap_line(now=datetime(2026, 10, 16, 9, 0)), "")
+
+    def test_ops_status_and_the_morning_read_it(self):
+        from core import nightly_task, status_summary
+
+        self._write(self.record, {"channel": "tapin", "started": "2026-10-16T04:30:07",
+                                  "finished": "", "drafts": None})  # fmt: skip
+        self._write(self.beat, {"started": "2026-10-16T04:30:07", "beat": "2026-10-16T04:32:13",
+                                "step": "rendering run 175"})  # fmt: skip
+        with patch.object(nightly_task, "_now", return_value=datetime(2026, 10, 16, 9, 0)):
+            status = status_summary._overnight("tapin")
+            morning = nightly_task.overnight_stop_line()  # no Task Scheduler: the beat alone
+        self.assertIn("last sign of life was 4:32 AM", status)
+        self.assertIn("rendering run 175", morning)
+
+    def test_ops_overnight_beats_while_it_runs(self):
+        from scripts import ops
+
+        seen = {}
+
+        def run(*_a, **_k):
+            seen["alive"] = any(t.name == "overnight-beat" for t in threading.enumerate())
+            seen["file"] = os.path.isfile(self.beat)
+            return SimpleNamespace(drafted=0)
+
+        with (
+            patch("core.overnight.run_overnight", side_effect=run),
+            patch("core.overnight.render_overnight", return_value=""),
+            patch("core.nightly_task.enable_crash_traceback", return_value=False),
+        ):
+            ops.cmd_overnight(SimpleNamespace(channel="tapin", count=1, file=None, facts_file=None))
+        self.assertEqual(seen, {"alive": True, "file": True})
+        self.assertFalse(any(t.name == "overnight-beat" for t in threading.enumerate()))
 
 
 class CorpusTests(unittest.TestCase):

@@ -193,8 +193,10 @@ def _week_compile(result: Any, now: datetime | None = None) -> None:
 
         if moment.astimezone(_channel_tz(result.channel_id)).weekday() != 0:
             return
+        from core.nightly_task import beat_step
         from video.week_compile import compile_week
 
+        beat_step("the weekly compilation")  # #1468
         result.week_line = "\n".join(
             compile_week(result.channel_id, apply=True, queue=True, now=moment)
         )
@@ -568,15 +570,15 @@ def draft_each(
     picks: dict[str, dict] | None = None,
 ) -> list[Any]:
     """One child process per topic. A crashed child is one failed draft."""
-    return [
-        _draft_one(
-            channel,
-            topic,
-            key_facts=key_facts,
-            pick=(picks or {}).get(topic),
+    from core.nightly_task import beat_step
+
+    outcomes = []
+    for i, topic in enumerate(topics, start=1):
+        beat_step(f"drafting {i} of {len(topics)}: {topic[:40]}")  # #1468
+        outcomes.append(
+            _draft_one(channel, topic, key_facts=key_facts, pick=(picks or {}).get(topic))
         )
-        for topic in topics
-    ]
+    return outcomes
 
 
 def _draft_one(

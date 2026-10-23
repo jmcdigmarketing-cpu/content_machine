@@ -1103,6 +1103,9 @@ def render_unattended(
             continue
         tried += 1
         try:
+            from core.nightly_task import beat_step
+
+            beat_step(f"rendering run {draft.run_id}")  # #1468: the native crash class lives here
             (render or _render)(draft, False)
         except Exception as exc:
             logger.warning("overnight render of run %s failed: %s", draft.run_id, exc)

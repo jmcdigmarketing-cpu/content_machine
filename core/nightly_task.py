@@ -19,6 +19,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -451,6 +452,130 @@ def record_overnight(
         logger.debug("overnight record not written: %s", exc)
 
 
+# #1468 (S17): a beat each minute while overnight runs. A native crash kills the thread with
+# the process, so the last beat is the time of death to within a minute - the 10-16 crash was
+# known only from Task Scheduler's exit code and the log's last write, and a hand run had neither.
+BEAT_SECONDS = 60.0
+_BEAT_STALE_MINUTES = 3
+_beat_lock = threading.Lock()
+_beat_state: dict[str, Any] = {"step": "", "stop": None, "thread": None, "started": None}
+
+
+def _now() -> datetime:
+    return datetime.now()
+
+
+def beat_enabled() -> bool:
+    """`OVERNIGHT_BEAT=false` (the suite) writes no beat."""
+    return os.getenv("OVERNIGHT_BEAT", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def beat_path() -> str:
+    """`OVERNIGHT_BEAT_FILE`, else data/overnight_beat.json - not `core.human_presence`'s
+    heartbeat, which an unattended run must never stamp."""
+    return os.getenv("OVERNIGHT_BEAT_FILE", "").strip() or os.path.join(
+        REPO_ROOT, "data", "overnight_beat.json"
+    )
+
+
+def beat_step(text: str) -> None:
+    """What overnight is doing now - the next beat carries it ("rendering run 175")."""
+    _beat_state["step"] = str(text or "")[:80]
+
+
+def _write_beat() -> None:
+    started = _beat_state.get("started")
+    payload = {
+        "started": started.isoformat(timespec="seconds") if started else "",
+        "beat": _now().isoformat(timespec="seconds"),
+        "step": _beat_state.get("step") or "",
+    }
+    try:
+        path = beat_path()
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        tmp = f"{path}.tmp"
+        with open(tmp, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+        os.replace(tmp, path)
+    except OSError as exc:
+        logger.debug("overnight beat not written: %s", exc)
+
+
+def start_beat(started: datetime, *, seconds: float | None = None) -> bool:
+    """Write a beat now and every `seconds` until `stop_beat`. False when beats are off."""
+    if not beat_enabled():
+        return False
+    stop_beat()
+    interval = BEAT_SECONDS if seconds is None else max(0.001, float(seconds))
+    stop = threading.Event()
+
+    def _loop() -> None:
+        while not stop.wait(interval):
+            _write_beat()
+
+    with _beat_lock:
+        _beat_state.update(step="", started=started, stop=stop)
+        _write_beat()  # the first beat before the run starts - a crash at once still leaves one
+        thread = threading.Thread(target=_loop, name="overnight-beat", daemon=True)
+        _beat_state["thread"] = thread
+        thread.start()
+    return True
+
+
+def stop_beat() -> None:
+    with _beat_lock:
+        stop, thread = _beat_state.get("stop"), _beat_state.get("thread")
+        _beat_state.update(stop=None, thread=None)
+    if stop is not None:
+        stop.set()
+    if thread is not None:
+        thread.join(timeout=5)
+
+
+def last_beat() -> dict[str, Any] | None:
+    try:
+        with open(beat_path(), encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _stale_beat(now: datetime | None = None) -> tuple[datetime, datetime, str] | None:
+    """(started, last beat, step) of a run that stopped beating and never finished, else None."""
+    started, finished = _recorded_start(), _recorded_finish()
+    beat = last_beat() or {}
+    if started is None or (finished is not None and finished >= started):
+        return None
+    if str(beat.get("started") or "") != started.isoformat(timespec="seconds"):
+        return None  # no beat from this run (before #1468, or beats off)
+    try:
+        last = datetime.fromisoformat(str(beat.get("beat") or ""))
+    except ValueError:
+        return None
+    if ((now or _now()) - last).total_seconds() < _BEAT_STALE_MINUTES * 60:
+        return None  # still running
+    return started, last, str(beat.get("step") or "")
+
+
+def _beat_when(last: datetime, step: str) -> str:
+    return f"{_clock(last)} on {last:%b %d}" + (f", {step}" if step else "")
+
+
+def beat_gap_line(*, now: datetime | None = None) -> str:
+    """#1468: "" while overnight is beating or finished, else its last sign of life - "Overnight's
+    last sign of life was 4:32 AM on Oct 16, rendering run 175 (started 4:30 AM) - it never
+    finished". Needs no Task Scheduler, so a hand run is covered."""
+    gap = _stale_beat(now)
+    if gap is None:
+        return ""
+    started, last, step = gap
+    return (
+        f"Overnight's last sign of life was {_beat_when(last, step)} "
+        f"(started {_clock(started)}) - it never finished"
+    )
+
+
 def _recorded(key: str) -> datetime | None:
     try:
         with open(overnight_record_path(), encoding="utf-8") as f:
@@ -543,7 +668,7 @@ def overnight_stop_line(*, root: str | None = None, log_path: str | None = None)
     after 4 of 3 drafts"."""
     times = _queried_times()
     if not times:
-        return ""
+        return beat_gap_line()  # #1468: a hand run, or no Task Scheduler to ask
     last = times.get("last")
     finished = _recorded_finish()
     if last is not None and finished is not None and finished >= last:
@@ -570,7 +695,11 @@ def overnight_stop_line(*, root: str | None = None, log_path: str | None = None)
         except Exception as exc:
             logger.debug("overnight drafts uncounted: %s", exc)
     log = log_path or os.path.join(REPO_ROOT, OVERNIGHT_LOG)
-    return stopped_line(times, drafts_made=made, crash_at=crash_frame(_crash_text(last, log)))
+    line = stopped_line(times, drafts_made=made, crash_at=crash_frame(_crash_text(last, log)))
+    gap = _stale_beat()
+    if line and gap:  # #1468: when it died, and what it was doing
+        line += f" Its last sign of life was {_beat_when(gap[1], gap[2])}."
+    return line or beat_gap_line()
 
 
 def enable_crash_traceback(stream: Any = None) -> bool:

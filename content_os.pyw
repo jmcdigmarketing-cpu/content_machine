@@ -11,6 +11,9 @@ if ROOT not in sys.path:
 os.chdir(ROOT)
 
 if __name__ == "__main__":
+    from core.win_shell import hide_child_windows
+
+    hide_child_windows()  # wave 123: no console window from git, ffmpeg or `cmd /c ver`
     if "--chip" in sys.argv:
         from core.win_notify import run_tray
 

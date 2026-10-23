@@ -8,6 +8,10 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+from core.win_shell import hide_child_windows  # noqa: E402
+
+hide_child_windows()  # wave 123: no console window from git, ffmpeg or `cmd /c ver`
+
 from core.review_booth import serve_booth  # noqa: E402
 
 

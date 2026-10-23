@@ -7011,6 +7011,80 @@
         ]
       },
       "why": "the first cue stops before New England Patriots"
+    },
+    {
+      "id": "a-digit-nickname-stays-with-its-city",
+      "item": 1485,
+      "source": "wave 123 audit of 144 teams: 'Philadelphia 76ers' came back as 'Philadelphia' - the Eagles', Phillies' and Flyers' city too",
+      "call": "apis.topic_tokens:title_phrases",
+      "args": [
+        "Philadelphia 76ers beat the Knicks"
+      ],
+      "expect": {
+        "equals": [
+          "Philadelphia 76ers",
+          "Knicks"
+        ]
+      },
+      "why": "a city several teams share is not a team"
+    },
+    {
+      "id": "an-ampersand-inside-a-club-name",
+      "item": 1485,
+      "source": "wave 123 audit: 'Brighton & Hove Albion' split into 'Brighton' and 'Hove Albion'",
+      "call": "apis.topic_tokens:title_phrases",
+      "args": [
+        "Brighton & Hove Albion beat Arsenal at the Amex"
+      ],
+      "expect": {
+        "equals": [
+          "Brighton & Hove Albion",
+          "Arsenal",
+          "Amex"
+        ]
+      },
+      "why": "the club's name is one name"
+    },
+    {
+      "id": "the-49ers-search-is-not-the-city",
+      "item": 1485,
+      "source": "wave 123 audit: search_query gave 'San Francisco' for a 49ers topic",
+      "call": "apis.topic_tokens:search_query",
+      "args": [
+        "Why the San Francisco 49ers beat the defending champions in overtime"
+      ],
+      "expect": {
+        "equals": "San Francisco 49ers"
+      },
+      "why": "a search for the city finds the Giants"
+    },
+    {
+      "id": "a-caption-cue-keeps-the-49ers-whole",
+      "item": 1485,
+      "source": "wave 123, the sibling: name_spans gave (2, 4) - a cue could end on 'San Francisco' before '49ers'",
+      "call": "apis.topic_tokens:name_spans",
+      "args": [
+        [
+          "Can",
+          "the",
+          "San",
+          "Francisco",
+          "49ers",
+          "stop",
+          "the",
+          "Rams",
+          "again"
+        ]
+      ],
+      "expect": {
+        "equals": [
+          [
+            2,
+            5
+          ]
+        ]
+      },
+      "why": "#1482's cues read the same names"
     }
   ]
 }

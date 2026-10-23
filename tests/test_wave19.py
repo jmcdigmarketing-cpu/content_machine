@@ -253,8 +253,10 @@ class TestNightlyTask(unittest.TestCase):
         self.assertEqual(argv[:6], ["schtasks", "/Create", "/SC", "DAILY", "/ST", "05:00"])
         self.assertEqual(argv[argv.index("/TN") + 1], TASK_NAME)
         command = argv[argv.index("/TR") + 1]
-        self.assertIn(r'cd /d "C:\dev\content_machine"', command)
-        self.assertIn("-m scripts.ops overnight --channel tapin --count 3", command)
+        # wave 123: the launcher sets the folder itself - `cmd /c cd /d` held a console open
+        launcher = os.path.join(r"C:\dev\content_machine", "scripts", "ops_task.pyw")
+        self.assertIn(f'"{launcher}"', command)
+        self.assertIn("overnight --channel tapin --count 3", command)
         self.assertEqual(argv[-1], "/F")
 
     def test_run_reports_a_missing_schtasks_instead_of_raising(self):

@@ -95,7 +95,7 @@ _LEVERS: dict[str, dict] = {
         "kind": "thumbnail_text",
         "arms": {
             "text_short": "keep the painted headline to the first three title words",
-            "text_full": "paint the full title as the thumbnail headline",
+            "text_full": "paint the title's first phrase, up to five words (#1544)",
         },
     },
     "voice_delivery": {

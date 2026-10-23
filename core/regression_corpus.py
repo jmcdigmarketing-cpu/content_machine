@@ -49,8 +49,8 @@ def module_file(call: str) -> str:
 def _members(got: Any) -> Any:
     if isinstance(got, set | frozenset):
         return sorted(got, key=str)
-    if isinstance(got, tuple):
-        return list(got)
+    if isinstance(got, tuple | list):  # wave 123: spans are a list of tuples; JSON has lists
+        return [list(g) if isinstance(g, tuple) else g for g in got]
     return got
 
 

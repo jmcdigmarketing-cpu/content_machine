@@ -23,6 +23,12 @@ def main() -> None:
     with open(LOG, "a", encoding="utf-8", errors="replace") as log:
         sys.stdout = sys.stderr = log
         print(f"--- {datetime.now().isoformat(timespec='seconds')} worker pass")
+        # wave 123: before any import starts one - every pass opened ~16 console windows
+        # (`cmd /c ver` from Python's platform module, ffmpeg probes, schtasks from 8 PM). After
+        # the redirect: `core.logging` binds its handler to sys.stderr, None under pythonw.
+        from core.win_shell import hide_child_windows
+
+        hide_child_windows()
         try:
             from core.nightly_task import enable_crash_traceback
 

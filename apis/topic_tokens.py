@@ -321,6 +321,41 @@ def title_phrases(text: str, *, max_words: int = 3, connectors: bool = False) ->
         else:
             flush()
     flush()
+    return _whole_teams(raw, phrases)
+
+
+@lru_cache(maxsize=1)
+def _awkward_teams() -> tuple[tuple[str, re.Pattern[str]], ...]:
+    """#1485: the teams the scan above cannot keep whole - a nickname that starts with a digit
+    ("76ers", "49ers") or an "&" in the name ("Brighton & Hove Albion") - with a pattern each."""
+    from apis.nba_teams import NBA_TEAM_NAMES
+    from apis.nfl_entities import NFL_TEAM_NAMES
+    from apis.team_gazetteer import teams
+
+    names = set(NFL_TEAM_NAMES.values()) | set(NBA_TEAM_NAMES.values()) | {t.full for t in teams()}
+    out = []
+    for full in sorted(names):
+        words = full.split()
+        if not any(w[:1].isdigit() or w in ("&", "and") for w in words):
+            continue
+        body = r"\s+".join(r"(?:&|and)" if w in ("&", "and") else re.escape(w) for w in words)
+        out.append((full, re.compile(rf"(?<![\w-]){body}(?![\w-])")))
+    return tuple(out)
+
+
+def _whole_teams(raw: str, phrases: list[str]) -> list[str]:
+    """#1485: "Philadelphia 76ers" came back as "Philadelphia" - the Eagles', Phillies' and
+    Flyers' city too - and "Brighton & Hove Albion" as two names. The team's name replaces its
+    fragments, where the first one stood."""
+    for full, pattern in _awkward_teams():
+        if full in phrases or not pattern.search(raw):
+            continue
+        parts = [p for p in phrases if p in full]
+        if not parts:
+            continue
+        at = phrases.index(parts[0])
+        phrases = [p for p in phrases if p not in parts]
+        phrases.insert(min(at, len(phrases)), full)
     return phrases
 
 

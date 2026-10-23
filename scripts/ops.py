@@ -2006,6 +2006,16 @@ def cmd_schedule_drafts(args: argparse.Namespace) -> int:
         ok, said = nightly_task.set_wake()
         print("\n".join(nightly_task.wake_report(ok, said, nightly_task.wake_timers())))
         return 0 if ok else 1
+    if getattr(args, "windowless", False):
+        # wave 123: `cmd /c` held a System32 console window open for the whole run
+        count = int(getattr(args, "count", 0) or nightly_task.DEFAULT_COUNT)
+        ok, said = nightly_task.set_windowless(channel, count=count)
+        print(f"Overnight now runs with no window: {said}" if ok
+              else f"The task could not be changed: {said[-300:]}")  # fmt: skip
+        if ok:
+            print("It may wake the PC to run." if nightly_task.task_wakes()
+                  else "It cannot wake the PC: py -m scripts.ops schedule-drafts --wake")  # fmt: skip
+        return 0 if ok else 1
     if getattr(args, "install", False):
         code, out = nightly_task.run_schtasks(nightly_task.install_argv(channel))
         print(out or f"schtasks exit {code}")
@@ -4323,6 +4333,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--wake",
         action="store_true",
         help="schedule-drafts: let the nightly task wake the PC (sets WakeToRun, reads it back)",
+    )
+    parser.add_argument(
+        "--windowless",
+        action="store_true",
+        help="schedule-drafts: run the nightly task with no console window (changes it in place)",
     )
     parser.add_argument(
         "--expired",

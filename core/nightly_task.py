@@ -23,6 +23,7 @@ import threading
 from datetime import datetime, timedelta
 from typing import Any
 
+from core import win_shell
 from core.logging import get_logger
 
 logger = get_logger("core.nightly_task")
@@ -40,11 +41,68 @@ def task_command(
     python: str | None = None,
     repo: str | None = None,
 ) -> str:
-    """What the scheduler runs: `ops overnight` from the repo, so `.env` and `data/` resolve."""
+    """What the scheduler runs: `ops overnight` under `pythonw` through `scripts/ops_task.pyw`,
+    which sets the repo folder and writes output/logs/overnight-last.log (wave 123: `cmd /c` held
+    a console window open for the whole run)."""
+    return f'"{_windowless(python)}" {_overnight_arguments(channel_id, count=count, repo=repo)}'
+
+
+OPS_TASK_SCRIPT = os.path.join("scripts", "ops_task.pyw")
+
+
+def _overnight_arguments(
+    channel_id: str, *, count: int = DEFAULT_COUNT, repo: str | None = None
+) -> str:
+    launcher = os.path.join(repo or REPO_ROOT, OPS_TASK_SCRIPT)
+    return f'"{launcher}" overnight --channel {channel_id} --count {int(count)}'
+
+
+def windowless_command(
+    channel_id: str,
+    *,
+    count: int = DEFAULT_COUNT,
+    python: str | None = None,
+    repo: str | None = None,
+) -> str:
+    """The PowerShell that points the installed task at the windowless launcher in place -
+    WakeToRun, the time limit and start-when-available stay as they are (the `wake_command`
+    way; `schtasks /Create /F` would reset them)."""
+    folder, _, name = TASK_NAME.rpartition(chr(92))
+    task_path = chr(92) + folder + chr(92)
+    exe = _windowless(python).replace("'", "''")
+    arguments = _overnight_arguments(channel_id, count=count, repo=repo).replace("'", "''")
+    work = (repo or REPO_ROOT).replace("'", "''")
     return (
-        f'cmd /c cd /d "{repo or REPO_ROOT}" && "{python or sys.executable}" '
-        f"-m scripts.ops overnight --channel {channel_id} --count {int(count)}"
+        f"$t = Get-ScheduledTask -TaskPath '{task_path}' -TaskName '{name}'; "
+        f"$t.Actions[0].Execute = '{exe}'; $t.Actions[0].Arguments = '{arguments}'; "
+        f"$t.Actions[0].WorkingDirectory = '{work}'; Set-ScheduledTask -InputObject $t"
     )
+
+
+def task_action(xml: str) -> tuple[str, str] | None:
+    """(command, arguments) of the task's first action from `schtasks /Query /XML`."""
+    text = xml or ""
+    command = re.search(r"<Command>(.*?)</Command>", text, re.S)
+    if not command:
+        return None
+    arguments = re.search(r"<Arguments>(.*?)</Arguments>", text, re.S)
+    return _unescape(command.group(1)), _unescape(arguments.group(1)) if arguments else ""
+
+
+def _unescape(xml_text: str) -> str:
+    return xml_text.replace("&quot;", '"').replace("&apos;", "'").replace("&amp;", "&").strip()
+
+
+def set_windowless(channel_id: str, *, count: int = DEFAULT_COUNT) -> tuple[bool, str]:
+    """Point the installed overnight task at the windowless launcher and read it back. The
+    operator runs it - it changes their scheduled task."""
+    code, out = _powershell(windowless_command(channel_id, count=count))
+    if _query_enabled():
+        rc, xml = run_schtasks([*query_argv()[:4], "/XML"])
+        action = task_action(xml) if rc == 0 else None
+        if action and OPS_TASK_SCRIPT in action[1] and "pythonw" in action[0].lower():
+            return True, f"{action[0]} {action[1]}"
+    return False, out or f"PowerShell exit {code}"
 
 
 def install_argv(
@@ -177,6 +235,7 @@ def power_events(count: int = 6) -> list[tuple[datetime, int]]:
             text=True,
             timeout=20,
             stdin=subprocess.DEVNULL,
+            creationflags=win_shell.no_window(),
         )  # fmt: skip
     except Exception as exc:
         logger.debug("power events unread: %s", exc)
@@ -784,6 +843,7 @@ def wake_timers() -> dict[str, str]:
             text=True,
             timeout=30,
             stdin=subprocess.DEVNULL,
+            creationflags=win_shell.no_window(),
         )
     except Exception as exc:
         logger.debug("powercfg unread: %s", exc)
@@ -801,6 +861,7 @@ def _powershell(command: str) -> tuple[int, str]:
             text=True,
             timeout=60,
             stdin=subprocess.DEVNULL,
+            creationflags=win_shell.no_window(),
         )
     except FileNotFoundError:
         return 127, "PowerShell not found (Windows only)"
@@ -843,7 +904,9 @@ def wake_report(ok: bool, said: str, timers: dict[str, str]) -> list[str]:
 def run_schtasks(argv: list[str]) -> tuple[int, str]:
     """(exit code, output). Never raises - a missing schtasks is a message, not a crash."""
     try:
-        proc = subprocess.run(argv, capture_output=True, text=True, timeout=30)
+        proc = subprocess.run(
+            argv, capture_output=True, text=True, timeout=30, creationflags=win_shell.no_window()
+        )
     except FileNotFoundError:
         return 127, "schtasks not found (Windows Task Scheduler is Windows-only)"
     except Exception as exc:

@@ -1068,6 +1068,67 @@ def overnight_render_limit(channel_id: str, *, now: datetime | None = None) -> t
     return limit, ""
 
 
+def _env_off(name: str) -> bool:
+    return os.getenv(name, "true").strip().lower() in ("0", "false", "no", "off")
+
+
+def _smoke_failure() -> str:
+    """#1467: "" when a 2-second render through the production command works, else what to
+    say. `OVERNIGHT_SMOKE=false` skips it (the suite)."""
+    if _env_off("OVERNIGHT_SMOKE"):
+        return ""
+    import tempfile
+
+    try:
+        from video.render_smoke import smoke_render_synthetic
+
+        with tempfile.TemporaryDirectory(prefix="overnight_smoke_") as tmp:
+            smoke_render_synthetic(tmp)
+    except Exception as exc:
+        why = str(exc).strip().splitlines()[-1:] or [type(exc).__name__]
+        return (f"the 2-second test render failed: {why[0][:120]} - no render was tried; "
+                "py -m scripts.ops doctor")  # fmt: skip
+    return ""
+
+
+def _memory_short() -> str:
+    """#1465: "" with enough free memory for a render, else what to say. The floor is
+    `OVERNIGHT_MIN_FREE_GB` (default 3; 0 turns it off)."""
+    try:
+        floor = float(os.getenv("OVERNIGHT_MIN_FREE_GB", "3") or 0)
+    except ValueError:
+        floor = 3.0
+    if floor <= 0:
+        return ""
+    from core.ram_preflight import available_ram_gb
+
+    free = available_ram_gb()
+    if free is None or free >= floor:
+        return ""
+    return f"only {free:.1f} GB of memory free ({floor:g} needed) - the rest wait for tomorrow"
+
+
+def _disk_short(path: str = ".") -> str:
+    """Wave 123: "" with room on the disk for a render, else what to say - C: reached 0 GB free
+    on 10-22. The floor is `OVERNIGHT_MIN_DISK_GB` (default 5; 0 turns it off)."""
+    import shutil
+
+    try:
+        floor = float(os.getenv("OVERNIGHT_MIN_DISK_GB", "5") or 0)
+    except ValueError:
+        floor = 5.0
+    if floor <= 0:
+        return ""
+    try:
+        free = shutil.disk_usage(path).free / 1024**3
+    except OSError:
+        return ""
+    if free >= floor:
+        return ""
+    return (f"only {free:.1f} GB free on the disk ({floor:g} needed) - the rest wait; "
+            "py -m scripts.ops artifact-retention")  # fmt: skip
+
+
 def render_unattended(
     channel_id: str,
     limit: int,
@@ -1101,6 +1162,12 @@ def render_unattended(
         if doubt:
             out["waiting"].append((draft.run_id, f"second read: {doubt}"))
             continue
+        # #1467 before the first render, #1465 before each: a broken encoder or a full memory
+        # stops the night with the drafts in place, instead of a native crash mid-render.
+        stop = (_smoke_failure() if tried == 0 else "") or _memory_short() or _disk_short()
+        if stop:
+            out["paused"] = stop
+            break
         tried += 1
         try:
             from core.nightly_task import beat_step

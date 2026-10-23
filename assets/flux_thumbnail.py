@@ -552,10 +552,13 @@ def generate_dual_thumbnails(
         words = headline_words(title) or [part for part in (title or topic).split() if part]
         short = " ".join(short_headline(words, 3) or words)  # #1483: never "Why the New"
         full = (title or topic).strip() or short
-        if short == full and len(words) > 2:
+        if short in (full, " ".join(headline_words(full[:80]))) and len(words) > 2:
             short = " ".join(short_headline(words, 2))
         rows: list[dict] = []
         for arm, headline in (("text_short", short), ("text_full", full)):
+            # #1544: `compose_thumbnail` paints `headline_words` of the first 80 characters - the
+            # record held the whole title for text_full, words nobody saw.
+            painted = " ".join(headline_words(headline[:80]) or [headline])
             filename = _thumbnail_basename(title, topic, suffix=f"{arm}_pillow_{run_tag}")
             result = _pillow_thumbnail(
                 topic,
@@ -574,7 +577,8 @@ def generate_dual_thumbnails(
                     "features": {
                         "layout": "text_on",
                         "headline": True,
-                        "headline_text": headline,
+                        "headline_text": painted,
+                        "headline_asked": headline,
                         "subject_led": False,
                     },
                     "provider_evidence": {

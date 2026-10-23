@@ -18,6 +18,69 @@ SHORTCUT_NAME = "Content OS.lnk"
 BOOTH_SHORTCUT_NAME = "Content OS Review Booth.lnk"
 
 
+# Windows process-creation flags (winbase.h); subprocess only defines them on Windows.
+CREATE_NO_WINDOW = 0x08000000
+_OWN_CONSOLE = 0x00000010 | 0x00000008  # CREATE_NEW_CONSOLE | DETACHED_PROCESS
+
+
+def no_window() -> int:
+    """`creationflags` for a console tool started from a windowless process - 0 off Windows."""
+    return CREATE_NO_WINDOW if os.name == "nt" else 0
+
+
+def _has_console() -> bool:
+    try:
+        import ctypes
+
+        return bool(ctypes.windll.kernel32.GetConsoleWindow())  # type: ignore[attr-defined]
+    except Exception:
+        return True
+
+
+def hide_child_windows(
+    *, has_console: bool | None = None, platform: str | None = None, share_std: bool = False
+) -> bool:
+    """Start every console child of this process without a window (wave 123).
+
+    A `pythonw` process has no console, so each console tool it starts - `schtasks`, `wevtutil`,
+    `powercfg`, PowerShell, ffmpeg - opens a window of its own: the System32 pop-ups the operator
+    saw from the 15-minute worker. This wraps `subprocess.Popen` (which `run`, `call` and
+    `check_output` use) to add CREATE_NO_WINDOW unless a child asks for a console of its own.
+    Nothing changes in a process with a console, so terminal output stays where it was. True when
+    the wrapper is in place.
+
+    `share_std`: a windowless process's std handles do not reach a child that names none of its
+    own, so such a child is given this process's fds 1 and 2 - `scripts/ops_task.pyw` points
+    them at its log, where the overnight draft subprocess and its crash traceback must land.
+    """
+    if (platform or os.name) != "nt":
+        return False
+    if _has_console() if has_console is None else has_console:
+        return False
+    base = subprocess.Popen
+    if getattr(base, "_hides_windows", False):
+        if share_std:
+            base._share_std = True  # type: ignore[attr-defined]
+        return True
+
+    class _Windowless(base):  # type: ignore[valid-type,misc]
+        _hides_windows = True
+        _share_std = share_std
+
+        def __init__(self, *args, **kwargs):
+            flags = int(kwargs.get("creationflags") or 0)
+            if not flags & _OWN_CONSOLE:
+                kwargs["creationflags"] = flags | CREATE_NO_WINDOW
+            if type(self)._share_std and len(args) <= 1:
+                for key, fd in (("stdout", 1), ("stderr", 2)):
+                    if kwargs.get(key) is None:
+                        kwargs[key] = fd
+            super().__init__(*args, **kwargs)
+
+    subprocess.Popen = _Windowless  # type: ignore[misc]
+    return True
+
+
 def _ps_single_quote(text: str) -> str:
     return str(text).replace("'", "''")
 

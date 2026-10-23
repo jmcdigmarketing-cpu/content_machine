@@ -538,6 +538,12 @@ def _format_body(report: dict[str, Any]) -> str:
         lines.extend(f"  {line}" for line in claim_hold_lines(runs))
     except Exception as exc:
         logger.debug("claim hold lines skipped: %s", exc)
+    try:  # #1480 (wave 123): the fields health reads, against what the week wrote
+        from analytics.field_audit import field_audit_lines
+
+        lines.extend(f"  {line}" for line in field_audit_lines(report["channel_id"]))
+    except Exception as exc:
+        logger.debug("field audit lines skipped: %s", exc)
 
     actions = report.get("next_actions") or []
     if actions:

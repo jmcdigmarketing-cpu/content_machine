@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-22 evening: wave 123, the pop-ups and the next five
+# Handoff synopsis — 2026-10-23 evening: wave 124, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,17 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-22 evening (Claude Code): wave 123, the pop-ups and the next five
+## Last wave — 2026-10-23 evening (Claude Code): wave 124, the next ten
+
+Two defects first: run 181, a Cavaliers-76ers preview, was still queued a day after its tip-off
+and nothing would have stopped it uploading - the worker, the shelf and go-public now read the
+game (#1547); run 176, the UFC 333 preview, read "past its window" the day before the card (#1548).
+With the operator's calls: the hook score out of the grade and overnight's order (decision 70)
+and a run at power-on is normal, no Sleep ask (decision 69). Then `ops hooks` (each opener trait;
+longer openers held more), why a curve is missing, the GPU driver in the doctor, and the backlog
+by shortfall. Open 180.
+
+## Previous — 2026-10-22 evening (Claude Code): wave 123, the pop-ups and the next five
 
 The operator's System32 pop-ups were ours: the overnight task ran in a `cmd` window and each
 15-minute worker pass opened ~16 console windows (`cmd /c ver` at import, ffmpeg, schtasks).
@@ -28,17 +38,6 @@ gazetteer for NHL, MLB and the Premier League in the title check; the script che
 name and caption cues that never split one; team names whole on the thumbnail; a beat each minute,
 so `ops status` and the morning say when overnight died and what it was doing; each health line
 read back from what production writes. Open 190.
-
-## Previous — 2026-10-22 (Claude Code): wave 121, the next ten
-
-Built from the latest main (`9e03058`, waves 71-120). The 3-second line shows the share who
-stayed beside YouTube's replayed ratio; research and news names are whole ("Los Angeles
-Chargers", "Call of Duty", "New England Patriots"), and NE, BUF, KC and LAL are read as teams.
-Health says "unknown" instead of RED when it cannot read an input, reads $0.00 revenue as not
-monetized, keeps a line a day (`ops health --history`) with its thresholds in one versioned
-table, and costs a video from the spend you entered. The sync reads Studio edits back; the
-morning names the crash's Python line; the title check reads every mention of a team. #1391
-closed by measurement (the API cannot say which thumbnail is live). Open 193.
 
 ## Pipeline order (operator)
 
@@ -114,7 +113,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1546 #1501 #1505 #1470 #1510 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1504 #1503 #1464 #1517 #1540 (roadmap.md); yours: #1549 #1550. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

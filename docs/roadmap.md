@@ -83,12 +83,14 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-22 (Claude, wave 123).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
-first: sign in to YouTube again (publish the app first), then let one `ops sync-metrics` run -
-8 of 20 recent videos still hold numbers from before #1542's fix. Next: **#1546** why 8 of 20
-recent videos have no retention curve; **#1501** first-3-second retention per hook type;
-**#1505** hook length against stayed share; **#1470** the GPU driver in `ops doctor`; **#1510**
-`roadmap-index` by shortfall. #1540 wants one live video; #1335 waits on dates.
+**2026-10-23 (Claude, wave 124).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
+first: sign in to YouTube again (publish the app first) by Sat 10:30 AM EDT, or both UFC 333
+previews (176, 180) miss the card; then one `ops sync-metrics` - 6 public videos have never been
+measured. Two calls: **#1549** (the weak-hook hold still reads the score decision 70 took out)
+and **#1550** (under v6 a short script keeps its A). Next: **#1504** the ten best-held openers as
+the hook prompt's examples - `ops hooks` says longer ones held more; **#1503** one of three hooks
+picked at review; **#1464** each render in its own process; **#1517** each shortfall's exit
+command run weekly; **#1540** the thumbnail check on a live video, once signed in.
 Waves before 109 (the 10-17 grand audit, waves 103-108): [planning_log.md](planning_log.md).
 **2026-10-18 (Claude, wave 109).** Volume blockers: takes the detector missed (#1292 - run 164 renders tonight), a preview's hook cut at "vs." (#1293), when a game preview must be decided (#1294), today's quota entry corrected, health names its runs (#1291), facts from a voice note (#450). Filed #1295 #1296. `roadmap-index`: open 258, done 1271, numbered open 206, highest #1296.
 **2026-10-18 (Claude, wave 110).** Nothing by hand: prompts visible again (#1297), one slot rule and the Buffer round as the bare `crosspost` (#1298), scheduled videos changeable and sent at their slot (#1299), ideas ranked by outlets (#1300), previews with a call (#1301), `ops all` without the suite and `ops test` without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM. Filed #1303-#1306. `roadmap-index`: open 74, done 1465, numbered open 65, highest #1306.
@@ -105,6 +107,7 @@ Waves before 109 (the 10-17 grand audit, waves 103-108): [planning_log.md](plann
 **2026-10-22 (Claude, wave 121).** The next ten from the latest main, in two batches. The roadmap's five: the share who stayed beside the 3-second number (#1538), whole research names (#1539, and the news search's), "unknown" instead of RED (#1472), health history a line a day (#1475), Studio edits read back (#1390). Five neighbours: the thresholds in one versioned table (#1479), cost from the spend you entered (#1478), NE read as New England (#1487), the crash's Python line in the morning (#1469), every mention read in the title check (#1486, in place of #1391 - the API cannot say which thumbnail is live). Filed #1540 #1541. `roadmap-index`: open 193, done 1581, numbered open 184.
 **2026-10-22 (Claude, wave 122).** A defect first: the metrics sync had stored nothing after a video's first day since 10-05 (#1542). Then the five: a team gazetteer for NHL, MLB and the Premier League in the title check (#1481); the script checked for a broken name and caption cues that never end inside one (#1482); team names whole on the thumbnail (#1483); a beat each minute so the morning and `ops status` say when overnight died (#1468); each health line read back from what production writes (#1473). Filed #1543 #1544. `roadmap-index`: open 190, done 1587, numbered open 181.
 **2026-10-22 (Claude, wave 123).** The System32 pop-ups were ours: the overnight task's `cmd` window and ~16 console windows per 15-minute worker pass - now none (`hide_child_windows`, the task on `pythonw scripts\ops_task.pyw`). The cloud's five: painted thumbnail words (#1544), 76ers/49ers/Brighton whole (#1485), a memory check, a smoke render and a disk check before renders (#1465 #1467), a weekly fields audit (#1480). C: had reached 0 GB free. `roadmap-index`: open 186, done 1593, numbered open 177.
+**2026-10-23 (Claude, wave 124).** Measured first: run 181, a Cavaliers-76ers preview, was still queued a day after its tip-off and nothing would have stopped it (#1547), and run 176, the UFC 333 preview, read "past its window" the day before the card (#1548) - both fixed. With the operator's calls: the hook score out of the grade and overnight's order (#1499, decision 70) and a power-on run is normal (decision 69). The five and two neighbours: `ops hooks` - each opener trait against who stayed, the first 3 s and TikTok (#1500 #1501 #1506) and length (#1505: longer held more, r=+0.36); why a curve is missing (#1546); the GPU driver in `ops doctor` (#1470); `roadmap-index` by shortfall (#1510). Filed #1549 #1550. `roadmap-index`: open 180, done 1603, numbered open 171.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

@@ -278,3 +278,20 @@ and 5 stand. **Why:** the operator, asked where 220 ideas should go when the cei
 "All 220 as numbered items" (the idea bank outside the ceiling was the other choice).
 **Consequence:** open items rise from 59 to about 250; an idea with no measurement after 90
 days is retired with the reason (#1509), and a merge sweep runs past 250 (#1514).
+
+## 69. Overnight at power-on is fine - no Sleep ask (2026-10-23)
+**Decision:** overnight keeps its 5:00 AM start and its wake for the nights the PC sleeps; a night
+the PC was shut down, it runs at the next power-on (StartWhenAvailable), and that is normal. The
+morning, `ops overnight-last`, the doctor, the Tonight line and the 8 PM toast say when it ran or
+will run; none asks for Sleep. **Why:** 3 of 4 nights were shutdowns (10-19 8:49 PM, 10-21 9:02
+PM, 10-22 9:51 PM) and each run started about 6 minutes after power-on; the operator, asked: "Power-
+on is fine". **Consequence:** on a shutdown night the drafts come 15-60 minutes after the PC is on,
+not by morning, and a preview of that evening's game can be too late (run 181, #1547).
+
+## 70. The hook score is shown, not counted (2026-10-23)
+**Decision:** report card v6 counts the hook score at 0 and shows it; overnight renders a game
+first by kickoff, then the newest clean draft - not the highest hook score. **Why:** over 22
+measured videos the score ran against the share who stayed (r = -0.48, past p<0.05 at n=16); the
+operator, asked: "Out of grade and order". It replaces wave 112's "no retune before n of about 85"
+for the grade. **Consequence:** a card with a weak hook grades higher (#1550); the weak-hook hold
+still reads the score (#1549); `ops hooks` measures each trait on its own.

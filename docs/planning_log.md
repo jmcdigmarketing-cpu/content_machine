@@ -9428,3 +9428,113 @@ Audit (wave 123):
 - **Outward:** the operator's overnight task's action changed - asked for, and read back.
 
 `roadmap-index`: open 186, done 1593, numbered open 177.
+
+## 2026-10-23 evening — wave 124, the next ten (Claude Code)
+
+**Prompt:** "next 10"
+
+Measured first, read-only (Fri 10-23, 17:50-18:00 CDT):
+- **The 5:00 AM overnight did not run.** The PC was shut down Thu 9:51 PM - Kernel-Power 42 shows
+  target S5, effective S4 (Start > Shut down, with Fast Startup) - as on 10-19 at 8:49 PM and
+  10-21 at 9:02 PM. The Sleep nights (10-18, 10-20) woke at 4:59.
+  - It started at 5:52 PM, 6 minutes after power-on (StartWhenAvailable), with no window - wave
+    123's launcher - and wrote 3 drafts. Renders paused: 3 finished videos waiting.
+  - `ops status` already said why: "the PC was shut down Thu 9:51 PM".
+- **The sign-in** has been lapsed since 10-21 9:36 PM EDT: uploads 175, 180 and 181 hold, and 6
+  public videos under 28 days have never been measured. The Back-Home ticks are unchanged since
+  10-19.
+- **Defect - run 181.** "Cleveland Cavaliers vs 76ers: Opening Tip Preview | Oct 22 Hoops"
+  (`event_at` 10-22 23:00Z) sat as pending upload job 77 a day after its tip-off.
+  - `jobs/worker._process_upload` had no game check, and `_reslot_after_hold` takes
+    `free_slots`, not `slot_for_run`.
+  - `stale_renders.shelf_rows` asked "queued" before the game, so the shelf read "queued - the
+    YouTube sign-in has expired", and the run held one of the shelf's 3 places.
+  - `go_public.apply_go_public` had no game check either.
+  - After the sign-in it would have uploaded (1,600 units), waited unlisted, and been offered for
+    go-public.
+- **Defect - run 176.** The UFC 333 preview (`event_at` Sat 10-24 17:00Z) read "3 days old, past
+  its window": `batch_review.dead_reason` used the 2-day news window and ignored `event_at`.
+  `ops status` said "5 past their window" beside "Decide first" for the same draft, and Enter at
+  batch-review's "Set aside the N drafts past their window? [Y/n]" would have dropped it.
+  `expire_old_drafts` had the same blind spot.
+- **The hook score:** over 22 videos r = -0.475 against stayed, and `n_for_significance` = 16 -
+  past p<0.05. `unattended_candidates` still rendered the highest hook score first.
+
+Asked (three questions); the operator took each recommended option:
+- the shutdown nights: "Power-on is fine" - decision 69;
+- the hook score: "Out of grade and order" - decision 70, #1499;
+- run 181: "Take it off".
+
+Picked: the roadmap's five (#1546 #1501 #1505 #1470 #1510), the two defects first (#1547
+#1548), #1499 by the operator's call, and #1500 and #1506 beside #1501 and #1505 - one table.
+Built in a git worktree while overnight drafted from the main tree: each draft is a fresh process
+that imports the tree.
+
+Shipped (tests/test_wave124.py, 44 tests):
+1. **#1547.** `stale_renders.started_event` - the game a render previews, if it has started.
+   - The worker takes such an upload off the queue before any call; the file stays.
+   - One ladder, `stale_renders.shelf_state`, now decides both the shelf's rows and its count,
+     and asks the game before the queue.
+   - Go-public and schedule-public refuse it; the shelf offers an unlisted one nothing.
+   - The sibling: a rendered preview is current until its game, not its news window.
+2. **#1548.** A draft preview is current until its event in `dead_reason` and
+   `expire_old_drafts`. Run 176 now waits only on what holds it.
+3. **#1499 (decision 70).** Report card v6 shows the hook score and counts it 0. Overnight renders
+   a game first by kickoff, then the newest clean draft.
+4. **Decision 69.** The morning, `ops overnight-last`, the doctor, the Tonight line and the 8 PM
+   toast state when overnight ran or runs ("ran Fri 5:52 PM, when the PC came on - the PC was
+   shut down Thu 9:51 PM"); none asks for Sleep.
+5. **#1500 #1501 #1505 #1506 - `ops hooks`.** Each opener trait with and without, against the
+   share who stayed, the 3-second share (`retention.share_at`) and TikTok's average watch; "a
+   call" beside the scorer's traits; length in bins and its r. Live over 22:
+   - a question held 42% vs 21% (n 3/19);
+   - a number 19% vs 27%; 12 words or fewer 22% vs 31%;
+   - by length: 8 words or fewer 19% (n 6), 9-12 26% (n 10), 13-16 23% (n 3), 17+ 39% (n 3);
+     r=+0.36 - longer held more, against the rewrite's "under 12 words";
+   - a call: 0 of 22 - every measured opener predates #1311;
+   - the 3 s and TikTok columns are too thin a side yet (8 readable each).
+   `ops growth` prints the length line, and the morning's worker line says when a preview after
+   its game was taken off the queue.
+6. **#1546.** The sync stores `retention_curve_state` (asked and no rows, or the error), and the
+   weekly audit says why each curve is missing. Live: of 17 videos the Analytics sync read under
+   28 days, 12 have a curve, 1 was synced only in its first 3 days, 4 before the sync said why.
+   The audit now names the 6 never synced.
+7. **#1470.** `ops doctor` gpu row: "NVIDIA GeForce RTX 4070 Ti, driver 616.92", failing under
+   `NVENC_MIN_DRIVER` (551.76).
+8. **#1510.** `ops roadmap-index`: the five shortfalls with the most open items, and
+   `--by-shortfall` each one with its name (before the ticks: 126 open across 21; S18 none).
+
+Found on the way:
+- The field audit counted a row holding only the Data API's `lifetime_views` as synced, so "views
+  on 16 of 23 videos" was really 6 videos never synced - fixed with #1546.
+- v6's first cut divided by zero on a card holding only the hook; `test_video_grade` caught it.
+- Without the hook, run 74's 277-word script grades A 91 again (#1550); the weak-hook hold still
+  reads the score (#1549).
+- My corpus write re-serialised the whole JSON (614 lines changed); reverted and appended in place
+  (58 lines).
+- `test_stage4`'s import budget (1.66 s) read 1.67-1.71 s on both trees while the PC was busy -
+  borderline, and not this wave's: no module-level import was added.
+- Tonight's overnight set aside run 178 (its game had started) - correct; run 176 untouched.
+
+Not done: #1549 and #1550 (the operator's calls); #1540 (needs a live video, so the sign-in); the
+hook table's 3 s, TikTok and "a call" rows fill as signed-in syncs measure post-#1311 videos.
+
+Audit (wave 124):
+- 44 tests in tests/test_wave124.py. 43 were written first and run against code as on
+  `d53382f`: 38 failed, and the 5 that passed are controls (a preview before its game uploads, a
+  video with no event uploads, a queued preview before its game waits on the sign-in, news still
+  ages, a draft after its event is dead). The unlisted-hold test came with its code.
+- Older tests changed on purpose, each for decision 69 or 70: test_wave117 (3 strings),
+  test_wave118 (1), test_grade_v5 (4), test_video_grade (3, plus the hook-only card),
+  test_stage3_queue (1), test_overnight_renders (2); corpus cases #1337 and #1534 take the new
+  Tonight wording.
+- 3 corpus cases (#1547 twice, #1548); 433 of 433 held.
+- mypy 92 = baseline (one new error of mine - a shadowed `runs` - fixed); ruff clean.
+- Suite: 6656 forward and 6656 reversed, both OK (this tree, docs included).
+- **Live, read-only:** `ops shelf` shows run 181 "its game has started", 180 and 175 on the
+  sign-in; `ops hooks`, the length line, the weekly fields lines, the doctor's gpu row and
+  `roadmap-index` by shortfall run on the real stores; `git status --short data/` empty.
+- **Outward:** job 77 (run 181) off the queue at the worker's first pass after the merge, with the
+  operator's yes. Nothing uploaded or published.
+
+`roadmap-index`: open 180, done 1603, numbered open 171.

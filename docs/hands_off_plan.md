@@ -122,7 +122,8 @@ The last run started 10-18 at 08:04; the next 5:00 start shows whether the wake 
 
 **Who:** Code. **Done when:** `data/overnight_last.json` - started at 05:0x for a week.
 
-**Ideas:** #1371-#1380 in [backlog.md](backlog.md) under "S07".
+**Ideas:** #1371-#1380 in [backlog.md](backlog.md) under "S07". Decision 69 (wave 124, the
+operator): a run at power-on after a shutdown is normal - nothing asks for Sleep any more.
 
 ### S08 Good research blocked good drafts
 
@@ -253,7 +254,8 @@ its Python line (faulthandler).
 
 **Ideas:** #1463-#1470 in [backlog.md](backlog.md) under "S17", and already open: #457, #445.
 Built in wave 121: #1469 (the crash's Python line in the morning). Built in wave 122: #1468 (a
-beat each minute; `ops status` and the morning say when a run died and what it was doing).
+beat each minute; `ops status` and the morning say when a run died and what it was doing). Built
+in wave 124: #1470 (the GPU and its driver in `ops doctor`).
 
 ### S18 Health read RED on a number nobody stored (Oct 16)
 
@@ -269,6 +271,7 @@ is.
 (unknown, never RED), #1475 (a line a day), #1478 (cost from the spend entered), #1479 (the
 thresholds in one versioned table). Built in wave 122: #1473 (each line read back from what its
 production writer stores), which found #1542 - the metrics sync froze a video's numbers at day 1.
+Built in wave 124: #1546 (why a curve is missing, and which videos never synced).
 
 ### S19 "New England" lost its "New" (Oct 16)
 
@@ -312,6 +315,9 @@ logic change, and the learned gaps steer the rewrite from n=21 (decision 67).
 0, or the score out of the grade.
 
 **Ideas:** #1499-#1507 in [backlog.md](backlog.md) under "S21", and already open: #1290.
+Built in wave 124: #1499 - the score out of the grade and overnight's order (decision 70), which
+meets "Done when"; #1500 #1501 #1505 #1506 - `ops hooks`, each trait on its own (over 22 videos
+a question held 42% vs 21%, longer openers held more, r=+0.36).
 
 ### S22 It grew faster than it shipped
 
@@ -324,7 +330,8 @@ files" for this wave only; ideas expire without a measurement, and a merge sweep
 **Who:** Code. **Done when:** `py -m scripts.ops roadmap-index` - at or under 300, and falling
 after this wave.
 
-**Ideas:** #1508-#1517 in [backlog.md](backlog.md) under "S22".
+**Ideas:** #1508-#1517 in [backlog.md](backlog.md) under "S22". Built in wave 124: #1510
+(`ops roadmap-index --by-shortfall`).
 
 ## The rules the backlog keeps
 

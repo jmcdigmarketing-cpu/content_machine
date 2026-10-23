@@ -7,6 +7,17 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-22 (Claude Code): wave 121, the next ten
+
+Built from the latest main (`9e03058`, waves 71-120). The 3-second line shows the share who
+stayed beside YouTube's replayed ratio; research and news names are whole ("Los Angeles
+Chargers", "Call of Duty", "New England Patriots"), and NE, BUF, KC and LAL are read as teams.
+Health says "unknown" instead of RED when it cannot read an input, reads $0.00 revenue as not
+monetized, keeps a line a day (`ops health --history`) with its thresholds in one versioned
+table, and costs a video from the spend you entered. The sync reads Studio edits back; the
+morning names the crash's Python line; the title check reads every mention of a team. #1391
+closed by measurement (the API cannot say which thumbnail is live). Open 193.
+
 ## Previous — 2026-10-21 night (Claude Code): wave 120, the next ten
 
 The sign-in lapsed at 9:36 PM EDT and `ops status` says "Yours today: sign in again".

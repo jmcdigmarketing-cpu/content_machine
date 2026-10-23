@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-22 evening · **HEAD at write:** `f4351fe` (the code; the docs commit follows)
+**Written:** 2026-10-23 evening · **HEAD at write:** `a9c6997` (the code; the docs commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
@@ -61,17 +61,20 @@ nothing broken, say that explicitly rather than leaving it implied.
 **The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall**; ideas
 #1314-#1517 in the backlog. Decision 68: the backlog stays <= 300 (`test_docs_lint`).
 
-**Wave 123 (one code commit, then docs), built on the cloud's `ab47464` (waves 121-122):**
-- The pop-ups: `win_shell.hide_child_windows` (+ `share_std`) in every `.pyw`; `nightly_task`'s
-  four console calls flagged; `scripts/ops_task.pyw` + `schedule-drafts --windowless` - the
-  operator's overnight task now runs `pythonw ... ops_task.pyw overnight` (read back).
-- #1544 painted words; #1485 `topic_tokens._whole_teams`; #1465 #1467 + a disk check in
-  `render_unattended`; #1480 `analytics/field_audit.py` in the weekly report.
+**Wave 124 (one code commit, then docs), built in a git worktree while overnight ran:**
+- #1547 `stale_renders.started_event` and one ladder `shelf_state`; the worker drops a started
+  preview before any call; go-public and schedule-public refuse it. #1548 a preview is current
+  until its event (`dead_reason`, `expire_old_drafts`).
+- Decision 69: nothing asks for Sleep (`nightly_task` late/missed/tonight/doctor lines).
+  Decision 70 (#1499): grade v6, hook weight 0; overnight renders a game by kickoff, then newest.
+- `ops hooks` (#1500 #1501 #1505 #1506); #1546 `retention_curve_state` and
+  `field_audit.curve_gaps`; #1470 the doctor's gpu row; #1510 `roadmap-index --by-shortfall`.
 
-**Live:** 16 console windows in the 20:37 worker pass, 0 after. The sign-in is still lapsed -
-uploads 175, 180, 181 hold; #1542's rows heal at the first sync after it. C: was at 0 GB free
-(old suite copies, deleted; 11 GB free) - **delete scratch exports each wave**.
-**Defects first:** none open of mine.
+**Live:** overnight ran 5:52 PM at power-on (shut down Thu 9:51 PM), 3 drafts; job 77 (run 181)
+off the queue at the first worker pass after the merge (the operator's yes). The sign-in is still
+lapsed - uploads 175 and 180 hold; the UFC 333 previews need it by Sat 10:30 AM EDT. **Delete
+scratch exports and worktrees each wave.**
+**Defects first:** none open of mine. Operator calls: #1549, #1550.
 
 ## Slot — Cursor
 

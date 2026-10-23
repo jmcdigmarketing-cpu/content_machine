@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-22: wave 121, the next ten
+# Handoff synopsis — 2026-10-22 night: wave 122, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,17 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-22 (Claude Code): wave 121, the next ten
+## Last wave — 2026-10-22 night (Claude Code): wave 122, the next five
+
+A defect first: since 10-05 the metrics sync stored nothing after a video's first-day snapshot,
+so views, engaged rate and revenue froze at day 1 for every video whose analytics came in early;
+every sync stores again (#1542), and the next one on the PC heals the rows. Then the five: a team
+gazetteer for NHL, MLB and the Premier League in the title check; the script checked for a broken
+name and caption cues that never split one; team names whole on the thumbnail; a beat each minute,
+so `ops status` and the morning say when overnight died and what it was doing; each health line
+read back from what production writes. Open 190.
+
+## Previous — 2026-10-22 (Claude Code): wave 121, the next ten
 
 Built from the latest main (`9e03058`, waves 71-120). The 3-second line shows the share who
 stayed beside YouTube's replayed ratio; research and news names are whole ("Los Angeles
@@ -29,15 +39,6 @@ weekly report counts drafts a claim held (1 of 25); the privacy sync says what i
 `ops retention` gives each video's first 3 seconds (over 100% is replays - #1538); `ops ypp`
 keeps a month's snapshot; the compilation's title names its three most-viewed subjects.
 Open 202.
-
-## Previous — 2026-10-21 (Claude Code): wave 119, the next ten
-
-Before the 9:36 PM EDT lapse, with the operator's yes, 168 and 170 went public and 171 was
-retired, so overnight renders again. Run 179 (the first follow-up) had leaned on last
-season's "No. 1 seed" page; follow-ups now name the original's date and one that says
-"since" waits. A cheap second read guards an unattended render; a crash keeps its log; the
-weekly report counts crashes and gives each video's drop-off second; review shows "you
-typed / it wrote". Open 210.
 
 ## Pipeline order (operator)
 
@@ -113,7 +114,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1482 #1483 #1481 #1468 #1473 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1544 #1485 #1465 #1467 #1480 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

@@ -252,7 +252,8 @@ its Python line (faulthandler).
 **Who:** Code. **Done when:** the weekly report - 0 crashes over 4 weeks.
 
 **Ideas:** #1463-#1470 in [backlog.md](backlog.md) under "S17", and already open: #457, #445.
-Built in wave 121: #1469 (the crash's Python line in the morning).
+Built in wave 121: #1469 (the crash's Python line in the morning). Built in wave 122: #1468 (a
+beat each minute; `ops status` and the morning say when a run died and what it was doing).
 
 ### S18 Health read RED on a number nobody stored (Oct 16)
 
@@ -266,7 +267,8 @@ is.
 
 **Ideas:** #1471-#1480 in [backlog.md](backlog.md) under "S18". Built in wave 121: #1472
 (unknown, never RED), #1475 (a line a day), #1478 (cost from the spend entered), #1479 (the
-thresholds in one versioned table).
+thresholds in one versioned table). Built in wave 122: #1473 (each line read back from what its
+production writer stores), which found #1542 - the metrics sync froze a video's numbers at day 1.
 
 ### S19 "New England" lost its "New" (Oct 16)
 
@@ -279,7 +281,8 @@ thresholds in one versioned table).
 
 **Ideas:** #1481-#1488 in [backlog.md](backlog.md) under "S19", and already open: #334, #553.
 Built in wave 121: #1486 (every mention read, cases for every league), #1487 (NE -> New
-England), with #1539 (whole research names).
+England), with #1539 (whole research names). Built in wave 122: #1481 (a gazetteer with NHL, MLB
+and EPL for the title check), #1482 (the script and the caption cues), #1483 (the thumbnail).
 
 ### S20 Engagement is softening (Oct 17)
 
@@ -294,6 +297,8 @@ a 406 s NBA video at 11%, is most of the drop).
 from the last 7 days.
 
 **Ideas:** #1489-#1498 in [backlog.md](backlog.md) under "S20". Built in wave 113: #1489, #1490.
+Fixed in wave 122: #1542 - since 10-05 the sync stored nothing after a video's first day, so the
+engagement it reads was day-one engagement.
 
 ### S21 The hook score is backwards (Oct 18)
 

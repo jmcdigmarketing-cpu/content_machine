@@ -8,6 +8,23 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 122 — numbers that move again, names whole everywhere, a beat overnight - 2026-10-22
+
+*mypy 90; ruff 0.15.8 clean; suite 6590; corpus cases 13 added.*
+
+- **#1542** The metrics sync stores every sync again. Since 10-05 a video's views, engaged rate
+  and revenue stopped updating once its first-day snapshot was taken; the next sync heals them.
+- **#1481** The title check knows NHL, MLB and Premier League teams: "York Rangers" and "Ham
+  United" are broken names, "Vegas Golden Knights" and "Maple Leafs" are whole.
+- **#1482** The script check names a broken team, and a caption never splits a name across two
+  cues ("New England | Patriots").
+- **#1483** The thumbnail's words never end inside a team's name; the short version says "New
+  England Patriots", not "Why the New".
+- **#1468** Overnight writes a beat each minute; `ops status` and the morning say when a run died
+  and what it was doing.
+- **#1473** Each health line is tested against what production writes; a run with no recorded
+  cost is said, not counted as free.
+
 ### Wave 121 — whole names, honest health, Studio read back - 2026-10-22
 
 *mypy 90; ruff 0.15.8 clean; suite 6568; corpus cases 28 added. Waves 71-120 are written up in

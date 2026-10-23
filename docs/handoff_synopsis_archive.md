@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-21 (Claude Code): wave 119, the next ten
+
+Before the 9:36 PM EDT lapse, with the operator's yes, 168 and 170 went public and 171 was
+retired, so overnight renders again. Run 179 (the first follow-up) had leaned on last
+season's "No. 1 seed" page; follow-ups now name the original's date and one that says
+"since" waits. A cheap second read guards an unattended render; a crash keeps its log; the
+weekly report counts crashes and gives each video's drop-off second; review shows "you
+typed / it wrote". Open 210.
+
 ## Previous — 2026-10-20 evening (Claude Code): wave 118, the next ten
 
 Overnight rendered none of today's 3 drafts. Two waited only on "hard to say", which now

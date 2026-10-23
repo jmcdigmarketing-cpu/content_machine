@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-22 · **HEAD at write:** `db00be1` (the code; the docs commit follows)
+**Written:** 2026-10-22 night · **HEAD at write:** `9d4610d` (the code; the docs commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
@@ -61,19 +61,18 @@ nothing broken, say that explicitly rather than leaving it implied.
 **The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall**; ideas
 #1314-#1517 in the backlog. Decision 68: the backlog stays <= 300 (`test_docs_lint`).
 
-**Wave 121 (two batches, `c74cab7` `db00be1`), built on `9e03058`:**
-- `retention.first_seconds_text(stayed=)` (#1538); `topic_tokens.trim_name`, `part_of_team`,
-  `abbreviations_in`, `NFL_ABBR_TEAMS` / `NBA_ABBR_TEAMS` in `names_for` and `subject_terms`
-  (#1539 #1487); `title_generator.broken_team_name` reads each mention (#1486).
-- `channel_health`: `UNKNOWN` (#1472), `record_history` / `history_lines` + `ops health
-  --history` (#1475), `THRESHOLDS` / `THRESHOLDS_VERSION` (#1479), `_entered_cost_sub` (#1478).
-- `privacy_sync.fetch_status` reads `status,snippet`, `studio_edits` (#1390);
-  `nightly_task.crash_frame` in the stopped line (#1469). #1391 closed by measurement.
-- Changed on purpose: test_pillar5_agents' fail-open test pins unknown, not yellow "n/a".
+**Wave 122 (two batches, `d67b929` `9d4610d`), built on `053978c`:**
+- **#1542, a defect:** `youtube_metrics.refresh_publish_metrics` stored nothing after a video's
+  24h snapshot since 10-05 - fixed; the next `sync-metrics` on the PC heals the rows.
+- `apis/team_gazetteer` (NHL/MLB/EPL) in `title_generator.broken_team_name` (#1481);
+  `script_check` names a broken team, `caption_timing.line_bounds` + `topic_tokens.name_spans`
+  keep names on one cue (#1482); `thumbnail_compose.short_headline` (#1483).
+- `nightly_task.start_beat` / `beat_gap_line` from `ops overnight`, read by `ops status` and the
+  morning (#1468; `OVERNIGHT_BEAT=false` in the suite); `tests/test_health_writers.py` (#1473).
 
-**Live:** nothing run on the PC this wave - each item was replayed on synthetic data. The
-sign-in lapsed 10-21 9:36 PM EDT; uploads hold until the operator signs in. **Defects first:**
-#1540 (the #599 thumbnail check likely cannot fail) is filed, not fixed; none open of mine.
+**Live:** nothing run on the PC this wave - replayed on synthetic data. **Defects first:** #1542
+is fixed in code and waits for one sync to heal the stored rows; #1540 (the #599 thumbnail check
+likely cannot fail) is still filed, not fixed. None open of mine otherwise.
 
 ## Slot — Cursor
 

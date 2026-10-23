@@ -9262,3 +9262,84 @@ Audit (wave 121):
 - Outward: nothing.
 
 `roadmap-index`: open 193, done 1581, numbered open 184.
+
+## 2026-10-22 night — wave 122, the next five and a defect found while planning them (Claude Code)
+
+**Prompt:** wave 121's CI check-in came back green (main and the session branch, `053978c`), and
+the operator, asked in plan mode what to plan next, chose "The next five" - the roadmap's #1482
+#1483 #1481 #1468 #1473. The plan was approved as written.
+
+Picked: the five, plus **#1542**, found while exploring for #1473 and confirmed in the code before
+it was planned: the metrics sync's only write of `metrics_json` sat inside `if log_id and not
+had_first_day` (`analytics/youtube_metrics.py`, wave 60 `60f8d5e`, 10-05). Once a video held its
+24h snapshot, later syncs fetched and stored nothing. It went first, defects before features.
+
+Shipped (tests/test_wave122.py 14 tests, tests/test_health_writers.py 8; batch A `d67b929`,
+batch B `9d4610d`):
+1. #1542 - `analytics/youtube_metrics.py:780`: every sync stores what it fetched; the first-day
+   snapshot and verdict stay inside the first-day block.
+2. #1481 - new `apis/team_gazetteer.py` (`:82` `teams`, `:96` `broken_tails`, `:133`
+   `team_spans`): NFL and NBA from their tables, NHL 32, MLB 30, EPL 20, as city and nickname.
+   `core/title_generator.py:196` `broken_place_name` / `:213` `broken_team_name` read it.
+3. #1482 - `core/script_craft.py:575` names a broken team in the script (`:193`
+   `SPOKEN_SPLIT_PLACES`: only "Angeles" - a fight script says "in Vegas");
+   `video/caption_timing.py:104` `line_bounds` / `:130` `splits_a_name` and
+   `apis/topic_tokens.py:331` `name_spans` keep every name of two or more words on one cue, on
+   both the word-timed and the plain path.
+4. #1483 - `assets/thumbnail_compose.py:61` `_whole_names` in `headline_words`, `:72`
+   `short_headline` for the short A/B arm (`assets/flux_thumbnail.py`).
+5. #1468 - `core/nightly_task.py:504` `start_beat` / `:525` `stop_beat` / `:481` `beat_step` /
+   `:565` `beat_gap_line`, from `scripts/ops.py:1695` (`cmd_overnight`, stopped in a finally),
+   read by `core/status_summary.py:93` and the morning's stop line.
+6. #1473 - `tests/test_health_writers.py`, one round trip per health line through real JSON
+   stores; `core/channel_health.py:433` `_with_unrecorded` and `core/unit_economics.py:106`
+   `cost_recorded` for the cost it found read as $0.00; `HEALTH_SOURCES` completed.
+
+Found on the way:
+- #1542 itself, above. `tests/test_first_day.py` synced twice and never checked the second
+  sync's numbers, so it passed either way.
+- A caption cue split names the script had right: "AFC | East" and "New England | Patriots" at
+  4 words. The fix uses `title_phrases` on the script (which is in ordinary case), so players'
+  names are kept whole too, not only teams.
+- The place rule would have held fight scripts for "in Vegas" and "the Orleans Arena"; the
+  script check uses "Angeles" alone.
+- `ops status` never mentioned a crash - it said "last started". It says the gap first now.
+- A run with no stored cost counted as a $0.00 video in `channel_economics`.
+- Filed #1543 (thumbnail text a model draws needs OCR) and #1544 (`headline_text` records the
+  words asked for, not the five painted).
+
+Not done: NHL/MLB/EPL names in research and `team_names_in` (the gazetteer feeds the title check,
+captions and thumbnails only); the voice reading a name (#1488); nothing run live - no `data/` or
+sign-in here, so each item was replayed on synthetic data.
+
+Audit (wave 122):
+- 22 tests: 16 seen failing on clean `053978c` (the editable finder removed). The 6 that held
+  are guards, each shown to go red: a sentence with no names is cut as before (red when a name
+  span moves its cues), and the 5 health round trips whose writers already worked (each red with
+  its writer switched off).
+- 13 corpus cases: 11 failed on the base; 2 are guards (Maple Leafs whole, a script's "in Vegas"
+  not flagged).
+- Changed on purpose: none of the older tests.
+- mypy 90, the same 90 errors as the base. ruff and format clean. Two new env keys documented in
+  `.env.example` (the env-lint test caught them).
+- Suite 6590 (+22) green in default, reverse and shuffle order and under coverage as CI runs the
+  forward job; data/ and output/ untouched; network probe 0.
+- Every new function has a production caller: the title check, the script check, both caption
+  paths, both thumbnail arms, `ops overnight`, `ops status`, the morning, the health cost line.
+- Proof - the replay script on synthetic data, base -> tree:
+  - two syncs, 90 then 2000 views: stored 90 -> 2000 (engaged 0.4 -> 0.55);
+  - "Vegas Golden Knights win again": "Las Vegas" -> ""; "York Rangers fall to 2-5": "" ->
+    "New York Rangers"; "Ham United sack their manager": "" -> "West Ham United";
+  - script "Can the England Patriots win ...": nothing said -> "the script breaks a name: "New
+    England Patriots" has lost a word, and so do the captions";
+  - karaoke cues: ['Can the New England', 'Patriots win the AFC', ...] -> ['Can the', 'New
+    England Patriots win', 'the AFC East this', ...];
+  - short thumbnail arm: "Why the New" -> "New England Patriots";
+  - `ops status` after a run that stopped beating: "Overnight: last started Fri 04:30" ->
+    "Overnight's last sign of life was 4:32 AM on Oct 16, rendering run 175 (started 4:30 AM) -
+    it never finished".
+- Live, on the PC: one `py -m scripts.ops sync-metrics` (stored views move again), the next
+  overnight writes `data/overnight_beat.json`, `py -m scripts.ops status`.
+- Outward: nothing.
+
+`roadmap-index`: open 190, done 1587, numbered open 181.

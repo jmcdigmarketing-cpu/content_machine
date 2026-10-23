@@ -83,15 +83,14 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-22 (Claude, wave 121).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
-first: sign in again if you have not (it lapsed 10-21 at 9:36 PM EDT; publish the app first).
-Next: **#1482** and **#1483** names checked in the burned captions and the thumbnail text (the
-title check #1486 fixed, run where else a viewer reads a name); **#1481** a gazetteer for NHL,
-MLB and EPL; **#1468** a heartbeat file, so the morning reads how long overnight ran (beside
-#1469); **#1473** a test per health line that a production path writes what it reads. #1540
-wants one live video checked first; #1335 waits for dated results.
-Waves before 108 (the 10-17 grand audit, waves 103-107): [planning_log.md](planning_log.md).
-**2026-10-18 (Claude, wave 108).** Measured defects first, the roadmap's five unchanged: hook learning had joined 0 of 41 videos (#1287; decision 67 - the last 90 days, the rewrite's rules stay until n settles), the quota day is YouTube's Pacific date (#1288), the overnight task may wake the PC (#1289), goose3's date warning (#1267), the teaser (#1264), a caption scrim to 4.5:1 (#1268). Filed #1290 (the hook scorer runs against who stays) and #1291. `roadmap-index`: open 258, done 1266, numbered open 206, highest #1291.
+**2026-10-22 (Claude, wave 122).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours
+first: pull, then let one `ops sync-metrics` run - every video's stored numbers move again (#1542)
+- and sign in if you have not. Next: **#1544** the thumbnail test learns from the words painted,
+not the ones asked for; **#1485** city and state collisions in topic_tokens (S19); **#1465** a
+memory check between renders and **#1467** a 2-second smoke render before the run (S17, with the
+beat #1468 now shows where a run died); **#1480** a weekly fields-written-against-read audit
+(S18, the sweep #1473's round trips start). #1540 wants one live video; #1335 waits on dates.
+Waves before 109 (the 10-17 grand audit, waves 103-108): [planning_log.md](planning_log.md).
 **2026-10-18 (Claude, wave 109).** Volume blockers: takes the detector missed (#1292 - run 164 renders tonight), a preview's hook cut at "vs." (#1293), when a game preview must be decided (#1294), today's quota entry corrected, health names its runs (#1291), facts from a voice note (#450). Filed #1295 #1296. `roadmap-index`: open 258, done 1271, numbered open 206, highest #1296.
 **2026-10-18 (Claude, wave 110).** Nothing by hand: prompts visible again (#1297), one slot rule and the Buffer round as the bare `crosspost` (#1298), scheduled videos changeable and sent at their slot (#1299), ideas ranked by outlets (#1300), previews with a call (#1301), `ops all` without the suite and `ops test` without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM. Filed #1303-#1306. `roadmap-index`: open 74, done 1465, numbered open 65, highest #1306.
 **2026-10-18 (Claude, wave 111).** The plan's next ten, in six batches: NFL/NBA news in ideas (#1303), the twelve stale cards (#1269) and two audit misses (#104 #1059), status updates that switched embedding off on 7 videos (#1306, repaired), voice-note names (#1296), no test reads the real data/ (#1305), calls from ESPN's summary kept and scored (#1304), Picks graded (#991), holdouts (#83), the weekly compilation (#138). `roadmap-index`: open 63, done 1476, numbered open 54.
@@ -105,6 +104,7 @@ Waves before 108 (the 10-17 grand audit, waves 103-107): [planning_log.md](plann
 **2026-10-21 (Claude, wave 119).** With your yes before the lapse: 168 and 170 public, 171 retired - overnight renders again. A follow-up names the original's date and one that says "since" waits (#1536, run 179's last-season seed); "Yours today" says sign in again after the lapse (#1537); a crash keeps its log and the week counts them (#1466 #1463); each video's drop-off second (#1494); a cheap second read before an unattended render (#1341); "you typed / it wrote" (#1343 #1342). `roadmap-index`: open 210, done 1560, numbered open 201.
 **2026-10-21 (Claude, wave 120).** The lapse landed and "Yours today" says sign in again. Health names its runs, its dates and each line's source (#1474 #1476 #1471 #1395); the weekly report counts the drafts a claim held (#1381); the privacy sync says what it checked (#1389); `ops retention` gives each video's first 3 seconds (#1426); `ops ypp` a monthly card (#1320); the compilation's title names its biggest subjects (#1316); #1386 met by #1083. `roadmap-index`: open 202, done 1570, numbered open 193.
 **2026-10-22 (Claude, wave 121).** The next ten from the latest main, in two batches. The roadmap's five: the share who stayed beside the 3-second number (#1538), whole research names (#1539, and the news search's), "unknown" instead of RED (#1472), health history a line a day (#1475), Studio edits read back (#1390). Five neighbours: the thresholds in one versioned table (#1479), cost from the spend you entered (#1478), NE read as New England (#1487), the crash's Python line in the morning (#1469), every mention read in the title check (#1486, in place of #1391 - the API cannot say which thumbnail is live). Filed #1540 #1541. `roadmap-index`: open 193, done 1581, numbered open 184.
+**2026-10-22 (Claude, wave 122).** A defect first: the metrics sync had stored nothing after a video's first day since 10-05 (#1542). Then the five: a team gazetteer for NHL, MLB and the Premier League in the title check (#1481); the script checked for a broken name and caption cues that never end inside one (#1482); team names whole on the thumbnail (#1483); a beat each minute so the morning and `ops status` say when overnight died (#1468); each health line read back from what production writes (#1473). Filed #1543 #1544. `roadmap-index`: open 190, done 1587, numbered open 181.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

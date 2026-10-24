@@ -969,7 +969,7 @@ def _hook_variants(
     #1093: with ``intent``, the prompt carries the idea's STANCE line and an opener that knocks
     it ("masks", "denial" on a hope idea; "isn't elite" on "Herbert is elite") is refused.
     """
-    from analytics.hook_learning import rank_openers, regen_guidance
+    from analytics.hook_learning import rank_by_traits, rank_openers, regen_guidance
     from core.angle_intent import stance_flip, stance_rule
     from core.authenticity import first_line_take
     from core.hook_score import hook_regen_enabled, score_hook, score_script_hook
@@ -1063,7 +1063,11 @@ def _hook_variants(
             from core.hook_score import extract_hook
 
             openers = [extract_hook(str(payload["script"]))]
-    baseline = dict(rank_openers([current.hook], guidance)).get(current.hook, 0.0)
+    # #1556, decision 73: once the channel has learned traits they rank the openers, not the
+    # hook score; until then the scorer still does (a channel with no data keeps today's rule).
+    measured = bool(guidance.get("prefer") or guidance.get("avoid"))
+    ranker = rank_by_traits if measured else rank_openers
+    baseline = dict(ranker([current.hook], guidance)).get(current.hook, 0.0)
     if problems:
         baseline = float("-inf")  # any sound opener beats an unsupported or stock one
     from apis.topic_tokens import content_tokens
@@ -1072,7 +1076,7 @@ def _hook_variants(
     later = [set(content_tokens(s)) for s in re.split(r"(?<=[.!?])\s+", tail) if s.strip()]
     following = next((s for s in re.split(r"(?<=[.!?])\s+", tail) if s.strip()), "")
     best = ""
-    for opener, score in rank_openers(openers, guidance):
+    for opener, score in ranker(openers, guidance):
         row: dict[str, Any] = {"opener": opener, "score": score}
         words = set(content_tokens(opener))
         opener_problems = _hook_problems(opener, grounding_text, recent_openers=recent)
@@ -1090,7 +1094,7 @@ def _hook_variants(
             row["refused"] = "repeats a later sentence of the script"
         elif says_next_sentence(opener, following):
             row["refused"] = "says the next sentence again"
-        elif not score_hook(opener).passed:
+        elif not measured and not score_hook(opener).passed:
             row["refused"] = "below the hook threshold"
         elif score <= baseline:
             row["refused"] = f"no better than the current opener ({baseline:g})"

@@ -408,8 +408,8 @@ class TestPublishDeadmanSwitch(unittest.TestCase):
 
 
 class TestThumbnailConfirmAfterSet(unittest.TestCase):
-    """#599. thumbnails.set returning 200 is not proof the custom thumb
-    applied. A videos.list that still shows the default is a silent miss."""
+    """#599, then #1540 (2026-10-23): videos.list lists maxresdefault.jpg for any HD upload, so
+    it could not confirm a custom image; thumbnails.set's own answer does."""
 
     def test_set_without_a_custom_thumb_is_unverified(self):
         from youtube.thumbnails import set_video_thumbnail
@@ -438,13 +438,15 @@ class TestThumbnailConfirmAfterSet(unittest.TestCase):
         finally:
             os.unlink(path)
         self.assertEqual(result.status, "unverified")
-        mock_service.videos.return_value.list.assert_called()
+        mock_service.videos.return_value.list.assert_not_called()
 
     def test_set_with_maxres_is_confirmed(self):
         from youtube.thumbnails import set_video_thumbnail
 
         mock_service = MagicMock()
-        mock_service.thumbnails.return_value.set.return_value.execute.return_value = {}
+        mock_service.thumbnails.return_value.set.return_value.execute.return_value = {
+            "items": [{"default": {}}]
+        }
         mock_service.videos.return_value.list.return_value.execute.return_value = {
             "items": [
                 {
@@ -469,7 +471,7 @@ class TestThumbnailConfirmAfterSet(unittest.TestCase):
         finally:
             os.unlink(path)
         self.assertEqual(result.status, "set")
-        mock_service.videos.return_value.list.assert_called()
+        mock_service.videos.return_value.list.assert_not_called()
 
 
 class TestPublishRollbackDryRun(unittest.TestCase):

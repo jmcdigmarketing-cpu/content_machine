@@ -11,6 +11,7 @@ Read-only. Never writes a doc.
 from __future__ import annotations
 
 import re
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,8 @@ SIZE_RE = re.compile(r"`\[(XL|L|M|S)\]`")
 NUM_RE = re.compile(r"^\s*- \[ \] \*{0,2}(\d+)\.")
 # #1510: an idea filed for one of the hands-off plan's shortfalls carries "*(S21.3, filed ...".
 SHORTFALL_RE = re.compile(r"\*\(S(\d{2})\.\d+, filed")
+FILED_RE = re.compile(r"\*\(S\d{2}\.\d+, filed (\d{4}-\d{2}-\d{2})\)")
+IDEA_DAYS = 90  # decision 68: an idea with no measurement after 90 days is retired (#1509)
 PLAN_HEADING_RE = re.compile(r"^### (S\d{2}) (.+?)\s*$")
 
 FILES = ("roadmap.md", "desktop_app.md", "backlog.md", "roadmap_archive.md")
@@ -87,6 +90,27 @@ def shortfall_counts(lines: list[str]) -> dict[str, int]:
     return dict(sorted(out.items()))
 
 
+def idea_expiry(lines: list[str], *, today: date | None = None) -> dict[str, Any]:
+    """#1509: the open shortfall ideas filed `IDEA_DAYS` or more days ago - each to be measured or
+    retired with the reason - and the day the next one reaches it."""
+    moment = today or date.today()
+    overdue: list[int] = []
+    due_days: list[date] = []
+    for line in lines:
+        if not OPEN_RE.match(line):
+            continue
+        filed = FILED_RE.search(line)
+        number = NUM_RE.match(line)
+        if not filed or not number:
+            continue
+        due = date.fromisoformat(filed.group(1)) + timedelta(days=IDEA_DAYS)
+        if due <= moment:
+            overdue.append(int(number.group(1)))
+        else:
+            due_days.append(due)
+    return {"overdue": overdue, "next_due": min(due_days) if due_days else None}
+
+
 def shortfall_names(lines: list[str]) -> dict[str, str]:
     """{"S21": "The hook score is backwards (Oct 18)"} from the plan's section headings."""
     out: dict[str, str] = {}
@@ -110,7 +134,11 @@ def open_numbered(lines: list[str]) -> list[tuple[int, str]]:
 
 
 def render(
-    data: dict[str, object] | None = None, *, list_open: bool = False, by_shortfall: bool = False
+    data: dict[str, object] | None = None,
+    *,
+    list_open: bool = False,
+    by_shortfall: bool = False,
+    public_videos: int | None = None,
 ) -> str:
     """Operator-facing report. ASCII only (candidate 250).
 
@@ -148,6 +176,20 @@ def render(
             f"  by shortfall : {sum(shortfalls.values())} open across {len(shortfalls)} - most "
             + ", ".join(f"{k} {v}" for k, v in top)
             + " (--by-shortfall for each)"
+        )
+    expiry = idea_expiry(_lines("backlog.md"))
+    if expiry["overdue"]:
+        out.append(
+            f"  ideas expire : {len(expiry['overdue'])} past {IDEA_DAYS} days - measure or retire "
+            f"them with the reason (decision 68): "
+            + ", ".join(f"#{n}" for n in expiry["overdue"][:8])
+        )
+    elif expiry["next_due"]:
+        out.append(f"  ideas expire : the first reaches {IDEA_DAYS} days on {expiry['next_due']}")
+    if public_videos:  # #1515: whether the backlog grows faster than what reaches viewers
+        out.append(
+            f"  per public video: {data['open_total']} open over {public_videos} public videos - "
+            f"{int(data['open_total']) / public_videos:.1f} each"  # type: ignore[call-overload]
         )
     if by_shortfall:
         names = shortfall_names(_lines("hands_off_plan.md"))

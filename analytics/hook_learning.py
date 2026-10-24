@@ -402,6 +402,23 @@ def regen_guidance(channel_id: str) -> dict[str, Any]:
     return guidance_from(got)
 
 
+def rank_by_traits(hooks: list[str], guidance: dict[str, Any]) -> list[tuple[str, float]]:
+    """#1556 (the operator, 2026-10-23: measured traits - decision 73): openers best first by the
+    channel's learned trait gaps (x100) alone - not `score_hook`, which ran against who stayed
+    (r = -0.48 over 22). With no learning yet every opener ranks 0. A stable sort."""
+    learned = [*(guidance.get("prefer") or []), *(guidance.get("avoid") or [])]
+    ranked: list[tuple[str, float]] = []
+    for hook in hooks:
+        text = (hook or "").strip()
+        if not text:
+            continue
+        traits = traits_of(text)
+        ranked.append(
+            (text, round(sum(float(t["gap"]) * 100 for t in learned if t["trait"] in traits), 1))
+        )
+    return sorted(ranked, key=lambda pair: -pair[1])
+
+
 def rank_openers(hooks: list[str], guidance: dict[str, Any]) -> list[tuple[str, float]]:
     """#987: openers best first - the scorer's score plus the learned trait gaps (x100).
 

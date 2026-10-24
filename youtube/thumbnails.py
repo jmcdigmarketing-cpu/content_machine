@@ -24,31 +24,6 @@ logger = get_logger("youtube.thumbnails")
 _IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
 
-def _thumbnail_looks_custom(service, video_id: str) -> bool:
-    """True when videos.list shows more than the auto-generated default.jpg."""
-    try:
-        payload = service.videos().list(part="snippet", id=video_id).execute()
-    except Exception as exc:
-        logger.debug("thumbnail confirm skipped: %s", exc)
-        return False
-    if not isinstance(payload, dict):
-        return False
-    items = payload.get("items") or []
-    if not items:
-        return False
-    thumbs = ((items[0].get("snippet") or {}).get("thumbnails")) or {}
-    if thumbs.get("maxres"):
-        return True
-    keys = {str(k).lower() for k in thumbs}
-    if keys <= {"default"}:
-        return False
-    for meta in thumbs.values():
-        url = str((meta or {}).get("url") or "").lower()
-        if url and "default.jpg" not in url and "mqdefault.jpg" not in url:
-            return True
-    return False
-
-
 @dataclass
 class ThumbnailUploadResult:
     status: str
@@ -117,11 +92,14 @@ def set_video_thumbnail(service, video_id: str, image_path: str) -> ThumbnailUpl
             mimetype=_mimetype_for_path(image_path),
             resumable=False,
         )
-        service.thumbnails().set(videoId=video_id, media_body=media).execute()
-        if not _thumbnail_looks_custom(service, video_id):
+        response = service.thumbnails().set(videoId=video_id, media_body=media).execute()
+        # #1540 (2026-10-23): videos.list lists `maxresdefault.jpg` for any HD upload, custom
+        # image or not (run 180), so it could not say the image took. thumbnails.set answers
+        # with the thumbnail it set - that is the confirmation, and one list call fewer.
+        if not (isinstance(response, dict) and response.get("items")):
             return ThumbnailUploadResult(
                 "unverified",
-                "thumbnails.set returned but videos.list still shows the default thumb",
+                "thumbnails.set returned no thumbnail - check it in Studio",
             )
         return ThumbnailUploadResult(
             "set",

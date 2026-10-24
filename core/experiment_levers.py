@@ -30,6 +30,16 @@ _LEVERS: dict[str, dict] = {
             ),
         },
     },
+    # #1502 (the operator, 2026-10-23: alternate): does the hook rewrite hold more viewers?
+    # Overnight drafts take an arm; "off" keeps the first-draft opener (main.py always rewrites).
+    "hook_rewrite": {
+        "description": "Whether the hook rewrite runs on an overnight draft",
+        "kind": "hook",
+        "arms": {
+            "on": "HOOK ARM: the rewrite runs.",
+            "off": "HOOK ARM: the first-draft opener stays.",
+        },
+    },
     "cta_style": {
         "description": "How the script closes / calls for engagement",
         "kind": "script",

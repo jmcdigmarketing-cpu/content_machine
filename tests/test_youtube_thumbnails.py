@@ -14,7 +14,11 @@ from youtube.upload import UploadRequest, upload_video
 
 
 def _stub_custom_thumb(mock_service) -> None:
-    """videos.list after thumbnails.set must show a custom thumb (#599)."""
+    """#1540: thumbnails.set answers with the thumbnail it set - that confirms it (#599's
+    videos.list check read `maxres` for any HD upload)."""
+    mock_service.thumbnails.return_value.set.return_value.execute.return_value = {
+        "items": [{"default": {"url": "https://i.ytimg.com/vi/vid1/default.jpg"}}]
+    }
     mock_service.videos.return_value.list.return_value.execute.return_value = {
         "items": [
             {

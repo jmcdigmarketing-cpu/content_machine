@@ -2920,6 +2920,23 @@ def cmd_shortfalls(_args: argparse.Namespace) -> int:
     return 0
 
 
+def _public_video_count(channel_id: str) -> int | None:
+    """#1515: the channel's public videos on record, for `roadmap-index`; None unread."""
+    try:
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        rows = get_publish_log_repository().list_uploaded_for_channel(channel_id) or []
+        return len(
+            {
+                r.youtube_video_id
+                for r in rows
+                if r.youtube_video_id and r.privacy_status == "public"
+            }
+        )
+    except Exception:
+        return None
+
+
 @_register("roadmap-index", "Counts per roadmap file and by size, read from the docs")
 def cmd_roadmap_index(args: argparse.Namespace) -> int:
     from core.roadmap_index import render
@@ -2929,6 +2946,7 @@ def cmd_roadmap_index(args: argparse.Namespace) -> int:
         render(
             list_open=bool(getattr(args, "list_open", False)),
             by_shortfall=bool(getattr(args, "by_shortfall", False)),
+            public_videos=_public_video_count(getattr(args, "channel", "") or "tapin"),
         ),
         args,
     )

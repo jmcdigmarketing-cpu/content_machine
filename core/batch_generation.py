@@ -26,6 +26,8 @@ import json
 import os
 import re
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
@@ -58,6 +60,24 @@ class DraftOutcome:
     # #1159: what `ops script-check --idea` prints - the script and its finished-script check.
     script: str = ""
     script_clean: dict | None = None
+
+
+@contextmanager
+def hook_arm_env(arm: tuple[str, str, str] | None) -> Iterator[None]:
+    """#1502: the "off" arm turns the hook rewrite off for this one draft (HOOK_REGEN_ENABLED,
+    read by `hook_score.hook_regen_enabled`), and puts the setting back after."""
+    if not arm or arm[1] != "off":
+        yield
+        return
+    before = os.environ.get("HOOK_REGEN_ENABLED")
+    os.environ["HOOK_REGEN_ENABLED"] = "false"
+    try:
+        yield
+    finally:
+        if before is None:
+            os.environ.pop("HOOK_REGEN_ENABLED", None)
+        else:
+            os.environ["HOOK_REGEN_ENABLED"] = before
 
 
 def hook_options(script: str, passes: Any, *, limit: int = 3) -> list[str]:
@@ -375,6 +395,14 @@ def generate_draft(
             experiment = next_arm(channel_id, kind="script")
         except Exception as exc:
             logger.debug("next_arm skipped: %s", exc)
+    hook_arm: tuple[str, str, str] | None = None
+    if not own_idea:
+        try:  # #1502: the hook rewrite on or off for this draft
+            from core.experiments import next_arm
+
+            hook_arm = next_arm(channel_id, kind="hook")
+        except Exception as exc:
+            logger.debug("hook arm skipped: %s", exc)
     out.variant, out.score = best_topic, float(best_score or 0)
 
     from core.facts.selection import select_headless_facts
@@ -383,22 +411,30 @@ def generate_draft(
     corpus = build_relevance_corpus(best_signals, operator_facts=key_facts or [])
     packed = select_headless_facts(key_facts, topic=topic, corpus=corpus) if key_facts else None
     length_choice = _length_choice(channel_id, best_topic)
-    result = run_pipeline(
-        topic,
-        discovery=discovery,
-        variant_index=variant_index,
-        length_choice=length_choice,
-        proceed_video=False,
-        channel_id=channel_id,
-        creative_brief=topic
-        if own_idea
-        else "\n".join(part for part in (preview, experiment[2] if experiment else "") if part),
-        key_facts=packed,
-        relevance_corpus=corpus,
-        best_bet=best_bet,
-        own_idea=own_idea,
-        own_topic=best_topic if own_idea else "",
-    )
+    with hook_arm_env(hook_arm):  # #1502
+        result = run_pipeline(
+            topic,
+            discovery=discovery,
+            variant_index=variant_index,
+            length_choice=length_choice,
+            proceed_video=False,
+            channel_id=channel_id,
+            creative_brief=topic
+            if own_idea
+            else "\n".join(part for part in (preview, experiment[2] if experiment else "") if part),
+            key_facts=packed,
+            relevance_corpus=corpus,
+            best_bet=best_bet,
+            own_idea=own_idea,
+            own_topic=best_topic if own_idea else "",
+        )
+    if hook_arm and result.run_id:
+        try:
+            from core.experiments import record_assignment
+
+            record_assignment(channel_id, result.run_id, hook_arm[0], hook_arm[1])
+        except Exception as exc:
+            logger.debug("hook arm not recorded: %s", exc)
     # #779: a script-only run always comes back aborted with "proceed_video=False" - the
     # pipeline records that as "drafted". Treating it as a failure kept 0 of 3 drafts on
     # the first real overnight run.

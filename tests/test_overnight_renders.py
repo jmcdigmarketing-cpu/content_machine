@@ -119,9 +119,8 @@ class EligibilityTests(_DraftsCase):
         self._draft(2, ungrounded_entities=["Somebody"])
         self._draft(3, hook_verdict="weak")
         reasons = [unattended_block_reason(d) for d in pending_drafts("tapin", root=self.tmp.name)]
-        self.assertEqual(
-            reasons, ["its facts conflict", "it names something the facts do not", "weak hook"]
-        )
+        # Decision 72 (#1549): a weak hook verdict no longer holds an overnight render.
+        self.assertEqual(reasons, ["its facts conflict", "it names something the facts do not", ""])
 
     def test_a_draft_past_its_window_waits(self):
         old = (datetime.now() - timedelta(days=20)).isoformat(timespec="seconds")

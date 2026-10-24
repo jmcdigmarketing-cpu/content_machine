@@ -8,6 +8,7 @@ or corrupt file yields no seeds.
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -326,10 +327,22 @@ def event_for(text: str, *, events: dict[str, str] | None = None) -> tuple[str, 
         pool = _EVENTS
     if not (text or "").strip():
         return "", ""
+    # #1551 (2026-10-23): run 184, "Yan's resilience vs. Dvalishvili's pressure at UFC 333", named
+    # the card by its number and two fighters below its main event, so it matched nothing and was
+    # slotted the day after the card. A numbered card is its name's first words.
+    numbered = _CARD_NUMBER_RE.search(text)
+    if numbered:
+        for name, start in pool.items():
+            card = _CARD_NUMBER_RE.match(name.upper())
+            if card and card.group(0).split() == numbered.group(0).upper().split():
+                return name, start
     for name, start in pool.items():
         if same_story(name, [text]):
             return name, start
     return "", ""
+
+
+_CARD_NUMBER_RE = re.compile(r"\bUFC\s+\d{3}\b", re.IGNORECASE)
 
 
 def fetch_week_topics() -> list[tuple[str, str]]:

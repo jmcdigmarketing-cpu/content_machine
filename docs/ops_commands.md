@@ -188,6 +188,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `traces` | Recent run traces — timings, LLM cost, quality, hotspots (Pillar 1) |
 | `tray` | System-tray / quota chip (uploads-left + TTS chars + Apify breaker) |
 | `tts-arms` | ElevenLabs vs Piper Bayesian report (no auto-switch) |
+| `unschedule` | Take a scheduled video off YouTube's schedule - private, no publish time (#1555; dry-run default; --apply sends) |
 | `validate` | Validate config/channels.json |
 | `vault-decay` | List vault notes whose expires date is in the past, and preview lines about past events |
 | `vault-eval` | Vault subject-relevance evals: precision/recall, or compare last two |

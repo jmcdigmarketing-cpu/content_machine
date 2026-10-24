@@ -368,6 +368,92 @@ def _read_back(service: Any, video_id: str, when: datetime, channel_id: str) -> 
     return f" - YouTube still shows {old}; the next privacy sync corrects the record"
 
 
+def apply_unschedule(
+    video_id: str,
+    *,
+    channel_id: str = "tapin",
+    dry_run: bool = True,
+    repo=None,
+    why: str = "",
+) -> GoPublicResult:
+    """#1555 (2026-10-23): a scheduled video back to private with no publish time. Run 179, the
+    Pistons follow-up, was scheduled for Sat noon with last season's "clinched the No. 1 seed",
+    and the operator asked for it off the schedule; `rollback-publish` unlists only a published
+    video. The file stays; the log row is private and uploaded, so its slot is free again."""
+    video_id = (video_id or "").strip()
+    try:
+        if repo is None:
+            from storage.repositories.publish_log import get_publish_log_repository
+
+            repo = get_publish_log_repository()
+        rows = _log_rows(repo, channel_id)
+    except Exception as exc:
+        logger.warning("unschedule: publish log unreadable: %s", exc)
+        rows = []
+    record = _find(rows, video_id) if video_id else None
+    run_id = record.content_run_id if record is not None else None
+    title = _run_title(run_id)
+    if record is None or str(getattr(record, "status", "") or "") != "scheduled":
+        return GoPublicResult(
+            "invalid",
+            f"{video_id or 'no video id'} is not a scheduled upload on record - nothing to unschedule",
+            video_id,
+            run_id=run_id,
+            title=title,
+        )
+    body: dict[str, Any] = {
+        "id": video_id,
+        "status": {"privacyStatus": "private", "publishAt": None},
+    }
+    if dry_run:
+        return GoPublicResult("dry_run", json.dumps(body), video_id, run_id=run_id, title=title)
+    if os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() not in ("1", "true", "yes"):
+        return GoPublicResult(
+            "blocked", "YOUTUBE_UPLOAD_ENABLED is not true; nothing was sent", video_id,
+            run_id=run_id, title=title,
+        )  # fmt: skip
+    from publishing.snippet_update import manage_scope_problem
+
+    problem = manage_scope_problem(channel_id)
+    if problem:
+        return GoPublicResult("blocked", problem, video_id, run_id=run_id, title=title)
+    try:
+        from publishing.snippet_update import live_status, writable_status
+        from youtube.oauth import get_youtube_service
+
+        service = get_youtube_service(channel_id)
+        # #1306: the whole status; a None publishAt drops it.
+        body["status"] = writable_status(
+            live_status(service, video_id), privacyStatus="private", publishAt=None
+        )
+        record_call("videos.update")
+        service.videos().update(part="status", body=body).execute()
+        after = live_status(service, video_id)
+    except Exception as exc:
+        from publishing.snippet_update import edit_error_text
+
+        logger.warning("unschedule failed: %s", exc)
+        return GoPublicResult("error", edit_error_text(exc, channel_id), video_id, run_id=run_id,
+                              title=title)  # fmt: skip
+    try:
+        repo.update(record.id, {"privacy_status": "private", "status": "uploaded"})
+        if run_id:
+            merge_features(run_id, {"unscheduled": {"at": _now().isoformat(), "why": why}})
+    except Exception as exc:
+        logger.warning("unschedule: record not updated: %s", exc)
+    if after.get("publishAt"):
+        return GoPublicResult(
+            "error",
+            f"YouTube still shows a publish time ({after['publishAt']}) - check it in Studio",
+            video_id,
+            run_id=run_id,
+            title=title,
+        )
+    result = GoPublicResult("updated", "", video_id, run_id=run_id, title=title)
+    result.detail = f"{result.label} is private, with no publish time - the file stays"
+    return result
+
+
 def unlisted_holds(channel_id: str) -> list:
     """Every upload on the channel that is still unlisted, newest first (#1122)."""
     from storage.repositories.publish_log import get_publish_log_repository

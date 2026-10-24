@@ -960,8 +960,9 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
         return "its facts conflict"
     if meta.get("ungrounded_entities"):
         return "it names something the facts do not"
-    if str(meta.get("hook_verdict") or "").strip().lower() == "weak":
-        return "weak hook"
+    # Decision 72 (#1549, the operator 2026-10-23): a "weak" hook verdict no longer holds an
+    # overnight render - the score behind it ran against who stayed (r = -0.48 over 22, decision
+    # 70). Review still shows the verdict.
     check = meta.get("script_clean")
     if isinstance(check, dict) and check.get("ok") is False:
         # #1535 (wave 118, the operator: warn only): "hard to say" alone held 9 of 58 drafts;

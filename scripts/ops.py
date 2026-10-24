@@ -3270,6 +3270,26 @@ def cmd_go_public(args: argparse.Namespace) -> int:
 
 
 @_register(
+    "unschedule",
+    "Take a scheduled video off YouTube's schedule - private, no publish time (#1555; dry-run "
+    "default; --apply sends)",
+)
+def cmd_unschedule(args: argparse.Namespace) -> int:
+    from publishing.go_public import apply_unschedule
+
+    result = apply_unschedule(
+        (getattr(args, "target", None) or "").strip(),
+        channel_id=args.channel,
+        dry_run=not bool(getattr(args, "apply", False)),
+        why=(getattr(args, "topic", None) or "").strip(),
+    )
+    print(f"{result.status}: {result.detail}")
+    if result.status == "dry_run":
+        print(f"  Would unschedule: {result.label}. Nothing was sent - re-run with --apply.")
+    return 0 if result.status in ("dry_run", "updated") else 1
+
+
+@_register(
     "recategorize",
     "Re-file uploaded videos under their run's YouTube category (#873; dry-run default; --apply sends)",
 )

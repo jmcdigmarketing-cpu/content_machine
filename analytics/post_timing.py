@@ -467,7 +467,8 @@ def planned_post_time(
     return when
 
 
-def format_scheduled_local(when_utc: datetime, channel_id: str) -> str:
+def format_scheduled_local(when_utc: datetime, channel_id: str, *, dated: bool = False) -> str:
+    """ "Fri 8:42 PM EDT" in the channel's zone; `dated` adds the date ("Fri Oct 30 8:42 PM EDT")."""
     schedule = get_post_schedule(channel_id)
     try:
         tz = ZoneInfo(schedule.timezone)
@@ -476,7 +477,7 @@ def format_scheduled_local(when_utc: datetime, channel_id: str) -> str:
     if when_utc.tzinfo is None:
         when_utc = when_utc.replace(tzinfo=timezone.utc)
     local = when_utc.astimezone(tz)
-    return local.strftime("%a %I:%M %p %Z").replace(" 0", " ")
+    return local.strftime("%a %b %d %I:%M %p %Z" if dated else "%a %I:%M %p %Z").replace(" 0", " ")
 
 
 # Explicit date + time (full date required — a year-less date can't be dated safely).

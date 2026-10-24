@@ -270,11 +270,14 @@ def sign_in_expiry_line(channel_id: str | None = None, *, now: datetime | None =
     if _reminder_days() <= 0:
         return ""
     when = sign_in_expiry(channel_id)
-    if when is None or when <= (now or _now()):
+    moment = now or _now()
+    if when is None or when <= moment:
         return ""
     from analytics.post_timing import format_scheduled_local
 
-    local = format_scheduled_local(when, resolve_channel_id(channel_id))
+    # #1554 (2026-10-23): "lapses Fri 8:42 PM EDT" was read on a Friday, a week before the lapse.
+    dated = when - moment > timedelta(days=1)
+    local = format_scheduled_local(when, resolve_channel_id(channel_id), dated=dated)
     return f"lapses {local} unless the app is published"
 
 

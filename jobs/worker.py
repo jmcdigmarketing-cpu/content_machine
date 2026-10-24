@@ -303,6 +303,46 @@ def _after_its_game(job, channel_id: str) -> bool:
     return True
 
 
+def _before_its_event(job, payload: dict, channel_id: str) -> dict:
+    """#1552 (2026-10-23): run 184, a UFC 333 preview, was queued for Sun noon - the day after the
+    card - because its title named the card by number and matched no event (#1551). A job whose
+    publish time is at or after its event's start takes `slot_for_run`'s slot: before the event,
+    or as it uploads when none is left. The new slot is stored."""
+    publish_at = _parse_publish_at(payload)
+    if publish_at is None or not job.content_run_id:
+        return payload
+    try:
+        from core.spaced_queue import slot_for_run
+        from core.stale_renders import render_age_days, run_event
+
+        run = get_content_run_repository().get(int(job.content_run_id))
+        event = run_event(run, channel_id, render_age_days(run)) if run is not None else None
+        if event is None or publish_at < event:
+            return payload
+        title = str(getattr(run, "title", "") or "")
+        when, why = slot_for_run(channel_id, int(job.content_run_id), title=title)
+    except Exception as exc:
+        logger.debug("event check skipped for job %s: %s", job.id, exc)
+        return payload
+    if when is None:
+        print(
+            f"Upload job {job.id} (run {job.content_run_id}): its slot is after its event and {why}"
+        )
+        return payload
+    moved = {**payload, "youtube_publish_at": when.isoformat()}
+    try:
+        get_job_repository().update(job.id, {"payload_json": json.dumps(moved)})
+    except Exception as exc:
+        logger.debug("new slot not stored for job %s: %s", job.id, exc)
+    from analytics.post_timing import format_scheduled_local
+
+    print(
+        f"Upload job {job.id} (run {job.content_run_id}): its slot was after its event - moved "
+        f"before its event, to {format_scheduled_local(when, channel_id)}"
+    )
+    return moved
+
+
 def _process_upload(job) -> None:
     payload = json.loads(job.payload_json or "{}")
     channel_id = resolve_channel_id(job.channel_id)
@@ -332,6 +372,7 @@ def _process_upload(job) -> None:
         print(rpm_blocked)
         return
 
+    payload = _before_its_event(job, payload, channel_id)  # #1552
     payload = _reslot_after_hold(job, payload, channel_id)  # #1439
     request = PublishRequest(
         file_path=payload.get("file_path", ""),

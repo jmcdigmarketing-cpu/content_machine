@@ -7143,6 +7143,44 @@
         "equals": ""
       },
       "why": "a preview is current until its event"
+    },
+    {
+      "id": "a-card-named-by-its-number",
+      "item": 1551,
+      "source": "live 2026-10-23: run 184, 'Yan's resilience vs. Dvalishvili's pressure at UFC 333', matched no event and was slotted the day after the card",
+      "call": "core.seasonal_calendar:event_for",
+      "args": [
+        "Yan's resilience vs. Dvalishvili's pressure at UFC 333"
+      ],
+      "kwargs": {
+        "events": {
+          "UFC 333: Volkanovski vs. Evloev": "2026-10-24T17:00Z",
+          "UFC Fight Night: Moicano vs. Nolan": "2026-11-01T00:00Z"
+        }
+      },
+      "expect": {
+        "includes_all": [
+          "UFC 333: Volkanovski vs. Evloev",
+          "2026-10-24T17:00Z"
+        ]
+      },
+      "why": "a numbered card is its name's first words"
+    },
+    {
+      "id": "captions-wait-for-queued-uploads",
+      "item": 1553,
+      "source": "live 2026-10-23: three caption files took 1,200 units with three uploads queued; run 184 waited for the reset",
+      "call": "youtube.captions:caption_quota_ok",
+      "args": [
+        3500
+      ],
+      "kwargs": {
+        "waiting": 2
+      },
+      "expect": {
+        "falsy": true
+      },
+      "why": "a caption keeps an upload's units for each upload queued"
     }
   ]
 }

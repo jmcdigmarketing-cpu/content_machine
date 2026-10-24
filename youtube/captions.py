@@ -33,13 +33,28 @@ def resolve_caption_path(file_path: str | None = None, explicit: str | None = No
 CAPTION_UNITS = 400  # YouTube's cost of captions.insert
 
 
-def caption_quota_ok(remaining: int) -> bool:
+def caption_quota_ok(remaining: int, *, waiting: int = 0) -> bool:
     """#1525 (the operator: only when quota allows): a caption file is 400 units - 1,200 of the
     8,629 spent on 2026-10-19, when uploads stopped at 4. It goes up only while one upload's worth
-    is still left after it; the burned captions and YouTube's auto-captions remain either way."""
+    is still left after it; the burned captions and YouTube's auto-captions remain either way.
+    #1553 (2026-10-23): one upload's worth for each upload still `waiting` - three captions took
+    1,200 units with three uploads queued, and run 184 waited for the reset."""
     from apis.youtube_quota import units_per_upload
 
-    return int(remaining) - CAPTION_UNITS >= units_per_upload()
+    return int(remaining) - CAPTION_UNITS >= units_per_upload() * max(1, int(waiting))
+
+
+def _waiting_uploads() -> int:
+    """Upload jobs still pending - the one being sent is running, so it is not counted."""
+    try:
+        from core.job_queue import list_active_jobs
+
+        return sum(
+            1 for j in list_active_jobs() if j.job_type == "upload" and j.status == "pending"
+        )
+    except Exception as exc:
+        logger.debug("upload queue unread for the caption reserve: %s", exc)
+        return 0
 
 
 def maybe_upload_captions(
@@ -57,10 +72,15 @@ def maybe_upload_captions(
     except Exception as exc:  # an unread ledger does not stop a caption (as before)
         logger.debug("caption quota unread: %s", exc)
         remaining = None
-    if remaining is not None and not caption_quota_ok(remaining):
-        logger.info("caption file skipped - keeps an upload's units (%s left)", remaining)
+    waiting = _waiting_uploads() if remaining is not None else 0
+    if remaining is not None and not caption_quota_ok(remaining, waiting=waiting):
+        queued = f", {waiting} queued" if waiting else ""
+        logger.info(
+            "caption file skipped - keeps the uploads' units (%s left%s)", remaining, queued
+        )
         return CaptionUploadResult(
-            "skipped", f"caption file skipped - keeps an upload's units ({remaining:,} left)"
+            "skipped",
+            f"caption file skipped - keeps the uploads' units ({remaining:,} left{queued})",
         )
     try:
         mime = "application/octet-stream"

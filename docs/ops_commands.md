@@ -164,6 +164,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `shelf` | Finished videos that are not public, each with its command (#1131) |
 | `shell` | Localhost FastAPI operator shell (GET only; no TTS/Apify/publish) |
 | `shortcut` | Start Menu + Desktop shortcuts that open the Content OS app (#982) |
+| `shortfalls` | Each of the plan's 22 shortfalls with its open items and done-when (#1517) |
 | `signal-audit` | Which signals feed the script, and which return frozen payloads (#575 #588) |
 | `signal-canary` | Probe every signal at $0 — a dead source found before a real run needs it |
 | `signal-diff` | What each signal returned differently between two runs: <A> --run-id B (#586) |

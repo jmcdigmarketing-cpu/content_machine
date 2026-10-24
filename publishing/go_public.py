@@ -428,7 +428,16 @@ def apply_unschedule(
         )
         record_call("videos.update")
         service.videos().update(part="status", body=body).execute()
+        import time
+
+        # #1555's first live run: read at once, YouTube still showed the old publish time; a
+        # read a few seconds later did not.
         after = live_status(service, video_id)
+        for _attempt in range(3):
+            if not after.get("publishAt"):
+                break
+            time.sleep(3)
+            after = live_status(service, video_id)
     except Exception as exc:
         from publishing.snippet_update import edit_error_text
 

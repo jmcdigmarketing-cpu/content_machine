@@ -47,6 +47,14 @@ def learn_min() -> int:
         return 10
 
 
+def examples_count() -> int:
+    """#1504: how many best-held openers the rewrite quotes (`HOOK_EXAMPLES`, default 10)."""
+    try:
+        return max(1, int(os.getenv("HOOK_EXAMPLES", "10")))
+    except ValueError:
+        return 10
+
+
 def learn_days() -> int:
     """Decision 67: the last 90 days teach. All 41 videos made the three best openers June 4's
     first batch ("Grand Theft Auto VI is on the horizon..."); `HOOK_LEARN_DAYS=0` is all."""
@@ -304,7 +312,7 @@ def learn(channel_id: str) -> dict[str, Any]:
                        "gap": round(a - b, 3), "n_with": len(with_t),
                        "n_without": len(without)})  # fmt: skip
     out["traits"] = sorted(traits, key=lambda t: -t["gap"])
-    best = sorted(rows, key=lambda x: -x["stayed"])[:3]
+    best = sorted(rows, key=lambda x: -x["stayed"])[: examples_count()]  # #1504: was 3
     out["best_hooks"] = [(x["hook"], x["stayed"]) for x in best]
     return out
 
@@ -372,9 +380,13 @@ def guidance_from(got: dict[str, Any]) -> dict[str, Any]:
     held_back = set(_against_rules(got))
     traits = [t for t in got.get("traits") or [] if t["trait"] not in held_back]
     return {
-        "examples": [hook for hook, _stayed in got.get("best_hooks") or []],
+        # #1504: each with the share who stayed, so the model reads how well it held
+        "examples": [
+            f"{hook} ({stayed:.0%} stayed)" for hook, stayed in got.get("best_hooks") or []
+        ],
         "prefer": [t for t in traits if t["gap"] >= _GAP][:2],
         "avoid": [t for t in reversed(traits) if t["gap"] <= -_GAP][:2],
+        "settled": _settled(got),  # decision 67: a settled note outranks the fixed rule
     }
 
 

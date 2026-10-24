@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
@@ -162,3 +163,65 @@ def render(
             shown = shown.encode("cp1252", "replace").decode("cp1252")
             out.append(f"  #{number} {shown}")
     return "\n".join(out)
+
+
+# ---- #1517 (S22): each shortfall with the check that says it is done ---------------------------
+#
+# `docs/hands_off_plan.md` gives every shortfall a **Done when** - a command and what it must show.
+# Nothing said them together, so whether a shortfall was closing was read by hand. `ops shortfalls`
+# prints each with its open backlog items (#1510), and the weekly review runs it.
+
+PLAN = DOCS / "hands_off_plan.md"
+_HEADING_RE = re.compile(r"^### (S\d{2}) (.+?)\s*$")
+_DONE_RE = re.compile(r"\*\*Done when:\*\*\s*(.*)$")
+_OPS_RE = re.compile(r"py -m scripts\.ops ([a-z][a-z0-9-]*)")
+
+
+def sections(text: str | None = None) -> list[dict[str, Any]]:
+    """[{key, name, done_when, commands}] in plan order. `done_when` is the sentence, its wrapped
+    lines joined; `commands` the `ops` commands it names."""
+    lines = (PLAN.read_text(encoding="utf-8") if text is None else text).splitlines()
+    out: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    reading = False
+    for line in lines:
+        heading = _HEADING_RE.match(line)
+        if heading:
+            current = {"key": heading.group(1), "name": heading.group(2), "done_when": "",
+                       "commands": []}  # fmt: skip
+            out.append(current)
+            reading = False
+            continue
+        if line.startswith("## "):
+            current, reading = None, False
+            continue
+        if current is None:
+            continue
+        done = _DONE_RE.search(line)
+        if done:
+            current["done_when"] = done.group(1).strip()
+            reading = True
+        elif reading and line.strip() and not line.startswith("**"):
+            current["done_when"] += " " + line.strip()
+        else:
+            reading = False
+    for section in out:
+        section["commands"] = list(dict.fromkeys(_OPS_RE.findall(section["done_when"])))
+    return out
+
+
+def shortfall_lines() -> list[str]:
+    """`ops shortfalls`: one line a shortfall - its open items and its done-when."""
+    try:
+        open_by = counts().get("by_shortfall") or {}
+    except Exception:
+        open_by = {}
+    found = sections()
+    out = [
+        f"Shortfalls - {len(found)} in docs/hands_off_plan.md, each with the check that closes it"
+    ]
+    for s in found:
+        n = open_by.get(s["key"], 0) if isinstance(open_by, dict) else 0
+        out.append(f"  {s['key']} {s['name'][:52]} - {n} open")
+        out.append(f"      done when {s['done_when'] or '(none written)'}")
+    return out

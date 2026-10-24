@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -211,9 +212,36 @@ def _cut_flagged(draft: PendingDraft, blocking: list[str], print_fn: Callable[..
     return True
 
 
-def _render_prompt(can_cut: bool) -> str:
+def _render_prompt(can_cut: bool, can_pick: bool = False) -> str:
     cut_offer = " / c = cut the flagged sentences" if can_cut else ""
-    return f"  Render it? [y / n = reject / Enter = later / q = stop{cut_offer}]: "
+    pick_offer = " / h = pick the hook" if can_pick else ""
+    return f"  Render it? [y / n = reject / Enter = later / q = stop{cut_offer}{pick_offer}]: "
+
+
+def _pick_hook(
+    draft: PendingDraft, ask: Callable[[str], str], print_fn: Callable[..., Any]
+) -> bool:
+    """#1503: one of three openers - the draft's and the rewrite's runners-up. The pick replaces
+    the first sentence in draft.md and is recorded (`hook_pick`) so its stayed share can be read."""
+    options = [str(o) for o in draft.meta.get("hook_options") or [] if str(o).strip()]
+    if len(options) < 2:
+        return False
+    for number, opener in enumerate(options, 1):
+        print_fn(f"    {number}{' (now)' if number == 1 else ''}: {opener}")
+    typed = ask(f"  Which opener? [1-{len(options)} / Enter = keep]: ").strip()
+    if not typed.isdigit() or not 1 <= int(typed) <= len(options):
+        return False
+    picked = int(typed)
+    if picked > 1 and draft.script.startswith(options[0]):
+        new = options[picked - 1] + draft.script[len(options[0]) :]
+        _rewrite_script(draft.folder, new)
+        draft.script = new
+    draft.meta["hook_pick"] = {"options": options, "picked": picked,
+                               "at": datetime.now().isoformat(timespec="seconds")}  # fmt: skip
+    with open(os.path.join(draft.folder, "meta.json"), "w", encoding="utf-8") as f:
+        json.dump(draft.meta, f, indent=2, default=str)
+    print_fn(f"    opener {picked}: {options[picked - 1]}")
+    return True
 
 
 def _blocking_claims(draft: PendingDraft) -> list[str]:
@@ -442,15 +470,21 @@ def review_drafts(
                 summary.later.append(draft.run_id)
                 continue
         can_cut = bool(blocking)
-        answer = ask(_render_prompt(can_cut)).strip().lower()
-        while answer == "c" and can_cut:  # #1177
-            if _cut_flagged(draft, blocking, print_fn):
+        can_pick = len(draft.meta.get("hook_options") or []) > 1  # #1503
+        answer = ask(_render_prompt(can_cut, can_pick)).strip().lower()
+        while (answer == "c" and can_cut) or (answer == "h" and can_pick):
+            if answer == "h":
+                _pick_hook(draft, ask, print_fn)
+                can_pick = False
+            elif _cut_flagged(draft, blocking, print_fn):  # #1177
                 blocking = _blocking_claims(draft)
                 from core.script_craft import script_check_line
 
                 print_fn(f"    {script_check_line(draft.meta.get('script_clean'))}")
-            can_cut = False  # one cut takes every sentence it can; a second finds the same
-            answer = ask(_render_prompt(can_cut)).strip().lower()
+                can_cut = False  # one cut takes every sentence it can; a second finds the same
+            else:
+                can_cut = False
+            answer = ask(_render_prompt(can_cut, can_pick)).strip().lower()
         if answer == "q":
             break
         if answer == "n":
@@ -1186,7 +1220,7 @@ def render_unattended(
             from core.nightly_task import beat_step
 
             beat_step(f"rendering run {draft.run_id}")  # #1468: the native crash class lives here
-            (render or _render)(draft, False)
+            (render or _render_in_process)(draft, False)
         except Exception as exc:
             logger.warning("overnight render of run %s failed: %s", draft.run_id, exc)
             out["failed"].append((draft.run_id, str(exc)[:120]))
@@ -1201,6 +1235,48 @@ def render_unattended(
             logger.warning("overnight upload of run %s not queued: %s", draft.run_id, exc)
             out["failed"].append((draft.run_id, f"rendered, not queued: {str(exc)[:90]}"))
     return out
+
+
+def _render_in_process(draft: PendingDraft, override: bool) -> bool:
+    """#1464 (S17): each unattended render in its own process - `python -m core.batch_review
+    --render-draft FOLDER` - so a native crash (10-16: one took the night) costs that one draft,
+    named, and the next still renders. Not captured: its lines and a crash's faulthandler
+    traceback go to the parent's log, as overnight's drafts do. OVERNIGHT_RENDER_PROCESS=false
+    renders in this process."""
+    if _env_off("OVERNIGHT_RENDER_PROCESS"):
+        return _render(draft, override)
+    import subprocess
+    import sys
+
+    argv = [sys.executable, "-m", "core.batch_review", "--render-draft", draft.folder]
+    if override:
+        argv.append("--override")
+    proc = subprocess.run(argv)
+    if proc.returncode != 0:
+        raise RuntimeError(f"the render process stopped (exit {proc.returncode})")
+    return True
+
+
+def main(argv: list[str] | None = None) -> int:
+    """`--render-draft FOLDER [--override]`: render one draft (#1464's child process)."""
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args[:1] != ["--render-draft"] or len(args) < 2:
+        return 2
+    import faulthandler
+
+    faulthandler.enable()  # a native crash names its Python line in the parent's log (#1216)
+    folder = args[1]
+    try:
+        with open(os.path.join(folder, "meta.json"), encoding="utf-8") as f:
+            meta = json.load(f)
+    except (OSError, ValueError) as exc:
+        print(f"render job: {folder} unreadable: {exc}")
+        return 2
+    from core.run_trace import full_script
+
+    script = draft_script(folder) or full_script(meta.get("run_id")) or ""
+    _render(PendingDraft(folder=folder, meta=meta, script=script), "--override" in args)
+    return 0
 
 
 OVERNIGHT_LOOKBACK_HOURS = 48.0
@@ -1446,3 +1522,7 @@ def unattended_plan_lines(channel_id: str, *, root: str | None = None) -> list[s
         lines.append(f"  Waiting for you ({len(skipped)}): {told}")
         lines.append(f"  Review them: py -m scripts.ops batch-review --channel {channel_id}")
     return lines
+
+
+if __name__ == "__main__":
+    sys.exit(main())

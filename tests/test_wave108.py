@@ -194,7 +194,10 @@ class HookLearningTests(unittest.TestCase):
             "best_hooks": [("One.", 0.52), ("Two?", 0.50), ("Three?", 0.42)],
         }  # fmt: skip
         got = guidance_from(learned)
-        self.assertEqual(got["examples"], ["One.", "Two?", "Three?"])
+        # #1504: each example carries the share who stayed
+        self.assertEqual(
+            got["examples"], ["One. (52% stayed)", "Two? (50% stayed)", "Three? (42% stayed)"]
+        )
         self.assertEqual([t["trait"] for t in got["prefer"]], ["stakes"])
         self.assertEqual([t["trait"] for t in got["avoid"]], ["a weak opener"])
         settled = guidance_from(dict(learned, n=21))

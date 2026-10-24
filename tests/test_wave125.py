@@ -130,11 +130,14 @@ class UnscheduleTests(unittest.TestCase):
             patch.dict("os.environ", {"YOUTUBE_UPLOAD_ENABLED": "true"}),
             patch("publishing.snippet_update.manage_scope_problem", return_value=""),
             patch("youtube.oauth.get_youtube_service", return_value=service),
-            patch("publishing.snippet_update.live_status", side_effect=[dict(self.LIVE), after]),
+            patch(
+                "publishing.snippet_update.live_status", side_effect=[dict(self.LIVE)] + [after] * 4
+            ),
             patch.object(
                 go_public, "_run_title", return_value="Detroit Pistons bench delivers 23-0"
             ),
             patch("publishing.go_public.merge_features") as marked,
+            patch("time.sleep"),
         ):
             result = go_public.apply_unschedule(
                 "lS5dluGdRlI",
@@ -241,6 +244,281 @@ class SignInDateTests(unittest.TestCase):
         expiry = datetime(2026, 10, 31, 0, 42, tzinfo=timezone.utc)
         line = self._line(expiry, expiry - timedelta(hours=5))
         self.assertEqual(line, "lapses Fri 8:42 PM EDT unless the app is published")
+
+
+SCRIPT = (
+    "The Chiefs are 5-0 and favored by three in Seattle. Seattle ruled out three starters. "
+    "Kansas City has covered four straight. The line moved twice this week. Tap in for more."
+)
+
+
+def _prompt_for(guidance=None, rule="most viewers decide in the first seconds"):
+    from core import content_engine
+
+    seen: dict[str, str] = {}
+
+    def llm(system_prompt, user_prompt, **_kw):
+        seen["system"] = system_prompt
+        return {"openers": ["The Chiefs will lose in Seattle, and the spread already says so."]}
+
+    with (
+        patch.object(content_engine, "_call_content_llm", side_effect=llm),
+        patch.object(content_engine, "_first_line_rule", return_value=rule),
+        patch("analytics.hook_learning.regen_guidance", return_value=guidance or {}),
+        patch("core.hook_score.hook_regen_enabled", return_value=True),  # the suite turns it off
+    ):
+        new, extra = content_engine._hook_variants(SCRIPT, channel_id="")
+    return seen.get("system", ""), new, extra
+
+
+class CallFormTests(unittest.TestCase):
+    """#1557: since 10-19, 17 of 18 runs refused every hook variant for "no call or take" - the
+    prompt said why a call matters and never what one looks like."""
+
+    def test_the_prompt_names_the_form(self):
+        system, _new, _extra = _prompt_for()
+        self.assertIn("will", system)
+        self.assertIn("in so many words", system)
+
+    def test_an_opener_in_that_form_passes_the_rule(self):
+        from core.authenticity import first_line_take
+
+        self.assertTrue(
+            first_line_take("The Chiefs will lose in Seattle, and the spread already says so.")
+        )
+        # the live refusals of run 185 stay refused
+        self.assertFalse(
+            first_line_take(
+                "The 5-0 Chiefs are underdogs in Seattle, and the spread says the league already knows why."
+            )
+        )
+
+    def test_the_variant_is_kept(self):
+        _system, new, extra = _prompt_for()
+        self.assertTrue(new.startswith("The Chiefs will lose in Seattle"), extra)
+
+
+class TenExamplesTests(unittest.TestCase):
+    """#1504: the ten best-held openers as the rewrite's examples, and decision 67's settled notes
+    in place of the fixed rules they contradict."""
+
+    def test_learn_keeps_ten(self):
+        from analytics import hook_learning
+
+        rows = [{"hook": f"Opener {i} names Detroit.", "score": 50.0, "traits": set(), "stayed": i / 100}
+                for i in range(22)]  # fmt: skip
+        with patch.object(hook_learning, "_rows", return_value=rows):
+            got = hook_learning.learn("tapin")
+        self.assertEqual(len(got["best_hooks"]), 10)
+        self.assertEqual(got["best_hooks"][0][0], "Opener 21 names Detroit.")
+
+    def test_the_examples_carry_their_share(self):
+        from analytics.hook_learning import guidance_from
+
+        got = {"ready": True, "n": 22, "needs": 16, "traits": [],
+               "best_hooks": [("Is Jalen Hurts the best?", 0.45)]}  # fmt: skip
+        guidance = guidance_from(got)
+        self.assertEqual(guidance["examples"], ["Is Jalen Hurts the best? (45% stayed)"])
+        self.assertTrue(guidance["settled"])
+
+    def test_settled_notes_replace_the_rules_they_contradict(self):
+        guidance = {
+            "examples": [f"Example {i}" for i in range(10)],
+            "prefer": [{"trait": "a question", "with": 0.42, "without": 0.21, "gap": 0.21}],
+            "avoid": [{"trait": "12 words or fewer", "with": 0.22, "without": 0.31, "gap": -0.09}],
+            "settled": True,
+        }
+        system, _new, _extra = _prompt_for(guidance)
+        self.assertNotIn("under 12 words", system)
+        self.assertNotIn("or a question", system)
+        self.assertIn("Example 9", system)
+
+    def test_unsettled_the_rules_stand(self):
+        guidance = {"examples": ["Example 0"], "prefer": [], "avoid": [], "settled": False}
+        system, _new, _extra = _prompt_for(guidance)
+        self.assertIn("under 12 words", system)
+
+
+class HookOptionsTests(unittest.TestCase):
+    """#1503: at review, one of three hooks; the pick is recorded."""
+
+    PASSES: ClassVar[list[dict[str, Any]]] = [
+        {"name": "improve_hook", "picked": "",
+         "variants": [{"opener": "Kansas City will cover in Seattle.", "score": 80},
+                      {"opener": "Seattle's three starters out will decide it.", "score": 78,
+                       "refused": "no better than the current opener (90)"},
+                      {"opener": "Bad one with new numbers 99.", "score": 70,
+                       "refused": "new specifics (a name or number the script does not have)"}]},
+    ]  # fmt: skip
+
+    def test_the_options(self):
+        from core.batch_generation import hook_options
+
+        got = hook_options(SCRIPT, self.PASSES)
+        self.assertEqual(got[0], "The Chiefs are 5-0 and favored by three in Seattle.")
+        self.assertEqual(
+            got[1:],
+            ["Kansas City will cover in Seattle.", "Seattle's three starters out will decide it."],
+        )
+
+    def test_a_stored_repr_is_read(self):
+        from core.batch_generation import hook_options
+
+        passes = [dict(self.PASSES[0], variants=repr(self.PASSES[0]["variants"]))]
+        self.assertEqual(len(hook_options(SCRIPT, passes)), 3)
+
+    def test_review_swaps_the_first_sentence_and_records_the_pick(self):
+        import os
+        import shutil
+        import tempfile
+
+        from core import batch_review
+
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root, True)
+        folder = os.path.join(root, "185")
+        os.makedirs(folder)
+        options = [
+            "The Chiefs are 5-0 and favored by three in Seattle.",
+            "Kansas City will cover in Seattle.",
+        ]
+        meta = {"run_id": 185, "title": "Chiefs at Seahawks", "topic": "Chiefs at Seahawks",
+                "created_at": datetime.now().isoformat(), "hook_options": options}  # fmt: skip
+        with open(os.path.join(folder, "meta.json"), "w", encoding="utf-8") as f:
+            json.dump(meta, f)
+        with open(os.path.join(folder, "draft.md"), "w", encoding="utf-8") as f:
+            f.write(f"# Chiefs\n\n## Script\n\n{SCRIPT}\n\n## Description\n\nd\n")
+        answers = iter(["h", "2", ""])
+        with (
+            patch.object(batch_review, "_show", return_value=[]),
+            patch.object(batch_review, "deadline_line", return_value=""),
+            patch("builtins.print"),
+        ):
+            batch_review.review_drafts(
+                "tapin", root=root, ask=lambda _p: next(answers), print_fn=lambda *a: None
+            )
+        script = batch_review.draft_script(folder)
+        self.assertTrue(script.startswith("Kansas City will cover in Seattle."), script)
+        self.assertIn("Seattle ruled out three starters.", script)
+        with open(os.path.join(folder, "meta.json"), encoding="utf-8") as f:
+            stored = json.load(f)
+        self.assertEqual(stored["hook_pick"]["picked"], 2)
+        self.assertEqual(stored["hook_pick"]["options"], options)
+
+
+class RenderProcessTests(unittest.TestCase):
+    """#1464: each overnight render in its own process - one crash costs one draft."""
+
+    def test_a_crash_costs_one_draft(self):
+        from core import batch_review
+        from core.batch_review import PendingDraft
+
+        drafts = [PendingDraft(f"folder{i}", {"run_id": i, "created_at": datetime.now().isoformat()}, "s")
+                  for i in (1, 2)]  # fmt: skip
+        codes = iter([3221225477, 0])
+        with (
+            patch.object(batch_review, "unattended_candidates", return_value=(drafts, [])),
+            patch.object(batch_review, "shelf_max", return_value=0),
+            patch.object(batch_review, "second_read", return_value=""),
+            patch.object(batch_review, "_smoke_failure", return_value=""),
+            patch.object(batch_review, "_memory_short", return_value=""),
+            patch.object(batch_review, "_disk_short", return_value=""),
+            patch.object(batch_review, "_write_review"),
+            patch("core.nightly_task.beat_step"),
+            patch(
+                "subprocess.run",
+                side_effect=lambda *a, **k: SimpleNamespace(returncode=next(codes)),
+            ) as run,
+        ):
+            out = batch_review.render_unattended("tapin", 2, queue=lambda r, c: 1)
+        self.assertEqual(out["rendered"], [2])
+        self.assertEqual(out["failed"][0][0], 1)
+        self.assertIn("exit 3221225477", out["failed"][0][1])
+        argv = run.call_args_list[0].args[0]
+        self.assertEqual(argv[1:4], ["-m", "core.batch_review", "--render-draft"])
+
+    def test_the_child_renders_the_folder(self):
+        import os
+        import shutil
+        import tempfile
+
+        from core import batch_review
+
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root, True)
+        with open(os.path.join(root, "meta.json"), "w", encoding="utf-8") as f:
+            json.dump({"run_id": 7, "title": "T", "topic": "T"}, f)
+        with open(os.path.join(root, "draft.md"), "w", encoding="utf-8") as f:
+            f.write("# T\n\n## Script\n\nThe script.\n")
+        with patch.object(batch_review, "_render", return_value=True) as render:
+            code = batch_review.main(["--render-draft", root])
+        self.assertEqual(code, 0)
+        self.assertEqual(render.call_args.args[0].run_id, 7)
+
+
+class ShortfallsTests(unittest.TestCase):
+    """#1517: each shortfall's exit command, from the plan, in the weekly review."""
+
+    def test_every_section_has_a_done_when(self):
+        from core.roadmap_index import sections
+
+        found = sections()
+        self.assertEqual(len(found), 22)
+        self.assertTrue(
+            all(s["done_when"] for s in found), [s["key"] for s in found if not s["done_when"]]
+        )
+
+    def test_every_named_command_exists(self):
+        from core.roadmap_index import sections
+        from scripts.ops import COMMANDS
+
+        named = {c for s in sections() for c in s["commands"]}
+        self.assertTrue(named)
+        self.assertEqual(sorted(named - set(COMMANDS)), [])
+
+    def test_ops_shortfalls_in_the_weekly_review(self):
+        from scripts import ops
+
+        self.assertIn("shortfalls", ops.COMMANDS)
+        group = (
+            next(v for k, v in ops.GROUPS.items() if k == "all-review")
+            if hasattr(ops, "GROUPS")
+            else None
+        )
+        source = __import__("inspect").getsource(ops)
+        self.assertIn(
+            '"shortfalls"',
+            source[source.index('"all-review": (') :][:600] if group is None else str(group),
+        )
+
+
+class UnscheduleReadBackTests(UnscheduleTests):
+    """#1555's first live run read YouTube back before the change had taken: it said "still
+    shows a publish time", and a second read seconds later showed none."""
+
+    def test_a_late_read_back_is_waited_for(self):
+        from publishing import go_public
+
+        clean = {k: v for k, v in self.LIVE.items() if k != "publishAt"}
+        repo = MagicMock()
+        repo.list_uploaded_for_channel.return_value = [self._row()]
+        with (
+            patch.dict("os.environ", {"YOUTUBE_UPLOAD_ENABLED": "true"}),
+            patch("publishing.snippet_update.manage_scope_problem", return_value=""),
+            patch("youtube.oauth.get_youtube_service", return_value=MagicMock()),
+            patch(
+                "publishing.snippet_update.live_status",
+                side_effect=[dict(self.LIVE), dict(self.LIVE), clean],
+            ),  # fmt: skip
+            patch.object(go_public, "_run_title", return_value="t"),
+            patch("publishing.go_public.merge_features"),
+            patch("time.sleep") as slept,
+        ):
+            result = go_public.apply_unschedule(
+                "lS5dluGdRlI", channel_id="tapin", repo=repo, dry_run=False
+            )
+        self.assertEqual(result.status, "updated", result.detail)
+        slept.assert_called()
 
 
 if __name__ == "__main__":

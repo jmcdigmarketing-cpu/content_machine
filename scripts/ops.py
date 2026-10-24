@@ -2909,6 +2909,17 @@ def cmd_grounding_corpus(_args: argparse.Namespace) -> int:
     return grounding_main()
 
 
+@_register(
+    "shortfalls", "Each of the plan's 22 shortfalls with its open items and done-when (#1517)"
+)
+def cmd_shortfalls(_args: argparse.Namespace) -> int:
+    from core.roadmap_index import shortfall_lines
+
+    for line in shortfall_lines():
+        print(line)
+    return 0
+
+
 @_register("roadmap-index", "Counts per roadmap file and by size, read from the docs")
 def cmd_roadmap_index(args: argparse.Namespace) -> int:
     from core.roadmap_index import render
@@ -3433,6 +3444,7 @@ BATCHES: dict[str, tuple[str, tuple[BatchStep, ...], bool]] = {
             "verdicts",
             "winners",
             "signal-audit",
+            "shortfalls",  # #1517
             "review-week",
         ),
         False,

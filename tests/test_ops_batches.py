@@ -140,7 +140,7 @@ class BatchRunTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("scoreboard", rec.names)
         self.assertIn("review-week", rec.names)
-        self.assertIn("1 of 9 steps reported a problem: sync-metrics (exit 1)", out.getvalue())
+        self.assertIn("1 of 10 steps reported a problem: sync-metrics (exit 1)", out.getvalue())
 
     def test_setup_still_stops_at_the_first_failure(self):
         from scripts.ops import COMMANDS

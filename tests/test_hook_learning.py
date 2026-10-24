@@ -80,9 +80,9 @@ class LearnTests(unittest.TestCase):
         self.assertIsNotNone(got["r"])
         self.assertGreater(got["r"], 0)
 
-    def test_the_best_three_openers(self):
-        best = _learn()["best_hooks"]
-        self.assertEqual(len(best), 3)
+    def test_the_best_openers_up_to_ten(self):
+        best = _learn()["best_hooks"]  # #1504: the ten best-held, was three
+        self.assertEqual(len(best), min(10, len(HOOKS)))
         self.assertEqual(best[0][0], "Conor McGregor lost 3 straight fights.")
 
     def test_collecting_below_the_minimum(self):

@@ -933,6 +933,23 @@ def _first_line_rule(channel_id: str = "") -> str:
     return f"half this channel's viewers are gone by {round(pos * 100)}% of the video"
 
 
+def _settled_overrides(guidance: dict[str, Any]) -> set[str]:
+    """#1504, decision 67: once n settles, a learned note replaces the fixed rule it contradicts -
+    "question" when openers with a question held more, "length" when 12 words or fewer held
+    fewer. On 10-23 the prompt banned questions and asked for 12 words, then quoted that
+    questions held 42% vs 21% and 12 words or fewer 22% vs 31%."""
+    if not guidance.get("settled"):
+        return set()
+    out: set[str] = set()
+    for t in guidance.get("prefer") or []:
+        if t.get("trait") == "a question":
+            out.add("question")
+    for t in guidance.get("avoid") or []:
+        if t.get("trait") == "12 words or fewer":
+            out.add("length")
+    return out
+
+
 def _hook_variants(
     script: str,
     *,
@@ -978,15 +995,30 @@ def _hook_variants(
     except Exception as exc:
         logger.debug("hook learning skipped: %s", exc)
     count = hook_variant_count()
+    learned = _settled_overrides(guidance)
+    shape = "a specific fact, number, or contradiction" + (
+        "" if "length" in learned else ", under 12 words"
+    )
+    banned = "'Today', 'Let's', 'In this video', 'Welcome'" + (
+        "" if "question" in learned else ", or a question"
+    )
     system_prompt = (
         f"Write {count} different first sentences for this short-form video script - each a "
-        "stronger hook: a specific fact, number, or contradiction, under 12 words. "
-        "Never open with 'Today', 'Let's', 'In this video', 'Welcome', or a question, and "
+        f"stronger hook: {shape}. Never open with {banned}, and "
         "never with a stock line ('Here's the part everyone's missing', 'Nobody wants to "
         "say this'). Use only names and numbers already in the script; invent nothing."
     )
     if rule:
-        system_prompt += f"\nEach opener states the stake and the call (or the take): {rule}."
+        system_prompt += (
+            f"\nEach opener states the stake and the call (or the take): {rule}. "
+            # #1557: since 10-19, 17 of 18 runs refused every variant for "no call or take" - the
+            # prompt said why a call matters and never what one is (`authenticity._FIRST_LINE_CALL`).
+            "Say the call in so many words: every opener MUST contain one of will, won't, should, "
+            "can't, overrated or underrated - who will win, what will happen - e.g. 'The Chiefs "
+            "will lose in Seattle, and the spread already says so.' An opener without one is "
+            "thrown away."
+        )
+    shape_hint = "<a fact from the script>, and <who> will <what>" if rule else "first sentence 1"
     if problems and grounding_text.strip():
         # #1018: the current hook is not on solid ground - build the new one from facts.
         facts_excerpt = "\n".join(
@@ -1014,7 +1046,7 @@ def _hook_variants(
         )
     user_prompt = (
         f"SCRIPT:\n{script}\n\nReturn JSON only:\n"
-        '{"openers": ["first sentence 1", "first sentence 2", "..."]}'
+        f'{{"openers": ["{shape_hint}", "{shape_hint}", "..."]}}'
     )
     try:
         # Rewriting one sentence is throwaway work → cheap tier.

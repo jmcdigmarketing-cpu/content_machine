@@ -60,6 +60,37 @@ class DraftOutcome:
     script_clean: dict | None = None
 
 
+def hook_options(script: str, passes: Any, *, limit: int = 3) -> list[str]:
+    """#1503: the script's first sentence, then up to two openers the hook rewrite wrote that
+    failed only on "no better than the current opener" (or were kept) - [] without any."""
+    import ast
+
+    from core.hook_score import extract_hook
+
+    current = extract_hook(script or "")
+    rows: list[Any] = []
+    for entry in passes if isinstance(passes, list) else []:
+        if isinstance(entry, dict) and entry.get("name") == "improve_hook":
+            raw = entry.get("variants")
+            if isinstance(raw, str):
+                try:
+                    raw = ast.literal_eval(raw)
+                except (ValueError, SyntaxError):
+                    raw = []
+            rows.extend(raw if isinstance(raw, list) else [])
+    options = [current] if current else []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        refused = str(row.get("refused") or "")
+        opener = str(row.get("opener") or "").strip()
+        if opener and opener not in options and (not refused or refused.startswith("no better")):
+            options.append(opener)
+        if len(options) >= limit:
+            break
+    return options if len(options) > 1 else []
+
+
 def _slug(topic: str, max_len: int = 40) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", topic.lower()).strip("-")
     return slug[:max_len].rstrip("-") or "draft"
@@ -460,6 +491,8 @@ def generate_draft(
         "length_choice": length_choice,
         "hook_score": out.hook_score,
         "hook_verdict": out.hook_verdict,
+        # #1503: the opener and the rewrite's sound runners-up, picked from at review
+        "hook_options": hook_options(result.script, result.features.get("script_passes")),
         "authenticity_verdict": out.authenticity_verdict,
         "authenticity_failed": list(out.authenticity_failed),
         "script_clean": result.features.get("script_clean"),  # #1143

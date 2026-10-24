@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-23 evening: wave 124, the next ten
+# Handoff synopsis — 2026-10-23 night: wave 125, UFC 333 first
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,17 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-23 evening (Claude Code): wave 124, the next ten
+## Last wave — 2026-10-23 night (Claude Code): wave 125, UFC 333 first
+
+After the operator's sign-in and review: run 184, a UFC 333 preview, was queued for the day after
+the card - a card named by number now finds its event, and the worker moves a job past its event
+before it uploads; with the operator's yes run 180 goes public Fri 10:45 PM EDT and run 179 (last
+season's seed) is off the schedule (`ops unschedule`). Captions wait for queued uploads, the
+weak-hook hold is lifted, the hook rewrite writes calls again (it had adopted nothing on 17 of 18
+runs), ten best-held openers in its prompt, one of three hooks at review, a render per process,
+`ops shortfalls` weekly.
+
+## Previous — 2026-10-23 evening (Claude Code): wave 124, the next ten
 
 Two defects first: run 181, a Cavaliers-76ers preview, was still queued a day after its tip-off
 and nothing would have stopped it uploading - the worker, the shelf and go-public now read the
@@ -28,16 +38,6 @@ A windowless process now starts its children with no window, and the overnight t
 `pythonw scripts\ops_task.pyw` (changed in place). Then the cloud's five: painted thumbnail
 words, whole team names, a memory check, a smoke render and a disk check before renders, and
 a weekly fields audit. C: had reached 0 GB free (11 GB of it old suite copies). Open 186.
-
-## Previous — 2026-10-22 night (Claude Code): wave 122, the next five
-
-A defect first: since 10-05 the metrics sync stored nothing after a video's first-day snapshot,
-so views, engaged rate and revenue froze at day 1 for every video whose analytics came in early;
-every sync stores again (#1542), and the next one on the PC heals the rows. Then the five: a team
-gazetteer for NHL, MLB and the Premier League in the title check; the script checked for a broken
-name and caption cues that never split one; team names whole on the thumbnail; a beat each minute,
-so `ops status` and the morning say when overnight died and what it was doing; each health line
-read back from what production writes. Open 190.
 
 ## Pipeline order (operator)
 
@@ -113,7 +113,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1504 #1503 #1464 #1517 #1540 (roadmap.md); yours: #1549 #1550. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1540 #1556 #1502 #1509 #1515 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

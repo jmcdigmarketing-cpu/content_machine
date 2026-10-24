@@ -162,6 +162,8 @@ week: 17 packed, 6 posted - mark each with ops crosspost done".
 for posting.
 
 **Ideas:** #1398-#1407 in [backlog.md](backlog.md) under "S10". Built in wave 113: #1398.
+Wave 125: a queued job's slot is moved before its event (#1552), and `ops unschedule` takes a
+scheduled video off YouTube's schedule (#1555).
 
 ### S11 Clicks are unmeasured
 
@@ -203,7 +205,7 @@ empty slots.
 4 weeks, and no upload deferred for quota.
 
 **Ideas:** #1427-#1435 in [backlog.md](backlog.md) under "S13", and already open: #1057. Built in
-wave 113: #1427.
+wave 113: #1427. Wave 125: a caption file keeps an upload's units for each upload queued (#1553).
 
 ### S14 The sign-in ends every 7 days until the Google app is published
 
@@ -255,7 +257,8 @@ its Python line (faulthandler).
 **Ideas:** #1463-#1470 in [backlog.md](backlog.md) under "S17", and already open: #457, #445.
 Built in wave 121: #1469 (the crash's Python line in the morning). Built in wave 122: #1468 (a
 beat each minute; `ops status` and the morning say when a run died and what it was doing). Built
-in wave 124: #1470 (the GPU and its driver in `ops doctor`).
+in wave 124: #1470 (the GPU and its driver in `ops doctor`). Built in wave 125: #1464 (each
+overnight render in its own process).
 
 ### S18 Health read RED on a number nobody stored (Oct 16)
 
@@ -317,7 +320,9 @@ logic change, and the learned gaps steer the rewrite from n=21 (decision 67).
 **Ideas:** #1499-#1507 in [backlog.md](backlog.md) under "S21", and already open: #1290.
 Built in wave 124: #1499 - the score out of the grade and overnight's order (decision 70), which
 meets "Done when"; #1500 #1501 #1505 #1506 - `ops hooks`, each trait on its own (over 22 videos
-a question held 42% vs 21%, longer openers held more, r=+0.36).
+a question held 42% vs 21%, longer openers held more, r=+0.36). Built in wave 125: #1504 (ten
+examples; settled notes replace the rules they contradict), #1503 (one of three hooks at review),
+#1557 (the rewrite had adopted nothing on 17 of 18 runs), and the weak-hook hold lifted (#1549).
 
 ### S22 It grew faster than it shipped
 
@@ -331,7 +336,8 @@ files" for this wave only; ideas expire without a measurement, and a merge sweep
 after this wave.
 
 **Ideas:** #1508-#1517 in [backlog.md](backlog.md) under "S22". Built in wave 124: #1510
-(`ops roadmap-index --by-shortfall`).
+(`ops roadmap-index --by-shortfall`). Built in wave 125: #1517 (`ops shortfalls` in the weekly
+review).
 
 ## The rules the backlog keeps
 

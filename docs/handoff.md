@@ -53,28 +53,20 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-23 evening · **HEAD at write:** `a9c6997` (the code; the docs commit follows)
-· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; CI read after the push.
+**Written:** 2026-10-23 night · **HEAD at write:** `2f46c86` (the code; the docs commit follows)
+· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**The plan is [hands_off_plan.md](hands_off_plan.md), one section per shortfall**; ideas
-#1314-#1517 in the backlog. Decision 68: the backlog stays <= 300 (`test_docs_lint`).
+**Wave 125 (two code commits, `53a48ed` then `2f46c86`, then docs):** #1551 a card named by
+number; #1552 the worker moves a job past its event; #1555 `ops unschedule`; #1553 captions wait
+for queued uploads; #1549 lifted; #1554 the lapse dated; #1557 the hook rewrite writes calls;
+#1504 #1503 #1464 #1517.
 
-**Wave 124 (one code commit, then docs), built in a git worktree while overnight ran:**
-- #1547 `stale_renders.started_event` and one ladder `shelf_state`; the worker drops a started
-  preview before any call; go-public and schedule-public refuse it. #1548 a preview is current
-  until its event (`dead_reason`, `expire_old_drafts`).
-- Decision 69: nothing asks for Sleep (`nightly_task` late/missed/tonight/doctor lines).
-  Decision 70 (#1499): grade v6, hook weight 0; overnight renders a game by kickoff, then newest.
-- `ops hooks` (#1500 #1501 #1505 #1506); #1546 `retention_curve_state` and
-  `field_audit.curve_gaps`; #1470 the doctor's gpu row; #1510 `roadmap-index --by-shortfall`.
-
-**Live:** overnight ran 5:52 PM at power-on (shut down Thu 9:51 PM), 3 drafts; job 77 (run 181)
-off the queue at the first worker pass after the merge (the operator's yes). The sign-in is still
-lapsed - uploads 175 and 180 hold; the UFC 333 previews need it by Sat 10:30 AM EDT. **Delete
-scratch exports and worktrees each wave.**
-**Defects first:** none open of mine. Operator calls: #1549, #1550.
+**Live (the operator's yes):** run 180 public Fri 10:45 PM EDT; run 179 off the schedule. Run 184
+(job 80) should take Sat noon EDT at the 3:05 AM EDT worker pass - **check `worker_task.log`**.
+Pages (Back-Home, Story) not yet updated for wave 125. Sign-in lapses Fri 10-30 8:42 PM EDT.
+**Defects first:** none open of mine; #1556 open.
 
 ## Slot — Cursor
 

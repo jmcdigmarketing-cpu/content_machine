@@ -9538,3 +9538,71 @@ Audit (wave 124):
   operator's yes. Nothing uploaded or published.
 
 `roadmap-index`: open 180, done 1603, numbered open 171.
+
+## 2026-10-23 night — wave 125, the next ten: UFC 333 first (Claude Code)
+
+**Prompt:** "next 10"
+
+Measured first, read-only (Fri 10-23, 20:10-20:30 CDT). The operator had signed in at about
+7:42 PM (Testing mode: it lapses Fri 10-30) and run a review:
+- 175 and 180 went up unlisted at 19:52; 179, 182 and 184 were rendered; 176 (the UFC 333
+  draft, "hook") and 183 were rejected; 174 and 177 were set aside.
+- 179 was scheduled for Sat noon EDT and 182 for Sat 10 PM; the quota was then blocked for
+  uploads (8,735 of 10,000 used) - three caption files took 1,200 units while three uploads
+  were queued, so run 184 waited for the 3:05 AM EDT reset.
+- **Run 184, "Yan's resilience vs. Dvalishvili's pressure at UFC 333", was queued for Sun noon**
+  - the day after the card (ESPN: "UFC 333: Volkanovski vs. Evloev", Sat 17:00Z). Its draft had
+  no `event_at`: `seasonal_calendar.event_for` matches two sides (`best_bet.same_story`), and the
+  title names the card only by its number. Nothing re-checked a queued job against its event.
+- **Run 179 was scheduled with last season's facts:** "Since then, Detroit clinched the No. 1 seed
+  in the East - even after Cade Cunningham's collapsed lung", and "kept that edge all season".
+- The sign-in line read "lapses Fri 8:42 PM EDT" on a Friday, a week before the lapse.
+- C: was at 14.3 GB free, 4.5 GB down in an hour; our folders grew about 0.5 GB of it.
+
+Asked (four questions); the operator took each recommended option: run 179 off the schedule,
+run 180 public before the card, the weak-hook hold lifted (#1549), no length change (#1550).
+
+Shipped (tests/test_wave125.py, 37 tests; two commits, batch A pushed before the quota reset):
+1. **Run 180** at the next free slot before the card by the existing slot rule: Fri 10:45 PM
+   EDT, read back.
+2. **#1555 `ops unschedule`** - a scheduled video back to private with no publish time, the whole
+   status sent. Run 179: done (the file stays). The first read-back, at once, still showed the
+   publish time; a read seconds later did not - the read-back now waits up to 9 seconds.
+3. **#1551** `event_for` matches a card by its number first. **#1552** the worker moves a job whose
+   slot is at or after its event to `slot_for_run`'s slot. Live: run 184 now takes Sat noon EDT,
+   at the 3:05 AM EDT pass.
+4. **#1553** a caption file keeps one upload's units per upload queued. **#1554** the lapse names
+   its date. **#1549** the weak-hook hold lifted (decision 72). **#1550** closed by decision.
+5. **#1557** the hook rewrite: since run 168 (10-19), 17 of 18 runs refused every variant for "no
+   call or take in the first sentence". The prompt now says the call in so many words, and its
+   JSON shape is "<a fact>, and <who> will <what>". Live on run 185's script: 3 of 3 variants
+   passed (0 of 3 before), one kept.
+6. **#1504** ten best-held openers, each with its stayed share; once n settles (22 of 16), a learned
+   note replaces the fixed rule it contradicts - the prompt had banned questions and asked for 12
+   words, then quoted that questions held 42% vs 21%.
+7. **#1503** the opener and two runners-up kept with each new draft; batch-review's h picks one,
+   rewrites the first sentence and records `hook_pick`.
+8. **#1464** each overnight render in its own process; a crash costs that draft, named.
+9. **#1517** `ops shortfalls` - each shortfall's Done when and its open items - in `all-review`.
+
+Found on the way:
+- The rewrite still keeps a variant by the hook score (#1556, open).
+- `ops backlog`'s gate still reads the weak-hook verdict; it runs only when typed - left as is.
+- My heredoc patch wrote a real newline into `"\n".join` in `scripts/ops.py` - the slip the
+  memory warns of; caught by the import, fixed with Edit.
+- A double-booked `videos.list` unit of mine was caught by test_wave113.
+
+Not done: #1540 (needs a video with no custom thumbnail); runs 175 and 185 wait unlisted for the
+operator.
+
+Audit (wave 125):
+- 37 tests in tests/test_wave125.py, written first: batch A's 16 - 11 failed on `206bd4f`, 5
+  controls; batch B's 21 - 16 failed before their code, the rest controls or the read-back case.
+- Older tests changed on purpose: test_overnight_renders (decision 72), test_hook_learning and
+  test_wave108 (#1504), test_ops_batches (all-review's tenth step).
+- 2 corpus cases (#1551, #1553); 435 of 435 held.
+- mypy 92 = baseline; ruff clean. Suite: 6693 forward and 6693 reversed, both OK.
+- **Outward, each with the operator's yes:** run 180 scheduled (Fri 10:45 PM EDT); run 179 off
+  the schedule. Two cheap LLM calls to check #1557.
+
+`roadmap-index`: open 175, done 1615, numbered open 166.

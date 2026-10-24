@@ -295,3 +295,17 @@ measured videos the score ran against the share who stayed (r = -0.48, past p<0.
 operator, asked: "Out of grade and order". It replaces wave 112's "no retune before n of about 85"
 for the grade. **Consequence:** a card with a weak hook grades higher (#1550); the weak-hook hold
 still reads the score (#1549); `ops hooks` measures each trait on its own.
+
+## 71. Run 179 off the schedule; run 180 before the card (2026-10-23)
+**Decision:** run 179, the Pistons follow-up, goes back to private with no publish time - its
+script says "Since then, Detroit clinched the No. 1 seed" (last season) - and the file stays. Run
+180, the UFC 333 main-event preview, goes public at the next free slot before the card (Fri
+10:45 PM EDT). **Why:** asked, the operator took "Take it off the schedule" and "Yes, before the
+card". **Consequence:** `ops unschedule` exists (#1555); Sat noon EDT goes to run 184, the other
+UFC 333 preview, once the worker moves it before its event (#1552).
+
+## 72. The weak-hook hold is lifted; a short script may keep its A (2026-10-23)
+**Decision:** a "weak" hook verdict no longer holds an overnight render (it is still shown at
+review), and report card v6 is unchanged for length. **Why:** the verdict reads the score decision
+70 took out (r = -0.48 over 22 videos); the operator: "Lift the hold" and "No change".
+**Consequence:** #1549 done, #1550 closed; `ops backlog`'s own gate still reads the verdict.

@@ -7,6 +7,16 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-22 night (Claude Code): wave 122, the next five
+
+A defect first: since 10-05 the metrics sync stored nothing after a video's first-day snapshot,
+so views, engaged rate and revenue froze at day 1 for every video whose analytics came in early;
+every sync stores again (#1542), and the next one on the PC heals the rows. Then the five: a team
+gazetteer for NHL, MLB and the Premier League in the title check; the script checked for a broken
+name and caption cues that never split one; team names whole on the thumbnail; a beat each minute,
+so `ops status` and the morning say when overnight died and what it was doing; each health line
+read back from what production writes. Open 190.
+
 ## Previous — 2026-10-22 (Claude Code): wave 121, the next ten
 
 Built from the latest main (`9e03058`, waves 71-120). The 3-second line shows the share who

@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-22 evening (Claude Code): wave 123, the pop-ups and the next five
+
+The operator's System32 pop-ups were ours: the overnight task ran in a `cmd` window and each
+15-minute worker pass opened ~16 console windows (`cmd /c ver` at import, ffmpeg, schtasks).
+A windowless process now starts its children with no window, and the overnight task runs
+`pythonw scripts\ops_task.pyw` (changed in place). Then the cloud's five: painted thumbnail
+words, whole team names, a memory check, a smoke render and a disk check before renders, and
+a weekly fields audit. C: had reached 0 GB free (11 GB of it old suite copies). Open 186.
+
 ## Previous — 2026-10-22 night (Claude Code): wave 122, the next five
 
 A defect first: since 10-05 the metrics sync stored nothing after a video's first-day snapshot,

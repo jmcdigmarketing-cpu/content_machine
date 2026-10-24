@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-23 night: wave 125, UFC 333 first
+# Handoff synopsis — 2026-10-23 late: wave 126, a phantom slot first
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-23 night (Claude Code): wave 125, UFC 333 first
+## Last wave — 2026-10-23 late (Claude Code): wave 126, a phantom slot first
+
+A held run's job held Sat noon, the slot run 184's UFC 333 preview needed before the card - a
+job now reserves a slot only when it can go public there; the pass line counts tries. With the
+operator's yes run 175 is set for Sun 10 PM EDT and the hook rewrite is an experiment (on/off by
+draft). Hook variants rank by the measured traits once a channel has them; thumbnails.set's
+answer confirms the image; `roadmap-index` gives the idea-expiry date and open items per public
+video.
+
+## Previous — 2026-10-23 night (Claude Code): wave 125, UFC 333 first
 
 After the operator's sign-in and review: run 184, a UFC 333 preview, was queued for the day after
 the card - a card named by number now finds its event, and the worker moves a job past its event
@@ -29,15 +38,6 @@ With the operator's calls: the hook score out of the grade and overnight's order
 and a run at power-on is normal, no Sleep ask (decision 69). Then `ops hooks` (each opener trait;
 longer openers held more), why a curve is missing, the GPU driver in the doctor, and the backlog
 by shortfall. Open 180.
-
-## Previous — 2026-10-22 evening (Claude Code): wave 123, the pop-ups and the next five
-
-The operator's System32 pop-ups were ours: the overnight task ran in a `cmd` window and each
-15-minute worker pass opened ~16 console windows (`cmd /c ver` at import, ffmpeg, schtasks).
-A windowless process now starts its children with no window, and the overnight task runs
-`pythonw scripts\ops_task.pyw` (changed in place). Then the cloud's five: painted thumbnail
-words, whole team names, a memory check, a smoke render and a disk check before renders, and
-a weekly fields audit. C: had reached 0 GB free (11 GB of it old suite copies). Open 186.
 
 ## Pipeline order (operator)
 
@@ -113,7 +113,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1540 #1556 #1502 #1509 #1515 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1361 #1364 #1367 #1541 #1409 (roadmap.md). **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

@@ -53,20 +53,21 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-23 night · **HEAD at write:** `2f46c86` (the code; the docs commit follows)
+**Written:** 2026-10-23 late · **HEAD at write:** `64980f3` (the code; the docs commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI after the push.
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**Wave 125 (two code commits, `53a48ed` then `2f46c86`, then docs):** #1551 a card named by
-number; #1552 the worker moves a job past its event; #1555 `ops unschedule`; #1553 captions wait
-for queued uploads; #1549 lifted; #1554 the lapse dated; #1557 the hook rewrite writes calls;
-#1504 #1503 #1464 #1517.
+**Wave 126 (`bd56b27` then `64980f3`, then docs):** #1558 a held run's job reserves no slot
+(`spaced_queue.job_reserves_slot`); #1559 the pass line; #1556 variants ranked by measured traits
+(`rank_by_traits`, the scorer until a channel has learned); #1502 the `hook_rewrite` experiment
+(`batch_generation.hook_arm_env`); #1540 thumbnails.set's answer confirms; #1509 #1515 in
+`roadmap-index`.
 
-**Live (the operator's yes):** run 180 public Fri 10:45 PM EDT; run 179 off the schedule. Run 184
-(job 80) should take Sat noon EDT at the 3:05 AM EDT worker pass - **check `worker_task.log`**.
-Pages (Back-Home, Story) not yet updated for wave 125. Sign-in lapses Fri 10-30 8:42 PM EDT.
-**Defects first:** none open of mine; #1556 open.
+**Live (the operator's yes):** run 175 set for Sun 10 PM EDT; the PC stays asleep tonight - run
+184 (job 80) should take Sat noon EDT at the reset pass: **check `worker_task.log`**. Runs 185 and
+186 are held for a flagged claim. Pages are two waves behind. Sign-in lapses Fri 10-30.
+**Defects first:** none open of mine.
 
 ## Slot — Cursor
 

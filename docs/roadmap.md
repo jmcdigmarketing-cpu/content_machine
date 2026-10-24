@@ -83,12 +83,12 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-23 (Claude, wave 125).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours:
-publish the Google app before Fri 10-30 8:42 PM EDT, when tonight's sign-in lapses; go-public
-runs 175 and 185 when you have watched them. Next: **#1540** the thumbnail check on a live video;
-**#1556** the hook rewrite still keeps a variant by the score decision 70 dropped; **#1502** hooks
-A/B through the holdout drafts; **#1509** an idea retired after 90 days without a measurement;
-**#1515** open items per public video in `roadmap-index`.
+**2026-10-23 (Claude, wave 126).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours:
+leave the PC asleep tonight (run 184 to Sat noon EDT); publish the Google app before Fri 10-30
+8:42 PM EDT; runs 185 and 186 are held for a flagged claim (`ops verify-claim`). Next: **#1361**
+a finished preview read for recap tense before render; **#1364** a game in progress skipped;
+**#1367** no call, no preview; **#1541** the live thumbnail compared with ours; **#1409** stayed
+share as the Shorts' "click" in title learning.
 Waves before 109 (the 10-17 grand audit, waves 103-108): [planning_log.md](planning_log.md).
 **2026-10-18 (Claude, wave 109).** Volume blockers: takes the detector missed (#1292 - run 164 renders tonight), a preview's hook cut at "vs." (#1293), when a game preview must be decided (#1294), today's quota entry corrected, health names its runs (#1291), facts from a voice note (#450). Filed #1295 #1296. `roadmap-index`: open 258, done 1271, numbered open 206, highest #1296.
 **2026-10-18 (Claude, wave 110).** Nothing by hand: prompts visible again (#1297), one slot rule and the Buffer round as the bare `crosspost` (#1298), scheduled videos changeable and sent at their slot (#1299), ideas ranked by outlets (#1300), previews with a call (#1301), `ops all` without the suite and `ops test` without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM. Filed #1303-#1306. `roadmap-index`: open 74, done 1465, numbered open 65, highest #1306.
@@ -107,6 +107,7 @@ Waves before 109 (the 10-17 grand audit, waves 103-108): [planning_log.md](plann
 **2026-10-22 (Claude, wave 123).** The System32 pop-ups were ours: the overnight task's `cmd` window and ~16 console windows per 15-minute worker pass - now none (`hide_child_windows`, the task on `pythonw scripts\ops_task.pyw`). The cloud's five: painted thumbnail words (#1544), 76ers/49ers/Brighton whole (#1485), a memory check, a smoke render and a disk check before renders (#1465 #1467), a weekly fields audit (#1480). C: had reached 0 GB free. `roadmap-index`: open 186, done 1593, numbered open 177.
 **2026-10-23 (Claude, wave 124).** Measured first: run 181, a Cavaliers-76ers preview, was still queued a day after its tip-off and nothing would have stopped it (#1547), and run 176, the UFC 333 preview, read "past its window" the day before the card (#1548) - both fixed. With the operator's calls: the hook score out of the grade and overnight's order (#1499, decision 70) and a power-on run is normal (decision 69). The five and two neighbours: `ops hooks` - each opener trait against who stayed, the first 3 s and TikTok (#1500 #1501 #1506) and length (#1505: longer held more, r=+0.36); why a curve is missing (#1546); the GPU driver in `ops doctor` (#1470); `roadmap-index` by shortfall (#1510). Filed #1549 #1550. `roadmap-index`: open 180, done 1603, numbered open 171.
 **2026-10-23 (Claude, wave 125).** UFC 333 first: run 184 named the card by number and matched no event, so it was queued for Sun noon (#1551), and nothing re-checked a queued job against its event (#1552); with the operator's yes run 180 went to Fri 10:45 PM EDT and run 179 (last season's seed) off the schedule through a new `ops unschedule` (#1555). Captions wait for queued uploads (#1553), the weak-hook hold is lifted (#1549, decision 72), the lapse is dated (#1554). The five: ten best-held openers and settled notes in the prompt (#1504), one of three hooks at review (#1503), a render per process (#1464), `ops shortfalls` weekly (#1517) - and the hook rewrite, which had adopted nothing on 17 of 18 runs, writes calls again (#1557). `roadmap-index`: open 175, done 1615, numbered open 166.
+**2026-10-23 (Claude, wave 126).** A phantom slot first: run 186, held by the grounding gate and so never public at a slot, held Sat noon - the slot run 184's UFC 333 preview needed before the card (#1558); the pass line said "Sent" for passes that sent nothing (#1559). With the operator's yes run 175 is set for Sun 10 PM EDT. The five: hook variants ranked by measured traits (#1556), the rewrite on/off as an experiment (#1502), the thumbnail confirmed by thumbnails.set's answer (#1540), the idea-expiry date (#1509), open items per public video (#1515). `roadmap-index`: open 170, done 1622, numbered open 161.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

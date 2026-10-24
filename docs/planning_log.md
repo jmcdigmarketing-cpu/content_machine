@@ -9606,3 +9606,58 @@ Audit (wave 125):
   the schedule. Two cheap LLM calls to check #1557.
 
 `roadmap-index`: open 175, done 1615, numbered open 166.
+
+## 2026-10-23 late — wave 126, the next ten: a phantom slot first (Claude Code)
+
+**Prompt:** "next 10"
+
+Measured first, read-only (Fri 10-23, 22:51 CDT, 90 minutes after wave 125): CI green on every
+push; run 180 went public at 10:45 PM EDT and Buffer had it for 11:07 PM; the quota was blocked
+until 3:05 AM EDT with three uploads waiting (184, 185, 186).
+- **Run 186**, a chapter Short of run 185 (both "Chiefs vs Seahawks", cut and queued in main.py),
+  sat in job 82 for **Sat noon EDT**. Both runs were rendered past the grounding gate, so the
+  uploader strips their publish time (`hold_flagged_schedule`) - 186 would never go public then -
+  but `spaced_queue._taken_slots` and the Publish queue counted the slot. That was the slot
+  wave 125's #1552 was to give run 184's UFC 333 preview at the reset pass; it would have gone
+  out at about 3:50 AM instead.
+- The 19:07 and 19:22 passes held every upload for the sign-in and printed "Sent 3 due job(s)".
+- Run 185, made before #1557 merged, still refused all three hook variants.
+- Run 180's videos.list listed `maxresdefault.jpg` with the other `*default.jpg` sizes (#1540).
+
+Asked (four questions); the operator took each recommended option: leave the PC asleep tonight,
+rank hook variants by measured traits (#1556), alternate the rewrite on/off overnight (#1502),
+run 175 public at its next free slot.
+
+Shipped (tests/test_wave126.py, 16 tests; batch A pushed first):
+1. **#1558** `spaced_queue.job_reserves_slot`: a pending job holds its time only when its run is
+   not held; `_taken_slots` and the Publish queue read it, and `queue_spaced_uploads` queues a run
+   the hold downgraded with no time. Live: `slot_for_run(184)` gives Sat 16:00Z, and the queue no
+   longer lists the phantom noon.
+2. **#1559** "N due upload job(s) tried in one pass".
+3. **Run 175** set for Sun 10 PM EDT - not Sat noon, the slot it was offered first, which run 184
+   needs; read back.
+4. **#1556** once the channel has learned traits, `rank_by_traits` ranks the variants and the
+   current opener, and the score threshold goes; with no learning the scorer still does - the
+   first cut dropped the scorer everywhere and a weak "So today we talk about the Heat." could no
+   longer be replaced (test_hook_variants caught it).
+5. **#1502** the `hook_rewrite` lever; the off arm turns the rewrite off for that draft only.
+6. **#1540** thumbnails.set's answer confirms the image; the `maxres` heuristic and its list call
+   are gone.
+7. **#1509** the expiry date (the first on 2027-01-16) and a test that fails once one is overdue.
+8. **#1515** open items per public video: 175 over 61, 2.9 each.
+
+Not done: #1557's proof on a real draft waits for overnight; runs 185 and 186 wait for a claim
+check.
+
+Audit (wave 126):
+- 16 tests in tests/test_wave126.py, written first. Batch A's 5: 4 failed on `11da235`, 1
+  control. Batch B's 11: each failed before its code except the arm-off context's on and none
+  branches. Two #1556 tests first passed on old code and were rewritten until they failed for the
+  right reason.
+- Older tests changed on purpose: test_next15_wave2 and test_youtube_thumbnails (#1540).
+  test_wave17 kept an explicitly requested unlisted job's time.
+- mypy 92 = baseline; ruff clean. Suite: 6709 forward and 6709 reversed, OK (after restoring the planning log my script had truncated - opened for writing before it was read).
+- **Outward, each with the operator's yes:** run 175 scheduled; the `hook_rewrite` experiment
+  started.
+
+`roadmap-index`: open 170, done 1622, numbered open 161.

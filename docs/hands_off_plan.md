@@ -163,7 +163,8 @@ for posting.
 
 **Ideas:** #1398-#1407 in [backlog.md](backlog.md) under "S10". Built in wave 113: #1398.
 Wave 125: a queued job's slot is moved before its event (#1552), and `ops unschedule` takes a
-scheduled video off YouTube's schedule (#1555).
+scheduled video off YouTube's schedule (#1555). Wave 126: a held run's job no longer reserves a
+slot it will never use (#1558).
 
 ### S11 Clicks are unmeasured
 
@@ -323,6 +324,8 @@ meets "Done when"; #1500 #1501 #1505 #1506 - `ops hooks`, each trait on its own 
 a question held 42% vs 21%, longer openers held more, r=+0.36). Built in wave 125: #1504 (ten
 examples; settled notes replace the rules they contradict), #1503 (one of three hooks at review),
 #1557 (the rewrite had adopted nothing on 17 of 18 runs), and the weak-hook hold lifted (#1549).
+Built in wave 126: #1556 (variants ranked by the measured traits), #1502 (the rewrite on/off as
+an experiment).
 
 ### S22 It grew faster than it shipped
 
@@ -337,7 +340,7 @@ after this wave.
 
 **Ideas:** #1508-#1517 in [backlog.md](backlog.md) under "S22". Built in wave 124: #1510
 (`ops roadmap-index --by-shortfall`). Built in wave 125: #1517 (`ops shortfalls` in the weekly
-review).
+review). Built in wave 126: #1509 (the expiry date), #1515 (open items per public video).
 
 ## The rules the backlog keeps
 

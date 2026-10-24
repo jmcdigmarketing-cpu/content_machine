@@ -309,3 +309,12 @@ UFC 333 preview, once the worker moves it before its event (#1552).
 review), and report card v6 is unchanged for length. **Why:** the verdict reads the score decision
 70 took out (r = -0.48 over 22 videos); the operator: "Lift the hold" and "No change".
 **Consequence:** #1549 done, #1550 closed; `ops backlog`'s own gate still reads the verdict.
+
+## 73. Hooks by measured traits, the rewrite tested, run 175 public (2026-10-23)
+**Decision:** once the channel has learned traits, the hook rewrite ranks its variants by them
+alone - no hook-score threshold (#1556); overnight drafts alternate the rewrite on and off, so
+the experiment report (`py -m core.experiments`) can say whether it holds viewers (#1502); run 175 goes public at its next free
+slot; the PC stays asleep tonight so run 184 reaches Sat noon. **Why:** the operator, asked, took
+"Measured traits", "Yes, alternate", "Public at the next free slot" and "Leave it asleep tonight".
+**Consequence:** half of the overnight drafts keep their first-draft opener while the test runs;
+run 175 is set for Sun 10 PM EDT (Sat noon is kept for the UFC 333 preview).

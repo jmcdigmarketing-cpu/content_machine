@@ -124,6 +124,10 @@ def list_queue_entries(channel_id: str) -> list[QueueEntry]:
                 continue
             if int(job.content_run_id or 0) in logged:
                 continue  # #1527: listed below at the publish log's time, or already public
+            from core.spaced_queue import job_reserves_slot
+
+            if not job_reserves_slot(job.content_run_id):
+                continue  # #1558: a held run uploads unlisted - this time is not its slot
             try:
                 payload = json.loads(job.payload_json or "{}")
                 title = str(payload.get("title", ""))[:60]

@@ -192,6 +192,22 @@ def twice_daily_slots(
 _EVENING = (18,)  # #1285: the extra slot a news video gets to stay inside its window
 
 
+def job_reserves_slot(content_run_id: object) -> bool:
+    """#1558 (2026-10-23): a pending upload holds its publish time only when it can go public
+    there. A run rendered past the grounding gate cannot - the uploader strips its publish time
+    (`youtube_publisher.hold_flagged_schedule`) - yet run 186's job held Sat noon, the slot run
+    184's UFC 333 preview needed before the card. Fail-open: an unread hold reserves."""
+    if not content_run_id:
+        return True
+    try:
+        from publishing.go_public import override_held
+
+        return not override_held(int(content_run_id))  # type: ignore[call-overload]
+    except Exception as exc:
+        logger.debug("hold unread for run %s: %s", content_run_id, exc)
+        return True
+
+
 def _taken_slots(channel_id: str) -> set[datetime]:
     """Publish times other uploads already hold: pending upload jobs' `youtube_publish_at` and
     the scheduled rows of the publish log (#1285: a second run would have landed on run 153's
@@ -207,7 +223,7 @@ def _taken_slots(channel_id: str) -> set[datetime]:
                 continue
             payload = json.loads(getattr(job, "payload_json", "") or "{}")
             when = _when(payload.get("youtube_publish_at"))
-            if when is not None:
+            if when is not None and job_reserves_slot(getattr(job, "content_run_id", None)):
                 taken.add(when.astimezone(timezone.utc))
     except Exception as exc:
         logger.debug("taken slots: jobs unread: %s", exc)
@@ -436,7 +452,11 @@ def queue_spaced_uploads(
                 description=str(getattr(record, "description", "") or ""),
                 tags=tags,
                 privacy_status=privacy,
-                youtube_publish_at=slot.publish_at,
+                # #1558: a run the grounding hold downgraded is never public at a slot - queue
+                # it with no time, so it reserves nothing
+                youtube_publish_at=None
+                if privacy != ((privacy_status or "public").strip().lower() or "public")
+                else slot.publish_at,
             )
         except Exception as exc:
             logger.warning("spaced queue: run %s not enqueued: %s", slot.run_id, exc)

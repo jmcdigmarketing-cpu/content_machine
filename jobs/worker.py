@@ -808,7 +808,8 @@ def main():
         _sign_in_watch()  # #1438
         _tonight_watch()  # #1337
         if processed > 1:
-            print(f"Sent {processed} due job(s) in one pass.")
+            # #1559: "Sent 3" was printed for a pass that held all three for the sign-in
+            print(f"{processed} due upload job(s) tried in one pass - each line above says how")
         if not processed:
             print(_idle_line())
         return

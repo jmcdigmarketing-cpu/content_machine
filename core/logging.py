@@ -2,7 +2,14 @@ import contextvars
 import logging
 import os
 import sys
+import warnings
 from concurrent.futures import Executor
+
+# #1561 (2026-10-24): google.api_core printed its Python 3.11 notice into every worker pass and
+# command. Support ends 2027-10-24 - #1564 is the move to Python 3.12 before then.
+warnings.filterwarnings(
+    "ignore", category=FutureWarning, module=r"google\.api_core\._python_version_support"
+)
 
 _CONFIGURED = False
 _RUN_ID: contextvars.ContextVar[str] = contextvars.ContextVar("cm_run_id", default="")

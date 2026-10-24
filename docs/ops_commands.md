@@ -181,6 +181,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `teaser` | Cut a 5s teaser from a finished vertical render (--run-id) (#511) |
 | `technical-qc` | Inspect a finished video for stream, frame and loudness defects |
 | `test` | Run unit tests (--order reverse\|shuffle [--seed N] proves order-independence) |
+| `thumbnail-check` | Whether YouTube shows our thumbnail on each recent upload (#1541) |
 | `title-card` | Write a 2-line title-card still (--path dest.png, --topic text) |
 | `title-patterns` | Title patterns that engage (A/B variant loop leaderboard) |
 | `topic-clone` | Seed a new draft from a winner run (--run-id; angles/facts refresh) |

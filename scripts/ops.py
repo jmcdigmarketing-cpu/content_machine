@@ -2326,6 +2326,15 @@ def cmd_retention(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("thumbnail-check", "Whether YouTube shows our thumbnail on each recent upload (#1541)")
+def cmd_thumbnail_check(args: argparse.Namespace) -> int:
+    from youtube.thumbnail_check import recent_lines
+
+    for line in recent_lines(args.channel, days=int(getattr(args, "days", 0) or 7)):
+        print(line)
+    return 0
+
+
 @_register("hooks", "Each opener trait against who stayed, the first 3 s and TikTok (#1500)")
 def cmd_hooks(args: argparse.Namespace) -> int:
     from analytics.hook_learning import hook_table_lines

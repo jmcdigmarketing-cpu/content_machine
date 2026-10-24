@@ -112,6 +112,14 @@ def classify_exception(exc: BaseException):
     if isinstance(exc, TimeoutError) or "timed out" in message or "timeout" in message:
         return STATUS_UNAVAILABLE, str(exc)[:120]
 
+    # #1562 (2026-10-24): run 187's YouTube search died on a dropped connection whose text was
+    # "0\r\n" (a chunked reply's tail) and read as a broken signal. A protocol-level failure
+    # or a message that is only a number is an outage, named by its type.
+    import http.client
+
+    if isinstance(exc, (http.client.HTTPException, ConnectionError)) or message.strip().isdigit():
+        return STATUS_UNAVAILABLE, f"{type(exc).__name__}: {str(exc).strip()!r}"[:120]
+
     return STATUS_ERROR, str(exc)[:120]
 
 

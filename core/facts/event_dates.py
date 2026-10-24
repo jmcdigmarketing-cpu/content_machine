@@ -307,14 +307,14 @@ def _side_words(side: str) -> set[str]:
     return {word.lower() for word in re.findall(r"[A-Za-z0-9]+", side) if len(word) >= 4}
 
 
-def unplayed_result(text: str, topic: str) -> str:
+def unplayed_result(text: str, topic: str, *, sides: tuple[str, str] | None = None) -> str:
     """The sentence of `text` that states a result between the two sides `topic` names, or "".
 
     For a game that has not been played. A sentence counts when it names both sides and uses
     a result word ("win over", "dissected") with nothing marking it as history ("last
     season", a year, "three straight") or as still to come ("will", "if", a question).
     """
-    sides = fixture_sides(topic)
+    sides = sides or fixture_sides(topic)
     if not sides:
         return ""
     away, home = _side_words(sides[0]), _side_words(sides[1])

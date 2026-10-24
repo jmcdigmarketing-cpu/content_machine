@@ -380,6 +380,46 @@ def format_report(report: dict[str, Any]) -> str:
     return _scoreboard_head(channel_id) + _format_body(report) + _buffer_tail(channel_id)
 
 
+def draft_mix_line(drafts: list[dict[str, Any]]) -> str:
+    """#1365: the week's drafts as games (an event), news (a short window) and the rest -
+    decision 66 asked for five ideas and five previews."""
+    if not drafts:
+        return ""
+    from core.batch_review import freshness_window_days
+
+    games = sum(1 for d in drafts if d.get("event_at"))
+    news = sum(1 for d in drafts if not d.get("event_at") and freshness_window_days(d) < 7)
+    other = len(drafts) - games - news
+    game_word = "game" if games == 1 else "games"
+    return (
+        f"Overnight's mix this week: {games} {game_word}, {news} news, {other} other "
+        f"({len(drafts)} drafts)"
+    )
+
+
+def _week_drafts(channel_id: str, days: int = 7) -> list[dict[str, Any]]:
+    import json as _json
+    import os
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+
+    from core.batch_generation import _drafts_dir
+
+    root = _drafts_dir(channel_id)
+    cutoff = _dt.now() - _td(days=days)
+    out: list[dict[str, Any]] = []
+    for name in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+        try:
+            with open(os.path.join(root, name, "meta.json"), encoding="utf-8") as f:
+                meta = _json.load(f)
+            made = _dt.fromisoformat(str(meta.get("created_at")))
+        except (OSError, ValueError, TypeError):
+            continue
+        if made.replace(tzinfo=None) >= cutoff:
+            out.append(meta)
+    return out
+
+
 def claim_hold_lines(
     runs: list[Any], *, now: datetime | None = None, days: int = 7, limit: int = 5
 ) -> list[str]:
@@ -538,6 +578,12 @@ def _format_body(report: dict[str, Any]) -> str:
         lines.extend(f"  {line}" for line in claim_hold_lines(runs))
     except Exception as exc:
         logger.debug("claim hold lines skipped: %s", exc)
+    try:  # #1365 (wave 127): what overnight drafted this week, by kind
+        line = draft_mix_line(_week_drafts(report["channel_id"]))
+        if line:
+            lines.append(f"  {line}")
+    except Exception as exc:
+        logger.debug("draft mix skipped: %s", exc)
     try:  # #1480 (wave 123): the fields health reads, against what the week wrote
         from analytics.field_audit import field_audit_lines
 

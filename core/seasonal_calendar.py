@@ -201,8 +201,10 @@ def topics_from_board(
             when = date.fromisoformat(raw)
         except ValueError:
             continue
-        completed = ((event.get("status") or {}).get("type") or {}).get("completed") is True
-        if completed or when < today or when > horizon:
+        state = (event.get("status") or {}).get("type") or {}
+        completed = state.get("completed") is True
+        live = str(state.get("state") or "") == "in"  # #1364: neither preview nor recap
+        if completed or live or when < today or when > horizon:
             continue
         topics.append((name, league))
         if starts is not None:

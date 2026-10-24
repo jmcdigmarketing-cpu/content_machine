@@ -975,6 +975,48 @@ def follow_up_since(draft: PendingDraft) -> str:
     return 'a follow-up says "since" - check its source is newer than the original video'
 
 
+_VS_RE = re.compile(
+    r"\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,2})\s+vs\.?\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,2})"
+)
+
+
+def _preview_sides(meta: dict[str, Any]) -> tuple[str, str] | None:
+    """The two sides a preview is about: its fixture ("A at B"), else an "X vs. Y" in its title
+    or topic - a UFC bout's two fighters."""
+    from core.facts.event_dates import fixture_sides
+
+    for text in (str(meta.get("topic") or ""), str(meta.get("title") or "")):
+        sides = fixture_sides(text)
+        if sides:
+            return sides
+    for text in (str(meta.get("title") or ""), str(meta.get("topic") or "")):
+        found = _VS_RE.search(text)
+        if found:
+            return found.group(1).replace("'s", ""), found.group(2).replace("'s", "")
+    return None
+
+
+def preview_hold_reason(draft: PendingDraft, *, now: datetime | None = None) -> str:
+    """#1361 and #1367 (the operator, 2026-10-24: hold) - a preview, its event still ahead, read
+    as it is now: a sentence that states the result waits, and so does a script with no call
+    (no sentence `first_line_take` reads as a take). "" for anything else."""
+    if _event_ahead(draft.meta, now or datetime.now(timezone.utc)) is None:
+        return ""
+    from core.facts.event_dates import unplayed_result
+
+    sides = _preview_sides(draft.meta)
+    stated = unplayed_result(draft.script, "", sides=sides) if sides else ""
+    if stated:
+        return f"it states a result before the event: {stated[:90]}"
+    from apis.topic_tokens import split_sentences
+    from core.authenticity import first_line_take
+
+    sentences = split_sentences(draft.script or "")
+    if not any(first_line_take(s) for s in sentences):
+        return "a preview with no call"
+    return ""
+
+
 def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None) -> str:
     """Why a draft must wait for a person, or "" when it may render unattended."""
     meta = draft.meta
@@ -1009,6 +1051,9 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
     game = game_block_reason(meta, now=now)
     if game:
         return game
+    preview = preview_hold_reason(draft, now=now)  # #1361 #1367
+    if preview:
+        return preview
     arc = arc_counter_reason(meta)
     if arc:
         return arc

@@ -665,12 +665,47 @@ def _crosspost_scheduled_live(now: datetime | None = None) -> int:
     return rounds
 
 
+def _previews_first() -> list[int]:
+    """#1563 (2026-10-24): on Fri at 8:07 PM the worker uploaded runs 179 and 182 - neither
+    due soon - and the quota ran out before run 184, a UFC 333 preview for Sat 1 PM; it missed
+    the card. A pending upload whose run previews an event still ahead gets a `sort_key` that
+    the job stores claim first, soonest event first. Returns the job ids it moved."""
+    moved: list[int] = []
+    try:
+        from core.stale_renders import _now, render_age_days, run_event
+
+        repo = get_job_repository()
+        runs = get_content_run_repository()
+        now = _now()
+        for job in repo.list_active_jobs() or []:
+            if job.job_type != "upload" or job.status != "pending" or not job.content_run_id:
+                continue
+            run = runs.get(int(job.content_run_id))
+            event = (
+                run_event(run, resolve_channel_id(job.channel_id), render_age_days(run))
+                if run
+                else None
+            )
+            if event is None or event <= now:
+                continue
+            payload = json.loads(job.payload_json or "{}")
+            key = int(event.timestamp() // 60) - 10**8  # minutes; below every job id
+            if payload.get("sort_key") == key:
+                continue
+            repo.update(job.id, {"payload_json": json.dumps({**payload, "sort_key": key})})
+            moved.append(int(job.id))
+    except Exception as exc:
+        logger.debug("previews-first skipped: %s", exc)
+    return moved
+
+
 def drain_due(cap: int = PASS_CAP) -> int:
     """Every job that is due, in one pass. 2026-10-16: `ops worker` uploaded job 58 and stopped;
     job 59 (run 155), due since 5:10 PM, stayed pending. Each job keeps its own scheduled time
     and the quota check in `process_one`."""
     _post_due_pins()
     _crosspost_scheduled_live()
+    _previews_first()  # #1563
     done = 0
     while done < cap and process_one():
         done += 1

@@ -473,10 +473,18 @@ class GameDraftTests(_DraftsCase):
         self.assertIn("its game has started", reason)
 
     def test_a_preview_before_the_game_may_render(self):
-        self.assertEqual(
-            self._reason(topic="Houston Texans at Tennessee Titans", event_at="2026-10-18T17:00Z"),
-            "",
+        # #1367 (the operator, 2026-10-24): it renders unattended when its script makes a call.
+        import os as _os
+
+        from core.batch_review import pending_drafts, unattended_block_reason
+
+        folder = self._draft(
+            1, topic="Houston Texans at Tennessee Titans", event_at="2026-10-18T17:00Z"
         )
+        with open(_os.path.join(folder, "draft.md"), "w", encoding="utf-8") as fh:
+            fh.write("# Draft\n\n## Script\n\nHouston will win in Nashville on the ground.\n")
+        (draft,) = pending_drafts("tapin", root=self.tmp.name)
+        self.assertEqual(unattended_block_reason(draft, now=NOW), "")
 
     def test_run139_a_result_before_the_game_waits(self):
         reason = self._reason(

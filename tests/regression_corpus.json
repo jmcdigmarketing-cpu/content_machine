@@ -7181,6 +7181,26 @@
         "falsy": true
       },
       "why": "a caption keeps an upload's units for each upload queued"
+    },
+    {
+      "id": "a-bout-called-before-its-card",
+      "item": 1361,
+      "source": "wave 127: a preview's result check read only 'A at B' fixtures, so a UFC bout ('X vs Y') stated as won before the card passed",
+      "call": "core.facts.event_dates:unplayed_result",
+      "args": [
+        "Volkanovski beat Evloev on the scorecards in Abu Dhabi. Here is how it went.",
+        ""
+      ],
+      "kwargs": {
+        "sides": [
+          "Volkanovski",
+          "Evloev"
+        ]
+      },
+      "expect": {
+        "contains": "Volkanovski beat Evloev"
+      },
+      "why": "a bout's two fighters are its sides"
     }
   ]
 }

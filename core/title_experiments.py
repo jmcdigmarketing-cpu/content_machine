@@ -43,10 +43,29 @@ def _titled_outcomes(channel_id: str) -> list[tuple[str, float]]:
         log = log_by_run.get(run.id)
         if not title or not log:
             continue
-        rate = engaged_rate(log.metrics_json)
+        rate = _title_outcome(log.metrics_json)
         if rate is not None:
             out.append((title, float(rate)))
     return out
+
+
+def _title_outcome(metrics_json: Any) -> float | None:
+    """#1409 (the operator, 2026-10-24): a Short's title is read against the share who stayed -
+    in the feed that is its click; a long video keeps its engaged rate."""
+    try:
+        import json as _json
+
+        from analytics.packaging import packaging_figures
+
+        metrics = (
+            _json.loads(metrics_json or "{}") if isinstance(metrics_json, str) else metrics_json
+        )
+        figures = packaging_figures(metrics if isinstance(metrics, dict) else {})
+        if figures.get("short") and isinstance(figures.get("stayed"), (int, float)):
+            return float(figures["stayed"])
+    except Exception as exc:
+        logger.debug("stayed share unread: %s", exc)
+    return engaged_rate(metrics_json)
 
 
 def _min_samples() -> int:

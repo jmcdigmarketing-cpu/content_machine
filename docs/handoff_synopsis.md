@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-23 late: wave 126, a phantom slot first
+# Handoff synopsis — 2026-10-24: wave 127, catch up and the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-23 late (Claude Code): wave 126, a phantom slot first
+## Last wave — 2026-10-24 (Claude Code): wave 127, catch up and the next ten
+
+Caught up with decision 74 (November's $20 ads test). Run 184's UFC 333 preview missed the card -
+the PC was shut down at 1:00 AM - and a preview due soon is now claimed before uploads that can
+wait. A dropped connection is an outage; google's notice is out of the logs. With the operator's
+calls: previews need a call and are read for a stated result before their event, live games leave
+the ideas, Shorts' titles read who stayed. `ops thumbnail-check` (run 164's image is not ours).
+Decision 70's r corrected to -0.08 on healed numbers.
+
+## Previous — 2026-10-23 late (Claude Code): wave 126, a phantom slot first
 
 A held run's job held Sat noon, the slot run 184's UFC 333 preview needed before the card - a
 job now reserves a slot only when it can go public there; the pass line counts tries. With the
@@ -28,16 +37,6 @@ season's seed) is off the schedule (`ops unschedule`). Captions wait for queued 
 weak-hook hold is lifted, the hook rewrite writes calls again (it had adopted nothing on 17 of 18
 runs), ten best-held openers in its prompt, one of three hooks at review, a render per process,
 `ops shortfalls` weekly.
-
-## Previous — 2026-10-23 evening (Claude Code): wave 124, the next ten
-
-Two defects first: run 181, a Cavaliers-76ers preview, was still queued a day after its tip-off
-and nothing would have stopped it uploading - the worker, the shelf and go-public now read the
-game (#1547); run 176, the UFC 333 preview, read "past its window" the day before the card (#1548).
-With the operator's calls: the hook score out of the grade and overnight's order (decision 70)
-and a run at power-on is normal, no Sleep ask (decision 69). Then `ops hooks` (each opener trait;
-longer openers held more), why a curve is missing, the GPU driver in the doctor, and the backlog
-by shortfall. Open 180.
 
 ## Pipeline order (operator)
 
@@ -113,7 +112,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1361 #1364 #1367 #1541 #1409 (roadmap.md). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1560 #1565 #1362 #1363 #1370 (roadmap.md). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

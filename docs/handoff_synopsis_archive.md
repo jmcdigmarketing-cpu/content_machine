@@ -7,6 +7,16 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-23 evening (Claude Code): wave 124, the next ten
+
+Two defects first: run 181, a Cavaliers-76ers preview, was still queued a day after its tip-off
+and nothing would have stopped it uploading - the worker, the shelf and go-public now read the
+game (#1547); run 176, the UFC 333 preview, read "past its window" the day before the card (#1548).
+With the operator's calls: the hook score out of the grade and overnight's order (decision 70)
+and a run at power-on is normal, no Sleep ask (decision 69). Then `ops hooks` (each opener trait;
+longer openers held more), why a curve is missing, the GPU driver in the doctor, and the backlog
+by shortfall. Open 180.
+
 ## Previous — 2026-10-22 evening (Claude Code): wave 123, the pop-ups and the next five
 
 The operator's System32 pop-ups were ours: the overnight task ran in a `cmd` window and each

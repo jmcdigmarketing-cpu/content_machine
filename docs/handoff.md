@@ -53,25 +53,21 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**2026-10-24 (the session that ran waves 121-122), at `9a075c6`:** the Oct 24 reminder fired; the
-operator chose one $20 ads test in November - decision 74, the to-do list's ads item updated. Docs
-only. The rest of this slot is the wave 126 session's, unchanged.
-
-**Written:** 2026-10-23 late · **HEAD at write:** `64980f3` (the code; the docs commit follows)
-· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI after the push.
+**Written:** 2026-10-24 · **HEAD at write:** `d9dffdd` (the code; the docs commit follows) ·
+**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI after the push. Built on
+the cloud's `f2d7897` (decision 74, November's $20 ads test).
 
 **Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
 
-**Wave 126 (`bd56b27` then `64980f3`, then docs):** #1558 a held run's job reserves no slot
-(`spaced_queue.job_reserves_slot`); #1559 the pass line; #1556 variants ranked by measured traits
-(`rank_by_traits`, the scorer until a channel has learned); #1502 the `hook_rewrite` experiment
-(`batch_generation.hook_arm_env`); #1540 thumbnails.set's answer confirms; #1509 #1515 in
-`roadmap-index`.
+**Wave 127:** #1563 previews claimed first (`worker._previews_first`); #1562 transient HTTP is
+unavailable; #1561 google's notice filtered; #1361 #1367 `batch_review.preview_hold_reason`;
+#1364 live games off the ideas; #1409 Shorts' titles by stayed share; #1541 `ops thumbnail-check`;
+#1365 the weekly mix. Decision 75; decision 70's r corrected to -0.08 on healed numbers.
 
-**Live (the operator's yes):** run 175 set for Sun 10 PM EDT; the PC stays asleep tonight - run
-184 (job 80) should take Sat noon EDT at the reset pass: **check `worker_task.log`**. Runs 185 and
-186 are held for a flagged claim. Pages are two waves behind. Sign-in lapses Fri 10-30.
-**Defects first:** none open of mine.
+**Live:** run 184 missed the card - the PC was shut down at 1:00 AM. Run 164's live thumbnail is
+not ours (#1565). #1560 open: the claim check blocked "The Chiefs are 5-0" with ESPN's line in the
+facts - my first diagnosis was wrong. Sign-in lapses Fri 10-30.
+**Defects first:** #1560 (reproduce on run 185's corpus).
 
 ## Slot — Cursor
 

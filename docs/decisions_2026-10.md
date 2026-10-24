@@ -289,6 +289,9 @@ on is fine". **Consequence:** on a shutdown night the drafts come 15-60 minutes 
 not by morning, and a preview of that evening's game can be too late (run 181, #1547).
 
 ## 70. The hook score is shown, not counted (2026-10-23)
+**Correction (2026-10-24, decision 75):** the r = -0.48 below was read on the day-one numbers
+#1542 had frozen; on the healed sync it is r = -0.08 over 28 (no relation either way). The score
+stays out - it does not predict.
 **Decision:** report card v6 counts the hook score at 0 and shows it; overnight renders a game
 first by kickoff, then the newest clean draft - not the highest hook score. **Why:** over 22
 measured videos the score ran against the share who stayed (r = -0.48, past p<0.05 at n=16); the
@@ -330,3 +333,12 @@ about $0.65 a subscriber if the ad brought them; whether organic views lifted wi
 measured. **Consequence:** the test is judged on subscribers per 1,000 paid views against organic,
 cost per subscriber, and whether the non-promoted videos' organic views rose; entering the October
 campaign as well lets `ops promotions` read both.
+
+## 75. Previews need a call, live games are no idea, Shorts' titles read who stayed (2026-10-24)
+**Decision:** a preview whose script makes no call waits for the operator instead of rendering
+overnight (#1367); a game ESPN shows in progress leaves the idea list (#1364); a Short's title
+patterns rank by the share who stayed, a long video's by engaged rate (#1409); and the hook score
+stays out of the grade with decision 70's numbers corrected. **Why:** the operator, asked, took
+"Hold it for me", "Leave it off", "Stayed share for Shorts" and "Keep it out". **Consequence:** fewer
+unattended previews render, each with a call; the hook findings of waves 124-125 shrink on the
+healed numbers (12 words or fewer 27% vs 28%, a number 28% vs 27%; a question 42% vs 25% on 3).

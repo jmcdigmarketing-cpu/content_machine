@@ -1807,13 +1807,13 @@ Already open for S05: #537 (per-section regeneration).
 
 ### S06 Every overnight draft was a game written as a recap (Oct 11-14)
 
-- [ ] 1361. **A finished preview read for recap tense and result words before render** *(S06.1, filed 2026-10-18)* `[S]`
+- [x] 1361. **A finished preview read for recap tense and result words before render** *(S06.1, filed 2026-10-18)* `[S]` **Done (2026-10-24, Claude, wave 127):** `batch_review.preview_hold_reason` reads a preview whose event is ahead as it is now: `unplayed_result` on the current script, with sides from the fixture or an "X vs Y" title - a UFC bout - so "Volkanovski beat Evloev on the scorecards" waits.
 - [ ] 1362. **A finished game becomes a "what it means" angle, never a play-by-play** *(S06.2, filed 2026-10-18)* `[S]`
 - [ ] 1363. **A recap's facts must postdate the final whistle** *(S06.3, filed 2026-10-18)* `[S]`
-- [ ] 1364. **A game in progress is neither preview nor recap - skipped** *(S06.4, filed 2026-10-18)* `[S]`
-- [ ] 1365. **Overnight's weekly mix (games, news, gaming) in the weekly report** *(S06.5, filed 2026-10-18)* `[S]`
+- [x] 1364. **A game in progress is neither preview nor recap - skipped** *(S06.4, filed 2026-10-18)* `[S]` **Done (2026-10-24, Claude, wave 127):** the operator: leave it off. `topics_from_board` skips a game whose ESPN state is "in".
+- [x] 1365. **Overnight's weekly mix (games, news, gaming) in the weekly report** *(S06.5, filed 2026-10-18)* `[S]` **Done (2026-10-24, Claude, wave 127):** the weekly report prints "Overnight's mix this week: N games, N news, N other".
 - [ ] 1366. **Three preview structures rotated: the stakes, the matchup, the X-factor** *(S06.6, filed 2026-10-18)* `[M]`
-- [ ] 1367. **No call, no preview** *(S06.7, filed 2026-10-18)* `[S]`
+- [x] 1367. **No call, no preview** *(S06.7, filed 2026-10-18)* `[S]` **Done (2026-10-24, Claude, wave 127):** the operator: hold. A preview whose script has no sentence `first_line_take` reads as a call waits - "a preview with no call"; review shows why.
 - [ ] 1368. **A scored call becomes a 20-second "I was right / wrong" Short** *(S06.8, filed 2026-10-18)* `[M]`
 - [ ] 1369. **Season context in previews: the last meeting and the streaks, from ESPN** *(S06.9, filed 2026-10-18)* `[M]`
 - [ ] 1370. **Which signals ran per domain, in `ops signal-audit`** *(S06.10, filed 2026-10-18)* `[S]`
@@ -1874,7 +1874,7 @@ Already open for S09: #464 (recorded API fixtures).
 ### S11 Clicks are unmeasured
 
 - [ ] 1408. **[You] Turn on the Reporting API (the link in `ops doctor`)** *(S11.1, filed 2026-10-18)* `[S]`
-- [ ] 1409. **Shorts: stayed share used as the feed's "click" in title learning** *(S11.3, filed 2026-10-18)* `[M]`
+- [x] 1409. **Shorts: stayed share used as the feed's "click" in title learning** *(S11.3, filed 2026-10-18)* `[M]` **Done (2026-10-24, Claude, wave 127):** the operator: stayed share. `title_experiments._title_outcome` reads a Short's title against the share who stayed; long videos keep engaged rate.
 - [ ] 1410. **Long-form click-through per thumbnail** *(S11.4, filed 2026-10-18)* `[M]`
 - [ ] 1411. **Impressions by traffic source** *(S11.5, filed 2026-10-18)* `[S]`
 - [ ] 1412. **Long-form titles rotated after 48 hours when click-through is low** *(S11.6, filed 2026-10-18)* `[M]`
@@ -2078,7 +2078,7 @@ Already open for S21: #1290 (the hook scorer against who stays).
 ### Found in wave 121 (2026-10-22)
 
 - [x] 1540. **The thumbnail check (#599) reads `maxres` as custom** *(2026-10-22: `youtube/thumbnails._thumbnail_looks_custom` returns True whenever `snippet.thumbnails` has `maxres`; YouTube lists `maxresdefault.jpg` for an HD upload's own frame too, so after `thumbnails.set` the result is likely "set" for every Short whether or not the image took - a guard that cannot fail. Confirm on one live video with no custom thumbnail first)* `[S]` **Done (2026-10-23, Claude, wave 126):** live 2026-10-23: run 180's videos.list listed default, medium, high, standard and maxres as `*default.jpg`, so `maxres` said nothing about a custom image. `set_video_thumbnail` confirms from thumbnails.set's own answer (its items) and the list call is gone.
-- [ ] 1541. **The live thumbnail compared with ours** *(2026-10-22, from #1391: the API cannot say which image is live; the image at `i.ytimg.com/vi/<id>/hqdefault.jpg` is the live one, letterboxed for a vertical Short - a small hash of it against the uploaded file, with the bars cut, says whether ours is showing)* `[M]`
+- [x] 1541. **The live thumbnail compared with ours** *(2026-10-22, from #1391: the API cannot say which image is live; the image at `i.ytimg.com/vi/<id>/hqdefault.jpg` is the live one, letterboxed for a vertical Short - a small hash of it against the uploaded file, with the bars cut, says whether ours is showing)* `[M]` **Done (2026-10-24, Claude, wave 127):** `youtube/thumbnail_check.py` and `ops thumbnail-check`: i.ytimg.com's live image (no quota), letterbox cut, against our file by a difference hash. Live over the week: 13 ours, run 164 another image (#1565), 2 unread, 4 with no thumbnail of ours on record.
 
 ### Found in wave 122 (2026-10-22)
 
@@ -2112,3 +2112,12 @@ Already open for S21: #1290 (the hook scorer against who stays).
 
 - [x] 1558. **A slot a held run would never use was taken** *(live 2026-10-23: run 186, a chapter Short of run 185 - both rendered past the grounding gate - sat in job 82 for Sat noon EDT. The uploader strips a held run's publish time (`hold_flagged_schedule`), so it would never go public then, but `spaced_queue._taken_slots` and the status's Publish queue counted it - and that was the slot #1552 was to give run 184's UFC 333 preview before the card)* `[S]` **Done (2026-10-23, Claude, wave 126):** `spaced_queue.job_reserves_slot` - a pending job holds its time only when its run is not held; `_taken_slots` and `upload_queue.list_queue_entries` read it, and `queue_spaced_uploads` queues a downgraded run with no time. Live: `slot_for_run(184)` gives Sat 16:00Z.
 - [x] 1559. **"Sent 3 due job(s)" for a pass that sent none** *(2026-10-23: the 19:07 and 19:22 passes held every upload for the sign-in and said "Sent")* `[S]` **Done (2026-10-23, Claude, wave 126):** "3 due upload job(s) tried in one pass - each line above says how".
+
+### Found in wave 127 (2026-10-24)
+
+- [ ] 1560. **The claim check blocked a fact ESPN's line carried** *(live 2026-10-24: run 185 was held for "The Chiefs are 5-0" and "The game is in Seattle"; the facts held "- Kansas City Chiefs: 5-0, 1st in AFC West; next: Kansas City Chiefs at Seattle Seahawks", signal tier, yet the verifier reported a CBS headline as where it found the first and blocked it. A missing live_scores branch was ruled out - it exists (#1003). Reproduce on run 185's corpus: which line the verifier matches, and why the signal line does not clear it)* `[S]`
+- [x] 1561. **google's Python 3.11 notice in every pass** *(2026-10-24: every worker pass and command printed google.api_core's FutureWarning)* `[S]` **Done (2026-10-24, Claude, wave 127):** filtered in `core/logging`; other FutureWarnings still show.
+- [x] 1562. **A dropped connection read as a broken signal** *(live 2026-10-24: run 187's YouTube search died with "0\r\n", a chunked reply's tail, and logged `[YouTube API Error] 0` as an error)* `[S]` **Done (2026-10-24, Claude, wave 127):** `classify_exception` reads an http.client error, a connection error or a bare number as unavailable, named by its type.
+- [x] 1563. **Uploads that could wait went before a preview due by morning** *(live 2026-10-24: on Fri at 8:07 PM runs 179 and 182 uploaded and the quota ran out before run 184, the UFC 333 preview for Sat 1 PM; with the PC shut down at 1:00 AM it missed the card)* `[S]` **Done (2026-10-24, Claude, wave 127):** `jobs/worker._previews_first` gives a pending upload whose run previews an event still ahead a `sort_key` the stores claim first, soonest event first.
+- [ ] 1564. **Python 3.12 before 2027-10-24** *(2026-10-24, from #1561: google.api_core stops supporting 3.11 then)* `[M]`
+- [ ] 1565. **Run 164's live thumbnail is not ours** *(live 2026-10-24, `ops thumbnail-check`: run 164 (3nlkdFTjxe0) shows another image - the custom thumbnail did not take, or the asset on record is not the one uploaded)* `[S]`

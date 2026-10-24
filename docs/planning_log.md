@@ -9680,3 +9680,59 @@ videos' organic views.
 Changed: decisions_2026-10.md (74); the roadmap, synopsis and hands_off_plan lines that pointed at
 Oct 24; the to-do list's `adstest` item. No code. Main was at `9a075c6` (waves 123-126 by the
 other session); this rode on top of it.
+
+## 2026-10-24 — wave 127, catch up and the next ten (Claude Code)
+
+**Prompt:** "next 10 and catch up"
+
+Caught up first: the cloud's `f2d7897` (decision 74 - one $20 ads test in November, docs only, CI
+green) fast-forwarded onto `9a075c6`.
+
+Measured, read-only (Sat 10-24, 15:36 CDT):
+- **The PC was shut down at 1:00 AM** (Kernel-Power 42, target S5), so there was no 3:05 AM pass; at
+  the 2:52 PM pass the worker took run 184 off the queue - "its game started Sat Oct 24 1:00 PM
+  EDT". On Friday at 8:07 PM it had uploaded runs 179 and 182, which could wait, before 184; claim
+  order was the job id.
+- Overnight ran at 2:42 PM on power-on: drafts 187-189, none rendered, chapter Shorts 190-191.
+  **#1557 proven** (187 and 189 adopted a new opener); **#1502 working** (on 2, off 1).
+- **Decision 70's number was wrong:** on the healed sync the hook score's r is -0.08 over 28, not
+  -0.48 over 22. The hook table moved too: 12 words or fewer 27% vs 28% (was 22% vs 31%), a number
+  28% vs 27% (was 19% vs 27%), length r +0.20 (was +0.36); a question still 42% vs 25%, on 3.
+- Run 185 was held for "The Chiefs are 5-0" and "The game is in Seattle". My first diagnosis - no
+  `live_scores` branch in `format_signal_facts` - was wrong: the branch exists (#1003) and the
+  ESPN line was in the facts; two existing tests failed on my extra branch, and it was reverted.
+  Filed as #1560 with what is known.
+- Run 187's YouTube signal: error "0\r\n" (a dropped connection). Every pass printed google's
+  Python 3.11 FutureWarning. C: was at 13 GB, a game's 5 GB of shader caches.
+
+Asked (four questions); the operator took each recommended option: hold a preview with no call,
+leave live games off, stayed share for Shorts' titles, keep the hook score out.
+
+Shipped (tests/test_wave127.py):
+1. **#1563** `jobs/worker._previews_first`: a pending upload whose run previews an event still
+   ahead gets a `sort_key` the JSON and Postgres stores claim first, soonest event first.
+2. **#1562** `classify_exception`: an http.client error, a connection error or a bare number is
+   unavailable, named by its type.
+3. **#1561** google's Python 3.11 notice filtered in `core/logging`; #1564 filed for 3.12.
+4. **#1361** `batch_review.preview_hold_reason`: a preview with its event ahead is read for a stated
+   result - fixtures and "X vs Y" bouts (`unplayed_result(sides=)`).
+5. **#1367** a preview with no call waits.
+6. **#1364** a game ESPN shows in progress leaves the ideas.
+7. **#1409** a Short's title outcome is the share who stayed.
+8. **#1541** `ops thumbnail-check`: 13 of this week's uploads show ours, run 164 another image
+   (#1565), 2 unread, 4 with no thumbnail of ours on record.
+9. **#1365** the weekly report's mix line.
+10. Decision 70 corrected and decision 75 written.
+
+Found on the way: my own guard that could not fail - an assertion comparing a constant with
+itself in test_overnight_guard - written and removed before it ran; the naive sentence split
+reused, caught by wave 118's ceiling.
+
+Audit (wave 127):
+- tests/test_wave127.py, written first: every new test failed on `f2d7897` except its controls.
+  test_overnight_guard's "may render" draft gained a call (decision 75).
+- 1 corpus case (#1361); 436 of 436 held. mypy 92; ruff clean. Suite: 6727 forward and 6727 reversed, OK.
+- **Live, read-only:** `ops thumbnail-check`, `ops hooks` on healed numbers, today's drafts' holds
+  unchanged (each held earlier). Nothing outward.
+
+`roadmap-index`: open 167, done 1631, numbered open 158.

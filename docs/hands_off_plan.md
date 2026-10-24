@@ -309,7 +309,8 @@ engagement it reads was day-one engagement.
 
 ### S21 The hook score is backwards (Oct 18)
 
-**Now.** r = -0.42 between the hook score and stayed share over 14 videos. Wave 112 decided no
+**Now.** (2026-10-24, healed sync) r = -0.08 over 28 - no relation; decision 70 keeps the score
+out of the grade. Earlier: r = -0.42 between the hook score and stayed share over 14 videos. Wave 112 decided no
 statistical retune before n of about 85 (master_plan M4.5); the first-line rule (#1311) was the
 logic change, and the learned gaps steer the rewrite from n=21 (decision 67).
 

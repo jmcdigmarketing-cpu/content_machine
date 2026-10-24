@@ -366,8 +366,8 @@ Yours, each one line:
 
 1. Publish the Google OAuth app - the sign-in stops ending every 7 days (S14).
 2. Turn on the YouTube Reporting API - the link is in `py -m scripts.ops doctor` (S11).
-3. Enter the October ad (`py -m scripts.ops spend add --kind ads`), and decide on another by
-   Oct 24 (S02).
+3. Enter the October ad (`py -m scripts.ops spend add --kind ads`); decided Oct 24: November gets
+   one $20 test, entered the day it starts (decision 74, S02).
 4. The 11 playlists, if yes: `py -m scripts.ops playlists --apply --channel tapin` - 550 units (S01).
 
 Done by you on 10-18: overnight can wake the PC - the task's WakeToRun is on and the power

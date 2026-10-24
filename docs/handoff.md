@@ -53,6 +53,10 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
+**2026-10-24 (the session that ran waves 121-122), at `9a075c6`:** the Oct 24 reminder fired; the
+operator chose one $20 ads test in November - decision 74, the to-do list's ads item updated. Docs
+only. The rest of this slot is the wave 126 session's, unchanged.
+
 **Written:** 2026-10-23 late · **HEAD at write:** `64980f3` (the code; the docs commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI after the push.
 

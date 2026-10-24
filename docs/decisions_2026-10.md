@@ -318,3 +318,15 @@ slot; the PC stays asleep tonight so run 184 reaches Sat noon. **Why:** the oper
 "Measured traits", "Yes, alternate", "Public at the next free slot" and "Leave it asleep tonight".
 **Consequence:** half of the overnight drafts keep their first-draft opener while the test runs;
 run 175 is set for Sun 10 PM EDT (Sat noon is kept for the UFC 333 preview).
+
+## 74. November gets one $20 ads test (2026-10-24)
+**Decision:** one YouTube ads campaign in November, capped at $20 (`ADS_MONTHLY_CAP=20`), entered
+with `py -m scripts.ops spend add --kind ads --video <id>` on the day it starts, ended with `ops
+spend end`, and its Studio result entered with `ops spend result` - so `ops promotions` can split
+paid from organic, which it could not for October's campaign (never entered). **Why:** the Oct 24
+reminder (set Oct 6); asked, the operator took "One $20 test in November". The record: one $40
+campaign, stopped Oct 8; 64-65 subscribers in 28 days, 62 of them while it ran, the videos 2-4 -
+about $0.65 a subscriber if the ad brought them; whether organic views lifted with it is not
+measured. **Consequence:** the test is judged on subscribers per 1,000 paid views against organic,
+cost per subscriber, and whether the non-promoted videos' organic views rose; entering the October
+campaign as well lets `ops promotions` read both.

@@ -9661,3 +9661,22 @@ Audit (wave 126):
   started.
 
 `roadmap-index`: open 170, done 1622, numbered open 161.
+
+## 2026-10-24 — the ads decision: one $20 test in November (Claude Code)
+
+**Prompt:** the Oct 24 reminder (stored Oct 6) fired: remind the operator of the ads-test decision,
+read the to-do list's ticks first, and put the outcome on its `adstest` item. Ticks unchanged since
+10-19, none on `adstest`. Asked "Ads decision for November: what's the call?", the operator chose
+"One $20 test in November".
+
+Recorded as decision 74. The basis was the record, not a new measurement: one $40 campaign
+stopped Oct 8; 64-65 subscribers in 28 days, 62 of them while it ran and 2-4 from the videos,
+about $0.65 a subscriber if the ad brought them. `ops promotions` cannot split paid from organic
+because the October campaign was never entered, so the rule is that November's is entered the day
+it starts (`ops spend add --kind ads --video`), ended and given its Studio result. It is judged on
+subscribers per 1,000 paid views against organic, cost per subscriber, and the non-promoted
+videos' organic views.
+
+Changed: decisions_2026-10.md (74); the roadmap, synopsis and hands_off_plan lines that pointed at
+Oct 24; the to-do list's `adstest` item. No code. Main was at `9a075c6` (waves 123-126 by the
+other session); this rode on top of it.

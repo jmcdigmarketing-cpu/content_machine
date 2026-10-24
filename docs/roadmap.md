@@ -125,7 +125,7 @@ Style (~20-30) on the TapIn voices; `ops spend add` for what was paid; record 20
 UFC 5 gameplay (`ops footage-add`) - with stock a last resort it is what fills a video; confirm run
 120's claim and run 119's with `ops verify-claim` (run 119's chapter line is fixed in Studio by hand),
 then `go-public`; rerun the Chargers idea and press Enter on angle 1; hand
-Cursor [cursor_brief_2026-10.md](cursor_brief_2026-10.md); read `ops promotions` on Oct 24.
+Cursor [cursor_brief_2026-10.md](cursor_brief_2026-10.md); November gets one $20 ads test (decision 74) - enter it with `ops spend add --kind ads` when it starts.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

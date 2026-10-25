@@ -301,6 +301,11 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                     f"{game.get('status')}"
                     + (f" — winner: {game.get('winner')}" if game.get("winner") else "")
                 )
+                leaders = game.get("leaders") if isinstance(game.get("leaders"), dict) else {}
+                parts = [f"{team}: {', '.join(rows)}" for team, rows in leaders.items() if rows]
+                if parts:  # #1575: a preview's player numbers have a source
+                    kind = "game leaders" if game.get("completed") else "season leaders (per game)"
+                    lines.append(f"ESPN {kind}, as of {_today()}: " + "; ".join(parts))
 
         elif name == "reddit" and isinstance(data, dict):
             posts = data.get("posts") or []

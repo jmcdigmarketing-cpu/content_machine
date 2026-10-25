@@ -7339,6 +7339,23 @@
         "contains": "API-SPORTS team search"
       },
       "why": "a signal's payload is never printed raw into the facts"
+    },
+    {
+      "id": "a-game-too-close-to-make",
+      "item": 1577,
+      "source": "live 2026-10-25: overnight ran at 11:29 AM CDT on power-on and drafted run 193, a Bengals-Ravens preview, 31 minutes before its 1 PM EDT kickoff",
+      "call": "core.facts.event_dates:starts_within",
+      "args": [
+        "2026-10-25T17:00Z",
+        3
+      ],
+      "kwargs": {
+        "now": "2026-10-25T16:29Z"
+      },
+      "expect": {
+        "truthy": true
+      },
+      "why": "a game under three hours away is too close to draft, render and decide"
     }
   ]
 }

@@ -185,7 +185,8 @@ video.
 
 **Now.** Every TapIn video opens on a 2.15 s channel intro. On YouTube the test stands at 1 video
 without it and 5 with (INTRO_TEST=alternate). TikTok viewers watch 1.24-1.68 s on average (Buffer,
-2026-10-18) - they leave while the intro is still playing.
+2026-10-18) - they leave while the intro is still playing. 10-25: the test settled - 21% stayed
+with the intro (13 videos) against 44% without (8) - and the intro is dropped (decision 79, #1581).
 
 **How.** The TikTok and Instagram copies start at the first word. YouTube keeps its test until 3
 each, then you decide.
@@ -230,7 +231,8 @@ needed for 30 days.
 ### S15 Every best bet was a game (Oct 14)
 
 **Now.** Fixed: decision 66 - five ideas and five previews, ranked by how many outlets carry the
-story (#1300).
+story (#1300). 10-25 (decision 79): while gaming leads organic views - 53% of them - at least two
+ideas of five are gaming (#1447); `ops predictions` shows the menu's mix (#1446).
 
 **How.** Weight domains by what holds viewers on this channel (the best 7-day video is a gaming
 one, Cyclops at 968).

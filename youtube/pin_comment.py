@@ -193,3 +193,142 @@ def maybe_pin_top_answer(
     )
     _save_pins(rows)
     return PinCommentResult("scheduled", peak.isoformat())
+
+
+# #1327 (decision 79, the operator 2026-10-25: "Ask for the call on previews"): channel comments
+# were built (#105) and never switched on. A preview that has gone public gets one comment asking
+# for the viewer's call, once, inside its first day and before its game.
+CALL_COMMENT_HOURS = 24.0
+
+
+def _call_enabled() -> bool:
+    return os.getenv("YOUTUBE_CALL_COMMENT", "true").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _call_path() -> str:
+    raw = (os.getenv("CALL_COMMENT_FILE") or "").strip()
+    if raw:
+        return raw
+    from config.paths import DATA_DIR
+
+    return os.path.join(DATA_DIR, "call_comments.json")
+
+
+def _load_calls() -> dict[str, dict]:
+    try:
+        with open(_call_path(), encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _save_calls(rows: dict[str, dict]) -> None:
+    path = _call_path()
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(rows, handle)
+
+
+def call_comment_text(sides: tuple[str, str] | None) -> str:
+    if sides:
+        return (
+            f"Your call: {sides[0]} or {sides[1]}? Say who wins and by how much - I grade my "
+            "call after the game."
+        )
+    return "Your call on this one: who wins, and by how much? I grade my call after the game."
+
+
+def _when(value: object) -> datetime | None:
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    return _parse_due(value)
+
+
+def call_candidates(channel_id: str, *, now: datetime | None = None) -> list[dict]:
+    """The public previews due a call comment: public in the last day, the game still ahead,
+    none posted on the video yet. [{video_id, run_id, text}]."""
+    from datetime import timedelta
+
+    from core.facts.event_dates import fixture_sides
+    from core.stale_renders import render_age_days, run_event
+    from storage.repositories.content_runs import get_content_run_repository
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    moment = now or datetime.now(timezone.utc)
+    done = _load_calls()
+    runs = get_content_run_repository()
+    out: list[dict] = []
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        video_id = str(getattr(row, "youtube_video_id", "") or "").strip()
+        run_id = getattr(row, "content_run_id", None)
+        if not video_id or not run_id or video_id in done:
+            continue
+        if str(getattr(row, "privacy_status", "") or "").lower() != "public":
+            continue
+        published = _when(getattr(row, "published_at", None))
+        if published is None or published > moment:
+            continue
+        if moment - published > timedelta(hours=CALL_COMMENT_HOURS):
+            continue
+        run = runs.get(int(run_id))
+        if run is None:
+            continue
+        try:
+            age = render_age_days(run)
+        except Exception:
+            age = None
+        event = run_event(run, channel_id, age)
+        if event is None or event <= moment:
+            continue
+        sides = fixture_sides(str(getattr(run, "selected_topic", "") or "")) or fixture_sides(
+            str(getattr(run, "title", "") or "")
+        )
+        text = call_comment_text(sides)
+        if _is_clean(text):
+            out.append({"video_id": video_id, "run_id": int(run_id), "text": text})
+    return out
+
+
+def post_call_comments(service, channel_id: str, *, now: datetime | None = None) -> list[str]:
+    """#1327: post each due call comment (`commentThreads.insert`, 50 units). One line each."""
+    if not _call_enabled():
+        return []
+    moment = now or datetime.now(timezone.utc)
+    done = _load_calls()
+    lines: list[str] = []
+    for item in call_candidates(channel_id, now=moment):
+        try:
+            _insert(service, video_id=item["video_id"], text=item["text"])
+        except Exception as exc:
+            logger.debug("call comment skipped for %s: %s", item["video_id"], exc)
+            continue
+        done[item["video_id"]] = {"run_id": item["run_id"], "at": moment.isoformat()}
+        lines.append(f"Call comment posted on run {item['run_id']} ({item['video_id']})")
+    if lines:
+        _save_calls(done)
+    return lines
+
+
+def call_comment_line(channel_id: str, *, now: datetime | None = None) -> str:
+    """`ops status`: the call comments posted in the last day - pinning is Studio-only."""
+    from datetime import timedelta
+
+    moment = now or datetime.now(timezone.utc)
+    recent = [
+        (video_id, row)
+        for video_id, row in _load_calls().items()
+        if isinstance(row, dict)
+        and (at := _parse_due(row.get("at"))) is not None
+        and moment - at <= timedelta(hours=CALL_COMMENT_HOURS)
+    ]
+    if not recent:
+        return ""
+    video_id, row = recent[-1]
+    more = f" (and {len(recent) - 1} more)" if len(recent) > 1 else ""
+    return (
+        f"Call comment posted on run {row.get('run_id')}{more} - pin it in Studio: "
+        f"https://youtu.be/{video_id}"
+    )

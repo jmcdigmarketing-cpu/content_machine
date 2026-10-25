@@ -705,10 +705,13 @@ def cmd_record_payloads(args: argparse.Namespace) -> int:
 @_register("predictions", "What was predicted and recommended at publish vs the outcome (#113)")
 def cmd_predictions(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
-    from core.predictions.ledger import report_lines
+    from core.predictions.ledger import menu_mix_line, report_lines
 
     for line in report_lines(resolve_channel_id(getattr(args, "channel", None))):
         print(line)
+    mix = menu_mix_line(resolve_channel_id(getattr(args, "channel", None)))  # #1446
+    if mix:
+        print(mix)
     from core.predictions import calls
 
     calls.score_calls()  # #1304: each final game scores its preview's call, once

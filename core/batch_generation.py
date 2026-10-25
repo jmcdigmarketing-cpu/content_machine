@@ -355,9 +355,16 @@ def generate_draft(
     # #1151 / #1169: a schedule pick knows when its game is; ahead of it, the angles and the
     # script are written as a preview.
     event_at = _game_start(topic, best_bet) or _named_event_start(topic)
-    from core.facts.event_dates import game_started
+    from core.facts.event_dates import PREVIEW_MIN_LEAD_HOURS, game_started, starts_within
 
     upcoming = bool(event_at) and game_started(event_at) is False
+    if upcoming and starts_within(event_at, PREVIEW_MIN_LEAD_HOURS):
+        # #1577: run 193 was drafted 31 minutes before its kickoff.
+        out.error = (
+            f"its game starts in under {PREVIEW_MIN_LEAD_HOURS:.0f} hours - too close to draft, "
+            "render and decide (#1577)"
+        )
+        return out
     # #1301: the brief carries the call the preview was offered with.
     preview = draft_brief(topic, best_bet) if upcoming else ""
 

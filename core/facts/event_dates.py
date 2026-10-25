@@ -368,6 +368,34 @@ def fixture_sides(topic: str) -> tuple[str, str] | None:
     return found.group("away").strip(), found.group("home").strip()
 
 
+# #1577: run 193, a Bengals-Ravens preview, was drafted at 11:29 AM CDT for a 1 PM EDT kickoff.
+PREVIEW_MIN_LEAD_HOURS = 3.0
+
+
+def starts_within(
+    event_at: str, hours: float, *, now: datetime.datetime | str | None = None
+) -> bool:
+    """#1577: True when the game starts in under `hours` and has not started - too close to draft,
+    render and decide. False for a start that cannot be read."""
+    raw = str(event_at or "").strip()
+    try:
+        when = datetime.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=datetime.timezone.utc)
+    if isinstance(now, str):
+        try:
+            moment = datetime.datetime.fromisoformat(now.replace("Z", "+00:00"))
+        except ValueError:
+            return False
+    else:
+        moment = now or datetime.datetime.now(datetime.timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=datetime.timezone.utc)
+    return moment < when <= moment + datetime.timedelta(hours=hours)
+
+
 def game_started(event_at: str, *, now: datetime.datetime | None = None) -> bool | None:
     """True once the game has started, False before, None when `event_at` cannot be read.
     A board day with no hour counts as started once that day is over."""

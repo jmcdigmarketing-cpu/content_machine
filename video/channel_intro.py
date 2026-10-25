@@ -32,7 +32,10 @@ DEFAULT_INTRO_DURATION = 2.15
 
 
 def _intro_enabled() -> bool:
-    return os.getenv("CHANNEL_INTRO_ENABLED", "true").lower() in (
+    """#1581 (decision 79, the operator 2026-10-25: drop it): off unless switched on - 21% stayed
+    past the swipe with the intro (13 videos) against 44% without (8), and it opened on 2.2 s of
+    silence."""
+    return os.getenv("CHANNEL_INTRO_ENABLED", "false").lower() in (
         "1",
         "true",
         "yes",

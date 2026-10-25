@@ -1224,6 +1224,13 @@ def _started(raw: str, now: datetime) -> bool:
     return when <= now
 
 
+def _too_soon(raw: str, now: datetime) -> bool:
+    """#1577: a game under three hours away - too close to draft, render and decide."""
+    from core.facts.event_dates import PREVIEW_MIN_LEAD_HOURS, starts_within
+
+    return starts_within(str(raw), PREVIEW_MIN_LEAD_HOURS, now=now)
+
+
 def suggested_games(
     scheduled: list[tuple[str, str]],
     *,
@@ -1239,7 +1246,8 @@ def suggested_games(
     out: list[BestBetResult] = []
     for topic, domain in scheduled:
         detail = game_details(topic)
-        if detail and _started(str(detail.get("date") or ""), moment):
+        date = str((detail or {}).get("date") or "")
+        if detail and (_started(date, moment) or _too_soon(date, moment)):  # #1577
             # The board is dated in UTC and cached: a 9:30 PM CDT tip-off is still "Oct 17".
             continue
         if detail:
@@ -1551,7 +1559,48 @@ def get_best_bets(
         if cont and normalize_seed_topic(cont.topic).lower() not in seen:
             options.append(cont)
 
+    # #1447 (decision 79): at least two gaming ideas while gaming leads the channel's organic
+    # views - on 10-25 one idea in five was gaming and gaming brought 53% of them.
+    try:
+        if n >= GAMING_FLOOR and _gaming_leads(channel_id):
+            # Fresh headlines first; with one gaming franchise in the news (10-25: two Call of
+            # Duty stories, one place a franchise), the channel's best past gaming topics.
+            picks: list[tuple[Any, dict]] = [(_emit_fresh, c) for c in by_domain.get("gaming", [])]
+            picks += [(_emit_hist, e) for e in ranked if e.get("domain") == "gaming"]
+            _gaming_floor(options, n, picks)
+    except Exception as exc:
+        logger.debug("gaming floor skipped: %s", exc)
     return options[:n]  # #1244: a thin day shows fewer ideas, never more games
+
+
+GAMING_FLOOR = 2
+
+
+def _gaming_leads(channel_id: str) -> bool:
+    """#1447: does gaming bring the most organic views on this channel (`ops growth`'s figures)?"""
+    from analytics.growth import _rows, conversion
+
+    views: dict[str, int] = {}
+    for group in conversion(_rows(channel_id)):
+        views[group["domain"]] = views.get(group["domain"], 0) + int(group["views"])
+    return bool(views) and max(views, key=lambda d: views[d]) == "gaming"
+
+
+def _gaming_floor(options: list[BestBetResult], n: int, picks: list[tuple[Any, dict]]) -> None:
+    """#1447: gaming candidates take the lowest-ranked other places until `GAMING_FLOOR` of the
+    first `n` ideas are gaming. Each pick is (the menu's own emitter - it appends - candidate)."""
+    for emit, candidate in picks:
+        shown = options[:n]
+        if sum(1 for o in shown if o.domain == "gaming") >= GAMING_FLOOR:
+            return
+        others = [i for i, o in enumerate(shown) if o.domain != "gaming"]
+        if not emit(candidate):
+            continue
+        if len(options) <= n:
+            continue  # it filled a free place
+        new = options.pop()
+        if others:
+            options[others[-1]] = new
 
 
 _OTHER_LEAGUES = ("nfl", "nba")
@@ -1631,7 +1680,8 @@ def preview_options(
         detail = game_details(topic)
         if not detail or str(detail.get("league") or "") not in _OTHER_LEAGUES:
             continue
-        if _started(str(detail.get("date") or ""), moment):
+        date = str(detail.get("date") or "")
+        if _started(date, moment) or _too_soon(date, moment):  # #1577
             continue
         offered.add(topic)
         kinds["other"].append(

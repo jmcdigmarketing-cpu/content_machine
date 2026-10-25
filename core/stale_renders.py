@@ -468,3 +468,22 @@ def retire_renders(runs: list[Any]) -> list[int]:
         except Exception as exc:
             logger.warning("retire skipped for run %s: %s", getattr(run, "id", "?"), exc)
     return marked
+
+
+def retire_dead_renders(
+    channel_id: str, *, now: datetime | None = None, after_hours: float = 24.0
+) -> list[int]:
+    """#1580: a render whose game started more than `after_hours` ago is retired - nothing
+    uploads it (#1547), and runs 181 and 184 sat in every `ops status` as "past their window".
+    The file stays. Returns the runs retired."""
+    from datetime import timedelta
+
+    from scripts.requeue_upload import list_recyclable
+
+    moment = now or _now()
+    dead = []
+    for run in list_recyclable(channel_id):
+        event = started_event(run, channel_id)
+        if event is not None and moment - event >= timedelta(hours=after_hours):
+            dead.append(run)
+    return retire_renders(dead) if dead else []

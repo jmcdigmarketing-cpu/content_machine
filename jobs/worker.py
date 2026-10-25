@@ -710,7 +710,37 @@ def drain_due(cap: int = PASS_CAP) -> int:
     while done < cap and process_one():
         done += 1
     _schedule_chapter_shorts()  # #1571
+    _post_call_comments()  # #1327
     return done
+
+
+def _post_call_comments() -> int:
+    """#1327 (decision 79): each pass, a preview that went public in the last day gets one comment
+    asking for the viewer's call - 50 units each, skipped under 200. The YouTube client is built
+    only when one is due. Returns how many were posted. Fail-open."""
+    try:
+        from apis.youtube_quota import get_usage_summary
+        from youtube.pin_comment import _call_enabled, call_candidates, post_call_comments
+
+        if not _call_enabled() or int(get_usage_summary().get("remaining") or 0) < 200:
+            return 0
+        from config.channels import active_channel_ids
+        from youtube.oauth import get_youtube_service
+
+        posted = 0
+        for channel in active_channel_ids():
+            if not call_candidates(channel):
+                continue
+            service = get_youtube_service(channel)
+            if service is None:
+                continue
+            for line in post_call_comments(service, channel):
+                print(line)
+                posted += 1
+        return posted
+    except Exception as exc:
+        logger.debug("call comments skipped: %s", exc)
+        return 0
 
 
 def _schedule_chapter_shorts() -> int:

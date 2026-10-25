@@ -1491,7 +1491,24 @@ def _maybe_inject_insight(
     Default-on (``INSIGHT_INJECTION_ENABLED``). No-op when the script already
     carries a take (same detector the authenticity gate scores on), so most runs
     pay nothing. Also no-op for calm intents (#660) — an explainer without a
-    take is the assignment, not a defect.
+    take is the assignment, not a defect. `insight_pass` is the same with its record.
+    """
+    return insight_pass(script, grounding_text, topic, intent=intent, own_idea=own_idea)[0]
+
+
+# #1578: the phrases the take detector reads, named in the second ask.
+_INSIGHT_CUES = '"what this means", "here\'s why", "my take", "I think", "the real reason"'
+
+
+def insight_pass(
+    script: str, grounding_text: str, topic: str, *, intent: str = "", own_idea: bool = False
+) -> tuple[str, dict[str, Any]]:
+    """`_maybe_inject_insight` with what it did: (script, {insight_tries, insight_rejected}).
+
+    #1578: the rewrite was refused on 8 of the 15 runs it ran (150-194) and nothing said why;
+    those drafts then waited "no take found" until they expired. A refusal is now named - "no
+    take" (the detector found none) or "short" (it cut the script) - and asked once more, the
+    second time naming the cues the detector reads or asking to keep every sentence.
     """
     from core.angle_intent import ANGLE_HOPE, ANGLE_TAKE, detect_angle_intent
 
@@ -1499,16 +1516,16 @@ def _maybe_inject_insight(
     if own_idea or kind == ANGLE_HOPE:
         # #1016: the operator's own idea is not given a take it did not have; #1084: a hope
         # video keeps its hope.
-        return script
+        return script, {}
     # #1226 (operator, 2026-10-16; reverses #660 for the other calm intents): a calm draft gets
     # the "what to watch" beat below - it was given none, and the authenticity check then held
     # runs 159 and 150 for "no take found".
     if not _insight_injection_enabled():
-        return script
+        return script, {}
     from core.authenticity import has_insight
 
     if has_insight(script):
-        return script
+        return script, {}
 
     # #1084: a take only when the operator asked for one; otherwise the beat says what the
     # facts mean ("what this means", "here's why") - the authenticity gate counts both.
@@ -1520,7 +1537,7 @@ def _maybe_inject_insight(
         "1-2 sentences, in the creator's voice - not a contrarian hot take, and nothing that "
         "knocks the video's angle"
     )
-    system_prompt = (
+    base_prompt = (
         "You add exactly ONE original-insight beat to a short-form video script: a "
         f"{beat}. Base it ONLY "
         "on the VERIFIED FACTS — do NOT invent any new name, team, trade, number, or "
@@ -1529,20 +1546,35 @@ def _maybe_inject_insight(
         '(often just before the closing line). Return JSON only: {"script": "..."}'
     )
     user_prompt = f"TOPIC: {topic}\n\nVERIFIED FACTS:\n{grounding_text}\n\nSCRIPT:\n{script}"
-    try:
-        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.6, tier="premium")
-    except Exception as exc:
-        logger.debug("insight injection failed: %s", exc)
-        return script
-    if not isinstance(payload, dict) or not payload.get("script"):
-        return script
-
-    candidate = str(payload["script"]).strip()
-    keeps_length = count_spoken_words(candidate) >= 0.9 * max(count_spoken_words(script), 1)
-    if has_insight(candidate) and keeps_length:
-        logger.info("Injected original-insight beat")
-        return candidate
-    return script
+    rejected: list[str] = []
+    retry = ""
+    for attempt in range(2):
+        try:
+            payload = _call_content_llm(
+                base_prompt + retry, user_prompt, temperature=0.6, tier="premium"
+            )
+        except Exception as exc:
+            logger.debug("insight injection failed: %s", exc)
+            rejected.append("no reply")
+            break
+        if not isinstance(payload, dict) or not payload.get("script"):
+            rejected.append("no reply")
+            break
+        candidate = str(payload["script"]).strip()
+        keeps_length = count_spoken_words(candidate) >= 0.9 * max(count_spoken_words(script), 1)
+        if has_insight(candidate) and keeps_length:
+            logger.info("Injected original-insight beat")
+            return candidate, {"insight_tries": attempt + 1, "insight_rejected": rejected}
+        why = "short" if not keeps_length else "no take"
+        rejected.append(why)
+        retry = (
+            " RETRY: your last version cut the script. Keep EVERY sentence of the script as it is "
+            "and only add the beat."
+            if why == "short"
+            else " RETRY: your last version had no beat a reader would call a take. Say it in "
+            f"words like {_INSIGHT_CUES}."
+        )
+    return script, {"insight_tries": len(rejected), "insight_rejected": rejected}
 
 
 def _key_fact_anchor_enabled() -> bool:
@@ -2164,7 +2196,7 @@ def generate_content_package(
         script_passes,
         "inject_insight",
         script,
-        lambda s: _maybe_inject_insight(
+        lambda s: insight_pass(  # #1578: with why a rewrite was refused
             s, grounding_text, topic, intent=resolved_intent, own_idea=own_idea
         ),
         disabled=not _insight_injection_enabled(),

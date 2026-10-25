@@ -266,6 +266,9 @@ os.environ["CONTENT_LAUNCH_STATE"] = _suite_store("launch_state.json")
 os.environ["CONTENT_UI_MASCOT_STAMP"] = _suite_store("mascot_shown_day.txt")
 os.environ["TOPIC_RECALL_FILE"] = _suite_store("last_topics.json")
 os.environ["PIN_COMMENT_FILE"] = _suite_store("pin_comments.json")
+# #1327: the call comments - never posted, never data/call_comments.json from a test.
+os.environ["CALL_COMMENT_FILE"] = _suite_store("call_comments.json")
+os.environ["YOUTUBE_CALL_COMMENT"] = "false"
 # #1284: the worker lock - never data/worker.lock from a test.
 os.environ["WORKER_LOCK_FILE"] = _suite_store("worker.lock")
 

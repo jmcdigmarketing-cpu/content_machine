@@ -556,3 +556,45 @@ def summary_line(channel_id: str) -> str | None:
     except Exception as exc:
         logger.debug("prediction ledger summary skipped: %s", exc)
         return None
+
+
+def menu_mix_line(channel_id: str, *, last: int = 30) -> str:
+    """#1446: what the idea menu offered, by domain, over the last `last` runs taken from it, and
+    which domains were taken - `features["best_bet"]` (#909) holds both."""
+    from collections import Counter
+
+    from storage.repositories.content_runs import get_content_run_repository
+
+    offered: Counter[str] = Counter()
+    taken: Counter[str] = Counter()
+    menus = 0
+    runs = sorted(
+        get_content_run_repository().list_for_channel(channel_id) or [],
+        key=lambda r: int(getattr(r, "id", 0) or 0),
+        reverse=True,
+    )
+    for run in runs:
+        if menus >= last:
+            break
+        try:
+            features = json.loads(getattr(run, "features_json", None) or "{}")
+        except (TypeError, ValueError):
+            continue
+        pick = features.get("best_bet") if isinstance(features, dict) else None
+        if not isinstance(pick, dict):
+            continue
+        options = [o for o in pick.get("offered") or [] if isinstance(o, dict)]
+        menus += 1
+        offered.update(str(o.get("domain") or "?") for o in options)
+        rank = pick.get("picked")
+        if isinstance(rank, int) and 1 <= rank <= len(options):
+            taken[str(options[rank - 1].get("domain") or "?")] += 1
+    if not menus:
+        return ""
+
+    def counts(counter: Counter[str]) -> str:
+        return ", ".join(
+            f"{d} {n}" for d, n in sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))
+        )
+
+    return f"Menu, last {menus}: offered {counts(offered)}; taken {counts(taken) or 'none'}"

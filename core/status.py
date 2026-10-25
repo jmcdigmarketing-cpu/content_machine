@@ -283,6 +283,14 @@ def build_status_lines(channel_id: str) -> list[str]:
             lines.append(flagged)
     except Exception as exc:
         logger.debug("subscriber flag skipped: %s", exc)
+    try:
+        from youtube.pin_comment import call_comment_line
+
+        line = call_comment_line(channel_id)  # #1327: pinning is Studio-only
+        if line:
+            lines.append(line)
+    except Exception as exc:
+        logger.debug("call comment line skipped: %s", exc)
 
     try:
         from analytics.unconfirmed_check import status_line as unconfirmed_line

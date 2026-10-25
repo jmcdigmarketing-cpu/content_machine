@@ -73,6 +73,8 @@ class OvernightResult:
     sign_in_line: str = ""
     # #1168: how many waiting drafts were set aside as past twice their window.
     expired: int = 0
+    # #1580: renders retired a day past their game.
+    retired: list[int] = field(default_factory=list)
     # #1190: what went to TikTok and Instagram through Buffer.
     crosspost_line: str = ""
     week_line: str = ""  # #138: the Monday compilation
@@ -294,6 +296,12 @@ def _run_overnight_body(
             result.expired = len(expire_old_drafts(channel))
     except Exception as exc:
         logger.debug("overnight draft expiry skipped: %s", exc)
+    try:  # #1580: a render a day past its game leaves the shelf for good (the file stays)
+        from core.stale_renders import retire_dead_renders
+
+        result.retired = retire_dead_renders(channel)
+    except Exception as exc:
+        logger.debug("dead renders not retired: %s", exc)
 
     try:
         from core.batch_review import pending_drafts
@@ -466,6 +474,11 @@ def render_lines(result: OvernightResult) -> list[str]:
         lines.append(
             f"Set aside {result.expired} drafts past twice their window - "
             "py -m scripts.ops batch-review --expired"
+        )
+    if result.retired:  # #1580
+        lines.append(
+            f"Retired {len(result.retired)} render(s) a day past their game (files kept): runs "
+            + ", ".join(str(r) for r in result.retired)
         )
     return lines
 

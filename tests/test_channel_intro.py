@@ -227,6 +227,8 @@ class TestConcatCommand(unittest.TestCase):
         self.assertNotIn("afade", graph)
 
 
+# #1581 (decision 79): the intro is off by default now; these tests are about it on.
+@patch.dict("os.environ", {"CHANNEL_INTRO_ENABLED": "true"})
 class TestIntroResolution(_IntroCase):
     def test_profile_intro_wins_over_env(self):
         # tapin configures its own intro, so the env var must not override it.

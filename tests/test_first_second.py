@@ -100,6 +100,8 @@ def _row(i, stayed, intro):
             "opening": {"intro": intro, "intro_seconds": 2.15 if intro else 0.0}}  # fmt: skip
 
 
+# #1581 (decision 79): the intro is off by default now; these tests are about it on.
+@patch.dict("os.environ", {"CHANNEL_INTRO_ENABLED": "true"})
 class GrowthTests(unittest.TestCase):
     def _split(self, items):
         from analytics import growth

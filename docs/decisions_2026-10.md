@@ -379,3 +379,13 @@ and only 4 of 14 game drafts went public before their game; asked, the operator 
 clean renders go", "5 when the week is empty", "Warn at review" and "Rotate as an experiment".
 **Consequence:** decision 60 now has two exceptions, chapter Shorts of a public video (77) and an
 unanswered clean render; a draft held by a check still waits for the operator.
+
+## 79. The intro goes; gaming keeps two ideas; previews ask for the viewer's call (2026-10-25)
+**Decision:** the channel intro is dropped - renders open on the first sentence (#1581); while
+gaming leads the channel's organic views, at least two of the five ideas are gaming (#1447); and a
+preview that goes public gets one channel comment asking for the viewer's call (#1327). **Why:** the
+intro test settled at 21% stayed with it against 44% without, and each intro render opened on 2.2 s
+of silence; gaming brought 53% of organic Shorts views while the menu held one gaming idea in five;
+channel comments had been built (#105) and never switched on. Asked, the operator took "Drop it",
+"At least 2 of 5" and "Ask for the call on previews". **Consequence:** `CHANNEL_INTRO_ENABLED` is
+off unless set; the comment is automatic (50 units each) and pinning it stays a Studio click.

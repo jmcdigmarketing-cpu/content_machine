@@ -210,6 +210,18 @@ def intro_verdict(with_intro: list[float], without: list[float]) -> str:
 def intro_line(channel_id: str) -> str:
     with_intro, without = _intro_rates(channel_id)
     split = intro_split(channel_id)
+    from video.channel_intro import _intro_enabled
+
+    if not _intro_enabled():  # #1581: the test settled and the intro was dropped
+        figures = (
+            f": {split['with']:.0%} stayed with it (n={split['n_with']}) vs "
+            f"{split['without']:.0%} without (n={split['n_without']})"
+            if split.get("with") is not None and split.get("without") is not None
+            else ""
+        )
+        return (
+            f"Intro: settled - dropped (decision 79){figures}; renders open on the first sentence"
+        )
     if split["n_with"] >= _INTRO_MIN and split["n_without"] >= _INTRO_MIN:
         return (
             f"Intro: {split['with']:.0%} stayed past the swipe with the channel intro "
@@ -534,8 +546,11 @@ def levers(rep: dict[str, Any]) -> list[dict[str, Any]]:
             "Shorts grow. Vertical, under 60 s, #Shorts-ready, and a hook in the first second."
         )})  # fmt: skip
     intro = rep.get("intro_split") or {}
+    from video.channel_intro import _intro_enabled
+
     if (
-        intro.get("n_with", 0) >= _INTRO_MIN
+        _intro_enabled()  # #1581: a dropped intro is no lever
+        and intro.get("n_with", 0) >= _INTRO_MIN
         and intro.get("n_without", 0) >= _INTRO_MIN
         and intro["without"] - intro["with"] >= 0.05
     ):

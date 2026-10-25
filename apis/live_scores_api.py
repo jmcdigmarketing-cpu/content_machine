@@ -24,9 +24,21 @@ def _parse_event(event):
     status = event.get("status", {}).get("type", {})
 
     sides = {}
+    leaders: dict[str, list[str]] = {}
     for comp in competitors:
         team = comp.get("team") or {}
         name = team.get("displayName") or team.get("shortDisplayName") or "Unknown"
+        # #1575: ESPN's leaders per stat - the season's on a coming game, the game's once played.
+        found = []
+        for category in comp.get("leaders") or []:
+            top = ((category or {}).get("leaders") or [{}])[0] or {}
+            player = (top.get("athlete") or {}).get("displayName")
+            value = top.get("displayValue")
+            label = category.get("shortDisplayName") or category.get("abbreviation") or ""
+            if player and value:
+                found.append(f"{player} {value} {label}".strip())
+        if found:
+            leaders[name] = found[:3]
         sides[comp.get("homeAway", "away")] = {
             "team": name,
             "score": comp.get("score"),
@@ -45,6 +57,7 @@ def _parse_event(event):
     return {
         "event_name": event.get("name") or event.get("shortName"),
         "date": str(event.get("date") or ""),  # #1363: when the whistle blew
+        "leaders": leaders,  # #1575
         "status": status.get("description") or status.get("shortDetail") or status.get("name"),
         "completed": status.get("completed") is True,
         "home_team": home.get("team"),

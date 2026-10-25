@@ -83,18 +83,18 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-24 (Claude, wave 127).** The plan is [hands_off_plan.md](hands_off_plan.md). Yours:
-publish the Google app before Fri 10-30 8:42 PM EDT; enter November's ads test the day it starts
-(decision 74); runs 185 and 186 wait for a claim check. Next: **#1560** why the claim check blocked
-"The Chiefs are 5-0" while ESPN's line had it; **#1565** run 164's live thumbnail is not ours;
-**#1362** a finished game as "what it means"; **#1363** a recap's facts after the final whistle;
-**#1370** which signals ran per domain in `ops signal-audit`.
-Waves before 109 (the 10-17 grand audit, waves 103-108): [planning_log.md](planning_log.md).
-**2026-10-18 (Claude, wave 109).** Volume blockers: takes the detector missed (#1292 - run 164 renders tonight), a preview's hook cut at "vs." (#1293), when a game preview must be decided (#1294), today's quota entry corrected, health names its runs (#1291), facts from a voice note (#450). Filed #1295 #1296. `roadmap-index`: open 258, done 1271, numbered open 206, highest #1296.
-**2026-10-18 (Claude, wave 110).** Nothing by hand: prompts visible again (#1297), one slot rule and the Buffer round as the bare `crosspost` (#1298), scheduled videos changeable and sent at their slot (#1299), ideas ranked by outlets (#1300), previews with a call (#1301), `ops all` without the suite and `ops test` without `.env` (#1302). Live: the Chargers preview public before kickoff, Perez at 6 PM. Filed #1303-#1306. `roadmap-index`: open 74, done 1465, numbered open 65, highest #1306.
-**2026-10-18 (Claude, wave 111).** The plan's next ten, in six batches: NFL/NBA news in ideas (#1303), the twelve stale cards (#1269) and two audit misses (#104 #1059), status updates that switched embedding off on 7 videos (#1306, repaired), voice-note names (#1296), no test reads the real data/ (#1305), calls from ESPN's summary kept and scored (#1304), Picks graded (#991), holdouts (#83), the weekly compilation (#138). `roadmap-index`: open 63, done 1476, numbered open 54.
-**2026-10-18 (Claude, wave 112).** The next ten in five batches: `ops status` 7.9 -> 3.4 s (#1307), roundups not ideas (#1308), the week's games called (#1309), the compilation's thumbnail (#1310), runs 92 and 119's claims settled (#1136), the call in the first sentence (#1311), the third-channel gate printed (#1079), paid-signal attribution on outcomes (#1312), the matchup card (#1042), the menu with fewer prompts (#1077), and the length recommendation reading its measured videos (#1313). `roadmap-index`: open 59, done 1487, numbered open 50.
-**2026-10-18 (Claude, wave 113).** The 22 shortfalls: the plan rebuilt by shortfall and #1314-#1517 filed (decision 68, the ceiling 300); TikTok views read (#1418) - its viewers watch 1.4 s, inside the intro; the Buffer line asks for nothing by hand (#1398); the metrics sync without you (#1489); ad-unsafe titles wait (#1319); the quota by caller, fifteen unbooked calls booked, an upload reserve (#1427); a follow line on previews with a call (#1322); Buffer copies from the first word (#1417). `roadmap-index`: open 252, done 1498, numbered open 243.
+**2026-10-24 evening (Claude, wave 128 planned - tonight's default for a cloud session).** The
+same five, now diagnosed, plus two found measuring them; the order, files and test data are
+[cloud_brief_2026-10.md](cloud_brief_2026-10.md), the operator's two answers decision 76. Yours:
+publish the Google app before Fri 10-30 8:42 PM EDT; runs 185 and 186 wait for a claim check;
+November's ads test (decision 74). Build order: **#1570** the suite reads the operator's experiment
+store (3 tests fail on the PC, not in CI); **#1560** a date read as a record dropped ESPN's "Chiefs
+5-0", and the board matched the wrong game; **#1567** an NFL topic with "game" reads as gaming;
+**#1565** a false alarm - run 164's thumbnail is ours, the check missed a top and bottom letterbox;
+**#1566** the MMA scrapers off NBA and NFL, the soccer API on soccer only; **#1370** `ops
+signal-audit` by topic domain; **#1362 + #1363** a finished game as what it means, with a call, its
+pre-game picks out of the facts. `roadmap-index`: open 172, done 1631, highest #1570.
+Waves before 114 (the 10-17 grand audit, waves 103-113): [planning_log.md](planning_log.md).
 **2026-10-19 (Claude, wave 114).** Two of wave 113's own defects first: the sync tried a channel with no sign-in (#1518), and a video moved on YouTube kept its old slot so Buffer was sent a day early (#1519, #1520 - run 154's posts removed with your yes). Then: Shorts read against Shorts (#1491 - the softening was one long video; GREEN), subscribers per 1,000 views (#1323), compilation hours (#1314), a stop rule (#354, #1423, #1507), one more render for an empty day (#1428), re-cuts of winners (#1057, #1521), a lockfile (#457). `roadmap-index`: open 243, done 1511, numbered open 234.
 **2026-10-19 (Claude, wave 115).** Uploads stopped at 4 - captions took 1,200 units: a caption file now only with quota (#1525); the AI line appended at upload and added to the compilation with your yes (#1524); the sync's scope (#1523); the sign-in date, the worker's pass and overnight's start in `ops status` (#1437 #1402 #1372); a 2+-subscriber flag (#1325); a toast for a failed Buffer send (#1399); Shorts link the compilation (#1317); #1422's card not shipped - the headline already shows the hook. `roadmap-index`: open 235, done 1523, numbered open 226.
 **2026-10-19 (Claude, wave 116).** A held upload named its reset instead of "overdue" (#1526); the queue listed three public videos, so the next slot was Sat - now Fri, every time in one zone, the two weeks at a glance (#1527 #1429); run 161 off run 156's minute with your yes; the lapsed sign-in holds uploads, a toast a day before, the console page and the mode (#1439 #1438 #1445 #1443); the last line and run-ons in the script check (#1334 #1352); a failed Buffer send retried once (#1400). `roadmap-index`: open 227, done 1533, numbered open 218.

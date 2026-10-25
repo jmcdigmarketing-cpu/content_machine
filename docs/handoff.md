@@ -53,21 +53,24 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-24 · **HEAD at write:** `d9dffdd` (the code; the docs commit follows) ·
-**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI after the push. Built on
-the cloud's `f2d7897` (decision 74, November's $20 ads test).
+**Written:** 2026-10-24 evening · **HEAD at write:** `b00490a` (wave 127; this docs commit follows)
+· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Docs only - no code since wave 127.
 
-**Cursor is out of usage for the month** - its queue is Claude's (roadmap next five).
+**Tonight's default, for a cloud session: wave 128 -
+[cloud_brief_2026-10.md](cloud_brief_2026-10.md).** Paste its prompt; it holds the build order,
+files and test data (the cloud has no `data/`), and the LOCAL checks the PC session runs after.
 
-**Wave 127:** #1563 previews claimed first (`worker._previews_first`); #1562 transient HTTP is
-unavailable; #1561 google's notice filtered; #1361 #1367 `batch_review.preview_hold_reason`;
-#1364 live games off the ideas; #1409 Shorts' titles by stayed share; #1541 `ops thumbnail-check`;
-#1365 the weekly mix. Decision 75; decision 70's r corrected to -0.08 on healed numbers.
+**Diagnosed today (defects first):** #1570 the suite reads `data/experiments.json` - on this PC 3
+tests fail the #1305 guard; CI is green because it has no `data/`. #1560 is two bugs - a date read
+as a "10-14" record dropped ESPN's "Chiefs 5-0" before the claim check, and `live_scores`
+matched the board on all four named teams (Bengals at Ravens won the tie). My wave 127 diagnosis
+of it was wrong. #1567 an NFL topic with "game" reads as gaming. #1565 was a false alarm: run
+164's thumbnail is ours (top and bottom letterbox). Decision 76: a finished game is what it means
++ next call; MMA scrapers off NBA/NFL, the soccer API on soccer only (#1566).
 
-**Live:** run 184 missed the card - the PC was shut down at 1:00 AM. Run 164's live thumbnail is
-not ours (#1565). #1560 open: the claim check blocked "The Chiefs are 5-0" with ESPN's line in the
-facts - my first diagnosis was wrong. Sign-in lapses Fri 10-30.
-**Defects first:** #1560 (reproduce on run 185's corpus).
+**Cursor is out of usage for the month** - its queue is Claude's.
+**Operator:** runs 185 and 186 still held for claims (game Sun 8:20 PM EDT); publish the Google app
+before Fri 10-30; the two operator pages were not updated tonight (no code shipped).
 
 ## Slot — Cursor
 

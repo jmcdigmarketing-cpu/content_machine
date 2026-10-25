@@ -342,3 +342,16 @@ stays out of the grade with decision 70's numbers corrected. **Why:** the operat
 "Hold it for me", "Leave it off", "Stayed share for Shorts" and "Keep it out". **Consequence:** fewer
 unattended previews render, each with a call; the hook findings of waves 124-125 shrink on the
 healed numbers (12 words or fewer 27% vs 28%, a number 28% vs 27%; a question 42% vs 25% on 3).
+
+## 76. A finished game is what it means, with a call; sport scrapers stay in their sport (2026-10-24)
+**Decision:** a video about a game ESPN calls final is written as what the result means - the
+final in one sentence, then what it changes for each side (record, standing, next game) - and ends
+on a call about the next game, never a play-by-play (#1362); its facts lose the lines dated before
+kickoff that state a result between the two sides (#1363). The MMA scrapers (`ufc_context`,
+`tapology`) no longer run on NBA or NFL topics, and the soccer API (`api_sports`,
+v3.football.api-sports.io) runs on soccer topics only (#1566). **Why:** the operator, asked, took
+"What it means + next call" and "Skip them". Measured over 60 runs: `ufc_context` ran on all 9 NBA
+runs and fed nothing; `api_sports` fed German soccer clubs ("Kickers Offenbach") into 4 NBA runs as
+raw JSON and nothing on 14 NFL runs. **Consequence:** a recap ends on a call, as a preview does
+(decision 75) - recording it for grading is not part of this; discovery on a team-sport topic runs
+fewer signals; `ops signal-audit` shows the per-domain numbers this rests on.

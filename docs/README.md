@@ -77,6 +77,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [hands_off_plan.md](hands_off_plan.md) | **Current.** The Story's 22 shortfalls, one section each - where it stands, how it is addressed, who acts, the command for done, its ten ideas in the backlog - then H0/H1/H2 |
 | [optimization_plan_2026-10.md](optimization_plan_2026-10.md) | *archived* → hands_off_plan.md (the next 100; backlog epic E7) |
 | [cursor_brief_2026-10.md](cursor_brief_2026-10.md) | Cursor's run: media first (footage, thumbnails, voice, Shorts), then the app |
+| [cloud_brief_2026-10.md](cloud_brief_2026-10.md) | Tonight's default for a Claude cloud session (2026-10-24): wave 128, with each fix's test data - the cloud has no `data/` |
 | [initiative_cross_platform.md](initiative_cross_platform.md) | Offered to Cursor (2026-10-14): learn per platform from TikTok and Instagram results (#1194-#1199) |
 | [content_quality_plan.md](content_quality_plan.md) | Five quality issues, traced and planned |
 | [spec_quality_fixes_1_to_4.md](spec_quality_fixes_1_to_4.md) | Code-ready specs for quality fixes §1–§4 |

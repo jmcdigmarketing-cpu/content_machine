@@ -9736,3 +9736,43 @@ Audit (wave 127):
   unchanged (each held earlier). Nothing outward.
 
 `roadmap-index`: open 167, done 1631, numbered open 158.
+
+## 2026-10-24 evening — wave 128 planned for the cloud (Claude Code)
+
+**Prompts:** "next 5", then (after an interruption and a side question about GTA V mods) "back to the
+project, lets continue with plan making and documentation. write a mockup to take into the cloud,
+which will be default for tonight."
+
+Nothing was built. The roadmap's five were diagnosed read-only on the PC, two defects were found
+measuring them, the operator answered two questions, and the wave was written as
+[cloud_brief_2026-10.md](cloud_brief_2026-10.md) - tonight's default for a Claude cloud session,
+with each fix's test data inline because the cloud has no `data/`.
+
+Diagnosed:
+- **#1560 has two causes.** (1) `core/facts/conflicts._RECORD_RE` reads the date of "2026-10-14 ·
+  Seahawks rule 3 players OUT..." as a 10-14 record, so ESPN's "- Kansas City Chiefs: 5-0" was a
+  "disagreeing record" and the conflict filter dropped it with 4 more lines (run 185's features:
+  `fact_conflicts_dropped` 5) - the claim check never saw it; offline `carried_by_facts` carries the
+  claim from it. Sibling: `apis/nfl_entities._SPORT_CUES` reads a date as a football cue. (2) The
+  topic named four teams; `live_scores` matched the board on all four, the two games tied and board
+  order picked Bengals at Ravens. My wave 127 diagnosis (a missing live_scores branch) was wrong.
+- **#1565 was a false alarm.** Run 164's thumbnail is 16:9, letterboxed top and bottom; the check
+  cut side bars only (13 bits, limit 12); cut rows first, 8 - ours.
+- **#1370, measured offline over 60 runs:** `ufc_context` ran on all 9 NBA runs and fed nothing;
+  `api_sports` (the soccer API) fed "Kickers Offenbach (Germany)" into NBA runs 133, 142, 145 and
+  151 as raw JSON and nothing on 14 NFL runs.
+- **Found:** #1567 "Chicago Bears defense struggles against Atlanta's early passing game" reads as
+  gaming (the word "game"), and gating cuts the sports signals; #1568 `api_sports` reaches the facts
+  as raw JSON; #1569 four uploads with no thumbnail asset on record. And, folded into #1363:
+  `event_dates._RESULT_RE` lacks "defeat", so "Seahawks defeat Chiefs" reads as no result.
+- **#1570, found running the docs tests:** `data/experiments.json` appeared at 14:50 today (overnight's
+  first hook-rewrite assignment) and `tests/__init__.py` does not redirect `EXPERIMENTS_FILE`, so in
+  this checkout `test_wave17` (2) and `test_stage3_honesty` (1) fail the #1305 data guard. CI and the
+  wave worktrees have no `data/`, which is why wave 127's suite and CI were green. First in the brief.
+
+The operator's answers (decision 76): a finished game is "what it means + next call"; the MMA
+scrapers stop on NBA and NFL and the soccer API runs on soccer only ("Skip them", #1566).
+
+Not done: no code. Runs 185 and 186 are still held; nothing outward.
+
+`roadmap-index`: open 172, done 1631, numbered open 163, highest #1570.

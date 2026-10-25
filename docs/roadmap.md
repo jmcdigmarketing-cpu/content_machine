@@ -83,16 +83,14 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-25 (Claude, wave 129).** The ten after wave 128, with the operator's answers
-(decision 78): a toast at a preview's decide-by time and clean overnight renders out after 24 h
-unanswered (#1572 #1574 - 18 of 46 drafts expired undecided in two weeks), the shelf cap 5 when the
-week is empty (#1434), ESPN season context in previews (#1369), preview shapes as an experiment
-(#1366), a dull-opener warning (#1357), leagues in turn (#1449), `ops hooks`' before/after (#1454),
-api_sports as context (#1568), `--pause-until` (#1338). Yours: runs 185 and 186 wait for a claim
-check; publish the Google app before Fri 10-30. Next: **#1575** a preview's player stats from ESPN's
-team leaders (9 of the 18 expired drafts held unbacked claims); **#1459** news plus reaction with no
-stake refused before it is drafted; **#1355** the burned-in captions against the script; **#1431**
-search units capped per signal; **#1458** the take in the title.
+**2026-10-25 (Claude, wave 130).** Measured first: the intro test had settled (21% stayed
+with it, 44% without) - dropped (decision 79, #1581); run 193 drafted 31 minutes before its game
+(#1577); the insight pass refused 8 of 15 rewrites unexplained (#1578). Also ESPN's season leaders
+in preview facts (#1575), two gaming ideas while gaming leads (#1447), the menu's mix (#1446), a
+call comment on each public preview (#1327), dead renders retired (#1580). Yours: publish the
+Google app before Fri 10-30. Next: **#1579** the comments signal's second 100-unit search;
+**#1459** news with no stake refused before it is drafted; **#1355** the burned-in captions against
+the script; **#1458** the take in the title; **#1431** search units capped per signal.
 Waves before 114 (the 10-17 grand audit, waves 103-113): [planning_log.md](planning_log.md).
 **2026-10-19 (Claude, wave 114).** Two of wave 113's own defects first: the sync tried a channel with no sign-in (#1518), and a video moved on YouTube kept its old slot so Buffer was sent a day early (#1519, #1520 - run 154's posts removed with your yes). Then: Shorts read against Shorts (#1491 - the softening was one long video; GREEN), subscribers per 1,000 views (#1323), compilation hours (#1314), a stop rule (#354, #1423, #1507), one more render for an empty day (#1428), re-cuts of winners (#1057, #1521), a lockfile (#457). `roadmap-index`: open 243, done 1511, numbered open 234.
 **2026-10-19 (Claude, wave 115).** Uploads stopped at 4 - captions took 1,200 units: a caption file now only with quota (#1525); the AI line appended at upload and added to the compilation with your yes (#1524); the sync's scope (#1523); the sign-in date, the worker's pass and overnight's start in `ops status` (#1437 #1402 #1372); a 2+-subscriber flag (#1325); a toast for a failed Buffer send (#1399); Shorts link the compilation (#1317); #1422's card not shipped - the headline already shows the hook. `roadmap-index`: open 235, done 1523, numbered open 226.

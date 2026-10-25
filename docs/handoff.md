@@ -53,22 +53,21 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-25 · **HEAD at write:** `566352b` (wave 129's code; this docs commit follows)
+**Written:** 2026-10-25 · **HEAD at write:** `b09261c` (wave 130's code; this docs commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed after the merge; read CI.
 
-**Defects first:** none open from this wave. 18 of 46 drafts in two weeks expired undecided - wave
-129 answers it with decision 78: a toast at a preview's decide-by time (#1572), then a clean
-overnight render left unanswered 24 h goes out at its slot (#1574); the shelf cap 5 while the week
-is nearly empty (#1434). Also ESPN season context in previews (#1369), preview shapes as an
-experiment (#1366, started), a dull-opener warning (#1357), leagues in turn (#1449), `ops hooks`'
-before/after (#1454), api_sports as context (#1568), `ops overnight --pause-until` (#1338).
+**Defects first:** run 193 was drafted 31 minutes before its game - no preview is offered or
+drafted under 3 hours now (#1577); the insight pass refused 8 of 15 rewrites unexplained - it names
+why and asks twice (#1578). Open: the comments signal's second search, 312-527 units a day (#1579).
 
-**Live:** decision 77 ran on its own - runs 190 and 191 scheduled Mon 10-26 noon and 10 PM EDT.
-Wave 128 (`bcd70ae`) is CI-green. Next five: #1575 #1459 #1355 #1431 #1458.
+**Decision 79 (the operator):** the intro is dropped - the test settled at 21% vs 44% (#1581);
+two of five ideas stay gaming while gaming leads (#1447); a public preview gets one comment asking
+for the viewer's call (#1327). Also ESPN's leaders in preview facts (#1575), the menu's mix in `ops
+predictions` (#1446), dead renders retired by overnight (#1580). Next five: #1579 #1459 #1355
+#1458 #1431.
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** runs 185 and 186 held for claims (game Sun 8:20 PM EDT); publish the Google app
-before Fri 10-30.
+**Operator:** publish the Google app before Fri 10-30. Runs 185 and 186 are still held for claims - their game is Sun 8:20 PM EDT.
 
 ## Slot — Cursor
 

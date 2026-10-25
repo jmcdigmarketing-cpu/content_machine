@@ -9873,3 +9873,46 @@ cap (3: the week now holds 3), #1574's dry run (nothing qualifies), the dull ope
 scheduled Mon 10-26 noon and 10 PM EDT, read back.
 
 `roadmap-index`: open 157, done 1651, numbered open 148.
+
+## 2026-10-25 — wave 130, the next ten (Claude Code)
+
+**Prompt:** "next 10"
+
+Measured first, read-only (Sun 10-25, 13:08 CDT):
+- **The intro test had settled:** 21% stayed past the swipe with the channel intro (13 videos)
+  against 44% without (8), `ops growth` "100% sure"; ffmpeg's silencedetect on the last 8 renders:
+  the 4 intro renders open on about 2.2 s of silence.
+- **Run 193 was drafted 31 minutes before its game** - overnight ran at 11:29 AM on power-on.
+- **The insight pass's rewrite was refused on 8 of the 15 runs it ran** (150-194), unexplained;
+  3 of today's 5 drafts waited "no take found".
+- **ESPN's scoreboard carries each side's season leaders** on a coming game (checked live).
+- **1 idea in 5 was gaming** while gaming brought 53% of organic Shorts views.
+- **Channel comments were built (#105) and never switched on.**
+- **Comment reads cost 312-527 units a day** - a second `search.list` per topic (#1579, filed).
+
+The operator's answers (decision 79): "Drop it"; "At least 2 of 5"; "Ask for the call on previews".
+
+Shipped (tests first, `tests/test_wave130.py`; 15 of the first 16 failed on `44aee3f`, the 16th a
+control; the history-fallback test was written after its code, unobserved):
+1. **#1581** the intro off by default; `ops growth` says settled and dropped.
+2. **#1577** no preview offered or drafted under 3 hours from its game (corpus case).
+3. **#1578** `insight_pass`: a refusal named and asked twice.
+4. **#1575** ESPN's leaders in preview facts.
+5. **#1447** two gaming ideas of five while gaming leads - fresh, then past gaming topics.
+6. **#1446** the menu's mix in `ops predictions`.
+7. **#1327** a call comment on each public preview.
+8. **#1580** a render a day past its game retired from overnight.
+9. **#1340** closed as superseded by decision 78.
+10. **#1579** filed.
+
+Found on the way: the first live menu kept one gaming idea - both fresh gaming headlines were Call
+of Duty and the menu allows one a franchise - so the floor falls back to past gaming topics. The
+first full run failed 4 older tests that assumed the intro on by default (they now set it) and the
+new corpus case until #1577 was filed.
+
+Audit (wave 130): mypy 92; ruff clean. Suite: 6795 forward and 6795 reversed, OK (6 skipped); data/ and output/ untouched.
+**Live, read-only:** the intro off for new runs, the too-soon games at 18:40 CDT (Chiefs-Seahawks
+and three more), the leaders lines, `insight_pass` on run 189 (adopted, one model call), the menu
+(2 gaming), the menu's mix, no call comment due, the dead renders (181, 184).
+
+`roadmap-index`: open 153, done 1660, numbered open 144.

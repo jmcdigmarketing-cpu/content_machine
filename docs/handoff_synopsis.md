@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-25: wave 129, the next ten after it
+# Handoff synopsis — 2026-10-25: wave 130, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-25 (Claude Code): wave 129, the next ten after it
+## Last wave — 2026-10-25 (Claude Code): wave 130, the next ten
+
+The intro test had settled - 21% stayed past the swipe with it against 44% without - and the
+operator dropped it (decision 79). A preview is no longer offered or drafted under 3 hours from
+its game (run 193 was drafted 31 minutes before). The insight pass names why it refused and asks
+twice. Preview facts carry ESPN's season leaders; two of five ideas stay gaming while gaming leads
+organic views; a public preview gets one comment asking for the viewer's call; renders a day past
+their game are retired.
+
+## Previous — 2026-10-25 (Claude Code): wave 129, the next ten after it
 
 Measured first: 18 of 46 drafts in two weeks expired undecided and only 4 of 14 game drafts went
 public before their game. With the operator's calls (decision 78): a toast at a preview's decide-by
@@ -28,15 +37,6 @@ wrong game - both fixed. An NFL topic with "game" read as gaming; run 164's thum
 check missed a top-and-bottom letterbox); the suite read `data/experiments.json`. With the
 operator's calls: a finished game is what it means with a call, the sport scrapers stay in their
 sport (decision 76), and a chapter Short of a public video goes out by itself (decision 77).
-
-## Previous — 2026-10-24 (Claude Code): wave 127, catch up and the next ten
-
-Caught up with decision 74 (November's $20 ads test). Run 184's UFC 333 preview missed the card -
-the PC was shut down at 1:00 AM - and a preview due soon is now claimed before uploads that can
-wait. A dropped connection is an outage; google's notice is out of the logs. With the operator's
-calls: previews need a call and are read for a stated result before their event, live games leave
-the ideas, Shorts' titles read who stayed. `ops thumbnail-check` (run 164's image is not ours).
-Decision 70's r corrected to -0.08 on healed numbers.
 
 ## Pipeline order (operator)
 

@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-24 (Claude Code): wave 127, catch up and the next ten
+
+Caught up with decision 74 (November's $20 ads test). Run 184's UFC 333 preview missed the card -
+the PC was shut down at 1:00 AM - and a preview due soon is now claimed before uploads that can
+wait. A dropped connection is an outage; google's notice is out of the logs. With the operator's
+calls: previews need a call and are read for a stated result before their event, live games leave
+the ideas, Shorts' titles read who stayed. `ops thumbnail-check` (run 164's image is not ours).
+Decision 70's r corrected to -0.08 on healed numbers.
+
 ## Previous — 2026-10-23 late (Claude Code): wave 126, a phantom slot first
 
 A held run's job held Sat noon, the slot run 184's UFC 333 preview needed before the card - a

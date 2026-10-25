@@ -128,7 +128,9 @@ class OvernightWaitsTests(unittest.TestCase):
                 if "apply_schedule_public(" in text:
                     scheduling.add(path.relative_to(ROOT_DIR).as_posix())
         self.assertLessEqual(callers, allowed | {p for p in callers if p.startswith("desktop/")})
-        self.assertLessEqual(scheduling, {"publishing/go_public.py"})  # menu 7's "s" only
+        # Menu 7's "s", and since decision 77 (#1571) the worker for a chapter Short of a video
+        # already public - the one exception, tested in tests/test_wave128.py.
+        self.assertLessEqual(scheduling, {"publishing/go_public.py", "core/chapter_shorts.py"})
 
 
 # ---- decision 61: TapIn keeps its look --------------------------------------------------------

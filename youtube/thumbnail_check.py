@@ -10,6 +10,7 @@ uploaded: close enough means ours is live.
 from __future__ import annotations
 
 import io
+import json
 import os
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -35,12 +36,21 @@ def _fetch_live(video_id: str) -> bytes | None:
 
 
 def _cut_letterbox(image: Any) -> Any:
-    """The image without the black side bars YouTube adds around a vertical thumbnail."""
+    """The image without the black bars YouTube adds around it: rows first - a 16:9 thumbnail in
+    the 4:3 frame (#1565: run 164's dark arena edges, averaged over the black rows too, read as
+    side bars and were cut) - then the columns of what is left, a vertical Short's side bars."""
     gray = image.convert("L")
     width, height = gray.size
-    columns = [sum(gray.getpixel((x, y)) for y in range(0, height, 8)) for x in range(width)]
-    rows = max(1, len(range(0, height, 8)))
-    lit = [x for x, total in enumerate(columns) if total / rows > 18]
+    xs = range(0, width, 8)
+    rows = [sum(gray.getpixel((x, y)) for x in xs) / max(1, len(xs)) for y in range(height)]
+    lit_rows = [y for y, mean in enumerate(rows) if mean > 18]
+    if lit_rows:
+        image = image.crop((0, lit_rows[0], width, lit_rows[-1] + 1))
+        gray = image.convert("L")
+        width, height = gray.size
+    ys = range(0, height, 8)
+    columns = [sum(gray.getpixel((x, y)) for y in ys) / max(1, len(ys)) for x in range(width)]
+    lit = [x for x, mean in enumerate(columns) if mean > 18]
     if not lit:
         return image
     return image.crop((lit[0], 0, lit[-1] + 1, height))
@@ -77,7 +87,41 @@ def check_video(video_id: str, ours: Any) -> str:
     return "ours" if same_image(ours, live) else "another image"
 
 
-def _uploaded_thumbnail(run_id: int) -> str | None:
+def _sent_thumbnails(channel_id: str) -> dict[int, str]:
+    """#1569: run id -> the thumbnail file its upload job sent. Run 172's compilation sent
+    `week_2026-10-19_thumb.png` and no asset row recorded it."""
+    out: dict[int, str] = {}
+    try:
+        from storage.repositories.jobs import get_job_repository
+
+        for job in get_job_repository().list_upload_jobs(channel_id) or []:
+            payload = json.loads(getattr(job, "payload_json", "") or "{}")
+            run_id = getattr(job, "content_run_id", None) or payload.get("content_run_id")
+            path = str(payload.get("thumbnail_path") or "")
+            if run_id and path:
+                out[int(run_id)] = path
+    except Exception as exc:
+        logger.debug("upload jobs unread: %s", exc)
+    return out
+
+
+def _uploaded_thumbnail(run_id: int, *, sent: str = "") -> str | None:
+    """The thumbnail the upload sent, in the uploader's own order (`resolve_thumbnail_path`): the
+    run's chosen pick, the job's path, then the asset rows - never a new one (#1569)."""
+    try:
+        from core.thumbnail_pick import chosen_thumbnail
+
+        picked = chosen_thumbnail(run_id)
+        if picked:
+            return picked
+    except Exception as exc:
+        logger.debug("thumbnail pick unread for run %s: %s", run_id, exc)
+    if sent and os.path.isfile(sent):
+        return sent
+    return _asset_thumbnail(run_id)
+
+
+def _asset_thumbnail(run_id: int) -> str | None:
     """The thumbnail file recorded for the run - never a new one (`resolve_thumbnail_path` may
     make one)."""
     try:
@@ -104,6 +148,7 @@ def recent_lines(channel_id: str, *, days: int = 7) -> list[str]:
         if r.youtube_video_id and r.content_run_id and getattr(r, "published_at", None)
     ]
     seen: set[str] = set()
+    sent = _sent_thumbnails(channel_id)
     out = [f"Thumbnails - {channel_id}: the live image against ours, the last {days} days"]
     counts: dict[str, int] = {}
     for row in sorted(rows, key=lambda r: str(r.published_at), reverse=True):
@@ -114,9 +159,10 @@ def recent_lines(channel_id: str, *, days: int = 7) -> list[str]:
         if when < cutoff or row.youtube_video_id in seen:
             continue
         seen.add(row.youtube_video_id)
-        path = _uploaded_thumbnail(int(run_id))
+        path = _uploaded_thumbnail(int(run_id), sent=sent.get(int(run_id), ""))
         if not path:
-            verdict = "no thumbnail of ours on record"
+            # #1569: a chapter Short goes up with YouTube's frame (the operator, 10-25: leave it).
+            verdict = "no thumbnail of ours was sent"
         else:
             with Image.open(path) as ours:
                 ours.load()

@@ -4817,15 +4817,15 @@
         "excludes_any": [
           "odds",
           "sports",
-          "live_scores",
-          "api_sports"
+          "live_scores"
         ],
         "includes_all": [
           "fred",
-          "lastfm"
+          "lastfm",
+          "api_sports"
         ]
       },
-      "why": "a player-only story reads neutral; TapIn covers sports, so its sports signals run"
+      "why": "a player-only story reads neutral; TapIn covers sports, so its sports signals run - all but the soccer API, which is soccer's alone since decision 76 (#1566)"
     },
     {
       "id": "a-sentence-opening-verb-is-not-a-specific",
@@ -7201,6 +7201,118 @@
         "contains": "Volkanovski beat Evloev"
       },
       "why": "a bout's two fighters are its sides"
+    },
+    {
+      "id": "a-dated-line-is-no-record",
+      "item": 1560,
+      "source": "live 2026-10-24: run 185's operator line dated 2026-10-14 read as a 10-14 record, so the conflict filter dropped ESPN's 'Kansas City Chiefs: 5-0' before the claim check",
+      "call": "core.facts.conflicts:find_fact_conflicts",
+      "args": [
+        [
+          "2026-10-14 - Seahawks rule 3 players OUT for Week 6 showdown with Denver Broncos (re: Seattle Seahawks miss key players)"
+        ],
+        "ESPN team (as of 2026-10-24):\n- Kansas City Chiefs: 5-0; next: Kansas City Chiefs at Seattle Seahawks (2026-10-26)"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a date's digits are no win-loss record"
+    },
+    {
+      "id": "a-date-is-no-football-cue",
+      "item": 1560,
+      "source": "wave 128: the sibling of the dated-record defect - a date's 10-14 made 'chargers' an NFL team",
+      "call": "apis.nfl_entities:team_names_in",
+      "args": [
+        "2026-10-14 - best phone chargers"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a record cue is never part of a longer dash-joined number"
+    },
+    {
+      "id": "the-board-matched-on-the-lead-pair",
+      "item": 1560,
+      "source": "live 2026-10-24: run 185's topic named four NFL teams and the board matched Bengals at Ravens",
+      "call": "apis.live_scores_api:_lead_pair",
+      "args": [
+        [
+          "bengals",
+          "ravens",
+          "chiefs",
+          "seahawks"
+        ],
+        "NFL Week 7 picks and score predictions: Chiefs edge Seahawks, Bengals over Ravens - all 5 angles"
+      ],
+      "expect": {
+        "equals": [
+          "chiefs",
+          "seahawks"
+        ]
+      },
+      "why": "the first two teams a topic names are its game"
+    },
+    {
+      "id": "the-nba-board-matched-on-the-lead-pair",
+      "item": 1560,
+      "source": "wave 128: the NBA board path had the same match, and teams_in_topic is not in topic order",
+      "call": "apis.live_scores_api:_lead_pair",
+      "args": [
+        [
+          "heat",
+          "lakers",
+          "celtics",
+          "knicks"
+        ],
+        "NBA: Knicks edge Celtics, Lakers over Heat"
+      ],
+      "expect": {
+        "equals": [
+          "knicks",
+          "celtics"
+        ]
+      },
+      "why": "topic order, not the nickname table's"
+    },
+    {
+      "id": "a-passing-game-is-football",
+      "item": 1567,
+      "source": "live 2026-10-24: runs 148 and 135, NFL topics with 'game' in them, read as gaming and gating cut the sports signals",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Chicago Bears defense struggles against Atlanta's early passing game"
+      ],
+      "expect": {
+        "equals": "nfl"
+      },
+      "why": "a named NFL team and a football word outrank the bare word game"
+    },
+    {
+      "id": "a-pick-is-not-the-result",
+      "item": 1363,
+      "source": "live 2026-10-24: run 185's facts held 'NFL Week 7 picks: Seahawks defeat Chiefs' (22 Oct), a pick that reads as a result",
+      "call": "core.facts.event_dates:is_pregame_result",
+      "args": [
+        "NFL Week 7 picks: Seahawks defeat Chiefs; Rams prevail over Raiders - Los Angeles Times (22 Oct 2026)"
+      ],
+      "kwargs": {
+        "game": {
+          "event_name": "Kansas City Chiefs at Seattle Seahawks",
+          "completed": true,
+          "status": "Final",
+          "away_team": "Kansas City Chiefs",
+          "home_team": "Seattle Seahawks",
+          "away_score": "20",
+          "home_score": "24",
+          "winner": "Seattle Seahawks",
+          "date": "2026-10-26T00:20Z"
+        }
+      },
+      "expect": {
+        "truthy": true
+      },
+      "why": "a result dated before the game's day is a pick"
     }
   ]
 }

@@ -253,8 +253,9 @@ def apply_schedule_public(
 ) -> GoPublicResult:
     """#1270: schedule an unlisted upload to go public at `when` - YouTube's `publishAt`, which
     needs the video private until then. The log row says scheduled at that time, so the slot
-    counts as taken and the worker crossposts it once it is live (#1275). Only an operator's
-    action calls this (decision 60)."""
+    counts as taken and the worker crossposts it once it is live (#1275). An operator's
+    action calls this (decision 60), and since decision 77 the worker, for a chapter Short of a
+    public video (#1571)."""
     from publishing.youtube_publisher import _to_publish_at_rfc3339
 
     video_id = (video_id or "").strip()

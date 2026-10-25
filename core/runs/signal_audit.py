@@ -195,6 +195,27 @@ def contribution_rows(runs: list[RunSignals]) -> list[dict[str, Any]]:
     return sorted(rows.values(), key=lambda r: (-r["fed"], -r["active"], r["signal"]))
 
 
+def domain_lines(runs: list[RunSignals]) -> list[str]:
+    """#1370: per topic domain, what fed the prompt and what ran and fed nothing. On 10-24, over
+    60 runs, ufc_context ran on all 9 NBA runs and fed nothing - the all-runs table hid it."""
+    from apis.topic_scorer import infer_topic_domain
+
+    groups: dict[str, list[RunSignals]] = {}
+    for run in runs:
+        groups.setdefault(infer_topic_domain(run.topic) or "neutral", []).append(run)
+    lines: list[str] = []
+    for domain, members in sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        rows = contribution_rows(members)
+        fed = [f"{r['signal']} {r['fed']}" for r in rows if r["fed"]][:5]
+        idle = sorted((r for r in rows if not r["fed"]), key=lambda r: (-r["runs"], r["signal"]))
+        count = f"{len(members)} run{'' if len(members) == 1 else 's'}"
+        line = f"    {domain} ({count}): fed most - {', '.join(fed) or 'nothing'}"
+        if idle:
+            line += "; ran, never fed - " + ", ".join(f"{r['signal']} {r['runs']}" for r in idle)
+        lines.append(line)
+    return lines
+
+
 def retirement_candidates(rows: list[dict[str, Any]]) -> list[str]:
     """Signals that ran on `RETIRE_MIN_RUNS`+ runs and never fed the prompt."""
     return sorted(r["signal"] for r in rows if r["runs"] >= RETIRE_MIN_RUNS and r["fed"] == 0)
@@ -228,6 +249,10 @@ def report_lines(
             f"  never fed the prompt in {RETIRE_MIN_RUNS}+ runs (retirement candidates, "
             f"decisions §19): {', '.join(candidates)}"
         )
+    lines.append(
+        "  by topic domain - what fed the prompt most, and what ran and fed nothing (#1370):"
+    )
+    lines += domain_lines(runs)
     if channel_id:
         demoted = demotion_line(channel_id)
         if demoted:

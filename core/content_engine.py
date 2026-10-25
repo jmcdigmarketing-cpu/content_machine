@@ -1952,6 +1952,18 @@ def generate_content_package(
         if _dropped_dates:
             logger.info("Dropped %d future-dated fact line(s)", len(_dropped_dates))
 
+    # #1362 / #1363 (decision 76): a game ESPN calls final is written as what it means, ending on
+    # a call, and its facts lose the pre-game lines that state a result.
+    from core.facts.event_dates import drop_pregame_results, finished_game, result_brief
+
+    _final = finished_game(signals, f"{seed_topic or ''} {topic or ''}", brief=creative_brief)
+    _pregame: list[str] = []
+    if _final:
+        signal_facts, _pregame = drop_pregame_results(signal_facts, _final)
+        extra_directive = "\n".join(p for p in (extra_directive, result_brief(_final)) if p.strip())
+        if _pregame:
+            logger.info("Dropped %d pre-game result line(s) from a final's facts", len(_pregame))
+
     # Pre-script contradiction detection (Pillar 3): flag source lines that
     # disagree with the operator's key facts BEFORE the LLM sees both, and
     # (default on) keep the losing lines out of the prompt entirely.
@@ -2772,6 +2784,8 @@ def generate_content_package(
         "disputed": conflict_features["disputed"],
         "disputed_claims": conflict_features["disputed_claims"],
         "conflict_sections": conflict_features["conflict_sections"],  # #917
+        "finished_game": str((_final or {}).get("event_name") or ""),  # #1362
+        "pregame_results_dropped": len(_pregame),  # #1363
         # #748: a wrong actor the verifier missed (or never judged) still reaches the gate.
         "claim_verification": verification_payload,
         "quote_attribution": quote_payload,

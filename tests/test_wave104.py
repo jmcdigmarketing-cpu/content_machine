@@ -28,7 +28,8 @@ from unittest.mock import MagicMock, patch
 
 PRITCHARD = "Payton Pritchard signed a two-year extension"
 POKEMON = "Pokemon at 5 PM"
-_SPORTS = ("sports", "live_scores", "odds", "api_sports")
+# The soccer API left this list with decision 76 (#1566): it is soccer's alone.
+_SPORTS = ("sports", "live_scores", "odds")
 
 
 # ---- C1 #1249: a neutral topic keeps every group the channel covers -------------------------

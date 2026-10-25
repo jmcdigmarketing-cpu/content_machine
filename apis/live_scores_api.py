@@ -43,6 +43,7 @@ def _parse_event(event):
 
     return {
         "event_name": event.get("name") or event.get("shortName"),
+        "date": str(event.get("date") or ""),  # #1363: when the whistle blew
         "status": status.get("description") or status.get("shortDetail") or status.get("name"),
         "completed": status.get("completed") is True,
         "home_team": home.get("team"),
@@ -51,6 +52,19 @@ def _parse_event(event):
         "away_score": away.get("score"),
         "winner": winner,
     }
+
+
+def _lead_pair(names, topic):
+    """#1560: the first two teams the topic names, in its order - the game it is about. Run 185's
+    topic named four ("Chiefs edge Seahawks, Bengals over Ravens"); matching the board on all
+    four tied two games at 2 and board order picked Bengals at Ravens."""
+    lower = (topic or "").lower()
+
+    def at(name):
+        found = re.search(rf"\b{re.escape(str(name).lower())}\b", lower)
+        return found.start() if found else len(lower)
+
+    return sorted(dict.fromkeys(names), key=at)[:2]
 
 
 def _match_score(event, topic_teams):
@@ -96,7 +110,7 @@ def _nfl_signal(topic, teams):
         rows = [_team_line(get_team("nfl", NFL_TEAM_ABBR[t]), "nfl") for t in teams[:2]]
     except SchemaDrift as drift_exc:
         return drift_signal(str(drift_exc))
-    nicknames = [t.split()[-1].lower() for t in teams]
+    nicknames = _lead_pair([t.split()[-1].lower() for t in teams], topic)
     game = None
     try:
         events = (get_scoreboard("nfl", week=week) or {}).get("events") or []
@@ -240,9 +254,10 @@ def get_live_scores_signal(topic):
                 status_detail="No games on ESPN scoreboard",
             )
 
-        parsed.sort(key=lambda g: _match_score(g, topic_teams), reverse=True)
+        lead = _lead_pair(topic_teams, topic)  # #1560
+        parsed.sort(key=lambda g: _match_score(g, lead), reverse=True)
         best = parsed[0]
-        match_hits = _match_score(best, topic_teams)
+        match_hits = _match_score(best, lead)
 
         if topic_teams and match_hits == 0:
             return make_signal(

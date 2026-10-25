@@ -113,9 +113,14 @@ NFL_TEAM_NAMES = {
     "rams": "Los Angeles Rams", "seahawks": "Seattle Seahawks",
 }  # fmt: skip
 
+# #1567: cities that name one team in any league we read - "Green Bay" is only the Packers.
+_CITY_TEAMS = {"green bay": NFL_TEAM_NAMES["packers"]}
+
 # Words that make a nickname a team rather than a phone charger or a ram.
 _SPORT_CUES = re.compile(
-    r"\b(?:\d{1,2}-\d{1,2}|nfl|afc|nfc|super bowl|playoffs?|season|week \d+|qb|quarterback|"
+    # #1560: a record, never a date's "10-14" ("2026-10-14 · best phone chargers").
+    r"\b(?:(?<![\d-])\d{1,2}-\d{1,2}(?![\d-])|nfl|afc|nfc|super bowl|playoffs?|season|week \d+|"
+    r"qb|quarterback|"
     r"coach|draft|trade|roster|vs\.?|beat|game|win|wins|loss|losses|record|offense|defense|"
     r"touchdown|standings|division)\b",
     re.I,
@@ -133,10 +138,17 @@ def team_names_in(text: str) -> list[str]:
     from apis.topic_tokens import abbreviations_in
 
     lower = (text or "").lower()
-    found: list[str] = []
+    hits: list[tuple[int, str]] = []
     for match in re.finditer(r"[a-z0-9]+", lower):
         full = NFL_TEAM_NAMES.get(match.group(0))
-        if full and full not in found:
+        if full:
+            hits.append((match.start(), full))
+    # #1567: a city no other league's team shares names its team ("Green Bay's running game").
+    for city, full in _CITY_TEAMS.items():
+        hits += [(m.start(), full) for m in re.finditer(rf"\b{city}\b", lower)]
+    found: list[str] = []
+    for _at, full in sorted(hits):
+        if full not in found:
             found.append(full)
     # #1487 (S19): "NE vs BUF" - an abbreviation the NBA shares ("DAL") needs football's word.
     # Once a nickname or an NFL-only abbreviation says football, "DEN vs KC" is both teams.

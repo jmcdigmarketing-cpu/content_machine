@@ -506,6 +506,59 @@ def scheduled_next_days(channel_id: str, *, days: int = 7) -> int:
     )
 
 
+SCHEDULE_PER_PASS = 2
+
+
+def schedule_waiting_shorts(
+    channel_id: str, *, limit: int = SCHEDULE_PER_PASS, dry_run: bool = False
+) -> list[str]:
+    """#1571 (decision 77, the operator 2026-10-25: "Chapter Shorts only"): a chapter Short of a
+    video already public goes public at its free slot by itself - the operator approved the video
+    it was cut from. On 10-25 runs 190 and 191 (cut from run 92) waited unlisted; with 185 and 186
+    held, the shelf stopped overnight's renders and nothing was scheduled after Sunday. New renders
+    still wait (decision 60); a claim-held Short is left. One line per Short scheduled or refused;
+    a Short with no slot is logged. Fail-open: []."""
+    try:
+        from core.run_features import load_features
+        from core.spaced_queue import slot_for_run
+        from publishing.go_public import apply_schedule_public, override_held
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        rows = list(get_publish_log_repository().list_uploaded_for_channel(channel_id) or [])
+        public = {
+            int(r.content_run_id)
+            for r in rows
+            if r.content_run_id and str(r.privacy_status or "").lower() == "public"
+        }
+        lines: list[str] = []
+        tried = 0
+        for row in sorted(rows, key=lambda r: int(getattr(r, "id", 0) or 0)):
+            if tried >= limit:
+                break
+            run_id = int(row.content_run_id or 0)
+            video_id = str(row.youtube_video_id or "").strip()
+            if not run_id or not video_id or str(row.privacy_status or "").lower() != "unlisted":
+                continue
+            features = load_features(run_id) or {}
+            if features.get("short_source") != "chapter_cut":
+                continue
+            if int(features.get("parent_run_id") or 0) not in public or override_held(run_id):
+                continue
+            tried += 1
+            when, why = slot_for_run(channel_id, run_id)
+            if when is None:
+                logger.info("chapter Short run %s has no slot: %s", run_id, why)
+                continue
+            result = apply_schedule_public(
+                video_id, channel_id=channel_id, when=when, dry_run=dry_run
+            )
+            lines.append(f"Chapter Short run {run_id}: {result.status} - {result.detail}")
+        return lines
+    except Exception as exc:
+        logger.warning("chapter Shorts not scheduled: %s", exc)
+        return []
+
+
 def fill_empty_slots(channel_id: str, *, cut: Any = None, queue: Any = None) -> list[str]:
     """#1430 (wave 118, the operator: gaming and evergreen only): when fewer than 7 are scheduled
     in the next 7 days, overnight cuts up to 2 chapters of a published all-angles video into

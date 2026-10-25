@@ -69,8 +69,12 @@ _DIVISION_WORDS = frozenset(
     }
 )
 
-# "Islam is 19-0" / "record 18-0-0". A percent range ("10-15%") is not a record.
-_RECORD_RE = re.compile(r"\b(\d{1,2})\s*-\s*(\d{1,2})(?:\s*-\s*(\d{1,2}))?(?!\s*%)")
+# "Islam is 19-0" / "record 18-0-0". A percent range ("10-15%") is not a record, and #1560: nor
+# is part of a date - run 185's "2026-10-14 · Seahawks rule 3 players OUT..." read as a 10-14
+# record, and the filter dropped ESPN's "Kansas City Chiefs: 5-0" before the claim check.
+_RECORD_RE = re.compile(
+    r"(?<![\d-])\b(\d{1,2})\s*-\s*(\d{1,2})(?:\s*-\s*(\d{1,2}))?(?![\d-])(?!\s*%)"
+)
 
 _MAX_CONFLICTS = 6
 

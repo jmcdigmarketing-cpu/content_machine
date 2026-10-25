@@ -477,6 +477,10 @@ _TEAM_SPORT_SIGNALS = {"sports", "odds", "live_scores", "api_sports"}
 # The mirror case: MMA-only scrapers return a random card for a football story.
 _MMA_ONLY_SIGNALS = {"ufc_context", "tapology"}
 
+# #1566 (decision 76): api_sports is the soccer API (v3.football.api-sports.io). Over 60 runs it
+# fed nothing on 14 NFL runs and fed German soccer clubs into 4 NBA runs.
+_SOCCER_ONLY_SIGNAL = "api_sports"
+
 
 def _domain_gating_enabled() -> bool:
     return os.getenv("DOMAIN_SIGNAL_GATING", "true").lower() in ("1", "true", "yes")
@@ -538,14 +542,19 @@ def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
         primary = str(profile.domain or "").strip().lower()
         if primary not in _DOMAIN_GROUP:
             return set()
-        return {name for name, group in _SIGNAL_GROUP.items() if group not in covered}
+        gated = {name for name, group in _SIGNAL_GROUP.items() if group not in covered}
+        return gated | {_SOCCER_ONLY_SIGNAL}  # #1566
 
     gated = {name for name, group in _SIGNAL_GROUP.items() if group != topic_group}
     # Within the sports group, team-sport signals don't cover MMA.
     if inferred == "ufc":
         gated |= _TEAM_SPORT_SIGNALS
-    if inferred == "soccer":
+    # #1566 (decision 76): nor do the MMA scrapers cover a team sport - ufc_context ran on all 9
+    # NBA runs and fed nothing - and the soccer API is soccer's alone.
+    if inferred in ("soccer", "nba", "nfl"):
         gated |= _MMA_ONLY_SIGNALS
+    if inferred != "soccer":
+        gated.add(_SOCCER_ONLY_SIGNAL)
     return gated
 
 

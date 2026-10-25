@@ -343,6 +343,24 @@ def _name_matches(topic_lower: str) -> list[tuple[str, str]]:
     ]
 
 
+# #1567: football's own words. With a named NFL team they outrank the bare word "game".
+_FOOTBALL_PLAY_RE = re.compile(
+    r"\b(?:defen[cs]e|defensive|offen[cs]e|offensive|passing|running|rushing|quarterback|qb|"
+    r"touchdowns?|nfl|afc|nfc|playoffs?|week \d+|coach|kickoff|sacks?|interceptions?|red zone|"
+    r"secondary|pass rush)\b"
+)
+
+
+def _football_story(topic_lower: str) -> bool:
+    """#1567: an NFL team and a football word - "passing game" is the Bears', not a video game.
+    "Saints Row game review" names a team's nickname and no football word, so it stays gaming."""
+    if not _FOOTBALL_PLAY_RE.search(topic_lower):
+        return False
+    from apis.nfl_entities import team_names_in
+
+    return bool(team_names_in(topic_lower))
+
+
 def _sport_from_names(topic_lower: str) -> str | None:
     """The one sport whose seeded or learned names the topic mentions, else None.
 
@@ -583,21 +601,16 @@ def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: 
     if (
         _mentions(
             topic_lower,
-            [
-                "gta",
-                "gaming",
-                "game",
-                "steam",
-                "roblox",
-                "marvel rivals",
-                "esports",
-                *_GAME_FRANCHISES,
-            ],
+            ["gta", "gaming", "steam", "roblox", "marvel rivals", "esports", *_GAME_FRANCHISES],
         )
         or _FOOTBALL_GAME_RE.search(topic_lower)
         or _mentions(topic_lower, sorted(_learned_game_names()))
     ):
         return "gaming"
+    if _mentions(topic_lower, ["game"]):
+        # #1567: "Chicago Bears defense struggles against Atlanta's early passing game" read as
+        # gaming, and gating then cut live_scores, odds and sports - run 98's shape.
+        return "nfl" if _football_story(topic_lower) else "gaming"
 
     # #946: "Holloway vs Gaethje", "Wemby's 40-point night" - a name, not a keyword.
     sport = _sport_from_names(topic_lower)

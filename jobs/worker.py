@@ -709,7 +709,31 @@ def drain_due(cap: int = PASS_CAP) -> int:
     done = 0
     while done < cap and process_one():
         done += 1
+    _schedule_chapter_shorts()  # #1571
     return done
+
+
+def _schedule_chapter_shorts() -> int:
+    """#1571 (decision 77): each pass, a chapter Short of a public video that waits unlisted is
+    scheduled at its slot - a videos.update, 50 units, skipped when two would not fit. Returns
+    the lines printed. Fail-open."""
+    try:
+        from apis.youtube_quota import get_usage_summary
+
+        if int(get_usage_summary().get("remaining") or 0) < 100:
+            return 0
+        from config.channels import active_channel_ids
+        from core.chapter_shorts import schedule_waiting_shorts
+
+        printed = 0
+        for channel in active_channel_ids():
+            for line in schedule_waiting_shorts(channel):
+                print(line)
+                printed += 1
+        return printed
+    except Exception as exc:
+        logger.debug("chapter Shorts not scheduled: %s", exc)
+        return 0
 
 
 def _overnight_watch() -> None:

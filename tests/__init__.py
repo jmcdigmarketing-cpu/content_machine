@@ -303,6 +303,9 @@ _SUITE_STORE_PATCHES = (
     patch.object(_incident_ledger, "INCIDENTS_FILE", _suite_store("incidents.json")),
     patch.object(_buffer_api, "REQUESTS_FILE", _suite_store("buffer_requests.json")),
     patch.object(_paths, "RELIABILITY_HISTORY_FILE", _suite_store("reliability_history.json")),
+    # #1570: overnight's first hook-rewrite assignment wrote data/experiments.json on 10-24, and
+    # three tests then read the operator's arms through core/experiments._load.
+    patch.object(_paths, "EXPERIMENTS_FILE", _suite_store("experiments.json")),
     # Wave 115 (#1402): the morning reads the upload worker's last pass.
     patch.object(_paths, "WORKER_TASK_LOG", _suite_store("worker_task.log")),
     # Wave 115 (#1399, #1372): the once-a-day toast stamps.

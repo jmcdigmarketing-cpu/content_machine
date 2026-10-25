@@ -222,7 +222,10 @@ _FIXTURE_RE = re.compile(
     r"(?P<home>[A-Z0-9][\w.'&-]*(?:\s+[A-Z0-9][\w.'&-]*){0,3})$"
 )
 _RESULT_RE = re.compile(
-    r"\b(?:beat|beats|defeated|defeats|won|win over|victory over|statement win|routed|crushed|"
+    # #1363: "defeat" and "prevail over" too - "NFL Week 7 picks: Seahawks defeat Chiefs; Rams
+    # prevail over Raiders" read as no result.
+    r"\b(?:beat|beats|defeat|defeated|defeats|won|win over|victory over|statement win|routed|"
+    r"crushed|prevails? over|prevailed over|"
     r"dissected|dominated|blew out|blowout|swept|edged|upset|outlasted|topped|downed|lost to|"
     r"loss to|fell to|falls to)\b",
     re.I,
@@ -272,6 +275,88 @@ def preview_brief(event_at: str, *, call: str = "") -> str:
             'for example "I grade this call after the game - follow to see if I was right."'
         )
     return brief
+
+
+RESULT_PREFIX = "This game is over"
+
+
+def finished_game(signals: dict | None, topic: str, *, brief: str = "") -> dict | None:
+    """#1362 (decision 76): ESPN's final for the game the topic is about, or None - only when ESPN
+    calls it final and the topic names both sides' nicknames; never under a preview's brief."""
+    if PREVIEW_PREFIX in (brief or ""):
+        return None
+    live = (signals or {}).get("live_scores") or {}
+    data = live.get("data") if isinstance(live, dict) else None
+    game = data.get("matched_game") if isinstance(data, dict) else None
+    if not isinstance(game, dict) or game.get("completed") is not True:
+        return None
+    lower = str(topic or "").lower()
+    for side in (game.get("away_team"), game.get("home_team")):
+        words = str(side or "").split()
+        if not words or not re.search(rf"\b{re.escape(words[-1].lower())}\b", lower):
+            return None
+    return game
+
+
+def result_brief(game: dict) -> str:
+    """#1362 (decision 76, the operator: "What it means + next call"): the directive for a game
+    that is over - the final once, then what it changes, then a call; never a play-by-play."""
+    final = (
+        f"{game.get('away_team')} {game.get('away_score')}, "
+        f"{game.get('home_team')} {game.get('home_score')}"
+    )
+    winner = f" - {game['winner']} won" if game.get("winner") else ""
+    return (
+        f"{RESULT_PREFIX} - ESPN's final: {final}{winner}. Write what the result means, not a "
+        "play-by-play: say the final in one sentence, then what it changes for each side - "
+        "record, standing, next game - from the facts. End on a call about the next game, argued "
+        "from the facts. Never retell plays, drives or quarters in order."
+    )
+
+
+def _game_day(game: dict) -> datetime.date | None:
+    """The day a game was played, in US Eastern time - ESPN dates a Sunday night game Monday UTC."""
+    raw = str((game or {}).get("date") or "").strip()
+    if not raw:
+        return None
+    try:
+        when = datetime.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=datetime.timezone.utc)
+    from zoneinfo import ZoneInfo
+
+    return when.astimezone(ZoneInfo("America/New_York")).date()
+
+
+def is_pregame_result(line: str, game: dict) -> bool:
+    """#1363: a line that states a result between the game's two sides and is dated only before
+    the game's day - a pick, not the result. Run 185's facts held "NFL Week 7 picks: Seahawks
+    defeat Chiefs ... (22 Oct 2026)". A line with no date is not judged."""
+    day = _game_day(game)
+    text = str(line or "")
+    if day is None or not _RESULT_RE.search(text):
+        return False
+    away = _side_words(str(game.get("away_team") or ""))
+    home = _side_words(str(game.get("home_team") or ""))
+    words = {word.lower() for word in re.findall(r"[A-Za-z0-9]+", text)}
+    if not (words & away and words & home):
+        return False
+    dates = _preview_dates(text, None, day)
+    return bool(dates) and all(d < day for d in dates)
+
+
+def drop_pregame_results(text: str, game: dict) -> tuple[str, list[str]]:
+    """#1363: `text` without its pre-game result lines (`is_pregame_result`), and those lines."""
+    kept: list[str] = []
+    dropped: list[str] = []
+    for line in str(text or "").splitlines():
+        if line.strip() and is_pregame_result(line, game):
+            dropped.append(line.strip())
+        else:
+            kept.append(line)
+    return "\n".join(kept), dropped
 
 
 def fixture_sides(topic: str) -> tuple[str, str] | None:

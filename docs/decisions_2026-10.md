@@ -366,3 +366,16 @@ held for claims - so the shelf stopped overnight's renders and nothing was sched
 asked, the operator took "Chapter Shorts only" and "Leave YouTube's frame". **Consequence:** the
 shelf frees itself of chapter Shorts within a worker pass of their upload; `apply_schedule_public`,
 once an operator-only call, now has the worker as its second caller (#1571).
+
+## 78. A preview due soon pushes a toast; a clean render left unanswered goes out (2026-10-25)
+**Decision:** a game draft whose decide-by time is within 3 hours raises a toast, once (#1572); a
+render overnight made - it passed every check - that waits unlisted 24 hours unanswered, or a
+preview whose event is within 30 hours, is scheduled public at its slot by the upload worker
+(#1574), unless the operator set it aside or a claim holds it. Overnight's shelf cap is 5 while
+fewer than 3 videos are scheduled in the next 7 days (#1434). A dull opener - no number, name or
+call in three sentences - is a warning at review, not a hold (#1357). Previews rotate three shapes
+as an experiment (#1366). **Why:** over the two weeks to 10-25, 18 of 46 drafts expired undecided
+and only 4 of 14 game drafts went public before their game; asked, the operator took "Toast, then
+clean renders go", "5 when the week is empty", "Warn at review" and "Rotate as an experiment".
+**Consequence:** decision 60 now has two exceptions, chapter Shorts of a public video (77) and an
+unanswered clean render; a draft held by a check still waits for the operator.

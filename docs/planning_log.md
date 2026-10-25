@@ -9825,3 +9825,51 @@ Audit (wave 128):
   `finished_game` on recorded finals (run 179), and #1571 as a dry run.
 
 `roadmap-index`: open 163, done 1641, numbered open 154.
+
+## 2026-10-25 — wave 129, the next ten after wave 128 (Claude Code)
+
+**Prompt:** "next 10 after that" - asked while wave 128's suite ran; wave 128 landed first
+(`b072e84`, `bcd70ae`, CI green).
+
+Measured first, read-only:
+- **39% of drafts expired undecided.** 46 drafts in 14 days: 23 rendered, 18 expired, 3 rejected, 2
+  waiting. Of 14 game drafts, 4 went public before their game; 178 (Patriots) and 188 (Bucks-76ers)
+  expired, 183 was rejected.
+- **What the 18 expired carried:** 9 claims the check could not back (188: two usage-rate stats
+  from no source, and "LeBron James ruled out for the Bucks game"), 4 title warnings, 4 authenticity
+  reviews, and 4 with no flag at all (134, 149, 151, 152) - they expired unrendered under the shelf
+  and render caps.
+- **Nothing pushed a deadline:** `deadline_line` lived in `ops status` and the morning.
+- **ESPN's team schedule** (checked live) gives the season's results with scores; the record has a
+  signed `streak` stat.
+
+The operator's answers (decision 78): "Toast, then clean renders go"; "5 when the week is empty";
+"Warn at review"; "Rotate as an experiment".
+
+Shipped (tests first, `tests/test_wave129.py`, 23 tests; the first 22 failed on `bcd70ae`, the 23rd
+- the season fetch with the switch on - was written after):
+1. **#1572** a toast within 3 h of a preview's decide-by time (`batch_review.next_decision`).
+2. **#1574** an unanswered clean overnight render goes out at its slot.
+3. **#1434** the shelf cap 5 while the week is nearly empty.
+4. **#1369** each team's streak, last five results and a meeting this season, from ESPN.
+5. **#1568** api_sports as context, never raw JSON (1 corpus case).
+6. **#1454** `ops hooks`: the first-line rule before and after.
+7. **#1366** a `preview_shape` lever, drawn only by previews.
+8. **#1357** the dull-opener warning.
+9. **#1449** leagues in turn within each kind of preview.
+10. **#1338** `ops overnight --pause-until DATE`.
+
+Found on the way: the first full run failed 7 older tests, each an expectation the decisions change:
+`ESPN_SEASON_CONTEXT` needed its `.env.example` line; `test_overnight_guard`'s shelf cases assumed
+the base cap with an empty queue (they now set a full week); `test_idea_menu` expected a second NFL
+game where #1449 now puts the NBA's (the shared-team case reads eight places). The new test file's
+count was written as 24 in the code commit; it is 23.
+
+Audit (wave 129): mypy 92 (five new errors in `best_bet`'s tuple annotation fixed); ruff clean.
+Suite: 6778 forward and 6778 reversed, OK (6 skipped); data/ and output/ untouched.
+**Live, read-only:** ESPN season lines for Chiefs-Seahawks, the decide line (none waiting), the shelf
+cap (3: the week now holds 3), #1574's dry run (nothing qualifies), the dull opener on 5 drafts
+(none), `ops hooks`' before/after, the menu's leagues. Decision 77 ran on its own: 190 and 191
+scheduled Mon 10-26 noon and 10 PM EDT, read back.
+
+`roadmap-index`: open 157, done 1651, numbered open 148.

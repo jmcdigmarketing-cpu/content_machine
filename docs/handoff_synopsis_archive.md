@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-23 late (Claude Code): wave 126, a phantom slot first
+
+A held run's job held Sat noon, the slot run 184's UFC 333 preview needed before the card - a
+job now reserves a slot only when it can go public there; the pass line counts tries. With the
+operator's yes run 175 is set for Sun 10 PM EDT and the hook rewrite is an experiment (on/off by
+draft). Hook variants rank by the measured traits once a channel has them; thumbnails.set's
+answer confirms the image; `roadmap-index` gives the idea-expiry date and open items per public
+video.
+
 ## Previous — 2026-10-23 night (Claude Code): wave 125, UFC 333 first
 
 After the operator's sign-in and review: run 184, a UFC 333 preview, was queued for the day after

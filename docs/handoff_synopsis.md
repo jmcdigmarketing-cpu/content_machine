@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-25: wave 128, the next ten
+# Handoff synopsis — 2026-10-25: wave 129, the next ten after it
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,17 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-25 (Claude Code): wave 128, the next ten
+## Last wave — 2026-10-25 (Claude Code): wave 129, the next ten after it
+
+Measured first: 18 of 46 drafts in two weeks expired undecided and only 4 of 14 game drafts went
+public before their game. With the operator's calls (decision 78): a toast at a preview's decide-by
+time, then a clean overnight render left unanswered 24 h goes out at its slot; the shelf cap 5 when
+the week is empty; a dull opener is a warning; preview shapes rotate as an experiment. Also ESPN
+season context in previews, leagues in turn, `ops hooks`' first-line before/after, api_sports as
+context, `ops overnight --pause-until`. Decision 77 ran live: runs 190 and 191 scheduled Mon noon
+and 10 PM EDT.
+
+## Previous — 2026-10-25 (Claude Code): wave 128, the next ten
 
 Built on the PC from the plan written for the cloud (the push failed). Run 185's claim hold: a
 dated operator line read as a 10-14 record dropped ESPN's "Chiefs 5-0", and the board matched the
@@ -27,15 +37,6 @@ wait. A dropped connection is an outage; google's notice is out of the logs. Wit
 calls: previews need a call and are read for a stated result before their event, live games leave
 the ideas, Shorts' titles read who stayed. `ops thumbnail-check` (run 164's image is not ours).
 Decision 70's r corrected to -0.08 on healed numbers.
-
-## Previous — 2026-10-23 late (Claude Code): wave 126, a phantom slot first
-
-A held run's job held Sat noon, the slot run 184's UFC 333 preview needed before the card - a
-job now reserves a slot only when it can go public there; the pass line counts tries. With the
-operator's yes run 175 is set for Sun 10 PM EDT and the hook rewrite is an experiment (on/off by
-draft). Hook variants rank by the measured traits once a channel has them; thumbnails.set's
-answer confirms the image; `roadmap-index` gives the idea-expiry date and open items per public
-video.
 
 ## Pipeline order (operator)
 

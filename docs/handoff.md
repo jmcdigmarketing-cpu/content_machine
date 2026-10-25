@@ -53,19 +53,18 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-25 · **HEAD at write:** `b072e84` (wave 128's code; this docs commit follows)
+**Written:** 2026-10-25 · **HEAD at write:** `566352b` (wave 129's code; this docs commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed after the merge; read CI.
 
-**Wave 128 was built on the PC** from [cloud_brief_2026-10.md](cloud_brief_2026-10.md) (archived -
-its push never happened, no cloud session ran). #1570 #1560 #1567 #1565 #1569 #1566 #1370 #1363
-#1362, and #1571: decision 77 - a chapter Short of a public video goes out by itself, from each
-worker pass. Its first effect: runs 190 and 191 scheduled at the next free slots.
+**Defects first:** none open from this wave. 18 of 46 drafts in two weeks expired undecided - wave
+129 answers it with decision 78: a toast at a preview's decide-by time (#1572), then a clean
+overnight render left unanswered 24 h goes out at its slot (#1574); the shelf cap 5 while the week
+is nearly empty (#1434). Also ESPN season context in previews (#1369), preview shapes as an
+experiment (#1366, started), a dull-opener warning (#1357), leagues in turn (#1449), `ops hooks`'
+before/after (#1454), api_sports as context (#1568), `ops overnight --pause-until` (#1338).
 
-**Defects first, measured 10-25:** 18 of 46 drafts in two weeks expired undecided; only 4 of 14
-game drafts went public before their game. Wave 129 (planned with the operator's answers, decision
-78 to write): a toast at a draft's decide-by time, then clean overnight renders go out after 24 h
-unanswered; the shelf cap 5 when the week is empty; ESPN season context in previews; preview shapes
-as an experiment; a dull-opener warning.
+**Live:** decision 77 ran on its own - runs 190 and 191 scheduled Mon 10-26 noon and 10 PM EDT.
+Wave 128 (`bcd70ae`) is CI-green. Next five: #1575 #1459 #1355 #1431 #1458.
 
 **Cursor is out of usage for the month** - its queue is Claude's.
 **Operator:** runs 185 and 186 held for claims (game Sun 8:20 PM EDT); publish the Google app

@@ -202,6 +202,8 @@ average watch above 3 s; the intro split settled.
 used on 10-17 and 6,032 on 10-18 with 2 uploads left; the ledger kept only a daily total. 10-25:
 four finished videos waiting for the operator stopped overnight's renders and nothing was scheduled
 after Sunday - chapter Shorts of a public video now go out by themselves (decision 77, #1571).
+Wave 129 (decision 78): a toast when a preview must be decided, a clean overnight render left
+unanswered 24 h goes out, and the shelf cap is 5 while the week is nearly empty (#1572 #1574 #1434).
 
 **How.** Know what spends the units and keep one upload's worth back from searches, then fill the
 empty slots.

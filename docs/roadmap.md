@@ -83,13 +83,16 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-25 (Claude, wave 128).** Built on the PC from the cloud brief: #1570 #1560 #1567
-#1565 #1569 #1566 #1370 #1363 #1362, and #1571 - chapter Shorts of a public video go out by
-themselves (decision 77). Yours: runs 185 and 186 still wait for a claim check (game Sun 8:20 PM
-EDT); publish the Google app before Fri 10-30. Next: **#1434** the drafts-waiting cap rises when
-slots are empty (10-25: nothing scheduled after Sunday); **#1568** `api_sports` as raw JSON in
-the facts (soccer only now); **#1454** the first-line rule's effect on who stayed; **#1366** three
-preview structures; **#1369** season context in previews.
+**2026-10-25 (Claude, wave 129).** The ten after wave 128, with the operator's answers
+(decision 78): a toast at a preview's decide-by time and clean overnight renders out after 24 h
+unanswered (#1572 #1574 - 18 of 46 drafts expired undecided in two weeks), the shelf cap 5 when the
+week is empty (#1434), ESPN season context in previews (#1369), preview shapes as an experiment
+(#1366), a dull-opener warning (#1357), leagues in turn (#1449), `ops hooks`' before/after (#1454),
+api_sports as context (#1568), `--pause-until` (#1338). Yours: runs 185 and 186 wait for a claim
+check; publish the Google app before Fri 10-30. Next: **#1575** a preview's player stats from ESPN's
+team leaders (9 of the 18 expired drafts held unbacked claims); **#1459** news plus reaction with no
+stake refused before it is drafted; **#1355** the burned-in captions against the script; **#1431**
+search units capped per signal; **#1458** the take in the title.
 Waves before 114 (the 10-17 grand audit, waves 103-113): [planning_log.md](planning_log.md).
 **2026-10-19 (Claude, wave 114).** Two of wave 113's own defects first: the sync tried a channel with no sign-in (#1518), and a video moved on YouTube kept its old slot so Buffer was sent a day early (#1519, #1520 - run 154's posts removed with your yes). Then: Shorts read against Shorts (#1491 - the softening was one long video; GREEN), subscribers per 1,000 views (#1323), compilation hours (#1314), a stop rule (#354, #1423, #1507), one more render for an empty day (#1428), re-cuts of winners (#1057, #1521), a lockfile (#457). `roadmap-index`: open 243, done 1511, numbered open 234.
 **2026-10-19 (Claude, wave 115).** Uploads stopped at 4 - captions took 1,200 units: a caption file now only with quota (#1525); the AI line appended at upload and added to the compilation with your yes (#1524); the sync's scope (#1523); the sign-in date, the worker's pass and overnight's start in `ops status` (#1437 #1402 #1372); a 2+-subscriber flag (#1325); a toast for a failed Buffer send (#1399); Shorts link the compilation (#1317); #1422's card not shipped - the headline already shows the hook. `roadmap-index`: open 235, done 1523, numbered open 226.

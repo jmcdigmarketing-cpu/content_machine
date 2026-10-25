@@ -83,17 +83,13 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five
 
-**2026-10-24 evening (Claude, wave 128 planned - tonight's default for a cloud session).** The
-same five, now diagnosed, plus two found measuring them; the order, files and test data are
-[cloud_brief_2026-10.md](cloud_brief_2026-10.md), the operator's two answers decision 76. Yours:
-publish the Google app before Fri 10-30 8:42 PM EDT; runs 185 and 186 wait for a claim check;
-November's ads test (decision 74). Build order: **#1570** the suite reads the operator's experiment
-store (3 tests fail on the PC, not in CI); **#1560** a date read as a record dropped ESPN's "Chiefs
-5-0", and the board matched the wrong game; **#1567** an NFL topic with "game" reads as gaming;
-**#1565** a false alarm - run 164's thumbnail is ours, the check missed a top and bottom letterbox;
-**#1566** the MMA scrapers off NBA and NFL, the soccer API on soccer only; **#1370** `ops
-signal-audit` by topic domain; **#1362 + #1363** a finished game as what it means, with a call, its
-pre-game picks out of the facts. `roadmap-index`: open 172, done 1631, highest #1570.
+**2026-10-25 (Claude, wave 128).** Built on the PC from the cloud brief: #1570 #1560 #1567
+#1565 #1569 #1566 #1370 #1363 #1362, and #1571 - chapter Shorts of a public video go out by
+themselves (decision 77). Yours: runs 185 and 186 still wait for a claim check (game Sun 8:20 PM
+EDT); publish the Google app before Fri 10-30. Next: **#1434** the drafts-waiting cap rises when
+slots are empty (10-25: nothing scheduled after Sunday); **#1568** `api_sports` as raw JSON in
+the facts (soccer only now); **#1454** the first-line rule's effect on who stayed; **#1366** three
+preview structures; **#1369** season context in previews.
 Waves before 114 (the 10-17 grand audit, waves 103-113): [planning_log.md](planning_log.md).
 **2026-10-19 (Claude, wave 114).** Two of wave 113's own defects first: the sync tried a channel with no sign-in (#1518), and a video moved on YouTube kept its old slot so Buffer was sent a day early (#1519, #1520 - run 154's posts removed with your yes). Then: Shorts read against Shorts (#1491 - the softening was one long video; GREEN), subscribers per 1,000 views (#1323), compilation hours (#1314), a stop rule (#354, #1423, #1507), one more render for an empty day (#1428), re-cuts of winners (#1057, #1521), a lockfile (#457). `roadmap-index`: open 243, done 1511, numbered open 234.
 **2026-10-19 (Claude, wave 115).** Uploads stopped at 4 - captions took 1,200 units: a caption file now only with quota (#1525); the AI line appended at upload and added to the compilation with your yes (#1524); the sync's scope (#1523); the sign-in date, the worker's pass and overnight's start in `ops status` (#1437 #1402 #1372); a 2+-subscriber flag (#1325); a toast for a failed Buffer send (#1399); Shorts link the compilation (#1317); #1422's card not shipped - the headline already shows the hook. `roadmap-index`: open 235, done 1523, numbered open 226.

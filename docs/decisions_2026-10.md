@@ -355,3 +355,14 @@ runs and fed nothing; `api_sports` fed German soccer clubs ("Kickers Offenbach")
 raw JSON and nothing on 14 NFL runs. **Consequence:** a recap ends on a call, as a preview does
 (decision 75) - recording it for grading is not part of this; discovery on a team-sport topic runs
 fewer signals; `ops signal-audit` shows the per-domain numbers this rests on.
+
+## 77. A chapter Short of a public video goes out by itself (2026-10-25)
+**Decision:** an unlisted chapter Short cut from a video that is already public is scheduled public
+at its free noon or 10 PM slot by the upload worker, without a review; a claim-held one waits. New
+overnight renders still wait for the operator (decision 60), and chapter Shorts keep YouTube's own
+frame - no thumbnail of ours is set (#1569). **Why:** on 10-25 four finished videos waited for the
+operator - runs 190 and 191, cut from run 92, which the operator approved and which is public, and 185-186,
+held for claims - so the shelf stopped overnight's renders and nothing was scheduled after Sunday;
+asked, the operator took "Chapter Shorts only" and "Leave YouTube's frame". **Consequence:** the
+shelf frees itself of chapter Shorts within a worker pass of their upload; `apply_schedule_public`,
+once an operator-only call, now has the worker as its second caller (#1571).

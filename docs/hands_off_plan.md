@@ -104,7 +104,9 @@ beside the grade so "clean" is tested against "good".
 ### S06 Every overnight draft was a game written as a recap (Oct 11-14)
 
 **Now.** Fixed: a scheduled game is drafted as a preview with a call (#1169, #1301), and music and
-filings signals no longer run for a football game.
+filings signals no longer run for a football game. Wave 128 (decision 76): a game ESPN calls final
+is written as what it means, ending on a call, and its pre-game picks leave the facts (#1362
+#1363); `ops signal-audit` shows what ran per topic domain (#1370).
 
 **How.** Read the finished script's tense before render, and give previews more than one shape.
 
@@ -197,7 +199,9 @@ average watch above 3 s; the intro split settled.
 ### S13 Volume
 
 **Now.** 13 uploads in the last 7 days, 4.5 a week over 28. YouTube quota: 9,485 of 10,000 units
-used on 10-17 and 6,032 on 10-18 with 2 uploads left; the ledger kept only a daily total.
+used on 10-17 and 6,032 on 10-18 with 2 uploads left; the ledger kept only a daily total. 10-25:
+four finished videos waiting for the operator stopped overnight's renders and nothing was scheduled
+after Sunday - chapter Shorts of a public video now go out by themselves (decision 77, #1571).
 
 **How.** Know what spends the units and keep one upload's worth back from searches, then fill the
 empty slots.

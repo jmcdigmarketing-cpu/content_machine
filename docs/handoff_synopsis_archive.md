@@ -7,6 +7,16 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-23 night (Claude Code): wave 125, UFC 333 first
+
+After the operator's sign-in and review: run 184, a UFC 333 preview, was queued for the day after
+the card - a card named by number now finds its event, and the worker moves a job past its event
+before it uploads; with the operator's yes run 180 goes public Fri 10:45 PM EDT and run 179 (last
+season's seed) is off the schedule (`ops unschedule`). Captions wait for queued uploads, the
+weak-hook hold is lifted, the hook rewrite writes calls again (it had adopted nothing on 17 of 18
+runs), ten best-held openers in its prompt, one of three hooks at review, a render per process,
+`ops shortfalls` weekly.
+
 ## Previous — 2026-10-23 evening (Claude Code): wave 124, the next ten
 
 Two defects first: run 181, a Cavaliers-76ers preview, was still queued a day after its tip-off

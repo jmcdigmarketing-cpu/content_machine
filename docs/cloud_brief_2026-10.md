@@ -1,6 +1,8 @@
 # Cloud brief — wave 128, tonight's default (October 2026)
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-24
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-10-25 · **Superseded by:** [roadmap.md](roadmap.md)
+
+**Built on the PC instead (wave 128, 2026-10-25).** The push that would have carried this page to the cloud failed, so no cloud session ran; the operator asked for "next 10" the next morning and the wave was built from this page on the PC, with #1571 (decision 77) in place of #1568. Kept as the record of the plan.
 
 The operator, 2026-10-24 evening: *"lets continue with plan making and documentation. write a
 mockup to take into the cloud, which will be default for tonight."* This page is that wave: a Claude

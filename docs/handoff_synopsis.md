@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-24: wave 127, catch up and the next ten
+# Handoff synopsis — 2026-10-25: wave 128, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-24 (Claude Code): wave 127, catch up and the next ten
+## Last wave — 2026-10-25 (Claude Code): wave 128, the next ten
+
+Built on the PC from the plan written for the cloud (the push failed). Run 185's claim hold: a
+dated operator line read as a 10-14 record dropped ESPN's "Chiefs 5-0", and the board matched the
+wrong game - both fixed. An NFL topic with "game" read as gaming; run 164's thumbnail was ours (the
+check missed a top-and-bottom letterbox); the suite read `data/experiments.json`. With the
+operator's calls: a finished game is what it means with a call, the sport scrapers stay in their
+sport (decision 76), and a chapter Short of a public video goes out by itself (decision 77).
+
+## Previous — 2026-10-24 (Claude Code): wave 127, catch up and the next ten
 
 Caught up with decision 74 (November's $20 ads test). Run 184's UFC 333 preview missed the card -
 the PC was shut down at 1:00 AM - and a preview due soon is now claimed before uploads that can
@@ -27,16 +36,6 @@ operator's yes run 175 is set for Sun 10 PM EDT and the hook rewrite is an exper
 draft). Hook variants rank by the measured traits once a channel has them; thumbnails.set's
 answer confirms the image; `roadmap-index` gives the idea-expiry date and open items per public
 video.
-
-## Previous — 2026-10-23 night (Claude Code): wave 125, UFC 333 first
-
-After the operator's sign-in and review: run 184, a UFC 333 preview, was queued for the day after
-the card - a card named by number now finds its event, and the worker moves a job past its event
-before it uploads; with the operator's yes run 180 goes public Fri 10:45 PM EDT and run 179 (last
-season's seed) is off the schedule (`ops unschedule`). Captions wait for queued uploads, the
-weak-hook hold is lifted, the hook rewrite writes calls again (it had adopted nothing on 17 of 18
-runs), ten best-held openers in its prompt, one of three hooks at review, a render per process,
-`ops shortfalls` weekly.
 
 ## Pipeline order (operator)
 

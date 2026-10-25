@@ -53,24 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-24 evening · **HEAD at write:** `b00490a` (wave 127; this docs commit follows)
-· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Docs only - no code since wave 127.
+**Written:** 2026-10-25 · **HEAD at write:** `b072e84` (wave 128's code; this docs commit follows)
+· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed after the merge; read CI.
 
-**Tonight's default, for a cloud session: wave 128 -
-[cloud_brief_2026-10.md](cloud_brief_2026-10.md).** Paste its prompt; it holds the build order,
-files and test data (the cloud has no `data/`), and the LOCAL checks the PC session runs after.
+**Wave 128 was built on the PC** from [cloud_brief_2026-10.md](cloud_brief_2026-10.md) (archived -
+its push never happened, no cloud session ran). #1570 #1560 #1567 #1565 #1569 #1566 #1370 #1363
+#1362, and #1571: decision 77 - a chapter Short of a public video goes out by itself, from each
+worker pass. Its first effect: runs 190 and 191 scheduled at the next free slots.
 
-**Diagnosed today (defects first):** #1570 the suite reads `data/experiments.json` - on this PC 3
-tests fail the #1305 guard; CI is green because it has no `data/`. #1560 is two bugs - a date read
-as a "10-14" record dropped ESPN's "Chiefs 5-0" before the claim check, and `live_scores`
-matched the board on all four named teams (Bengals at Ravens won the tie). My wave 127 diagnosis
-of it was wrong. #1567 an NFL topic with "game" reads as gaming. #1565 was a false alarm: run
-164's thumbnail is ours (top and bottom letterbox). Decision 76: a finished game is what it means
-+ next call; MMA scrapers off NBA/NFL, the soccer API on soccer only (#1566).
+**Defects first, measured 10-25:** 18 of 46 drafts in two weeks expired undecided; only 4 of 14
+game drafts went public before their game. Wave 129 (planned with the operator's answers, decision
+78 to write): a toast at a draft's decide-by time, then clean overnight renders go out after 24 h
+unanswered; the shelf cap 5 when the week is empty; ESPN season context in previews; preview shapes
+as an experiment; a dull-opener warning.
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** runs 185 and 186 still held for claims (game Sun 8:20 PM EDT); publish the Google app
-before Fri 10-30; the two operator pages were not updated tonight (no code shipped).
+**Operator:** runs 185 and 186 held for claims (game Sun 8:20 PM EDT); publish the Google app
+before Fri 10-30.
 
 ## Slot — Cursor
 

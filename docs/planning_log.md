@@ -9776,3 +9776,52 @@ scrapers stop on NBA and NFL and the soccer API runs on soccer only ("Skip them"
 Not done: no code. Runs 185 and 186 are still held; nothing outward.
 
 `roadmap-index`: open 172, done 1631, numbered open 163, highest #1570.
+
+## 2026-10-25 — wave 128, the next ten (Claude Code)
+
+**Prompt:** "next 10" (then "try again" twice - the shell's approvals failed overnight, and the
+first suite run was cut off when that session ended).
+
+The plan written for the cloud the evening before never reached origin, so no cloud session ran;
+the wave was built on the PC from [cloud_brief_2026-10.md](cloud_brief_2026-10.md) (now archived).
+
+Measured first, read-only (Sun 10-25, 01:51 CDT):
+- **Finished work was not reaching viewers.** Run 182 went public at 10 PM; only 175 (Sun 10 PM)
+  was scheduled and nothing after it. Four finished videos waited for the operator - chapter Shorts
+  190 and 191 (unlisted, cut from public run 92) and 185-186 (held for claims, game Sun 8:20 PM
+  EDT) - so overnight would render nothing. Run 188's Bucks-76ers preview was never reviewed and
+  its game passed.
+- **#1569:** of the 4 uploads "with no thumbnail of ours on record", run 172's compilation had sent
+  `week_2026-10-19_thumb.png` (in its upload job, not an asset row); 186, 190 and 191 are chapter
+  Shorts uploaded with none.
+
+The operator's answers: chapter Shorts of a public video go public on their own (decision 77, the
+new #1571 in #1568's place - #1568 is soccer-only after #1566); chapter Shorts keep YouTube's frame.
+
+Shipped (tests first, `tests/test_wave128.py`, 28 tests; 24 failed on `8e48da6`, 4 are controls):
+1. **#1570** the experiment store redirected in the suite.
+2. **#1560** a date is never a record (`conflicts`, and the sibling in `nfl_entities`); the board
+   matched on the topic's first two teams (`live_scores._lead_pair`, NFL and NBA).
+3. **#1567** a named NFL team and a football word outrank "game" (`topic_scorer._football_story`).
+4. **#1565** the letterbox cut by rows, then columns - the first synthetic image passed on HEAD; one
+   with run 164's dark arena edges reproduced it (cut to 316 wide, 14 bits).
+5. **#1569** the check reads what the upload sent.
+6. **#1566** the MMA scrapers off NBA and NFL, the soccer API on soccer only (decision 76). The #1249
+   corpus case and `test_wave104` expected the soccer API on a neutral NBA story - updated to it.
+7. **#1571** `chapter_shorts.schedule_waiting_shorts` from each worker pass (decision 77).
+8. **#1370** `ops signal-audit` by topic domain.
+9. **#1363** pre-game result lines out of a final's facts; `_RESULT_RE` reads "defeat".
+10. **#1362** a finished game's STYLE DIRECTIVE: the final, what it changes, a call.
+
+Found on the way: run 127's snapshot had matched an NBA game to a soccer topic - today's code does
+not reproduce it, so nothing was filed. A dry run of #1571 shows one slot for both Shorts because it
+books nothing; a real pass books them one at a time (the publish log's scheduled rows).
+
+Audit (wave 128):
+- 6 corpus cases (#1560 x4, #1567, #1363); the #1249 case updated to decision 76.
+- mypy 92; ruff clean. Suite: 6755 forward and 6755 reversed, OK (6 skipped); data/ and output/ untouched. The first full run failed one test both ways - test_grand_audit's guard that only an operator schedules a video public - and the guard now names decision 77's one caller, core/chapter_shorts.py.
+- **Live, read-only:** run 185's facts and today's ESPN board (#1560), the two NFL topics (#1567),
+  the gating (#1566), `ops thumbnail-check` (164 and 172 ours), `ops signal-audit` by domain,
+  `finished_game` on recorded finals (run 179), and #1571 as a dry run.
+
+`roadmap-index`: open 163, done 1641, numbered open 154.

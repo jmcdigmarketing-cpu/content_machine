@@ -140,6 +140,7 @@ def _rows(channel_id: str, *, detail: bool = False) -> list[dict[str, Any]]:
             continue
         row_out: dict[str, Any] = {
             "run_id": int(run_id),
+            "made": _made(run),  # #1454
             "hook": hook,
             "score": float(score_hook(hook).score),
             "traits": traits_of(hook),
@@ -253,7 +254,8 @@ def length_line(channel_id: str) -> str:
 
 def hook_table_lines(channel_id: str) -> list[str]:
     """`ops hooks`: the table, one line a trait, then length."""
-    table = hook_table(_rows(channel_id, detail=True))
+    rows = _rows(channel_id, detail=True)
+    table = hook_table(rows)
     out = [
         f"Hooks - {channel_id}: {table['n']} videos with an opening line and a stayed share "
         f"(the last {learn_days() or 'all'} days). With the trait vs without; a side under "
@@ -270,11 +272,63 @@ def hook_table_lines(channel_id: str) -> list[str]:
         f"({table['first3_replayed']} read over 100% - a replayed opening, #1538); TikTok's "
         f"watch time on {table['tiktok_measured']}"
     )
+    out.append(f"  {rule_effect_text(rule_effect(rows))}")
     out.append(
         "  The hook score is out of the grade and overnight's order (decision 70); "
         "`ops growth` prints its r."
     )
     return out
+
+
+# #1311 (wave 112): from 2026-10-18 the first sentence must carry the stake and the call.
+RULE_SINCE = datetime(2026, 10, 18, tzinfo=timezone.utc)
+
+
+def rule_effect(rows: list[dict[str, Any]], *, since: datetime = RULE_SINCE) -> dict[str, Any]:
+    """#1454: the share who stayed, and the share of openers that make a call, for videos made
+    before the first-line rule and after it. A side under `_MIN_SIDE` videos has no median."""
+    from core.authenticity import first_line_take
+
+    sides: dict[str, list[dict[str, Any]]] = {"before": [], "after": []}
+    for row in rows:
+        made = row.get("made")
+        if isinstance(made, datetime):
+            sides["after" if made >= since else "before"].append(row)
+    out: dict[str, Any] = {}
+    for key, members in sides.items():
+        stayed = [float(x["stayed"]) for x in members]
+        calls = [bool(first_line_take(str(x.get("hook") or ""))) for x in members]
+        out[key] = {
+            "n": len(members),
+            "stayed": round(statistics.median(stayed), 3) if len(stayed) >= _MIN_SIDE else None,
+            "calls": round(sum(calls) / len(calls), 2) if calls else None,
+        }
+    return out
+
+
+def rule_effect_text(effect: dict[str, Any]) -> str:
+    before, after = effect.get("before") or {}, effect.get("after") or {}
+
+    def pct(value: Any) -> str:
+        return f"{value:.0%}" if isinstance(value, int | float) else "too few"
+
+    return (
+        f"First-line rule (#1311, from 10-18): stayed {pct(before.get('stayed'))} before "
+        f"(n {before.get('n', 0)}) vs {pct(after.get('stayed'))} after (n {after.get('n', 0)}); "
+        f"openers with a call {pct(before.get('calls'))} vs {pct(after.get('calls'))}"
+    )
+
+
+def _made(run: Any) -> datetime | None:
+    made = getattr(run, "created_at", None)
+    if isinstance(made, str):
+        try:
+            made = datetime.fromisoformat(made.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if not isinstance(made, datetime):
+        return None
+    return made if made.tzinfo else made.replace(tzinfo=timezone.utc)
 
 
 def _made_since(run: Any, since: datetime) -> bool:

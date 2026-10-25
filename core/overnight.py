@@ -142,7 +142,9 @@ def run_overnight(
         from core.overnight_pause import is_paused
 
         if is_paused():
-            result.pause_line = "Overnight paused by operator flag."
+            from core.overnight_pause import status_line
+
+            result.pause_line = f"{status_line()} (operator flag)."  # #1338: and until when
             return result
     except Exception as exc:
         logger.debug("overnight pause check skipped: %s", exc)

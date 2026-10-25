@@ -550,7 +550,11 @@ class ShelfCapTests(_DraftsCase):
         from core.batch_review import render_unattended
 
         rendered: list[int] = []
-        with patch.dict("os.environ", {"OVERNIGHT_SHELF_MAX": cap}):
+        # #1434: a full week ahead, so the base cap holds (an empty week raises it to 5).
+        with (
+            patch.dict("os.environ", {"OVERNIGHT_SHELF_MAX": cap}),
+            patch("core.chapter_shorts.scheduled_next_days", return_value=7),
+        ):
             out = render_unattended(
                 "tapin",
                 limit,
@@ -593,6 +597,7 @@ class ShelfCapTests(_DraftsCase):
         self._draft(1)
         with (
             patch.dict("os.environ", {"OVERNIGHT_SHELF_MAX": "3"}),
+            patch("core.chapter_shorts.scheduled_next_days", return_value=7),  # #1434
             patch.object(batch_review, "unattended_limit", return_value=2),
             patch.object(batch_review, "shelf_waiting", return_value=4),
         ):

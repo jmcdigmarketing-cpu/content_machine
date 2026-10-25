@@ -1,3 +1,4 @@
+import os
 import re
 
 from apis.nba_teams import is_nba_topic, team_display_matches, teams_in_topic
@@ -97,7 +98,92 @@ def _team_line(payload, league):
         "next_game": str(nxt.get("name") or ""),
         "next_date": str(nxt.get("date") or "")[:10],
         "league": league,
+        "streak": _streak(payload),  # #1369
     }
+
+
+def _streak(payload) -> str:
+    """#1369: "W5" or "L2" from a team page's total record - ESPN signs it, -2 is two losses."""
+    record = ((payload or {}).get("team") or {}).get("record") or {}
+    for item in record.get("items") or []:
+        if item.get("type") != "total":
+            continue
+        for stat in item.get("stats") or []:
+            if stat.get("name") == "streak":
+                value = int(stat.get("value") or 0)
+                return f"W{value}" if value > 0 else f"L{-value}" if value < 0 else ""
+    return ""
+
+
+def _season_enabled() -> bool:
+    """#1369: the schedule read, one request a team (`ESPN_SEASON_CONTEXT`, on; the suite's off)."""
+    return os.getenv("ESPN_SEASON_CONTEXT", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def season_context(schedule, abbr, *, opponent="", last=5):
+    """#1369: a team's last results this season, newest first ("W 22-6 vs LAC (Oct 18)"), and
+    its meeting with `opponent` if they have played - so a preview's form claims have a fact."""
+    from datetime import datetime as _dt
+
+    def score(side):
+        value = side.get("score")
+        return str((value or {}).get("displayValue") if isinstance(value, dict) else value or "")
+
+    results = []
+    for event in (schedule or {}).get("events") or []:
+        comp = (event.get("competitions") or [{}])[0]
+        if not ((comp.get("status") or {}).get("type") or {}).get("completed"):
+            continue
+        sides = comp.get("competitors") or []
+        ours = next(
+            (
+                c
+                for c in sides
+                if str((c.get("team") or {}).get("abbreviation") or "").upper() == abbr.upper()
+            ),
+            None,
+        )
+        theirs = next((c for c in sides if c is not ours), None)
+        if ours is None or theirs is None:
+            continue
+        other = str((theirs.get("team") or {}).get("abbreviation") or "")
+        raw = str(event.get("date") or "")
+        try:
+            day = _dt.fromisoformat(raw[:10])
+            when = f"{day:%b} {day.day}"
+        except ValueError:
+            when = raw[:10]
+        mark = "W" if ours.get("winner") else "L"
+        where = "vs" if ours.get("homeAway") == "home" else "at"
+        results.append(
+            (raw, other, f"{mark} {score(ours)}-{score(theirs)} {where} {other} ({when})")
+        )
+    results.sort(key=lambda r: r[0], reverse=True)
+    met = [text for _raw, other, text in results if opponent and other.upper() == opponent.upper()]
+    return {"last": [text for _raw, _other, text in results[:last]], "met": met[0] if met else ""}
+
+
+def _add_season(rows, abbrs, league):
+    """#1369: each row's season so far. A bonus - the team pages are the facts. Fail-open."""
+    if not _season_enabled():
+        return
+    from sports.espn import get_schedule
+
+    for index, row in enumerate(rows):
+        if index >= len(abbrs):
+            break
+        other = abbrs[1 - index] if len(abbrs) == 2 else ""
+        try:
+            row.update(
+                season_context(get_schedule(league, abbrs[index]), abbrs[index], opponent=other)
+            )
+        except Exception as exc:
+            logger.debug("season context skipped for %s %s: %s", league, abbrs[index], exc)
 
 
 def _nfl_signal(topic, teams):
@@ -110,6 +196,7 @@ def _nfl_signal(topic, teams):
         rows = [_team_line(get_team("nfl", NFL_TEAM_ABBR[t]), "nfl") for t in teams[:2]]
     except SchemaDrift as drift_exc:
         return drift_signal(str(drift_exc))
+    _add_season(rows, [NFL_TEAM_ABBR[t] for t in teams[:2]], "nfl")  # #1369
     nicknames = _lead_pair([t.split()[-1].lower() for t in teams], topic)
     game = None
     try:
@@ -162,6 +249,7 @@ def _other_league_signal(topic: str, matches: list[tuple[str, str, str]]):
 
     league = matches[0][0]
     rows = []
+    abbrs = []
     for _full, _league, abbr in [(m[1], m[0], m[2]) for m in matches if m[0] == league][:2]:
         try:
             row = _team_line(get_team(league, abbr), league)
@@ -173,6 +261,8 @@ def _other_league_signal(topic: str, matches: list[tuple[str, str, str]]):
             logger.warning("injury report unavailable for %s %s: %s", league, abbr, exc)
             row["injuries"] = []
         rows.append(row)
+        abbrs.append(abbr)
+    _add_season(rows, abbrs, league)  # #1369
     nicknames = [row["team"].split()[-1].lower() for row in rows if row.get("team")]
     game = None
     try:

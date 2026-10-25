@@ -130,7 +130,13 @@ class OvernightWaitsTests(unittest.TestCase):
         self.assertLessEqual(callers, allowed | {p for p in callers if p.startswith("desktop/")})
         # Menu 7's "s", and since decision 77 (#1571) the worker for a chapter Short of a video
         # already public - the one exception, tested in tests/test_wave128.py.
-        self.assertLessEqual(scheduling, {"publishing/go_public.py", "core/chapter_shorts.py"})
+        # And since decision 78 (#1574) the worker for a clean overnight render left unanswered.
+        allowed_scheduling = {
+            "publishing/go_public.py",
+            "core/chapter_shorts.py",
+            "core/batch_review.py",
+        }
+        self.assertLessEqual(scheduling, allowed_scheduling)
 
 
 # ---- decision 61: TapIn keeps its look --------------------------------------------------------

@@ -50,7 +50,7 @@ def _scheduled():
     return topics, details, starts
 
 
-def _menu(fresh=(), recent=()):
+def _menu(fresh=(), recent=(), previews=None):
     from core import best_bet, seasonal_calendar
 
     topics, details, starts = _scheduled()
@@ -71,7 +71,7 @@ def _menu(fresh=(), recent=()):
         patch("core.seasonal_calendar.due_topics", return_value=[]),
         patch("analytics.mailbag.top_question", return_value=None),
     ):
-        return best_bet.get_idea_menu("tapin", now=NOW)
+        return best_bet.get_idea_menu("tapin", now=NOW, previews=previews)
 
 
 FRESH = [
@@ -103,7 +103,9 @@ class MenuShapeTests(unittest.TestCase):
     def test_previews_mix_the_kinds_of_event(self):
         _ideas, previews = _menu(fresh=FRESH)
         names = [b.topic for b in previews]
-        self.assertIn("Dallas Cowboys at Green Bay Packers", names)  # NBC, marquee
+        # #1449: the marquee places take leagues in turn - the NFL's earliest, then the NBA's.
+        self.assertIn("Houston Texans at Jacksonville Jaguars", names)
+        self.assertIn("Denver Nuggets at Los Angeles Lakers", names)
         self.assertIn("UFC 335: Nickal vs. Pyfer", names)  # a UFC card
         self.assertIn("Ballon d'Or 2026", names)  # an award
         self.assertNotIn("Ohio State Buckeyes at Michigan Wolverines", names)  # college stays out
@@ -128,7 +130,9 @@ class SameStoryTests(unittest.TestCase):
         self.assertFalse(any("Nickal" in b.topic for b in previews))
 
     def test_one_shared_team_is_a_different_story(self):
-        _ideas, previews = _menu(fresh=FRESH)  # "Packers sign a new kicker" is an idea
+        # "Packers sign a new kicker" is an idea. Since #1449 the NBA's game takes the second
+        # marquee place, so the Cowboys-Packers game is the third - past the first five.
+        _ideas, previews = _menu(fresh=FRESH, previews=8)
         self.assertIn("Dallas Cowboys at Green Bay Packers", [b.topic for b in previews])
 
 

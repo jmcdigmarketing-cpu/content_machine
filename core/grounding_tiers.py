@@ -43,12 +43,16 @@ YOUTUBE_SECTION_HEADERS = (
     "YouTube competitor performance",
 )
 
-from core.signal_facts import DEMAND_SECTION_HEADER  # noqa: E402
+from core.signal_facts import API_SPORTS_SECTION_HEADER, DEMAND_SECTION_HEADER  # noqa: E402
 
 # Every section that is context, never evidence: YouTube titles/descriptions and the
 # popularity payloads (run 98). One list for the prompt split, the fact counter, the
 # tier layer and the operator's "Fact quality" screen.
-CONTEXT_SECTION_HEADERS = (*YOUTUBE_SECTION_HEADERS, DEMAND_SECTION_HEADER.split(" (")[0])
+CONTEXT_SECTION_HEADERS = (
+    *YOUTUBE_SECTION_HEADERS,
+    DEMAND_SECTION_HEADER.split(" (")[0],
+    API_SPORTS_SECTION_HEADER.split(" (")[0],  # #1568
+)
 
 # signal_facts section prefix → tier. First match wins; unknown prefixes stay
 # on the `signal` tier (structured-but-unclassified beats false confidence).

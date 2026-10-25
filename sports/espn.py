@@ -40,6 +40,11 @@ def get_team(league: str, team: str) -> dict:
     return _get(f"{_SITE}/{LEAGUES[league]}/teams/{team.lower()}")
 
 
+def get_schedule(league: str, team: str) -> dict:
+    """A team's games this season, with each finished one's score (#1369)."""
+    return _get(f"{_SITE}/{LEAGUES[league]}/teams/{team.lower()}/schedule")
+
+
 def get_injuries(league: str, team: str) -> dict:
     """The team's injury report (the same site path as the team page, #1022)."""
     return _get(f"{_SITE}/{LEAGUES[league]}/teams/{team.lower()}/injuries")

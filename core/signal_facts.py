@@ -10,6 +10,8 @@ from typing import Any
 # VALORANT ...}", "wikipedia data: {"article": "Manchester" ...}") and the
 # authenticity check counted them as "16 verified fact(s)".
 DEMAND_SIGNALS = frozenset({"twitch", "trendingnow", "trends", "autocomplete", "wikipedia"})
+# #1568: what api_sports' team search matched - context, never evidence.
+API_SPORTS_SECTION_HEADER = "API-SPORTS team search (names the search matched - NOT facts):"
 DEMAND_SECTION_HEADER = "Demand signals (popularity only — NOT facts about this topic):"
 
 
@@ -272,6 +274,8 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                     row = f"- {team_row['team']}: {team_row.get('record') or 'record n/a'}"
                     if team_row.get("standing"):
                         row += f", {team_row['standing']}"
+                    if team_row.get("streak"):  # #1369
+                        row += f", streak {team_row['streak']}"
                     if team_row.get("next_game"):
                         row += f"; next: {team_row['next_game']}"
                         if team_row.get("next_date"):
@@ -281,6 +285,11 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                     ]
                     if injuries:
                         row += "; injuries: " + "; ".join(injuries)
+                    last = [str(item) for item in (team_row.get("last") or []) if str(item).strip()]
+                    if last:  # #1369: the season so far
+                        row += "; last results: " + ", ".join(last)
+                    if team_row.get("met"):
+                        row += f"; met this season: {team_row['met']}"
                     rows.append(row)
                 lines.append(f"ESPN team (as of {_today()}):\n" + "\n".join(rows))
             game = data.get("matched_game")
@@ -447,6 +456,15 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                     f"Live web search ({provider}) — current facts on this topic "
                     "(recent; verify specifics before stating as certainty):\n"
                     + "\n".join(block_lines)
+                )
+
+        elif name == "api_sports" and isinstance(data, dict):
+            # #1568: team-search hits, not facts about the story - the generic branch below
+            # printed the payload as raw JSON ("Kickers Offenbach (Germany)" in NBA runs).
+            hits = [str(item).strip() for item in data.get("lines") or [] if str(item).strip()]
+            if hits:
+                lines.append(
+                    API_SPORTS_SECTION_HEADER + "\n" + "\n".join(f"- {h}" for h in hits[:8])
                 )
 
         elif isinstance(data, dict | list):

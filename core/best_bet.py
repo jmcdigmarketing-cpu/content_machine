@@ -1603,7 +1603,7 @@ def preview_options(
 
     moment = now or datetime.now(timezone.utc)
     skip = {normalize_seed_topic(t).lower() for t in exclude if t}
-    kinds: dict[str, list[tuple[str, BestBetResult]]] = {
+    kinds: dict[str, list[tuple[str, BestBetResult, str]]] = {
         "marquee": [], "ufc": [], "award": [], "other": [],
     }  # fmt: skip
     offered: set[str] = set()
@@ -1615,13 +1615,15 @@ def preview_options(
         detail = game_details(bet.topic)
         offered.add(bet.topic)
         if detail:
-            kinds["marquee"].append((str(detail.get("date") or ""), bet))
+            kinds["marquee"].append(
+                (str(detail.get("date") or ""), bet, str(detail.get("league") or ""))
+            )
         elif bet.domain == "ufc":
             when = _event_when(bet.topic)
             card = replace(bet, rationale=f"{when} · UFC card" if when else "UFC card")
-            kinds["ufc"].append((str(when), card))
+            kinds["ufc"].append((str(when), card, "ufc"))
         else:
-            kinds["award"].append(("", bet))
+            kinds["award"].append(("", bet, ""))
     for topic, domain in scheduled:
         key = normalize_seed_topic(topic).lower()
         if topic in offered or not key or key in skip or same_story(topic, shown):
@@ -1643,14 +1645,32 @@ def preview_options(
                     supporting_runs=0,
                     rationale=game_line(detail, ""),
                 ),
+                str(detail.get("league") or ""),
             )
         )
-    queues = [[bet for _when, bet in sorted(rows, key=lambda r: r[0])] for rows in kinds.values()]
+    queues = [
+        [bet for _when, bet, _league in _alternate_leagues(sorted(rows, key=lambda r: r[0]))]
+        for rows in kinds.values()
+    ]
     out: list[BestBetResult] = []
     while len(out) < n and any(queues):
         for queue in queues:
             if queue and len(out) < n:
                 out.append(queue.pop(0))
+    return out
+
+
+def _alternate_leagues(rows: list[tuple[str, Any, str]]) -> list[tuple[str, Any, str]]:
+    """#1449: one league after another, each in date order - a week of NFL games filled every
+    marquee place. `rows` are (date, bet, league), sorted by date."""
+    queues: dict[str, list[tuple[str, Any, str]]] = {}
+    for row in rows:
+        queues.setdefault(row[2], []).append(row)
+    out: list[tuple[str, Any, str]] = []
+    while any(queues.values()):
+        for league in list(queues):
+            if queues[league]:
+                out.append(queues[league].pop(0))
     return out
 
 

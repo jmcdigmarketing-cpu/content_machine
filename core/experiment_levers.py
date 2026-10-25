@@ -40,6 +40,26 @@ _LEVERS: dict[str, dict] = {
             "off": "HOOK ARM: the first-draft opener stays.",
         },
     },
+    # #1366 (decision 78, the operator 2026-10-25: rotate as an experiment): which preview shape
+    # holds viewers. Only a preview draws one (`batch_generation.preview_shape_arm`).
+    "preview_shape": {
+        "description": "The shape of a game preview",
+        "kind": "preview",
+        "arms": {
+            "stakes": (
+                "PREVIEW SHAPE: build it on the stakes - what each side wins or loses here "
+                "(the standings, a streak, the season), each from a fact - then the call."
+            ),
+            "matchup": (
+                "PREVIEW SHAPE: build it on the one matchup that decides it - this unit against "
+                "that one, each side with a fact - then the call."
+            ),
+            "x_factor": (
+                "PREVIEW SHAPE: build it on one X-factor most previews miss - a player, an "
+                "injury or a trend, from a fact - then the call."
+            ),
+        },
+    },
     "cta_style": {
         "description": "How the script closes / calls for engagement",
         "kind": "script",

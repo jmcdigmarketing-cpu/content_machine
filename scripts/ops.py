@@ -1689,6 +1689,24 @@ def cmd_overnight(args: argparse.Namespace) -> int:
     from core.nightly_task import enable_crash_traceback, record_overnight, start_beat, stop_beat
     from core.overnight import render_overnight, run_overnight
 
+    until = str(getattr(args, "pause_until", "") or "").strip()
+    if until:  # #1338: one line to stop overnight while away
+        from datetime import date
+
+        from core.overnight_pause import set_paused, status_line
+
+        try:
+            day = date.fromisoformat(until)
+        except ValueError:
+            print(f"--pause-until wants a date like 2026-11-02, not {until!r}")
+            return 2
+        if not set_paused(True, until=day):
+            print("The pause was not written.")
+            return 1
+        print(
+            f"{status_line()} - it runs again the day after. Sooner: py -m scripts.ops tray --resume-overnight"
+        )
+        return 0
     enable_crash_traceback()  # #1216: a native crash names its Python line in the task's log
     channel, started = resolve_channel_id(args.channel), datetime.now()
     record_overnight(channel, started=started)  # #1223: a run that dies leaves no finish
@@ -4355,6 +4373,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--pause-overnight",
         action="store_true",
         help="tray: pause future scheduled overnight batches",
+    )
+    parser.add_argument(
+        "--pause-until",
+        default="",
+        help="overnight: pause scheduled overnight batches through this date (YYYY-MM-DD, #1338)",
     )
     parser.add_argument(
         "--resume-overnight",

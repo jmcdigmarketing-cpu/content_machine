@@ -7313,6 +7313,32 @@
         "truthy": true
       },
       "why": "a result dated before the game's day is a pick"
+    },
+    {
+      "id": "api-sports-is-never-raw-json",
+      "item": 1568,
+      "source": "live 2026-10-24: NBA runs 133, 142, 145 and 151 carried 'api_sports data: {\"connected\": true, \"lines\": [\"Kickers Offenbach (Germany)...' as a fact",
+      "call": "core.signal_facts:format_signal_facts",
+      "args": [
+        {
+          "api_sports": {
+            "active": true,
+            "connected": true,
+            "data": {
+              "connected": true,
+              "lines": [
+                "Kickers Offenbach (Germany) - API-SPORTS"
+              ],
+              "source": "api_sports"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "not_contains": "api_sports data:",
+        "contains": "API-SPORTS team search"
+      },
+      "why": "a signal's payload is never printed raw into the facts"
     }
   ]
 }

@@ -388,6 +388,8 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
         print_fn(f"    ~ {mode}")
     for warning in (meta.get("title_warnings") or [])[:2]:  # #1150
         print_fn(f"    ! title: {warning}")
+    if dull_opener(draft.script):  # #1357 (decision 78): a warning, never a hold
+        print_fn("    ~ dull opener: no number, no name and no call in the first three sentences")
     game = game_block_reason(meta)  # #1151
     if game:
         print_fn(f"    ! {game}")
@@ -401,6 +403,25 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     for claim in warn_only_unsupported(draft.meta.get("claim_verification"))[:2]:
         print_fn(f"    ~ hedged, warn only: {claim}")
     return blocking
+
+
+def dull_opener(script: str) -> bool:
+    """#1357 (decision 78, the operator: warn at review): "clean but dull" - the first three
+    sentences carry no number, no name and no call. A name is a capitalised word past a
+    sentence's first; a call is a sentence `first_line_take` reads as one."""
+    from apis.topic_tokens import split_sentences
+    from core.authenticity import first_line_take
+
+    sentences = [s for s in split_sentences(script or "") if s.strip()][:3]
+    if not sentences:
+        return False
+    for sentence in sentences:
+        words = sentence.split()
+        if re.search(r"\d", sentence) or any(w[:1].isupper() for w in words[1:]):
+            return False
+        if first_line_take(sentence):
+            return False
+    return True
 
 
 def review_drafts(
@@ -657,10 +678,13 @@ def _zone_clock(when: datetime, channel_id: str, *, day: bool = False) -> str:
     return f"{local:%a %b} {local.day} {clock}" if day else clock
 
 
-def deadline_line(channel_id: str, *, root: str | None = None, now: datetime | None = None) -> str:
-    """Wave 109: the waiting preview with the soonest kickoff, and when it must be decided - the
-    last free slot before kickoff, less the upload lead (`spaced_queue`). "" when no game waits.
-    On 2026-10-18 nothing said the Chargers preview had to be reviewed that morning."""
+def next_decision(
+    channel_id: str, *, root: str | None = None, now: datetime | None = None
+) -> dict[str, Any] | None:
+    """Wave 109 / #1572: the waiting preview with the soonest kickoff - {draft, kickoff, slot: the
+    last free slot before kickoff, by: that slot less the upload lead (`spaced_queue`), read:
+    False when the slots could not be read} - or None when no game waits. `slot` and `by` are
+    None when no slot is left before kickoff."""
     moment = now or datetime.now(timezone.utc)
     games = [
         (event, draft)
@@ -668,9 +692,9 @@ def deadline_line(channel_id: str, *, root: str | None = None, now: datetime | N
         if not draft.decision and (event := _event_ahead(draft.meta, moment)) is not None
     ]
     if not games:
-        return ""
+        return None
     event, draft = min(games, key=lambda pair: pair[0])
-    kickoff = _zone_clock(event, channel_id, day=True)
+    out: dict[str, Any] = {"draft": draft, "kickoff": event, "slot": None, "by": None, "read": True}
     try:
         from core.spaced_queue import _EVENING, _FIRST_LEAD, _taken_slots, free_slots
 
@@ -681,21 +705,37 @@ def deadline_line(channel_id: str, *, root: str | None = None, now: datetime | N
         ]
     except Exception as exc:
         logger.debug("deadline slots unread: %s", exc)
-        return f"Decide first: {draft.title} - kicks off {kickoff}"
+        out["read"] = False
+        return out
     before = sorted(slot for slot in slots if slot < event)
-    if not before:
+    if before:
+        out["slot"], out["by"] = before[-1], before[-1] - _FIRST_LEAD
+    return out
+
+
+def deadline_line(channel_id: str, *, root: str | None = None, now: datetime | None = None) -> str:
+    """Wave 109: the waiting preview with the soonest kickoff, and when it must be decided - the
+    last free slot before kickoff, less the upload lead (`spaced_queue`). "" when no game waits.
+    On 2026-10-18 nothing said the Chargers preview had to be reviewed that morning."""
+    got = next_decision(channel_id, root=root, now=now)
+    if not got:
+        return ""
+    draft, event = got["draft"], got["kickoff"]
+    kickoff = _zone_clock(event, channel_id, day=True)
+    if not got.get("read", True):
+        return f"Decide first: {draft.title} - kicks off {kickoff}"
+    if got["slot"] is None:
         return (
             f"Decide first: {draft.title} - kicks off {kickoff}, and no upload slot is left "
             f"before kickoff. To post it anyway: review it, then py -m scripts.requeue_upload "
             f"--run-id {draft.run_id} --queue --private, then go-public with its video id"
         )
-    slot = before[-1]
     # #1533 (wave 118): it said "review it by 8:30 PM EDT for the 10:00 PM EDT slot" for Fri
     # 10-23 - read on a Tuesday evening, that was tonight.
     return (
         f"Decide first: {draft.title} - kicks off {kickoff}; review it by "
-        f"{_zone_clock(slot - _FIRST_LEAD, channel_id, day=True)} for its "
-        f"{_zone_clock(slot, channel_id)} slot"
+        f"{_zone_clock(got['by'], channel_id, day=True)} for its "
+        f"{_zone_clock(got['slot'], channel_id)} slot"
     )
 
 
@@ -776,14 +816,31 @@ def unattended_limit(channel_id: str) -> int:
         return 0
 
 
-def shelf_max() -> int:
+# #1434 (decision 78): the shelf a nearly empty week allows - on 10-25 four waiting videos
+# stopped overnight with nothing scheduled after Sunday.
+SHELF_MAX_EMPTY_WEEK = 5
+EMPTY_WEEK_SCHEDULED = 3
+
+
+def shelf_max(channel_id: str | None = None) -> int:
     """`OVERNIGHT_SHELF_MAX` (default 3; 0 = no limit): overnight renders nothing while this
-    many finished videos are not public (#1152, operator 2026-10-13: "pause at 3 waiting")."""
+    many finished videos are not public (#1152, operator 2026-10-13: "pause at 3 waiting").
+    #1434 (decision 78): 5 while fewer than 3 are scheduled in the channel's next 7 days."""
     raw = os.getenv("OVERNIGHT_SHELF_MAX", "3").strip()
     try:
-        return max(0, int(raw))
+        base = max(0, int(raw))
     except ValueError:
-        return 3
+        base = 3
+    if base <= 0 or not channel_id:
+        return base
+    try:
+        from core.chapter_shorts import scheduled_next_days
+
+        if scheduled_next_days(channel_id) < EMPTY_WEEK_SCHEDULED:
+            return max(base, SHELF_MAX_EMPTY_WEEK)
+    except Exception as exc:
+        logger.debug("the week's schedule unread for the shelf cap: %s", exc)
+    return base
 
 
 def shelf_waiting(channel_id: str) -> int:
@@ -804,7 +861,7 @@ def shelf_pause(channel_id: str, *, waiting: int | None = None) -> str:
     2026-10-13: four finished videos were waiting, no upload task was installed and the
     sign-in had expired; overnight would have rendered two more that night and every night.
     """
-    limit = shelf_max()
+    limit = shelf_max(channel_id)
     if limit <= 0:
         return ""
     count = shelf_waiting(channel_id) if waiting is None else waiting
@@ -814,6 +871,66 @@ def shelf_pause(channel_id: str, *, waiting: int | None = None) -> str:
         f"{count} finished videos are waiting (overnight stops at {limit}) - "
         f"py -m scripts.ops shelf --channel {channel_id}"
     )
+
+
+UNANSWERED_HOURS = 24.0
+UNANSWERED_PREVIEW_HOURS = 30.0
+UNANSWERED_PER_PASS = 2
+
+
+def schedule_unanswered_renders(
+    channel_id: str,
+    *,
+    now: datetime | None = None,
+    limit: int = UNANSWERED_PER_PASS,
+    dry_run: bool = False,
+) -> list[str]:
+    """#1574 (decision 78, the operator 2026-10-25: "Toast, then clean renders go"): a render
+    overnight made - it passed every check, or it would not have rendered - that has waited
+    unlisted 24 hours with no answer, or a preview whose event is within 30 hours, is scheduled
+    public at its slot (`slot_for_run`, before kickoff). Over the two weeks to 10-25, 18 of 46
+    drafts expired undecided. The toast (#1572) comes first; a run the operator set aside, a
+    claim-held run and main.py's own uploads are left. One line per run tried. Fail-open."""
+    moment = now or datetime.now(timezone.utc)
+    local = moment.astimezone().replace(tzinfo=None)  # `review.at` is naive local time
+    try:
+        from core.spaced_queue import slot_for_run
+        from publishing.go_public import apply_schedule_public, listed_holds, override_held
+
+        waiting = {
+            int(row.content_run_id): row
+            for row in listed_holds(channel_id)
+            if getattr(row, "content_run_id", None)
+        }
+        if not waiting:
+            return []
+        lines: list[str] = []
+        tried = 0
+        for made in overnight_rendered(channel_id, hours=24 * 14, now=local):
+            if tried >= limit:
+                break
+            run_id = int(made["run_id"])
+            row = waiting.get(run_id)
+            if row is None or override_held(run_id):
+                continue
+            hours = (local - made["at"]).total_seconds() / 3600
+            event = _event_ahead(draft_meta_for_run(channel_id, run_id), moment)
+            due = event is not None and event - moment <= timedelta(hours=UNANSWERED_PREVIEW_HOURS)
+            if hours < UNANSWERED_HOURS and not due:
+                continue
+            tried += 1
+            when, why = slot_for_run(channel_id, run_id)
+            if when is None:
+                logger.info("unanswered render run %s has no slot: %s", run_id, why)
+                continue
+            result = apply_schedule_public(
+                str(row.youtube_video_id), channel_id=channel_id, when=when, dry_run=dry_run
+            )
+            lines.append(f"Unanswered render run {run_id}: {result.status} - {result.detail}")
+        return lines
+    except Exception as exc:
+        logger.warning("unanswered renders not scheduled: %s", exc)
+        return []
 
 
 def draft_meta_for_run(channel_id: str, run_id: int, *, root: str | None = None) -> dict[str, Any]:
@@ -1241,7 +1358,7 @@ def render_unattended(
         return out
     eligible, skipped = unattended_candidates(channel_id, root=root)
     out["waiting"] = [(d.run_id, why) for d, why in skipped]
-    on_shelf = (shelf or shelf_waiting)(channel_id) if shelf_max() > 0 else 0
+    on_shelf = (shelf or shelf_waiting)(channel_id) if shelf_max(channel_id) > 0 else 0
     tried = 0
     for draft in eligible:
         if tried >= limit:

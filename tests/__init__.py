@@ -251,6 +251,9 @@ os.environ["OVERNIGHT_BEAT_FILE"] = _suite_store("overnight_beat.json")
 # wave 123 (#1467 / #1465): no real 2-second ffmpeg render and no read of this box's free memory
 # before an unattended render. A test of either sets its own.
 os.environ["OVERNIGHT_SMOKE"] = "false"
+# #1369: live_scores reads each team's ESPN schedule - a request the guard would count. A test of
+# it sets its own.
+os.environ["ESPN_SEASON_CONTEXT"] = "false"
 os.environ["OVERNIGHT_MIN_FREE_GB"] = "0"
 os.environ["OVERNIGHT_MIN_DISK_GB"] = "0"
 os.environ["OVERNIGHT_EXPIRE_DRAFTS"] = "false"

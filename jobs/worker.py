@@ -723,17 +723,49 @@ def _schedule_chapter_shorts() -> int:
         if int(get_usage_summary().get("remaining") or 0) < 100:
             return 0
         from config.channels import active_channel_ids
+        from core.batch_review import schedule_unanswered_renders
         from core.chapter_shorts import schedule_waiting_shorts
 
         printed = 0
         for channel in active_channel_ids():
-            for line in schedule_waiting_shorts(channel):
+            # #1574 (decision 78): and a clean overnight render left unanswered.
+            for line in [*schedule_waiting_shorts(channel), *schedule_unanswered_renders(channel)]:
                 print(line)
                 printed += 1
         return printed
     except Exception as exc:
         logger.debug("chapter Shorts not scheduled: %s", exc)
         return 0
+
+
+DECIDE_TOAST_HOURS = 3.0
+
+
+def _decide_watch(now: datetime | None = None) -> None:
+    """#1572 (decision 78): a toast, once per draft, when a game draft must be decided within 3
+    hours - on 10-24 run 188's Bucks-76ers preview waited in `ops status` until its game passed.
+    With no slot left before kickoff, the kickoff is the deadline. Fail-open."""
+    from datetime import timedelta
+
+    try:
+        from config.channels import active_channel_ids
+        from core.batch_review import deadline_line, next_decision
+        from core.win_notify import toast_daily
+
+        moment = now or datetime.now(timezone.utc)
+        for channel in active_channel_ids():
+            got = next_decision(channel, now=moment)
+            if not got:
+                continue
+            when = got.get("by") or got.get("kickoff")
+            if when is None or not moment <= when <= moment + timedelta(hours=DECIDE_TOAST_HOURS):
+                continue
+            line = deadline_line(channel, now=moment) or str(got["draft"].title)
+            toast_daily(
+                f"decide-{got['draft'].run_id}", "Content OS: decide a preview", line, now=moment
+            )
+    except Exception as exc:
+        logger.debug("decide watch skipped: %s", exc)
 
 
 def _overnight_watch() -> None:
@@ -866,6 +898,7 @@ def main():
         _overnight_watch()
         _sign_in_watch()  # #1438
         _tonight_watch()  # #1337
+        _decide_watch()  # #1572
         if processed > 1:
             # #1559: "Sent 3" was printed for a pass that held all three for the sign-in
             print(f"{processed} due upload job(s) tried in one pass - each line above says how")
@@ -885,6 +918,7 @@ def main():
             _overnight_watch()
             _sign_in_watch()
             _tonight_watch()
+            _decide_watch()
             if not did_work and not has_quota_for_upload():
                 print(
                     f"Waiting for YouTube quota reset — {format_quota_detail()}. "

@@ -403,6 +403,7 @@ def generate_draft(
             hook_arm = next_arm(channel_id, kind="hook")
         except Exception as exc:
             logger.debug("hook arm skipped: %s", exc)
+    shape_arm = None if own_idea else preview_shape_arm(channel_id, preview)  # #1366
     out.variant, out.score = best_topic, float(best_score or 0)
 
     from core.facts.selection import select_headless_facts
@@ -421,7 +422,15 @@ def generate_draft(
             channel_id=channel_id,
             creative_brief=topic
             if own_idea
-            else "\n".join(part for part in (preview, experiment[2] if experiment else "") if part),
+            else "\n".join(
+                part
+                for part in (
+                    preview,
+                    shape_arm[2] if shape_arm else "",
+                    experiment[2] if experiment else "",
+                )
+                if part
+            ),
             key_facts=packed,
             relevance_corpus=corpus,
             best_bet=best_bet,
@@ -435,6 +444,13 @@ def generate_draft(
             record_assignment(channel_id, result.run_id, hook_arm[0], hook_arm[1])
         except Exception as exc:
             logger.debug("hook arm not recorded: %s", exc)
+    if shape_arm and result.run_id:
+        try:
+            from core.experiments import record_assignment
+
+            record_assignment(channel_id, result.run_id, shape_arm[0], shape_arm[1])
+        except Exception as exc:
+            logger.debug("preview shape not recorded: %s", exc)
     # #779: a script-only run always comes back aborted with "proceed_video=False" - the
     # pipeline records that as "drafted". Treating it as a failure kept 0 of 3 drafts on
     # the first real overnight run.
@@ -570,6 +586,20 @@ def _named_event_start(text: str, *, now: datetime | None = None) -> str:
     if when is None or when <= (now or datetime.now(timezone.utc)):
         return ""
     return start
+
+
+def preview_shape_arm(channel_id: str, preview: str) -> tuple[str, str, str] | None:
+    """#1366 (decision 78): the shape a preview draft takes - the `preview_shape` experiment's
+    next arm - or None for any other draft, or while the experiment is not running."""
+    if not preview:
+        return None
+    try:
+        from core.experiments import next_arm
+
+        return next_arm(channel_id, kind="preview")
+    except Exception as exc:
+        logger.debug("preview shape skipped: %s", exc)
+        return None
 
 
 def draft_brief(topic: str, best_bet: dict | None) -> str:

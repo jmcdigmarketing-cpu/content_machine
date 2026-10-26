@@ -9968,3 +9968,32 @@ Minecraft, Roblox, Twitch, UFC / MMA, NFL, Basketball (500 units booked); Footba
 Development wait for the worker's daily try.
 
 `roadmap-index`: open 149, done 1669, numbered open 140.
+
+## 2026-10-25 — wave 132 planned for the cloud: more interesting topics (Claude Code)
+
+**Prompt:** "week in review is far too long, video topics have been rough and uninteresting as of
+late. plan plan plan and push to main, might be going cloud tm" - then "the week in review should
+cover all topics of this channel as well as a deeper dive on the top 3. maybe 5-8 mins long not 11."
+
+Measured, read-only (Sun 10-25 night):
+- **Week in Review** stitches every public Short whole: this week 11, 13:13; the first (run 172) has
+  1 view. The top 3 by organic views run 3:30.
+- **What wins:** big names told plainly - Cyclops joins Marvel Rivals 968, Topuria 631, Ben Affleck
+  in Fortnite 411, Modern Warfare 4 325. **What loses:** small news and mechanics - Chargers pass
+  defense 24, Star Wars Zero Company 11, Pokémon body pillows 2. Previews median 48, stories 63.
+- **Why the angles go small:** default frames "underrated angle / what to watch / impact analysis";
+  the ranker weighs numbers and names; and every game preview was read as an *explainer* because
+  its own brief says "what is at stake" (11 of 51 drafts).
+- **Defects from the operator's pasted session:** a hook swap stranding "for the first time in his
+  *career*." (runs 187, 196 - `extract_hook` splits at "..."); Week-6 links as run 196's sources;
+  donation boilerplate kept as facts; a flagged title shipped (run 195); the verdict comparison on 1
+  of 28 ratings.
+
+The operator's answers (decision 81): the Week in Review covers every topic, then a deep dive on the
+top 3, 5-8 minutes; one marquee preview a night (answers #1586); headline drafts lead with the story
+and why fans care; an overnight story needs 3+ outlets or a marquee name.
+
+Filed #1587-#1596; the wave is [cloud_brief_wave132.md](cloud_brief_wave132.md) - order, files,
+fixture strings and done-when for each, since the cloud has no `data/`. Not built tonight.
+
+`roadmap-index`: open 158, done 1670, numbered open 149.

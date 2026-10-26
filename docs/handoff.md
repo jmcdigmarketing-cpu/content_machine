@@ -53,22 +53,28 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-25 · **HEAD at write:** `3226422` (wave 131's code; this docs commit follows)
-· **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed after the merge; read CI.
+**Written:** 2026-10-25 night · **HEAD at write:** `3912f26` (wave 131 done; this planning commit
+follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Defects first:** runs 185 and 186 were held for a claim until their game started and nothing
-pushed them - a held preview now toasts within 6 hours of its game and `ops status` names the game
-(#1582); the captions spelled numbers as the voice said them - they show the script's (#1583).
+**Next session (cloud or PC): build wave 132 from
+[cloud_brief_wave132.md](cloud_brief_wave132.md)** - #1587-#1596, defects first, each with its
+fixtures (the cloud has no `data/`). The operator: "week in review is far too long, video topics
+have been rough and uninteresting" - decision 81: the Week in Review as every topic then the top 3
+in full, 5-8 min; one marquee preview a night (answers #1586); headline drafts lead with the story
+and why fans care; an overnight story needs 3+ outlets or a marquee name.
 
-**Decision 80 (the operator):** one YouTube search per topic per run, the second caller booking
-nothing (#1579); 9 of the 11 playlists made - YouTube's limit refused the 10th, the worker
-retries once a day (#1584); the menu's domains by organic views per video, shrunk (#1448).
-Also long sentences split (#1360), holds recorded and counted weekly (#1585), the Oct 13 drafts
-as fixtures (#1339), #1353 pinned, #1586 filed. Next five: #1459 #1458 #1431 #1355 #1332.
+**Defects found tonight in the operator's session:** a hook swap stranding "for the first time in
+his *career*." (`extract_hook` splits at "..."); every game preview read as an explainer (its own
+brief's "what is at stake"); Week-6 links as run 196's sources; donation boilerplate kept as facts;
+a flagged title shipped (run 195); the verdict comparison on 1 of 28 ratings.
+
+**Wave 131 (done, `5454465` `3226422` `3912f26`, CI green):** decision 80 - one YouTube search per
+topic per run, 9 of 11 playlists made (YouTube's limit refused the 10th; the worker retries daily),
+the menu by organic views per video; captions show the script's numbers; a claim-held preview
+toasts 6 h before its game.
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** publish the Google app before Fri 10-30; #1586 - keep NFL previews at 32 organic
-views a Short? Runs 185 and 186 stay unlisted (their game was played).
+**Operator:** publish the Google app before Fri 10-30. The brief's LOCAL checks need the PC.
 
 ## Slot — Cursor
 

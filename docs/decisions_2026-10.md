@@ -403,3 +403,21 @@ the operator took "Share it within a run", "Create + new uploads join" and "View
 **Consequence:** CLAUDE.md's "no second cache inside a signal" holds - the kept search lives in
 the shared call path, and each signal is still cached once by `register_signals`; the playlists
 cost 50 units each, 500 so far; NFL falls to the bottom of the ideas (#1586 asks whether previews follow).
+
+## 81. Week in Review in 5-8 minutes; one marquee preview a night; headlines told as the story (2026-10-25)
+**Decision:** the weekly compilation covers every topic of the week as a short rundown, then the
+top 3 by organic views in full, in 5-8 minutes (#1592); overnight drafts at most one preview a
+night, and only a marquee event - a national broadcast or a league-marked game, or a numbered UFC
+card (#1593, answering #1586: NFL stays, prime time only); a headline draft leads with what
+happened to the biggest name and why fans care, while breakdown lenses stay for typed ideas
+(#1594); an overnight story needs 3+ outlets in 48 hours or a name on the channel's marquee list
+(#1595). **Why:** this week's compilation would have run 13:13 and the first had 1 view; 11
+previews took a median 48 organic views against stories' 63; the best-watched Shorts told a big
+story plainly (Cyclops joins Marvel Rivals 968, Topuria 631) while the default angles turned big
+stories into mechanics ("How Cincinnati's tempo keeps Baltimore's young QB off balance").
+Asked, the operator took "Top 3" - then revised it to "cover all topics ... as well as a deeper
+dive on the top 3, maybe 5-8 mins" - "1 a night, marquee only", "The story + why fans care"
+and "3+ outlets or a marquee name". **Consequence:** the story frame is not a take - #1084's
+neutral-unless-asked rule stands; a thin night drafts fewer rather than pad; smaller stories and
+other games stay in the menu for the operator. Specified for a cloud session in
+[cloud_brief_wave132.md](cloud_brief_wave132.md).

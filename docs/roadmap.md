@@ -91,9 +91,9 @@ topic per run (#1579); 9 of the 11 playlists made, the worker finishing the last
 menu's domains by organic views per video (#1448). Also long sentences split (#1360), why drafts
 wait recorded and counted (#1585), the Oct 13 drafts as fixtures (#1339), #1353 pinned; #1586
 filed - NFL brings 32 organic views a Short. Yours: publish the Google app before Fri 10-30;
-#1586's call on NFL previews. Next: **#1459** news with no stake refused before it is drafted;
-**#1458** the take in the title; **#1431** search units capped per signal; **#1355** captions
-against the script as a standing check; **#1332** pulled-before-public in the weekly report.
+#1586's call on NFL previews (answered, decision 81). Next: wave 132 from
+[cloud_brief_wave132.md](cloud_brief_wave132.md) - the hook splice, previews read as explainers,
+sources, a 5-8 minute Week in Review, one marquee preview a night, headlines told as the story.
 Waves before 114 (the 10-17 grand audit, waves 103-113): [planning_log.md](planning_log.md).
 **2026-10-19 (Claude, wave 114).** Two of wave 113's own defects first: the sync tried a channel with no sign-in (#1518), and a video moved on YouTube kept its old slot so Buffer was sent a day early (#1519, #1520 - run 154's posts removed with your yes). Then: Shorts read against Shorts (#1491 - the softening was one long video; GREEN), subscribers per 1,000 views (#1323), compilation hours (#1314), a stop rule (#354, #1423, #1507), one more render for an empty day (#1428), re-cuts of winners (#1057, #1521), a lockfile (#457). `roadmap-index`: open 243, done 1511, numbered open 234.
 **2026-10-19 (Claude, wave 115).** Uploads stopped at 4 - captions took 1,200 units: a caption file now only with quota (#1525); the AI line appended at upload and added to the compilation with your yes (#1524); the sync's scope (#1523); the sign-in date, the worker's pass and overnight's start in `ops status` (#1437 #1402 #1372); a 2+-subscriber flag (#1325); a toast for a failed Buffer send (#1399); Shorts link the compilation (#1317); #1422's card not shipped - the headline already shows the hook. `roadmap-index`: open 235, done 1523, numbered open 226.

@@ -711,7 +711,26 @@ def drain_due(cap: int = PASS_CAP) -> int:
         done += 1
     _schedule_chapter_shorts()  # #1571
     _post_call_comments()  # #1327
+    _finish_playlists()  # #1584
     return done
+
+
+def _finish_playlists() -> int:
+    """#1584 (decision 80): the playlists YouTube refused at creation, tried again once a day.
+    Fail-open."""
+    try:
+        from config.channels import active_channel_ids
+        from core.playlists import finish_playlists
+
+        made = 0
+        for channel in active_channel_ids():
+            for name in finish_playlists(channel):
+                print(f"Playlist created: {name} ({channel})")
+                made += 1
+        return made
+    except Exception as exc:
+        logger.debug("playlists not finished: %s", exc)
+        return 0
 
 
 def _post_call_comments() -> int:

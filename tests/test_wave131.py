@@ -476,5 +476,74 @@ class PlaylistTests(unittest.TestCase):
         self.assertEqual(missing, "")
 
 
+class PlaylistRefusalTests(unittest.TestCase):
+    """#1584, live 2026-10-25: YouTube made 9 of the 11 and refused the 10th with a 429
+    (RATE_LIMIT_EXCEEDED); `ops playlists --apply` died in a traceback and nothing would try
+    the last two again."""
+
+    def _service(self, outcomes):
+        service = MagicMock()
+        service.playlists.return_value.insert.return_value.execute.side_effect = outcomes
+        return service
+
+    def test_a_refusal_stops_the_run_and_keeps_what_was_made(self):
+        from core import playlists
+
+        refused = RuntimeError("<HttpError 429 ... RATE_LIMIT_EXCEEDED>")
+        service = self._service([{"id": "PL1"}, refused, {"id": "PL3"}])
+        with tempfile.TemporaryDirectory() as tmp:
+            store = os.path.join(tmp, "p.json")
+            created = playlists.sync_playlists(service, "tapin", store_path=store)
+            with open(store, encoding="utf-8") as f:
+                ids = json.load(f)["ids"]
+        self.assertEqual(created, ["GTA"])
+        self.assertEqual(ids, {"GTA": "PL1"})
+        self.assertEqual(service.playlists.return_value.insert.return_value.execute.call_count, 2)
+
+    def _finish(self, tmp, *, today, env="true", scope=True):
+        from core import playlists
+
+        service = self._service([{"id": f"PL{i}"} for i in range(20)])
+        factory = MagicMock(return_value=service)
+        with (
+            patch.dict(os.environ, {"PLAYLISTS_AUTO_CREATE": env}),
+            patch.object(playlists, "store_path_for", return_value=os.path.join(tmp, "p.json")),
+            patch("youtube.oauth.token_has_scope", return_value=scope),
+        ):
+            made = playlists.finish_playlists("tapin", service_factory=factory, today=today)
+        return made, factory
+
+    def test_the_worker_finishes_them_once_a_day(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            made, _f = self._finish(tmp, today="2026-10-26")
+            again, factory = self._finish(tmp, today="2026-10-26")
+        self.assertIn("Football", made)
+        self.assertEqual(again, [])
+        factory.assert_not_called()
+
+    def test_off_or_without_the_scope_it_does_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            off, factory = self._finish(tmp, today="2026-10-26", env="false")
+            factory.assert_not_called()
+            unscoped, factory = self._finish(tmp, today="2026-10-26", scope=False)
+            factory.assert_not_called()
+        self.assertEqual((off, unscoped), ([], []))
+
+    def test_drain_due_runs_it(self):
+        from jobs import worker
+
+        with (
+            patch.object(worker, "_post_due_pins"),
+            patch.object(worker, "_crosspost_scheduled_live"),
+            patch.object(worker, "_previews_first"),
+            patch.object(worker, "process_one", return_value=False),
+            patch.object(worker, "_schedule_chapter_shorts"),
+            patch.object(worker, "_post_call_comments"),
+            patch.object(worker, "_finish_playlists") as finish,
+        ):
+            worker.drain_due()
+        finish.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()

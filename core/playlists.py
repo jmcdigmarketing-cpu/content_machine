@@ -130,23 +130,72 @@ def sync_playlists(service, channel_id: str, *, store_path: str | None = None) -
         if ids.get(name):
             continue
         record_call("playlists.insert")  # wave 113: it booked nothing
-        resp = (
-            service.playlists()
-            .insert(
-                part="snippet,status",
-                body={
-                    "snippet": {"title": name, "description": f"{name} Shorts."},
-                    "status": {"privacyStatus": "public"},
-                },
+        try:
+            resp = (
+                service.playlists()
+                .insert(
+                    part="snippet,status",
+                    body={
+                        "snippet": {"title": name, "description": f"{name} Shorts."},
+                        "status": {"privacyStatus": "public"},
+                    },
+                )
+                .execute()
             )
-            .execute()
-        )
+        except Exception as exc:
+            # #1584, 2026-10-25: YouTube made 9 of 11 and refused the 10th with a 429
+            # (RATE_LIMIT_EXCEEDED); the command died in a traceback. The rest wait for the
+            # next try (`finish_playlists`, once a day from the upload worker).
+            logger.warning("playlist %s not created: %s", name, str(exc)[:160])
+            break
         if resp and resp.get("id"):
             ids[name] = str(resp["id"])
             created.append(name)
             data["ids"] = ids
             _save(path, data)
     return created
+
+
+def auto_create_enabled() -> bool:
+    """`PLAYLISTS_AUTO_CREATE` (default on; the suite turns it off)."""
+    raw = (os.getenv("PLAYLISTS_AUTO_CREATE", "true") or "true").strip().lower()
+    return raw not in ("0", "false", "off", "no")
+
+
+def finish_playlists(
+    channel_id: str, *, service_factory=None, today: str | None = None
+) -> list[str]:
+    """#1584 (decision 80): create the mapped playlists still missing, one try a day - YouTube's
+    insert limit refused 2 of 11 on 2026-10-25. Needs the manage scope. Returns the names
+    created. Never raises."""
+    from datetime import date
+
+    try:
+        if not auto_create_enabled():
+            return []
+        path = store_path_for(channel_id)
+        data = _load(path)
+        ids = data.get("ids") or {}
+        names = {str(n) for row in playlist_map(channel_id)
+                 for n in (row.get("name"), row.get("parent")) if n}  # fmt: skip
+        day = today or date.today().isoformat()
+        if not names - set(ids) or data.get("tried") == day:
+            return []
+        from youtube.oauth import token_has_scope
+
+        if not token_has_scope(channel_id, SCOPE_YOUTUBE_MANAGE):
+            return []
+        data["tried"] = day
+        _save(path, data)
+        if service_factory is None:
+            from youtube.oauth import get_youtube_service
+
+            service_factory = get_youtube_service
+        service = service_factory(channel_id)
+        return sync_playlists(service, channel_id, store_path=path) if service else []
+    except Exception as exc:
+        logger.debug("playlists not finished for %s: %s", channel_id, exc)
+        return []
 
 
 def add_to_playlists(

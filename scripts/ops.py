@@ -2110,6 +2110,10 @@ def cmd_playlists(args: argparse.Namespace) -> int:
         return 1
     created = sync_playlists(get_youtube_service(channel), channel)
     print(f"Created {len(created)}: {', '.join(created) or 'none'}")
+    from core.playlists import missing_line
+
+    if missing_line(channel):  # #1584: YouTube refused the rest for now
+        print("YouTube refused the rest for now - the upload worker tries them again once a day.")
     return 0
 
 

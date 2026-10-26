@@ -284,11 +284,12 @@ def _fetch_comments(youtube, video_id: str, limit: int) -> list[dict[str, Any]]:
 
 def gather_comment_intel(topic: str) -> dict[str, Any]:
     """Questions, top comments and themes for a topic. Never raises."""
-    from apis.youtube_api import _get_youtube_client, _search_videos
+    from apis.youtube_api import _get_youtube_client, _search_videos, search_was_shared
 
     youtube = _get_youtube_client()
     search = _search_videos(youtube, topic)
-    record_usage(caller="comments")  # search.list + the videos.list the helper implies
+    if not search_was_shared():  # #1579: the youtube signal's search, already booked
+        record_usage(caller="comments")  # search.list + the videos.list the helper implies
 
     video_ids = [
         item["id"]["videoId"]

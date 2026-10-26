@@ -267,12 +267,18 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
             )
             continue
         held = override_held(run_id)
+        state = "unlisted, held for a claim" if held else "unlisted on YouTube"
+        event = _event_for(run_id, channel_id) if held and run_id else None
+        if event is not None and event > _now():
+            from core.batch_review import _zone_clock
+
+            state += f" - its game is {_zone_clock(event, channel_id, day=True)}"  # #1582
         rows.append(
             {
                 "run_id": int(run_id) if run_id else 0,
                 "title": _upload_title(row),
                 "age_days": None,
-                "state": "unlisted, held for a claim" if held else "unlisted on YouTube",
+                "state": state,
                 "command": (
                     f"py -m scripts.ops verify-claim --run-id {run_id}"
                     if held
@@ -286,6 +292,47 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _event_for(run_id: Any, channel_id: str) -> datetime | None:
+    """The event the run's render previews, from its stored run - or None."""
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        run = get_content_run_repository().get(int(run_id))
+    except Exception as exc:
+        logger.debug("run %s unread: %s", run_id, exc)
+        return None
+    return run_event(run, channel_id, render_age_days(run)) if run is not None else None
+
+
+def claim_holds_ahead(channel_id: str, *, now: datetime | None = None) -> list[dict[str, Any]]:
+    """#1582: each unlisted upload held for a claim whose game is still ahead, soonest first -
+    [{run_id, title, event}]. Runs 185 and 186, the Chiefs-Seahawks preview and its Short, sat
+    held from 10-23 until their game started, and nothing pushed them."""
+    from publishing.go_public import override_held, unlisted_holds
+
+    moment = now or _now()
+    out: list[dict[str, Any]] = []
+    for row in unlisted_holds(channel_id):
+        run_id = getattr(row, "content_run_id", None)
+        if not run_id or not override_held(run_id):
+            continue
+        event = _event_for(run_id, channel_id)
+        if event is not None and event > moment:
+            out.append({"run_id": int(run_id), "title": _upload_title(row), "event": event})
+    return sorted(out, key=lambda hold: hold["event"])
+
+
+def claim_hold_line(hold: dict[str, Any], channel_id: str) -> str:
+    """The toast's line for one `claim_holds_ahead` row."""
+    from core.batch_review import _zone_clock
+
+    return (
+        f"Run {hold['run_id']} ({hold['title']}) is held for a claim and its game is "
+        f"{_zone_clock(hold['event'], channel_id, day=True)} - confirm it or it stays unlisted: "
+        f"py -m scripts.ops verify-claim --run-id {hold['run_id']}"
+    )
 
 
 def run_event(run: Any, channel_id: str, age: float | None) -> datetime | None:

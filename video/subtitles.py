@@ -302,6 +302,10 @@ def generate_subtitle_file(
     # thirds), so alignment runs once per render rather than once per consumer.
     if words is None:
         words = resolve_word_timings(audio_path, script, channel_id=channel_id)
+    if words:
+        from video.caption_timing import written_numbers
+
+        words = written_numbers(words, script)  # #1583: "UFC 334", not "three thirty-four"
 
     # Real word timings → accurate SRT or animated karaoke ASS; else the
     # proportional SRT estimate (unchanged behaviour).

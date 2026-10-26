@@ -3,7 +3,9 @@ import os
 import re
 import socket
 import threading
+import time
 from datetime import datetime, timezone
+from typing import Any
 
 import httplib2
 
@@ -16,6 +18,7 @@ from apis.signal_contract import (
     make_signal,
 )
 from apis.youtube_quota import (
+    UNITS_VIDEOS_LIST,
     format_quota_detail,
     has_quota_for_search,
     record_usage,
@@ -107,6 +110,29 @@ def reset_api_unreachable() -> None:
         _API_UNREACHABLE = ""
 
 
+# One search per topic per run (#1579, decision 80).
+# --------------------------------------------------
+# `youtube` and `youtube_comments` search the same topic in the same run, and each paid its own
+# 100-unit `search.list` - comment reads cost 312-527 units a day. The shared call path keeps
+# the result for the length of a run, behind a lock per query, so the second caller waits for
+# the first and reads its answer. Not a second cache inside a signal: each signal's own result
+# is still cached once, by `register_signals`. A failed search is not kept.
+_SEARCH_SECONDS = 120.0
+_SEARCH_LOCK = threading.Lock()
+_SEARCH_GATES: dict[str, threading.Lock] = {}
+_SEARCHES: dict[str, tuple[float, Any]] = {}
+_SHARED = threading.local()
+
+
+def _monotonic() -> float:
+    return time.monotonic()
+
+
+def search_was_shared() -> bool:
+    """Whether this thread's last `_search_videos` read another caller's result - no units."""
+    return bool(getattr(_SHARED, "value", False))
+
+
 def _get_youtube_client():
     global _youtube_client
     if _youtube_client is not None:
@@ -190,6 +216,27 @@ def _published_after_iso():
 def _search_videos(youtube, query: str):
     """The one call path `youtube` and `youtube_comments` share.
 
+    #1579 (decision 80): one search per query per run. The second caller - usually the other
+    signal, on its own thread - waits for the first and reads its result; `search_was_shared()`
+    tells it so, and it books no search units.
+    """
+    _SHARED.value = False
+    key = " ".join(str(query or "").lower().split())
+    with _SEARCH_LOCK:
+        gate = _SEARCH_GATES.setdefault(key, threading.Lock())
+    with gate:
+        kept = _SEARCHES.get(key)
+        if kept is not None and _monotonic() - kept[0] < _SEARCH_SECONDS:
+            _SHARED.value = True
+            return kept[1]
+        result = _search_once(youtube, query)
+        _SEARCHES[key] = (_monotonic(), result)
+        return result
+
+
+def _search_once(youtube, query: str):
+    """One `search.list` call.
+
     Arming and checking the unreachable latch here is what stops one dead endpoint
     from costing two full socket timeouts, as it did on run 74. Callers already
     turn an exception into a transient-failure signal, so failing fast here reads
@@ -238,7 +285,7 @@ def _search_videos(youtube, query: str):
         raise
 
 
-def _lightweight_signal(search_response):
+def _lightweight_signal(search_response, *, shared: bool = False):
     items = [
         item
         for item in search_response.get("items", [])
@@ -260,7 +307,8 @@ def _lightweight_signal(search_response):
             status_detail="No videos returned (lightweight search)",
         )
     score = min(len(items) * (100 / max(_MAX_RESULTS, 1)), 100)
-    record_usage(units=units_for_lightweight_search(), caller="search")
+    if not shared:  # #1579: the comments signal's search, already booked
+        record_usage(units=units_for_lightweight_search(), caller="search")
     return make_signal(
         connected=True,
         active=True,
@@ -292,9 +340,10 @@ def search_youtube(query):
     try:
         youtube = _get_youtube_client()
         search_response = _search_videos(youtube, query)
+        shared = search_was_shared()  # #1579
 
         if _LIGHTWEIGHT:
-            return _lightweight_signal(search_response)
+            return _lightweight_signal(search_response, shared=shared)
 
         video_ids = [
             item["id"]["videoId"]
@@ -353,7 +402,10 @@ def search_youtube(query):
         avg_velocity = total_velocity / max(len(video_ids), 1)
         scaled_score = min(math.log1p(avg_velocity) * 10, 100)
 
-        record_usage(units=units_per_search_call(), caller="search")
+        # #1579: after the comments signal's search, only this videos.list is new.
+        record_usage(
+            units=UNITS_VIDEOS_LIST if shared else units_per_search_call(), caller="search"
+        )
 
         return make_signal(
             connected=True,
@@ -475,6 +527,10 @@ def _reset_process_state() -> None:
         _warmup_started = False
     with _UNREACHABLE_LOCK:
         _API_UNREACHABLE = ""
+    with _SEARCH_LOCK:
+        _SEARCHES.clear()
+        _SEARCH_GATES.clear()
+    _SHARED.value = False
 
 
 process_state.register_reset("apis.youtube_api", _reset_process_state)

@@ -136,6 +136,10 @@ _NAME_LIST = re.compile(
 )
 
 
+# #1360: 36 of 317 sentences in 23 scripts read on 2026-10-25 ran over 25 words, the longest 51.
+LONG_SENTENCE_WORDS = 25
+
+
 def _numbers_in(text: str) -> list[str]:
     """Every digit run, so "18-0-0" is 18, 0, 0 and a rewrite cannot quietly lose one."""
     return sorted(re.findall(r"\d+", text or ""))
@@ -148,6 +152,8 @@ def _why_hard(sentence: str) -> str:
         return "numbers"
     if _NAME_LIST.search(sentence):
         return "names"
+    if len(sentence.split()) > LONG_SENTENCE_WORDS:
+        return "long"
     return ""
 
 
@@ -208,7 +214,7 @@ def read_aloud_pass(script: str, call) -> tuple[str, dict[str, Any]]:
         return script, report
     system = (
         "These sentences will be read aloud once and are hard to say: a run of numbers, a "
-        "parenthetical, or a long list of names. Rewrite each so it is easy to say - split it "
+        "parenthetical, a long list of names, or more words than one breath holds. Rewrite each so it is easy to say - split it "
         "into short sentences, move the aside into its own sentence. Keep every number and "
         "every name exactly; add none. Same voice."
     )

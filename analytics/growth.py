@@ -421,6 +421,42 @@ def conversion(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(out, key=lambda g: -g["views"])
 
 
+def organic_views_by_domain(
+    rows: list[dict[str, Any]], *, fmt: str = "Shorts"
+) -> dict[str, dict[str, int]]:
+    """#1448: organic views and videos by domain, one format - what the menu orders by."""
+    out: dict[str, dict[str, int]] = {}
+    for row in rows:
+        domain, kind = _kind(row.get("run_id"))
+        if not domain or kind != fmt:
+            continue
+        group = out.setdefault(domain, {"views": 0, "videos": 0})
+        group["views"] += max(0, int(row.get("views") or 0) - int(row.get("paid") or 0))
+        group["videos"] += 1
+    return out
+
+
+VIEWS_PRIOR_VIDEOS = 5
+
+
+def shrunk_views_per_video(
+    groups: dict[str, dict[str, int]], *, prior: int = VIEWS_PRIOR_VIDEOS
+) -> tuple[dict[str, float], float]:
+    """#1448 (decision 80): ({domain: organic views per video, shrunk toward the channel's
+    mean}, the mean). A domain under `prior` videos sits at the mean - on 2026-10-25 NBA's 145
+    a video came from 4, NFL's 32 from 6, UFC's 127 from 16."""
+    videos = sum(int(g.get("videos") or 0) for g in groups.values())
+    if not videos:
+        return {}, 0.0
+    mean = sum(int(g.get("views") or 0) for g in groups.values()) / videos
+    rates: dict[str, float] = {}
+    for domain, group in groups.items():
+        n = int(group.get("videos") or 0)
+        views = int(group.get("views") or 0)
+        rates[domain] = mean if n < prior else (views + prior * mean) / (n + prior)
+    return rates, mean
+
+
 def subscriber_flags(rows: list[dict[str, Any]], *, min_subs: int = 2) -> list[dict[str, Any]]:
     """#1325 (wave 115): the videos that brought `min_subs` or more subscribers, most first -
     2 of the channel's first 64 came from videos, so one that brings two is worth a follow-up."""

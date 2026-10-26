@@ -397,6 +397,38 @@ def draft_mix_line(drafts: list[dict[str, Any]]) -> str:
     )
 
 
+def _hold_kind(reason: str) -> str:
+    """ "script check: 1 thing said twice" is "script check" - the kind of hold, not its detail."""
+    import re
+
+    head = re.split(r':|\s\(|\s"', str(reason or ""), maxsplit=1)[0].strip()
+    return re.sub(r"\d+(?:\.\d+)?", "N", head) or "none recorded"
+
+
+def draft_outcome_line(drafts: list[dict[str, Any]]) -> str:
+    """#1585: the week's drafts by outcome, and what held the ones that expired - to track
+    decision 78 (18 of 46 drafts had expired undecided in two weeks) and #1578."""
+    if not drafts:
+        return ""
+    outcomes = {"rendered": 0, "expired": 0, "rejected": 0, "undecided": 0}
+    held: dict[str, int] = {}
+    for meta in drafts:
+        raw_review, raw_hold = meta.get("review"), meta.get("hold")
+        review: dict[str, Any] = raw_review if isinstance(raw_review, dict) else {}
+        decision = str(review.get("decision") or "undecided")
+        outcomes[decision] = outcomes.get(decision, 0) + 1
+        if decision == "expired":
+            hold: dict[str, Any] = raw_hold if isinstance(raw_hold, dict) else {}
+            kind = _hold_kind(hold["reason"]) if hold.get("reason") else "none recorded"
+            held[kind] = held.get(kind, 0) + 1
+    parts = ", ".join(f"{n} {name}" for name, n in outcomes.items())
+    line = f"Drafts this week: {parts} ({len(drafts)} drafts)"
+    if held:
+        ranked = sorted(held.items(), key=lambda kv: (-kv[1], kv[0]))
+        line += "; expired after a hold: " + ", ".join(f"{k} {n}" for k, n in ranked)
+    return line
+
+
 def _week_drafts(channel_id: str, days: int = 7) -> list[dict[str, Any]]:
     import json as _json
     import os
@@ -579,9 +611,10 @@ def _format_body(report: dict[str, Any]) -> str:
     except Exception as exc:
         logger.debug("claim hold lines skipped: %s", exc)
     try:  # #1365 (wave 127): what overnight drafted this week, by kind
-        line = draft_mix_line(_week_drafts(report["channel_id"]))
-        if line:
-            lines.append(f"  {line}")
+        week = _week_drafts(report["channel_id"])
+        for line in (draft_mix_line(week), draft_outcome_line(week)):  # #1585
+            if line:
+                lines.append(f"  {line}")
     except Exception as exc:
         logger.debug("draft mix skipped: %s", exc)
     try:  # #1480 (wave 123): the fields health reads, against what the week wrote

@@ -568,15 +568,40 @@ def _ranked_on_note(raw_rate: float, adjusted_rate: float | None, *, places: int
     return _target.ranked_on_note(raw_rate, adjusted_rate, places=places)  # #938
 
 
-def _domain_priority(domain: str, adjusted: dict[str, float], counts: dict[str, int]) -> tuple:
+def _domain_priority(
+    domain: str,
+    adjusted: dict[str, float],
+    counts: dict[str, int],
+    *,
+    views: tuple[dict[str, float], float] | None = None,
+) -> tuple:
     """Sort key (descending): adequately-sampled domains first, then shrunk rate.
 
     This is the fix for "all 3 picks are a stale 1-sample domain": a domain with
     < MODERATE_SAMPLES videos of engagement data is ranked *below* any domain that
     clears the bar, regardless of how high its thin average looks.
+
+    #1448 (decision 80): with the channel's organic views per video (`_domain_views`), those
+    lead - shrunk toward the channel's mean, a domain under five videos at the mean - and the
+    old key breaks ties.
     """
     n = counts.get(domain, 0)
-    return (1 if n >= MODERATE_SAMPLES else 0, adjusted.get(domain, 0.0))
+    sampled = (1 if n >= MODERATE_SAMPLES else 0, adjusted.get(domain, 0.0))
+    if views and views[0]:
+        rates, mean = views
+        return (rates.get(domain, mean), *sampled)
+    return sampled
+
+
+def _domain_views(channel_id: str) -> tuple[dict[str, float], float]:
+    """#1448: the channel's organic Shorts views per video by domain, shrunk; ({}, 0.0) without."""
+    try:
+        from analytics.growth import _rows, organic_views_by_domain, shrunk_views_per_video
+
+        return shrunk_views_per_video(organic_views_by_domain(_rows(channel_id)))
+    except Exception as exc:
+        logger.debug("domain views skipped: %s", exc)
+        return {}, 0.0
 
 
 def _effective_allowed(channel_id: str, entries: list[dict]) -> set[str]:
@@ -1409,8 +1434,10 @@ def get_best_bets(
     except Exception as exc:
         logger.debug("mailbag candidate skipped: %s", exc)
 
+    views = _domain_views(channel_id)  # #1448 (decision 80)
+
     def _domain_key(d: str) -> tuple:
-        return _domain_priority(d, adjusted, domain_counts)
+        return _domain_priority(d, adjusted, domain_counts, views=views)
 
     # Fresh RSS headlines, grouped by domain (relevant "what's hot now").
     by_domain: dict[str, list[dict]] = {}

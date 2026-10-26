@@ -209,6 +209,62 @@ def _line_span(line: list[dict]) -> tuple[float, float]:
     return start, end
 
 
+# #1583: what a number is said as - "three thirty-four", "nineteen zero", "point five percent".
+_SPOKEN_NUMBER = frozenset({
+    "zero", "oh", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
+    "nineteen", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+    "hundred", "thousand", "million", "billion", "point", "percent", "dollars",
+})  # fmt: skip
+_SPOKEN_JOINER = frozenset({"and", "a", "to"})
+
+
+def _align_key(token: str) -> str:
+    return re.sub(r"[\W_]", "", token.lower())
+
+
+def _said_parts(token: str) -> list[str]:
+    return [p for p in re.split(r"-", re.sub(r"[^\w-]", "", token.lower())) if p]
+
+
+def written_numbers(words: list[dict], script: str) -> list[dict]:
+    """The caption words with each spoken number written as the script writes it (#1583).
+
+    Word timings carry what the voice said, so "UFC 333" showed as "three thirty three" and
+    "12-2-1" as "twelve two one" on 5 of the 12 renders read on 2026-10-25. The words are
+    aligned to the script; where a run of number words stands in for script tokens with
+    digits, it becomes those tokens, from the first word's start to the last word's end.
+    Anything else is left as said.
+    """
+    if not words or not script:
+        return words
+    from difflib import SequenceMatcher
+
+    tokens = script.split()
+    said = [str(w.get("word") or "") for w in words]
+    matcher = SequenceMatcher(
+        None, [_align_key(t) for t in tokens], [_align_key(w) for w in said], autojunk=False
+    )
+    out: list[dict] = []
+    last = 0
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag != "replace" or not all(re.search(r"\d", t) for t in tokens[i1:i2]):
+            continue
+        parts = [p for w in said[j1:j2] for p in _said_parts(w)]
+        if not parts or not all(p in _SPOKEN_NUMBER or p in _SPOKEN_JOINER for p in parts):
+            continue
+        if not any(p in _SPOKEN_NUMBER for p in parts):
+            continue
+        out.extend(words[last:j1])
+        end = words[j2 - 1].get("end", words[j1].get("end"))
+        out.append({**words[j1], "word": " ".join(tokens[i1:i2]), "end": end})
+        last = j2
+    if not last:
+        return words
+    out.extend(words[last:])
+    return out
+
+
 def build_srt_from_words(words: list[dict], *, max_words: int = 5) -> str:
     """Accurately-timed SRT from word timings (chunk start/end = real spoken time)."""
     lines = group_into_lines(words, max_words)

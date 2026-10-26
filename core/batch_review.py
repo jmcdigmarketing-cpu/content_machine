@@ -127,6 +127,24 @@ def _write_review(draft: PendingDraft, **review: Any) -> None:
         logger.warning("review not saved for %s: %s", draft.folder, exc)
 
 
+def _note_hold(draft: PendingDraft, reason: str) -> None:
+    """#1585: why overnight passed a draft by, in its own record - `{reason, at}`, `at` the time
+    it was first held for that reason. 18 of 46 drafts expired undecided in two weeks and
+    nothing said what had held them."""
+    held = draft.meta.get("hold")
+    if isinstance(held, dict) and held.get("reason") == reason:
+        return
+    draft.meta["hold"] = {"reason": reason, "at": datetime.now().isoformat(timespec="seconds")}
+    folder = getattr(draft, "folder", "")
+    if not folder:
+        return
+    try:  # bookkeeping: a hold that is not saved never stops the night
+        with open(os.path.join(folder, "meta.json"), "w", encoding="utf-8") as f:
+            json.dump(draft.meta, f, indent=2, default=str)
+    except (OSError, TypeError, ValueError) as exc:
+        logger.warning("hold not saved for %s: %s", folder, exc)
+
+
 def _draft_min_words(draft: PendingDraft) -> int:
     try:
         from core.script_length import get_length_preset
@@ -1358,6 +1376,9 @@ def render_unattended(
         return out
     eligible, skipped = unattended_candidates(channel_id, root=root)
     out["waiting"] = [(d.run_id, why) for d, why in skipped]
+    for held, why in skipped:
+        if not why.startswith("already "):
+            _note_hold(held, why)  # #1585
     on_shelf = (shelf or shelf_waiting)(channel_id) if shelf_max(channel_id) > 0 else 0
     tried = 0
     for draft in eligible:
@@ -1370,6 +1391,7 @@ def render_unattended(
         doubt = second_read(draft.title, draft.script)  # #1341: the next draft takes its place
         if doubt:
             out["waiting"].append((draft.run_id, f"second read: {doubt}"))
+            _note_hold(draft, f"second read: {doubt}")
             continue
         # #1467 before the first render, #1465 before each: a broken encoder or a full memory
         # stops the night with the drafts in place, instead of a native crash mid-render.

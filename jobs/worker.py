@@ -769,6 +769,29 @@ def _schedule_chapter_shorts() -> int:
 
 
 DECIDE_TOAST_HOURS = 3.0
+CLAIM_TOAST_HOURS = 6.0
+
+
+def _claim_watch(channel: str, moment: datetime) -> None:
+    """#1582: a toast, once a day per run, when a render held for a claim has its game within 6
+    hours - runs 185 and 186 sat held until their game started. Fail-open."""
+    from datetime import timedelta
+
+    try:
+        from core.stale_renders import claim_hold_line, claim_holds_ahead
+        from core.win_notify import toast_daily
+
+        for hold in claim_holds_ahead(channel, now=moment):
+            if hold["event"] > moment + timedelta(hours=CLAIM_TOAST_HOURS):
+                break
+            toast_daily(
+                f"claim-{hold['run_id']}",
+                "Content OS: confirm a claim before its game",
+                claim_hold_line(hold, channel),
+                now=moment,
+            )
+    except Exception as exc:
+        logger.debug("claim watch skipped: %s", exc)
 
 
 def _decide_watch(now: datetime | None = None) -> None:
@@ -784,6 +807,7 @@ def _decide_watch(now: datetime | None = None) -> None:
 
         moment = now or datetime.now(timezone.utc)
         for channel in active_channel_ids():
+            _claim_watch(channel, moment)  # #1582
             got = next_decision(channel, now=moment)
             if not got:
                 continue

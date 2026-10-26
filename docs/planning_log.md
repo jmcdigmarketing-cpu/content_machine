@@ -9916,3 +9916,55 @@ and three more), the leaders lines, `insight_pass` on run 189 (adopted, one mode
 (2 gaming), the menu's mix, no call comment due, the dead renders (181, 184).
 
 `roadmap-index`: open 153, done 1660, numbered open 144.
+
+## 2026-10-25 — wave 131, the next ten (Claude Code)
+
+**Prompt:** "next 10"
+
+Measured first, read-only (Sun 10-25, 19:34 CDT):
+- **Runs 185 and 186 died held** - the Chiefs-Seahawks preview and its Short, held for a claim
+  since 10-23; the game started at 7:20 PM CDT. #1572's toast covers drafts, not held renders.
+- **Captions spell numbers as the voice says them:** the .srt against the script on the last 12
+  renders - "UFC 333" as "three thirty three", "5-0" as "five zero", "12-2-1" as "twelve two one",
+  on 5 of 12. The words otherwise match.
+- **Long sentences:** 36 of 317 in the last 23 scripts over 25 words, the longest 51.
+- **Comment reads cost 312-527 units a day** - the youtube and youtube_comments signals each paid a
+  100-unit search for the same topic (#1579).
+- **The 11 playlists were never made;** every upload logged "no playlist yet".
+- **Organic Shorts views per video by domain:** NBA 145 (4 videos), UFC 127 (16), gaming 113 (32),
+  NFL 32 (6, no subscriber); the menu ranked domains by engaged rate.
+- **Why a draft waited was never written down,** so the 39% that expire cannot be split by reason.
+- **Checked, not a defect:** the 0.8 s dark still at each render's end is the end card
+  (`video/channel_outro`); #1353 is covered by #1155's `said_twice`.
+
+The operator's answers (decision 80): "Share it within a run"; "Create + new uploads join";
+"Views per video".
+
+Shipped (tests first, `tests/test_wave131.py`; 22 of 28 failed on `2e2c9ee`, the 6 others pins;
+the 4 playlist-refusal tests, written after the live run, failed on `5454465`):
+1. **#1582** a claim-held preview toasts within 6 hours of its game; `ops status` names the game.
+2. **#1583** `written_numbers`: captions show the script's digits (two corpus cases).
+3. **#1579** one search per topic per run, the second caller booking nothing.
+4. **#1360** "long" past 25 words in the read-aloud pass (corpus case).
+5. **#1585** overnight records each hold; the weekly report counts outcomes and holds.
+6. **#1584** 9 of the 11 playlists created; a refusal stops cleanly; the worker finishes the rest.
+7. **#1448** the menu's domains by organic views per video, shrunk.
+8. **#1353** closed with a pinning test.
+9. **#1339** the Oct 13 drafts as fixtures, with today's gates run on them.
+10. **#1586** filed: the NFL question for the operator.
+
+Found on the way: YouTube refused the 10th playlist with a 429 and `ops playlists --apply` died in a
+traceback - fixed the same evening, with a once-a-day retry from the upload worker. One older test
+(wave 119's second read) passes a draft with no folder; the hold writer returns instead of
+writing `meta.json` into the working directory.
+
+Audit (wave 131): mypy 92; ruff clean. Suite: 6827 forward and 6827 reversed, OK (6 skipped); data/ and output/ untouched.
+
+**Live, read-only:** run 184, 180, 169 and 168's captions rebuilt from stored timings with every
+number as written; 26 long sentences across 17 scripts; the menu's order UFC 124, the thin domains
+at the mean 114, gaming 113, NFL 69; no claim hold ahead tonight; the week's 20 drafts by outcome.
+**Outward (decision 80):** 9 playlists created on the channel - GTA, Gaming, Marvel Rivals,
+Minecraft, Roblox, Twitch, UFC / MMA, NFL, Basketball (500 units booked); Football and AI
+Development wait for the worker's daily try.
+
+`roadmap-index`: open 149, done 1669, numbered open 140.

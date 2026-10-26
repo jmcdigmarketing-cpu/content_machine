@@ -389,3 +389,17 @@ of silence; gaming brought 53% of organic Shorts views while the menu held one g
 channel comments had been built (#105) and never switched on. Asked, the operator took "Drop it",
 "At least 2 of 5" and "Ask for the call on previews". **Consequence:** `CHANNEL_INTRO_ENABLED` is
 off unless set; the comment is automatic (50 units each) and pinning it stays a Studio click.
+
+## 80. One search per topic per run; the playlists made; the menu by organic views (2026-10-25)
+**Decision:** the youtube and youtube_comments signals share one `search.list` per topic per
+run - the shared call path keeps the result for 120 s behind a lock per query, and the second
+caller books no units (#1579); the 11 franchise playlists are created and new uploads join them,
+with no backfill (#1584); the menu's domains are ordered by organic Shorts views per video,
+shrunk toward the channel's mean, a domain under five videos at the mean (#1448). **Why:**
+comment reads cost 312-527 units a day, most of it a second 100-unit search for a topic the
+youtube signal had just searched; every upload logged "no playlist yet"; the menu ranked domains
+by engaged rate while organic views per video ran from 145 (NBA, 4 videos) to 32 (NFL, 6). Asked,
+the operator took "Share it within a run", "Create + new uploads join" and "Views per video".
+**Consequence:** CLAUDE.md's "no second cache inside a signal" holds - the kept search lives in
+the shared call path, and each signal is still cached once by `register_signals`; the playlists
+cost 50 units each, 500 so far; NFL falls to the bottom of the ideas (#1586 asks whether previews follow).

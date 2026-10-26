@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-25: wave 130, the next ten
+# Handoff synopsis — 2026-10-25: wave 131, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-25 (Claude Code): wave 130, the next ten
+## Last wave — 2026-10-25 (Claude Code): wave 131, the next ten
+
+Runs 185 and 186 were held for a claim until their game started; a held preview now toasts within
+6 hours of its game and `ops status` names it. The captions show the script's numbers ("UFC 334",
+not "three thirty-four"). With the operator's calls (decision 80): one YouTube search per topic per
+run, 9 of the 11 playlists made (YouTube's limit refused the 10th; the worker retries daily), the
+menu's domains by organic views per video. Long sentences go to the read-aloud split; why a draft
+waits is recorded and counted weekly.
+
+## Previous — 2026-10-25 (Claude Code): wave 130, the next ten
 
 The intro test had settled - 21% stayed past the swipe with it against 44% without - and the
 operator dropped it (decision 79). A preview is no longer offered or drafted under 3 hours from
@@ -28,15 +37,6 @@ the week is empty; a dull opener is a warning; preview shapes rotate as an exper
 season context in previews, leagues in turn, `ops hooks`' first-line before/after, api_sports as
 context, `ops overnight --pause-until`. Decision 77 ran live: runs 190 and 191 scheduled Mon noon
 and 10 PM EDT.
-
-## Previous — 2026-10-25 (Claude Code): wave 128, the next ten
-
-Built on the PC from the plan written for the cloud (the push failed). Run 185's claim hold: a
-dated operator line read as a 10-14 record dropped ESPN's "Chiefs 5-0", and the board matched the
-wrong game - both fixed. An NFL topic with "game" read as gaming; run 164's thumbnail was ours (the
-check missed a top-and-bottom letterbox); the suite read `data/experiments.json`. With the
-operator's calls: a finished game is what it means with a call, the sport scrapers stay in their
-sport (decision 76), and a chapter Short of a public video goes out by itself (decision 77).
 
 ## Pipeline order (operator)
 
@@ -112,7 +112,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1560 #1565 #1362 #1363 #1370 (roadmap.md). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** #1459 #1458 #1431 #1355 #1332 (roadmap.md). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

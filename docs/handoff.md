@@ -53,21 +53,22 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-25 · **HEAD at write:** `b09261c` (wave 130's code; this docs commit follows)
+**Written:** 2026-10-25 · **HEAD at write:** `3226422` (wave 131's code; this docs commit follows)
 · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed after the merge; read CI.
 
-**Defects first:** run 193 was drafted 31 minutes before its game - no preview is offered or
-drafted under 3 hours now (#1577); the insight pass refused 8 of 15 rewrites unexplained - it names
-why and asks twice (#1578). Open: the comments signal's second search, 312-527 units a day (#1579).
+**Defects first:** runs 185 and 186 were held for a claim until their game started and nothing
+pushed them - a held preview now toasts within 6 hours of its game and `ops status` names the game
+(#1582); the captions spelled numbers as the voice said them - they show the script's (#1583).
 
-**Decision 79 (the operator):** the intro is dropped - the test settled at 21% vs 44% (#1581);
-two of five ideas stay gaming while gaming leads (#1447); a public preview gets one comment asking
-for the viewer's call (#1327). Also ESPN's leaders in preview facts (#1575), the menu's mix in `ops
-predictions` (#1446), dead renders retired by overnight (#1580). Next five: #1579 #1459 #1355
-#1458 #1431.
+**Decision 80 (the operator):** one YouTube search per topic per run, the second caller booking
+nothing (#1579); 9 of the 11 playlists made - YouTube's limit refused the 10th, the worker
+retries once a day (#1584); the menu's domains by organic views per video, shrunk (#1448).
+Also long sentences split (#1360), holds recorded and counted weekly (#1585), the Oct 13 drafts
+as fixtures (#1339), #1353 pinned, #1586 filed. Next five: #1459 #1458 #1431 #1355 #1332.
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** publish the Google app before Fri 10-30. Runs 185 and 186 are still held for claims - their game is Sun 8:20 PM EDT.
+**Operator:** publish the Google app before Fri 10-30; #1586 - keep NFL previews at 32 organic
+views a Short? Runs 185 and 186 stay unlisted (their game was played).
 
 ## Slot — Cursor
 

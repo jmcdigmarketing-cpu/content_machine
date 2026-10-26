@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-25 (Claude Code): wave 128, the next ten
+
+Built on the PC from the plan written for the cloud (the push failed). Run 185's claim hold: a
+dated operator line read as a 10-14 record dropped ESPN's "Chiefs 5-0", and the board matched the
+wrong game - both fixed. An NFL topic with "game" read as gaming; run 164's thumbnail was ours (the
+check missed a top-and-bottom letterbox); the suite read `data/experiments.json`. With the
+operator's calls: a finished game is what it means with a call, the sport scrapers stay in their
+sport (decision 76), and a chapter Short of a public video goes out by itself (decision 77).
+
 ## Previous — 2026-10-24 (Claude Code): wave 127, catch up and the next ten
 
 Caught up with decision 74 (November's $20 ads test). Run 184's UFC 333 preview missed the card -

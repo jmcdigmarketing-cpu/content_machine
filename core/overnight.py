@@ -714,6 +714,9 @@ def main(argv: list[str] | None = None) -> int:
     if args_in[:1] == ["--draft-job"]:
         if len(args_in) < 2:
             return 2
+        from core.win_shell import hide_child_windows
+
+        hide_child_windows()  # 2026-10-28: a child of pythonw opens a window per console tool
         return _draft_job(args_in[1])
 
     parser = argparse.ArgumentParser(description="Overnight operator (drafts + grade + dossiers)")

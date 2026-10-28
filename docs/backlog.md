@@ -2508,3 +2508,7 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1894. **Odds movement as a story for marquee games (no betting promotion)** *(B12.23, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1895. **Views per Short by league, monthly, so the calendar keeps the leagues that earn** *(B12.24, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1896. **The calendar's number: organic views of calendar-planned Shorts against reactive ones** *(B12.25, filed 2026-10-27)* `[S]` · lane: views
+
+### Found 2026-10-28
+
+- [x] 1897. **Overnight's child processes opened a console window for every ffmpeg call** *(2026-10-28, the operator: "a terminal window popping in and out all crazy" - overnight ran at power-on, 16:18-16:31; its render child (`core.batch_review --render-draft`, #1464) and draft child (`core.overnight --draft-job`), started under pythonw with no console, never hid their own children's windows, so each ffmpeg and ffprobe call opened one)* `[S]` **Done (2026-10-28, Claude):** `core/batch_review.main`, `core/overnight.main` and `core/clock_ahead.main` call `core.win_shell.hide_child_windows()` first; `tests/test_child_windows.py` (3 of 3 failed first) guards every `sys.executable -m core.*` child. · lane: defect

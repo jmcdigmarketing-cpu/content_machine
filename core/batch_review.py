@@ -1446,6 +1446,10 @@ def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if args[:1] != ["--render-draft"] or len(args) < 2:
         return 2
+    from core.win_shell import hide_child_windows
+
+    # 2026-10-28: started under pythonw with no console, each ffmpeg call opened a window.
+    hide_child_windows()
     import faulthandler
 
     faulthandler.enable()  # a native crash names its Python line in the parent's log (#1216)

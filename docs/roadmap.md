@@ -67,8 +67,8 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
-**2026-10-27 (Claude, the bridge).** Decision 82: the next waves are 132 (the cloud brief), 133 the
-GTA 6 window, 134 the scoreboard, 135 speed and volume, 136 money - [bridge_plan.md](bridge_plan.md).
+**2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
+[135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 **2026-10-25 (Claude, wave 131).** Measured first: runs 185 and 186 were held for a claim
 until their game started and nothing pushed them - a held preview now toasts within 6 hours of
 its game (#1582); the captions spelled numbers as the voice said them on 5 of 12 renders - they

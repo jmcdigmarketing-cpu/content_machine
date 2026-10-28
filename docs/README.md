@@ -79,6 +79,12 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [cursor_brief_2026-10.md](cursor_brief_2026-10.md) | Cursor's run: media first (footage, thumbnails, voice, Shorts), then the app |
 | [cloud_brief_2026-10.md](cloud_brief_2026-10.md) | Tonight's default for a Claude cloud session (2026-10-24): wave 128, with each fix's test data - the cloud has no `data/` |
 | [bridge_plan.md](bridge_plan.md) | The bridge (decision 82, 2026-10-27): the race to monetization or big views for little money - the measured state, the lanes and the gate, 300 ideas in twelve sections, the waves in order |
+| [bridge_calendar.md](bridge_calendar.md) | The bridge's calendar to 2027-02-01: week by week, the wave, the dated moments (GTA 6 11-19, UFC cards, The Game Awards), the targets and the checkpoints |
+| [bridge_scores.md](bridge_scores.md) | The bridge's 300 ideas scored (effect x confidence x urgency / effort), 2026-10-28 - the source of bridge_plan.md's top 30 |
+| [cloud_brief_wave133.md](cloud_brief_wave133.md) | Wave 133 for a cloud or PC session: the GTA 6 window - the countdown series, a 16:9 long-form draft kind, affiliate links, launch week |
+| [cloud_brief_wave134.md](cloud_brief_wave134.md) | Wave 134: the bridge's scoreboard - the dated YPP bars, engaged views, organic subscribers, the race clock, cost per 1,000 views |
+| [cloud_brief_wave135.md](cloud_brief_wave135.md) | Wave 135: speed and volume - Shorts that loop, the breaking-news and results fast lanes, three a day, previews 24-48 hours ahead |
+| [cloud_brief_wave136.md](cloud_brief_wave136.md) | Wave 136: money and reach outside YouTube - Facebook Reels, a link-in-bio page, income beside spend, TikTok that can earn |
 | [cloud_brief_wave132.md](cloud_brief_wave132.md) | The default for a Claude cloud session (2026-10-26): wave 132 - more interesting topics (decision 81), a 5-8 minute Week in Review, tonight's defects, with each item's fixtures |
 | [initiative_cross_platform.md](initiative_cross_platform.md) | Offered to Cursor (2026-10-14): learn per platform from TikTok and Instagram results (#1194-#1199) |
 | [content_quality_plan.md](content_quality_plan.md) | Five quality issues, traced and planned |

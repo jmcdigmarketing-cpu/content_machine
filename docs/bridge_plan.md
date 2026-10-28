@@ -41,6 +41,93 @@ Rivals 968, Modern Warfare 4 325, the GTA 6 trailer reactions 305). Section B11 
 **What each video costs.** A draft is a median $0.04; a render with ElevenLabs $0.20-0.40; about
 $36.74 of runs so far against roughly 5,000 organic views.
 
+## The math to the bar (2026-10-28)
+
+What each path needs per day, against what the channel does now. A number marked *assumed* is an
+estimate the scoreboard (wave 134) replaces with a measured one.
+
+**Shorts path - 20M engaged views in 90 days.**
+- That is **222,222 a day**. The channel did 2,817 organic Shorts views in the last 28 days -
+  about 100 a day - so the gap is roughly **2,200x**.
+- At three Shorts a day, each would need about **74,000 views** on average. The median Short gets
+  60-80; the best ever got 968.
+- Views are heavy-tailed - a handful of videos earn most of a channel's views - so the path is not
+  "every Short a little better". It is more shots (volume, B03) times a higher chance that one
+  breaks out (topics B01, the first second B02, formats B04). Before 2027-02-01 this path needs
+  breakouts the channel has not had once.
+
+**Long-form path - 8,000 hours in 12 months.**
+- That is 480,000 minutes a year, **1,315 minutes a day**. Today's 10.2 hours a year is about 1.7
+  minutes a day - a gap of roughly **780x**.
+- At an *assumed* 4 minutes watched per view, 1,315 minutes is **~330 long-form views a day**,
+  ~120,000 a year.
+- At two long videos a week (104 a year), that is **~1,150 views each** in its first year, mostly
+  from search. That is a per-video target a search-led video on a marquee subject can reach - GTA 6
+  guides at launch above all.
+- Long-form is the more reachable path per video. It is also where affiliate links work, since a
+  Short's description links are not clickable.
+
+**Organic subscribers - 1,000 on either path.**
+- The videos have converted about **0.56 subscribers per 1,000 organic views** (4 from about
+  7,200; `growth.conversion`). At that rate 1,000 subscribers needs **~1.8M organic views** - so the
+  rate is the lever, not only the views.
+- How many of today's 134 are organic is not known: the ledger holds 29 campaign subscribers, and
+  October's campaign was never entered (B05.1 measures it).
+- Long-form is *assumed* to convert better per view; B05.2 measures it by format.
+
+**Money outside YouTube.**
+- Affiliate commissions are low single-digit percent of a sale. With a few hundred long-form views
+  a month, expect cents, not dollars, until long-form traffic exists. Setting it up costs little,
+  so it goes in before GTA 6 (wave 133), and it compounds with the hours path.
+
+**The read.** The math favours long-form for hours and for subscribers, with Shorts as the discovery
+engine and the breakout lottery. Decision 82 keeps both paths equal; the scores below lean the
+order toward long-form and toward the GTA 6 window because of the date, not by a rule.
+
+## The top 30
+
+All 300 are scored in [bridge_scores.md](bridge_scores.md): Effect (1-5) x Confidence (3 measured
+here, 2 platform behaviour, 1 a guess) x Urgency (2 the GTA 6 window, 1.5 a dated event before
+2027-02-01) / Effort (S1, M2, L4). The 30 highest, with the wave each belongs to:
+
+| # | score | idea | lane | wave |
+|---:|---:|---|---|---|
+| 1 | 16 | #1849 B11.3 the review-score Short when the embargo lifts | views | 133 |
+| 2 | 16 | #1861 B11.15 pre-load, file size and unlock times - the launch-eve utility Short | views | 133 |
+| 3 | 16 | #1865 B11.19 launch problems and fixes (search demand at launch) | hours | 133 |
+| 4 | 16 | #1867 B11.21 GTA 6 stories on 5+ outlets drafted within the hour in launch week | views | 133 |
+| 5 | 16 | #1868 B11.22 two GTA 6 slots a day in launch week | views | 133 |
+| 6 | 13.5 | #1670 B03.24 previews and calendar drafts made 24-48 hours ahead | views | 135 |
+| 7 | 13.5 | #1893 B12.22 calendar drafts rendered in time | views | 135 |
+| 8 | 12 | #1854 B11.8 GTA 6 Online - what is confirmed | views | 133 |
+| 9 | 12 | #1856 B11.10 GTA 6 search titles from autocomplete | views | 133 |
+| 10 | 12 | #1860 B11.14 the PC question as a Short | views | 133 |
+| 11 | 12 | #1862 B11.16 players' reactions the day after launch | views | 133 |
+| 12 | 12 | #1863 B11.17 the sales-record Short | views | 133 |
+| 13 | 12 | #1864 B11.18 Black Friday GTA 6 deals, the long video carrying the links | money | 133 |
+| 14 | 12 | #1869 B11.23 GTA 6 long-form thumbnails in the cover art's style | hours | 133 |
+| 15 | 10 | #1848 B11.2 launch-day Shorts | views | 133 |
+| 16 | 10 | #1850 B11.4 long-form "everything we know before launch", public by 11-10 | hours | 133 |
+| 17 | 10 | #1853 B11.7 launch-week guides | hours | 133 |
+| 18 | 9 | #1608 B01.12 a "more of what worked" slot | views | 135 |
+| 19 | 9 | #1665 B03.19 a clean news draft left undecided goes out after 6 hours | views | 135 |
+| 20 | 9 | #1679 B04.8 "fans react" with the community's lines on screen | views | 133 |
+| 21 | 9 | #1772 B08.1 every Short crossposted within the hour | views | 136 |
+| 22 | 9 | #1872 B12.1 a two-week calendar of marquee sports events | views | 135 |
+| 23 | 9 | #1873 B12.2 the UFC fight-week plan | views | 135 |
+| 24 | 9 | #1875 B12.4 NFL prime time: preview the day before, result within 60 minutes | views | 135 |
+| 25 | 9 | #1885 B12.14 Thanksgiving's three NFL games planned | views | 135 |
+| 26 | 8 | #1599 B01.3 competitor outliers first | views | 135 |
+| 27 | 8 | #1616 B01.20 long-form ideas scored on search demand | hours | 133 |
+| 28 | 8 | #1648 B03.2 three Shorts a day against two | views | 135 |
+| 29 | 8 | #1725 B06.4 long-form titles from autocomplete terms | hours | 133 |
+| 30 | 8 | #1731 B06.10 long-form thumbnails with a face and three words | hours | 133 |
+
+Two things the formula does not see: the scoreboard (B10, wave 134) scores low because it moves no
+number itself, yet every later wave is judged by it; and the breaking-news fast lane (B03.1, an L)
+scores 2.5 on effort though #1867 needs it - wave 135 builds it, and until then #1867 is the simple
+version: a GTA 6 story on 5+ outlets jumps to the top of the menu and takes the next free slot.
+
 ## The lanes and the gate (decision 82)
 
 Every change names its lane and the number it moves:
@@ -62,19 +149,28 @@ back with a new number when a lane needs it.
 
 ## The waves, in order
 
+Each has a build-ready brief - files, functions, test fixtures, done-when - and the dates are in
+[bridge_calendar.md](bridge_calendar.md):
+[133](cloud_brief_wave133.md) · [134](cloud_brief_wave134.md) · [135](cloud_brief_wave135.md) ·
+[136](cloud_brief_wave136.md).
+
 1. **Wave 132** - [cloud_brief_wave132.md](cloud_brief_wave132.md), written 10-25: the hook splice,
    previews read as explainers, sources, a 5-8 minute Week in Review, one marquee preview a night,
    headlines told as the story, the topic gate. Already lane-tagged (#1587-#1596).
 2. **Wave 133 - the GTA 6 window** (B11, before 11-19): the daily countdown series (B11.1), the
    "everything we know" long video by 11-10 (B11.4), Rockstar's press footage (B11.11), the marquee
-   list front-loaded (B11.13), the fast lane armed for GTA 6 (B11.21), launch day planned (B11.24).
+   list front-loaded (B11.13), the fast lane armed for GTA 6 (B11.21), launch day planned (B11.24),
+   and the affiliates map with the Amazon tag (B07.1, B07.2) - moved here from 136 because the
+   editions video needs its links before launch.
 3. **Wave 134 - the scoreboard** (B10.1-B10.4, B05.1, B09.1): organic subscribers, engaged views,
    qualified hours, the 2027 bars as data, the race clock, cost per 1,000 organic views - so every
    later wave is judged on the bridge's numbers.
-4. **Wave 135 - speed and volume** (B03): the breaking-news fast lane, three a day as an
-   experiment, results fast lanes, Shorts that loop (B02.1-B02.3).
-5. **Wave 136 - money outside YouTube** (B07): Amazon links on long-form, the affiliates map, the
-   link-in-bio page, Facebook Reels through Buffer - once your sign-ups are done.
+4. **Wave 135 - speed and volume** (B03, B12): the breaking-news fast lane, three a day as an
+   experiment, results fast lanes, Shorts that loop (B02.1-B02.3), calendar drafts 24-48 hours
+   ahead (B03.24, B12.22).
+5. **Wave 136 - money and reach outside YouTube** (B07, B08): Facebook Reels through Buffer, the
+   link-in-bio page, income beside spend, TikTok cuts for Creator Rewards, every Short crossposted
+   within the hour - once your sign-ups are done.
 6. Then by lane share: views and hours first while both bars are far (B10.5).
 
 ## The sections

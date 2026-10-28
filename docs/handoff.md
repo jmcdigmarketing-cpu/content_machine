@@ -53,26 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-27 · **HEAD at write:** `847628b` (the wave 132 brief; this bridge commit
-follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
+**Written:** 2026-10-28 · **HEAD at write:** `40dda17` (the bridge; this commit follows) · **Tree:**
+clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**The phase is the bridge - [bridge_plan.md](bridge_plan.md), decision 82.** Every change names its
-lane (views, subscribers, hours, money, cost, or defect); an open backlog item ends with
-` · lane: <lane>` or is parked `- [-]`; `tests/test_bridge.py` fails CI otherwise. 300 ideas filed
-(#1597-#1896, B01-B12); the old 158 open became 63 laned, 94 parked, 1 done.
+**The phase is the bridge** ([bridge_plan.md](bridge_plan.md), decision 82), now with the math to
+the bar and the top 30 ([bridge_scores.md](bridge_scores.md) scores all 300), a calendar to
+2027-02-01 ([bridge_calendar.md](bridge_calendar.md)) and a build-ready brief per wave.
 
-**Next, in order:** wave 132 from [cloud_brief_wave132.md](cloud_brief_wave132.md) (cloud or PC);
-**133 the GTA 6 window - launch is 11-19**, so the countdown series (B11.1) and the "everything we
-know" long video by 11-10 (B11.4) cannot wait; 134 the scoreboard (B10.1-4, B05.1, B09.1); 135 speed
-and volume; 136 money once the operator's sign-ups exist.
+**Next, in order:** wave 132 ([cloud_brief_wave132.md](cloud_brief_wave132.md)), then **133 the GTA
+6 window** ([cloud_brief_wave133.md](cloud_brief_wave133.md) - the countdown should start 10-29 and
+"everything we know" be public by 11-10; GTA 6 launches 11-19), then
+[134](cloud_brief_wave134.md) the scoreboard, [135](cloud_brief_wave135.md) speed and loops,
+[136](cloud_brief_wave136.md) money and reach. Checkpoints Dec 1, Jan 5, Jan 31.
 
-**Measured 10-27:** 134 subscribers, ~4 from videos; Google: Promote subscribers and hours do not
-count toward YPP - ads stopped, three campaigns in `ops spend` (the fourth, Oct 8, needs its
-numbers); the bar reportedly doubles 2027-02-01 (third-party).
+**Fixed today (#1897):** the console windows the operator saw - overnight's render and draft
+children never hid their own children's windows; each child's `main` now calls
+`hide_child_windows()`, and `tests/test_child_windows.py` guards it.
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** end the two Oct 26 campaigns in Studio and send the final numbers; Amazon Associates
-and a Facebook Page in Buffer; publish the Google app before Fri 10-30.
+**Operator:** end the two Oct 26 campaigns in Studio and send the final numbers (and the Oct 8
+row); Amazon Associates and a Facebook Page in Buffer; publish the Google app before Fri 10-30.
 
 ## Slot — Cursor
 

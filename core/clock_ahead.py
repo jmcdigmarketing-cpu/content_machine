@@ -121,6 +121,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--worker", type=int, required=True, help="days to shift this run")
     args = parser.parse_args(argv)
+    from core.win_shell import hide_child_windows
+
+    hide_child_windows()  # a no-op with a console; the guard in tests/test_child_windows.py
     print(json.dumps(_worker(args.worker)))
     return 0
 

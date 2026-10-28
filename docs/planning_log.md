@@ -10035,3 +10035,35 @@ longer calls (it reads `run_event`), so run 155's real draft in `output/tapin/dr
 kickoff) made the render "started". The test now patches `run_event`.
 
 `roadmap-index`: open 363 (every one laned), done 1671, parked 94, numbered open 361.
+
+## 2026-10-28 — the bridge, expanded: the math, the top 30, waves 133-136, the calendar (Claude Code)
+
+**Prompt:** "expand upon the last prompt more" - asked how, the operator took all four: the math to
+the bar, a ranked top 30, build-ready briefs for waves 133-136, a dated calendar to 2027-02-01. Then,
+mid-plan: "there was a terminal window popping in and out all fucking crazy, all good over there?"
+
+**The windows.** Overnight ran at power-on, 16:18-16:31: run 215 rendered (queued unlisted), 3 drafts
+saved, health yellow. Its render and draft children, started under pythonw, never hid their own
+children's windows - every ffmpeg and ffprobe call opened one. Fixed (#1897): each child's `main`
+calls `hide_child_windows()`; `tests/test_child_windows.py` (3 of 3 failed first) guards every
+`sys.executable -m core.*` child. The 16:14 `ollama app.exe` start was not this repo's.
+
+**The math** (in [bridge_plan.md](bridge_plan.md)): Shorts need 222,222 engaged views a day against
+~100 (2,200x; ~74k per Short at three a day); long-form needs 1,315 minutes a day against ~1.7
+(780x; ~1,150 views per long video at two a week, at an assumed 4 minutes watched); 1,000 organic
+subscribers at today's 0.56 per 1,000 needs ~1.8M organic views. The read: long-form for hours and
+subscribers, Shorts for discovery and breakouts.
+
+**The scores** ([bridge_scores.md](bridge_scores.md)): effect x confidence x urgency / effort for all
+300; 15 of the top 30 are the GTA 6 window (urgency 2), then calendar drafts ahead, the news drafts
+out after 6 hours, crossposts within the hour, the sports calendar, search-led long-form. The
+scoreboard and the fast lane score low on the formula and are scheduled anyway (stated).
+
+**The briefs:** [133](cloud_brief_wave133.md) the GTA 6 window (a `core/series/` countdown, a 16:9
+long-form draft kind, affiliate links moved here from 136, launch week), [134](cloud_brief_wave134.md)
+the scoreboard, [135](cloud_brief_wave135.md) speed, volume and loops, [136](cloud_brief_wave136.md)
+money and reach. **The calendar** ([bridge_calendar.md](bridge_calendar.md)): 14 weeks, the dated
+moments (UFC 334 11-14, GTA 6 11-19, Thanksgiving, Black Friday, The Game Awards 12-10, UFC 335 12-12,
+UFC 336 01-30), targets per week, checkpoints Dec 1, Jan 5 and Jan 31.
+
+`roadmap-index`: open 363 (every one laned), done 1672, parked 94, numbered open 361.

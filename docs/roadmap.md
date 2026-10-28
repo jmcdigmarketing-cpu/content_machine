@@ -52,37 +52,23 @@ is left is below.
 | 4 visuals | **#1105-#1107** footage from the right folder and owned before stock, word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out, **#1020** stock only as a last resort, **#1019** CC BY credits | thumbnails **#1047**, the voice **#1035**, licensed footage **#1040** (Cursor) · #786 your footage (operator) |
 | 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR, **#957** organic engaged rate, **#49** first-day alert, **#945** views prediction, **#985** which openers held viewers, **#988** the intro measured, **#959** what each ad campaign bought, **#992** paid subscribers, **#998** after the ads | #975 the organic rate on a real boosted video · more measured videos |
 
-### The stage: ship (2026-10-11 to 10-25)
+### The stage: the bridge (from 2026-10-27, decision 82)
 
-**Operator, 2026-10-10:** videos going public, not new features. All 43 videos are public
-(#1128). **As of 2026-10-13 nothing can go out:** the YouTube sign-in expired that evening and
-no upload task is installed. Where each target stands:
+**Operator, 2026-10-27:** *"all changes being in race to monetization or big views for low cost."*
+Every item names its lane - views, organic subscribers, long-form hours, money outside YouTube,
+cost - or is parked (`- [-]`); `tests/test_bridge.py` holds the gate. The plan, the measured state
+and 300 ideas (#1597-#1896): [bridge_plan.md](bridge_plan.md). Paid promotion stopped: Google does
+not count its subscribers or hours toward YPP.
 
-1. **Sign in, and stop it expiring weekly** - `py -m youtube.oauth_setup --channel tapin`, then
-   publish the Google consent screen (it is in Testing, which ends a sign-in after 7 days).
-2. **Uploads go out on their own** - `py -m scripts.ops worker-task --install` (one line, the
-   operator's; #1130). Run 132 has been queued since 10-10.
-3. **Videos ready each morning** - overnight renders up to 2 clean drafts, queued unlisted;
-   `py -m scripts.ops morning` is the morning (#1140). On 10-13 it rendered two and both were
-   wrong (a game written as won before it was played; a preview rendered two days late). Both
-   were pulled and the causes are fixed (#1148-#1152, wave 83): a game draft renders before
-   its game or waits, a flagged title waits, and overnight stops at 3 finished videos waiting.
-4. **The week against 3-5** - on the header.
-5. **Click-through flowing** - `ops doctor`'s `reach` row prints the link (#1123). Still off.
-6. **The intro test on** - `INTRO_TEST=alternate` in `.env`.
-
-**Where the channel stands** (`ops ypp`, numbers of 10-11): 69 of 1,000 subscribers; 1,797
-organic Shorts views in 90 days against 10,000,000 (147 a week against 777,778); 10 long-form
-hours against 4,000. The 43 videos brought 2 subscribers. The near goal is the first 1,000
-subscribers, not the Partner Programme.
-
-During the stage only a defect a live run exposes gets built. **MoneyWise is parked** (#1134).
-Operator calls open: runs 92 and 119 are public with a flagged claim never confirmed (#1136);
-the competitor shortlist (`ops competitors suggest`, then `add --name`); the ad campaign
-YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --kind ads`.
+**Where the channel stands** (`ops ypp`, 10-27): 134 subscribers, about 4 of them from the videos;
+3,852 organic Shorts views in 90 days; 10.2 long-form hours; ~250 organic views a day. The bar
+reportedly doubles on 2027-02-01 (20M Shorts views or 8,000 hours, with 1,000 organic subscribers).
+GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **MoneyWise is parked.**
 
 ### Recommended next five
 
+**2026-10-27 (Claude, the bridge).** Decision 82: the next waves are 132 (the cloud brief), 133 the
+GTA 6 window, 134 the scoreboard, 135 speed and volume, 136 money - [bridge_plan.md](bridge_plan.md).
 **2026-10-25 (Claude, wave 131).** Measured first: runs 185 and 186 were held for a claim
 until their game started and nothing pushed them - a held preview now toasts within 6 hours of
 its game (#1582); the captions spelled numbers as the voice said them on 5 of 12 renders - they

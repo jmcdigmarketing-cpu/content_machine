@@ -20,11 +20,16 @@ DOCS = ROOT / "docs"
 
 OPEN_RE = re.compile(r"^\s*- \[ \]")
 DONE_RE = re.compile(r"^\s*- \[x\]")
+# Decision 82 (2026-10-27): an item that moves no bridge number is parked - neither open nor done.
+PARKED_RE = re.compile(r"^\s*- \[-\]")
+LANES = ("views", "subscribers", "hours", "money", "cost", "defect")
+LANE_RE = re.compile(r"· lane: (" + "|".join(LANES) + r")\b")
 SIZE_RE = re.compile(r"`\[(XL|L|M|S)\]`")
 NUM_RE = re.compile(r"^\s*- \[ \] \*{0,2}(\d+)\.")
 # #1510: an idea filed for one of the hands-off plan's shortfalls carries "*(S21.3, filed ...".
 SHORTFALL_RE = re.compile(r"\*\(S(\d{2})\.\d+, filed")
-FILED_RE = re.compile(r"\*\(S\d{2}\.\d+, filed (\d{4}-\d{2}-\d{2})\)")
+# Decision 82: the bridge's ideas ("*(B01.3, filed ...") expire on the same 90 days.
+FILED_RE = re.compile(r"\*\([SB]\d{2}\.\d+, filed (\d{4}-\d{2}-\d{2})\)")
 IDEA_DAYS = 90  # decision 68: an idea with no measurement after 90 days is retired (#1509)
 PLAN_HEADING_RE = re.compile(r"^### (S\d{2}) (.+?)\s*$")
 
@@ -53,6 +58,7 @@ def counts() -> dict[str, object]:
             "lines": len(rows),
             "open": len(opens),
             "done": sum(1 for ln in rows if DONE_RE.match(ln)),
+            "parked": sum(1 for ln in rows if PARKED_RE.match(ln)),
         }
         for ln in opens:
             size = SIZE_RE.search(ln)
@@ -71,6 +77,7 @@ def counts() -> dict[str, object]:
         "untagged": untagged,
         "open_total": sum(v["open"] for v in per_file.values()),
         "done_total": sum(v["done"] for v in per_file.values()),
+        "parked_total": sum(v["parked"] for v in per_file.values()),
         "numbered_open": len(numbers),
         "highest_number": max(numbers) if numbers else 0,
     }
@@ -88,6 +95,24 @@ def shortfall_counts(lines: list[str]) -> dict[str, int]:
             key = f"S{tag.group(1)}"
             out[key] = out.get(key, 0) + 1
     return dict(sorted(out.items()))
+
+
+def lane_counts(lines: list[str]) -> tuple[dict[str, int], list[int]]:
+    """Decision 82: ({lane: open items}, the open numbered items that name no lane). A lane is
+    written at the end of the item's line, " · lane: views"."""
+    lanes: dict[str, int] = {}
+    unlaned: list[int] = []
+    for line in lines:
+        if not OPEN_RE.match(line):
+            continue
+        lane = LANE_RE.search(line)
+        if lane:
+            lanes[lane.group(1)] = lanes.get(lane.group(1), 0) + 1
+            continue
+        number = NUM_RE.match(line)
+        if number:
+            unlaned.append(int(number.group(1)))
+    return dict(sorted(lanes.items())), unlaned
 
 
 def idea_expiry(lines: list[str], *, today: date | None = None) -> dict[str, Any]:
@@ -160,8 +185,15 @@ def render(
         )
     out.append(
         f"  {'TOTAL':22} {'':5}         open {data['open_total']:4}   done {data['done_total']:4}"
+        f"   parked {data.get('parked_total', 0)}"
     )
     out.append("")
+    lanes, unlaned = lane_counts(_lines("backlog.md"))
+    if lanes or unlaned:  # decision 82: the race to monetization or big views for little money
+        line = "  by lane      : " + "  ".join(f"{k} {v}" for k, v in lanes.items())
+        if unlaned:
+            line += f"  - no lane: {', '.join(f'#{n}' for n in unlaned[:8])}"
+        out.append(line)
     sizes = "  ".join(f"{s} {by_size[s]}" for s in SIZES)
     out.append(f"  open by size : {sizes}")
     if data["untagged"]:

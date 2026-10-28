@@ -53,28 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-25 night · **HEAD at write:** `3912f26` (wave 131 done; this planning commit
+**Written:** 2026-10-27 · **HEAD at write:** `847628b` (the wave 132 brief; this bridge commit
 follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Next session (cloud or PC): build wave 132 from
-[cloud_brief_wave132.md](cloud_brief_wave132.md)** - #1587-#1596, defects first, each with its
-fixtures (the cloud has no `data/`). The operator: "week in review is far too long, video topics
-have been rough and uninteresting" - decision 81: the Week in Review as every topic then the top 3
-in full, 5-8 min; one marquee preview a night (answers #1586); headline drafts lead with the story
-and why fans care; an overnight story needs 3+ outlets or a marquee name.
+**The phase is the bridge - [bridge_plan.md](bridge_plan.md), decision 82.** Every change names its
+lane (views, subscribers, hours, money, cost, or defect); an open backlog item ends with
+` · lane: <lane>` or is parked `- [-]`; `tests/test_bridge.py` fails CI otherwise. 300 ideas filed
+(#1597-#1896, B01-B12); the old 158 open became 63 laned, 94 parked, 1 done.
 
-**Defects found tonight in the operator's session:** a hook swap stranding "for the first time in
-his *career*." (`extract_hook` splits at "..."); every game preview read as an explainer (its own
-brief's "what is at stake"); Week-6 links as run 196's sources; donation boilerplate kept as facts;
-a flagged title shipped (run 195); the verdict comparison on 1 of 28 ratings.
+**Next, in order:** wave 132 from [cloud_brief_wave132.md](cloud_brief_wave132.md) (cloud or PC);
+**133 the GTA 6 window - launch is 11-19**, so the countdown series (B11.1) and the "everything we
+know" long video by 11-10 (B11.4) cannot wait; 134 the scoreboard (B10.1-4, B05.1, B09.1); 135 speed
+and volume; 136 money once the operator's sign-ups exist.
 
-**Wave 131 (done, `5454465` `3226422` `3912f26`, CI green):** decision 80 - one YouTube search per
-topic per run, 9 of 11 playlists made (YouTube's limit refused the 10th; the worker retries daily),
-the menu by organic views per video; captions show the script's numbers; a claim-held preview
-toasts 6 h before its game.
+**Measured 10-27:** 134 subscribers, ~4 from videos; Google: Promote subscribers and hours do not
+count toward YPP - ads stopped, three campaigns in `ops spend` (the fourth, Oct 8, needs its
+numbers); the bar reportedly doubles 2027-02-01 (third-party).
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** publish the Google app before Fri 10-30. The brief's LOCAL checks need the PC.
+**Operator:** end the two Oct 26 campaigns in Studio and send the final numbers; Amazon Associates
+and a Facebook Page in Buffer; publish the Google app before Fri 10-30.
 
 ## Slot — Cursor
 

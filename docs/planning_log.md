@@ -9997,3 +9997,41 @@ Filed #1587-#1596; the wave is [cloud_brief_wave132.md](cloud_brief_wave132.md) 
 fixture strings and done-when for each, since the cloud has no `data/`. Not built tonight.
 
 `roadmap-index`: open 158, done 1670, numbered open 149.
+
+## 2026-10-27 — the bridge: 300 ideas, the gate, ads stopped (Claude Code)
+
+**Prompt:** a screenshot of YouTube Studio's Promotions page, and "please sync to youtube for
+stats, and start preparing for the next big phase of the project. next 100= ideas and lets make the
+bridge to success starting now, with all changes being in race to monetization or big views for low
+cost." On the first plan: "make it 300 ideas."
+
+Measured (the sync ran: `ops all-analytics`, 7 steps):
+- **The channel:** 134 subscribers, 4 of them from the 76 videos; 3,852 organic Shorts views in 90
+  days (+4,970 paid); 10.2 long-form hours; W43 1,389 views (+33%); 18 uploads in 7 days.
+- **The screenshot:** its views column matched the synced lifetime views (Modern Warfare 4 36,842
+  vs 37,123; Seahawks 1,850 vs 1,802), so its last column is subscribers - 27 and 2 for $14.55 and
+  $1.10 ($0.54 each); a $10 video-views campaign ended Sep 26; a fourth row (Oct 8) was not shown.
+- **Google's Promote help page:** subscribers and watch hours from ad campaigns do not count toward
+  YPP; promotions do not change organic reach. **Third-party reports:** from 2027-02-01 new
+  applicants need 8,000 hours or 20M engaged Shorts views in 90 days.
+- **Elsewhere:** TikTok 22 posts, 2,075 views, ~3 s watched; Instagram 22 posts, 2,304; Facebook
+  not wired; Shorts' description links not clickable.
+- **GTA 6 launches 2026-11-19** (stored headlines) - 23 days.
+
+The operator's answers (decision 82): stop paid promotion; both YPP paths equally; affiliate
+links, Facebook Reels and TikTok Creator Rewards; park what moves no number.
+
+Done: three campaigns entered (`ops spend`: #2 27 subscribers $0.54 each, #3 2 subscribers, both
+ended 10-27); [bridge_plan.md](bridge_plan.md) with twelve sections of 25 ideas (#1597-#1896);
+the triage - 63 laned, 94 parked, 1 done (#1318, the playlists); `core/roadmap_index` counts
+parked items and lanes; `tests/test_bridge.py` (3 of 4 failed first on the counter, the gate test
+failed until the triage); CLAUDE.md and the next-five skill carry the gate. Decision 68's ceiling
+rises to 400 open (the same reason: the operator asked for the ideas as numbered items), and the
+bridge's ideas expire after 90 days like the shortfalls'.
+
+Found on the way: `test_worker_shelf_public.test_a_fresh_render_still_counts` failed on the PC in
+both orders, on the committed code too - its patch targeted `_event_started`, which the shelf no
+longer calls (it reads `run_event`), so run 155's real draft in `output/tapin/drafts` (Oct 18
+kickoff) made the render "started". The test now patches `run_event`.
+
+`roadmap-index`: open 363 (every one laned), done 1671, parked 94, numbered open 361.

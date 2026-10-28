@@ -68,6 +68,9 @@ class ShelfTests(unittest.TestCase):
             # 2026-10-18 - from then the real clock made this "its game has started". The
             # tests here are about age and window.
             patch.object(stale_renders, "_event_started", return_value=False),
+            # 2026-10-27: the shelf reads the event through `run_event` now, which found run
+            # 155's real draft in output/tapin/drafts (its Oct 18 kickoff) on the PC - "started".
+            patch.object(stale_renders, "run_event", return_value=None),
         ):
             return stale_renders.shelf_rows("tapin")
 

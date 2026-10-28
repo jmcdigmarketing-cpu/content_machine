@@ -28,7 +28,9 @@ while sitting at picks 1 and 5.
    recommendation is prose and drifts. For each item check `docs/backlog.md` for
    its real text and size, and grep `docs/handoff_synopsis.md` for it - an item
    listed "Still parked" there is not next. Check that anything it names as a
-   dependency exists in code: #333's stated trigger, #341, does not.
+   dependency exists in code: #333's stated trigger, #341, does not. Since decision 82 a wave
+   takes only items with a lane (` · lane: ...`) - the bridge's order is in
+   `docs/bridge_plan.md` - and each new item filed names its lane.
 3. **Build each one fail-then-fix**, per [tdd](../tdd/SKILL.md). Order cheapest
    and safest first so the risky one cannot strand the rest.
 4. **Audit before committing** - see below. Not a re-run of the tests.

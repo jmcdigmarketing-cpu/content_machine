@@ -421,3 +421,20 @@ and "3+ outlets or a marquee name". **Consequence:** the story frame is not a ta
 neutral-unless-asked rule stands; a thin night drafts fewer rather than pad; smaller stories and
 other games stay in the menu for the operator. Specified for a cloud session in
 [cloud_brief_wave132.md](cloud_brief_wave132.md).
+
+## 82. The bridge: every change in the race to monetization or big views for little money; ads stop (2026-10-27)
+**Decision:** from 2026-10-27 every change names its lane - views, organic subscribers, long-form
+hours, money outside YouTube, or cost - and the number it moves; a defect that holds or breaks
+publishing always passes; an item that moves no number is parked (`- [-]`, neither open nor done).
+Paid promotion stops. The bridge aims at both YPP paths equally - 20M engaged Shorts views in 90
+days and 8,000 long-form hours in 12 months, each with 1,000 organic subscribers - and starts money
+outside YouTube now: affiliate links, a Facebook Reels crosspost, TikTok Creator Rewards as a
+long-run target. **Why:** Google's Promote help page says subscribers and watch hours from ad
+campaigns do not count toward YPP and promotions do not change organic reach - the Oct 26
+campaigns bought ~37k views and 29 subscribers for $15.65 that count for nothing; 4 of 134
+subscribers came from the videos; the bar reportedly doubles on 2027-02-01 (third-party reports).
+Asked, the operator took "Stop paid promotion", "Both equally", "Affiliate links, Facebook Reels
+crosspost, TikTok Creator Rewards" and "Park them"; then: "make it 300 ideas". **Consequence:** 158
+open items became 63 laned, 94 parked, 1 done; 300 ideas filed (#1597-#1896) in
+[bridge_plan.md](bridge_plan.md)'s twelve sections; `tests/test_bridge.py` fails CI on an open
+numbered item without a lane; the backlog ceiling rises from 300 to 400 (decision 68's rule, for the same reason) and the bridge's ideas expire after 90 days like the shortfalls'; the campaigns are in the spend ledger.

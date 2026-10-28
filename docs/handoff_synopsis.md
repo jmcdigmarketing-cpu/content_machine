@@ -112,7 +112,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** wave 132, #1587-#1596 ([cloud_brief_wave132.md](cloud_brief_wave132.md)); then #1459 #1458 #1431 #1355 #1332. **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - wave 132 from [cloud_brief_wave132.md](cloud_brief_wave132.md), then 133 the GTA 6 window (launch 11-19), 134 the scoreboard, 135 speed and volume, 136 money. **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

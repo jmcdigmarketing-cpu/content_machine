@@ -103,6 +103,10 @@ listed in `pyproject.toml` `packages`.
 
 ## Hard rules
 
+- **The bridge (decision 82):** every change names its lane - views, subscribers (organic),
+  hours (long-form), money (outside YouTube), cost - or `defect` for one that holds or breaks
+  publishing; an open backlog item ends with ` · lane: <lane>` or is parked `- [-]`
+  (`tests/test_bridge.py`). The plan and its 300 ideas: [docs/bridge_plan.md](docs/bridge_plan.md).
 - Never commit `.env` or `config/secrets/` (OAuth files).
 - Don't touch Apify credentials, budget, or circuit-breaker logic
   ([`core/cost_meter.py`](core/cost_meter.py), [`apis/apify_client.py`](apis/apify_client.py))

@@ -34,6 +34,10 @@ in [planning_log.md](planning_log.md) (waves 110-112).
 
 ### S01 Monetization is far
 
+**Since 2026-10-27 this shortfall is worked by [bridge_plan.md](bridge_plan.md)** (decision 82):
+ads do not count toward YPP, the bar reportedly doubles on 2027-02-01, and both paths are
+aimed at with money outside YouTube started now.
+
 **Now.** 69 of 1,000 subscribers; 1,936 organic Shorts views in 90 days (272 a week against the
 777,778 the Shorts path needs); 10 of 4,000 long-form hours (0.2 a week against 77). As of
 2026-10-18, YouTube's own numbers, ads excluded.
@@ -50,6 +54,9 @@ long-form hours a week rising from 0.2.
 in wave 113: #1319.
 
 ### S02 Subscribers came from ads, not videos
+
+**Since 2026-10-27:** paid promotion stopped (decision 82); organic subscribers are the
+bridge's B05 lane.
 
 **Now.** +64 subscribers in 28 days, 2 of them from the 53 videos (one each from the Vanguard meta
 and the GTA VI box videos). YouTube counts 4,543 paid Shorts views in 90 days; no campaign is

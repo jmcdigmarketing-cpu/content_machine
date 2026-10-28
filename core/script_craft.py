@@ -474,6 +474,19 @@ _LOWER_WORD = re.compile(r"\b[a-z][a-z]+\b")
 _RUN_ON_SIDE = 6  # words on each side of the missing stop
 
 
+def mid_thought_starts(script: str) -> list[str]:
+    """#1587: sentences that begin in lower case after a full stop - a fragment a rewrite left
+    behind (run 187: "...will pay for it. and Manchester City's perfect start is gone."). A word
+    written with a capital inside ("iPhone"), a number or a quote is not one."""
+    out: list[str] = []
+    for sentence in script_sentences(script or "")[1:]:  # after a full stop: not the first
+        text = sentence.strip().lstrip("*_")
+        first = text.split(" ", 1)[0] if text else ""
+        if first[:1].islower() and not any(ch.isupper() for ch in first):
+            out.append(sentence.strip())
+    return out
+
+
 def unfinished_ending(script: str) -> list[str]:
     """#1334 (wave 116): what is wrong with how the script ends - [] when nothing.
 
@@ -577,6 +590,9 @@ def script_check(
     if run_on:  # #1352
         why.append(f'a sentence runs into the next ("{run_on[0][:60]}")')
     why.extend(unfinished_ending(script))  # #1334
+    stranded = mid_thought_starts(script)
+    if stranded:  # #1587
+        why.append(f'a sentence starts mid-thought ("{stranded[0][:60]}")')
     broken = broken_place_name(script, places=SPOKEN_SPLIT_PLACES)
     if broken:  # #1482: the captions show the script's words as written
         why.append(f'the script breaks a name: "{broken}" has lost a word, and so do the captions')

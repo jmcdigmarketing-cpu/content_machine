@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-25: wave 131, the next ten
+# Handoff synopsis — 2026-10-28: wave 132, the first five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-25 (Claude Code): wave 131, the next ten
+## Last wave — 2026-10-28 (Claude Code): wave 132, the first five
+
+The 10-25 session's defects: a spoken "..." ended the hook and the swap stranded a fragment (6 of
+60 stored scripts carried one - overnight now reads the check live); previews were read as
+explainers from their own brief (a `preview` intent now, and machine drafts say what they are);
+another game's lines became sources; donation asks became facts; a flagged title is retried.
+
+## Previous — 2026-10-25 (Claude Code): wave 131, the next ten
 
 Runs 185 and 186 were held for a claim until their game started; a held preview now toasts within
 6 hours of its game and `ops status` names it. The captions show the script's numbers ("UFC 334",
@@ -27,16 +34,6 @@ its game (run 193 was drafted 31 minutes before). The insight pass names why it 
 twice. Preview facts carry ESPN's season leaders; two of five ideas stay gaming while gaming leads
 organic views; a public preview gets one comment asking for the viewer's call; renders a day past
 their game are retired.
-
-## Previous — 2026-10-25 (Claude Code): wave 129, the next ten after it
-
-Measured first: 18 of 46 drafts in two weeks expired undecided and only 4 of 14 game drafts went
-public before their game. With the operator's calls (decision 78): a toast at a preview's decide-by
-time, then a clean overnight render left unanswered 24 h goes out at its slot; the shelf cap 5 when
-the week is empty; a dull opener is a warning; preview shapes rotate as an experiment. Also ESPN
-season context in previews, leagues in turn, `ops hooks`' first-line before/after, api_sports as
-context, `ops overnight --pause-until`. Decision 77 ran live: runs 190 and 191 scheduled Mon noon
-and 10 PM EDT.
 
 ## Pipeline order (operator)
 
@@ -112,7 +109,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - wave 132 from [cloud_brief_wave132.md](cloud_brief_wave132.md), then 133 the GTA 6 window (launch 11-19), 134 the scoreboard, 135 speed and volume, 136 money. **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - #1847 the GTA 6 countdown, #1595 #1594 #1593 #1592, then the rest of wave 132 from [cloud_brief_wave132.md](cloud_brief_wave132.md), then 133 the GTA 6 window (launch 11-19), 134 the scoreboard, 135 speed and volume, 136 money. **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

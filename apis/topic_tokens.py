@@ -725,6 +725,13 @@ def split_sentences(text: str) -> list[str]:
         candidate = text[start : match.end(1)].strip()
         if not candidate or ends_on_an_abbreviation(candidate):
             continue
+        # #1587 (runs 187 and 196): a spoken pause ("zone... for the first time") is not a
+        # sentence end when a lowercase word follows; "Wait... What happened?" still splits.
+        if (
+            candidate.rstrip("\"')]").endswith("...")
+            and text[match.end(2) : match.end(2) + 1].islower()
+        ):
+            continue
         out.append(candidate)
         start = match.end(2)
     tail = text[start:].strip()

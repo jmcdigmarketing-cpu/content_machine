@@ -7,6 +7,16 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-25 (Claude Code): wave 129, the next ten after it
+
+Measured first: 18 of 46 drafts in two weeks expired undecided and only 4 of 14 game drafts went
+public before their game. With the operator's calls (decision 78): a toast at a preview's decide-by
+time, then a clean overnight render left unanswered 24 h goes out at its slot; the shelf cap 5 when
+the week is empty; a dull opener is a warning; preview shapes rotate as an experiment. Also ESPN
+season context in previews, leagues in turn, `ops hooks`' first-line before/after, api_sports as
+context, `ops overnight --pause-until`. Decision 77 ran live: runs 190 and 191 scheduled Mon noon
+and 10 PM EDT.
+
 ## Previous — 2026-10-25 (Claude Code): wave 128, the next ten
 
 Built on the PC from the plan written for the cloud (the push failed). Run 185's claim hold: a

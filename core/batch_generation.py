@@ -368,12 +368,15 @@ def generate_draft(
     # #1301: the brief carries the call the preview was offered with.
     preview = draft_brief(topic, best_bet) if upcoming else ""
 
+    machine_intent = draft_intent(own_idea=own_idea, preview=preview)  # #1588
     if own_idea:
         discovery = run_discovery(topic, channel_id=channel_id, brief=topic)
     elif preview:
-        discovery = run_discovery(topic, channel_id=channel_id, brief=preview)
+        discovery = run_discovery(
+            topic, channel_id=channel_id, brief=preview, intent=machine_intent
+        )
     else:
-        discovery = run_discovery(topic, channel_id=channel_id)
+        discovery = run_discovery(topic, channel_id=channel_id, intent=machine_intent)
     experiment: tuple[str, str, str] | None = None
     if own_idea:
         from apis.topic_variants import idea_angle
@@ -607,6 +610,17 @@ def preview_shape_arm(channel_id: str, preview: str) -> tuple[str, str, str] | N
     except Exception as exc:
         logger.debug("preview shape skipped: %s", exc)
         return None
+
+
+def draft_intent(*, own_idea: bool, preview: str) -> str:
+    """#1588: what a draft is - "" for the operator's own idea (its words are read for cues),
+    "preview" for a coming game, "default" for a headline. Headline words ("vs.", "reaction")
+    and the machine's own brief ("what is at stake") had been read as the operator's ask."""
+    from core.angle_intent import ANGLE_DEFAULT, ANGLE_PREVIEW
+
+    if own_idea:
+        return ""
+    return ANGLE_PREVIEW if preview else ANGLE_DEFAULT
 
 
 def draft_brief(topic: str, best_bet: dict | None) -> str:

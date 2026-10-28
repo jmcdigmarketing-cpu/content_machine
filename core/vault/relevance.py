@@ -222,6 +222,24 @@ def _scaled_cosine(text: str, corpus: str, reference: float) -> tuple[float, flo
     return raw, min(max(raw / reference, 0.0), 1.0)
 
 
+def other_game_teams(topic: str, text: str) -> list[str]:
+    """#1589: the teams `text` names beside one of the topic's, when the topic is a game (two
+    teams of one league) - a line about another game. Run 196, Seahawks-Chiefs in Week 7, was
+    given four Week-6 Broncos-Seahawks lines as confident facts and as its sources."""
+    from apis.nba_teams import team_names_in as nba_teams
+    from apis.nfl_entities import team_names_in as nfl_teams
+
+    out: list[str] = []
+    for teams_in in (nfl_teams, nba_teams):
+        game = set(teams_in(topic or ""))
+        if len(game) < 2:
+            continue
+        named = teams_in(text or "")
+        if game & set(named):
+            out.extend(team for team in named if team not in game and team not in out)
+    return out
+
+
 def score_vault_fact(
     *,
     topic: str,
@@ -275,6 +293,9 @@ def score_vault_fact(
         band = "uncertain"
     else:
         band = "reject"
+    other_game = other_game_teams(topic, bullet)
+    if other_game and band == "confident":
+        band = "uncertain"  # #1589: another game's line is never auto-attached
 
     breakdown: dict[str, Any] = {
         "bullet_entity_support": (round(bullet_entity, 4) if bullet_entity is not None else None),
@@ -294,6 +315,8 @@ def score_vault_fact(
     }
     for name, contribution in contributions.items():
         breakdown[f"{name}_contribution"] = round(contribution, 4)
+    if other_game:
+        breakdown["other_game"] = other_game
 
     return VaultRelevanceDecision(
         score=score,

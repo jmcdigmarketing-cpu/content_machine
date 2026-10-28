@@ -67,6 +67,13 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-10-28 (Claude, wave 132 - the first five).** The 10-25 session's defects: a spoken "..."
+ended the hook and the swap stranded a fragment (#1587; 6 of 60 stored scripts carried one);
+previews read as explainers from their own brief (#1588, a `preview` intent now); another game's
+lines as sources (#1589); donation asks as facts (#1590); a flagged title retried (#1591). Next:
+**#1847** the GTA 6 countdown (it should start 10-29); **#1595** the topic gate; **#1594**
+headlines told as the story; **#1593** one marquee preview a night; **#1592** the 5-8 minute
+Week in Review (Monday 11-02). #1596 (verdicts) waits a wave - it moves no number this week.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 **2026-10-25 (Claude, wave 131).** Measured first: runs 185 and 186 were held for a claim

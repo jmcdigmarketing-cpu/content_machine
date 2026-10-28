@@ -7514,6 +7514,147 @@
         ]
       },
       "why": "a sentence over 25 words goes to the read-aloud split"
+    },
+    {
+      "id": "a-spoken-pause-does-not-end-the-hook",
+      "item": 1587,
+      "source": "run 196, 2026-10-25: the hook swap left 'for the first time in his *career*.' after a new opener",
+      "call": "apis.topic_tokens:split_sentences",
+      "args": [
+        "Patrick Mahomes didn't reach the red zone... for the first time in his *career*. Seattle held Kansas City to three points."
+      ],
+      "select": 0,
+      "expect": {
+        "equals": "Patrick Mahomes didn't reach the red zone... for the first time in his *career*."
+      },
+      "why": "a '...' before a lowercase word is a pause inside the sentence, not its end"
+    },
+    {
+      "id": "the-hook-is-the-whole-first-sentence",
+      "item": 1587,
+      "source": "run 187, 2026-10-25: '...will pay for it. and Manchester City's perfect start is gone.'",
+      "call": "core.hook_score:extract_hook",
+      "args": [
+        "Jackson scored twice... and Manchester City's perfect start is gone. The same afternoon, Arsenal beat Everton 2-0."
+      ],
+      "expect": {
+        "equals": "Jackson scored twice... and Manchester City's perfect start is gone."
+      },
+      "why": "the sibling: the hook the swap replaces is the whole first sentence"
+    },
+    {
+      "id": "a-sentence-that-starts-mid-thought",
+      "item": 1587,
+      "source": "run 187's script as it was read aloud, 2026-10-25",
+      "call": "core.script_craft:mid_thought_starts",
+      "args": [
+        "Jackson scored twice and ended Man City's perfect start, and City's defence will pay for it. and Manchester City's perfect start is gone. The same afternoon, Arsenal beat Everton 2-0."
+      ],
+      "expect": {
+        "equals": [
+          "and Manchester City's perfect start is gone."
+        ]
+      },
+      "why": "the script check names a fragment a rewrite left behind"
+    },
+    {
+      "id": "a-preview-is-not-an-explainer-ask",
+      "item": 1588,
+      "source": "11 of 51 drafts since run 140 read 'explainer' on the cue 'what is' from the preview brief",
+      "call": "core.batch_generation:draft_intent",
+      "kwargs": {
+        "own_idea": false,
+        "preview": "This game has not been played yet - it is on Oct 25. Write a preview: the matchup, who is in form or hurt, what to watch and what is at stake."
+      },
+      "expect": {
+        "equals": "preview"
+      },
+      "why": "the machine says what a draft is; its own brief is not the operator's ask"
+    },
+    {
+      "id": "a-headline-is-not-an-ask",
+      "item": 1588,
+      "source": "run 194: a headline's 'vs.' was read as a comparison ask",
+      "call": "core.batch_generation:draft_intent",
+      "kwargs": {
+        "own_idea": false,
+        "preview": ""
+      },
+      "expect": {
+        "equals": "default"
+      },
+      "why": "the sibling: headline words are not cues"
+    },
+    {
+      "id": "another-games-line-is-not-this-games",
+      "item": 1589,
+      "source": "run 196, 2026-10-25: four Week-6 Broncos-Seahawks lines were confident facts and its sources",
+      "call": "core.vault.relevance:other_game_teams",
+      "args": [
+        "Sunday Night Football: Jaxon Smith-Njigba, Seahawks defense dominate Chiefs, win 20-3",
+        "2026-10-14 - Seahawks rule 3 players OUT for Week 6 showdown with Denver Broncos"
+      ],
+      "expect": {
+        "equals": [
+          "Denver Broncos"
+        ]
+      },
+      "why": "a line naming one of the game's teams and a third team is about another game"
+    },
+    {
+      "id": "a-source-is-a-fact-that-backed-a-claim",
+      "item": 1589,
+      "source": "run 196's sources backed nothing the script said",
+      "call": "core.description_extras:backs_a_claim",
+      "args": [
+        "2026-10-14 - Seahawks rule 3 players OUT for Week 6 showdown with Denver Broncos - https://sports.yahoo.com/x",
+        [
+          "Smith-Njigba had 150 yards and a touchdown"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the sibling: a fact's link is listed only when the claim check cited that fact"
+    },
+    {
+      "id": "a-donation-ask-is-boilerplate",
+      "item": 1590,
+      "source": "run 195, 2026-10-25: auto-research kept a donation ask as a fact",
+      "call": "core.link_facts:is_page_boilerplate",
+      "args": [
+        "We hope you found this article worthwhile. Before you close this tab, please consider supporting The Press and the future of independent community journalism."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a reader-funded outlet's ask is page furniture"
+    },
+    {
+      "id": "a-donation-ask-is-chrome-when-pasted",
+      "item": 1590,
+      "source": "the sibling of run 195's line: the paste filter",
+      "call": "core.operator_facts:is_article_chrome",
+      "args": [
+        "We hope you found this article worthwhile. Before you close this tab, please consider supporting The Press and the future of independent community journalism."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the same line pasted is not ground truth either"
+    },
+    {
+      "id": "a-real-fact-is-not-boilerplate",
+      "item": 1590,
+      "source": "must keep: run 195's own fact",
+      "call": "core.link_facts:is_page_boilerplate",
+      "args": [
+        "Kylian Mbappe scored his 100th goal for Real Madrid in a 2-1 win at Barcelona on Sunday"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the markers name the ask, not words a fact uses"
     }
   ]
 }

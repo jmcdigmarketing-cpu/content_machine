@@ -790,6 +790,7 @@ def _run_new_video_flow_body(
     # #909: what the best-bet card offered and what was taken, for the prediction ledger.
     best_bet_pick = pick_record([], None)
     from_best_bet = False
+    pick_intent = ""  # #1588: set for a menu pick; "" reads the operator's words for cues
     if seed_topic:
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
         topic = seed_topic
@@ -808,9 +809,14 @@ def _run_new_video_flow_body(
                 best_bet_pick = pick_record(options, int(sel))
                 from_best_bet = True
                 # #1301: a picked preview is written as a preview, with its call.
-                from core.batch_generation import draft_brief
+                from core.batch_generation import draft_brief, draft_intent
 
-                creative_brief = draft_brief(topic, best_bet_pick) or creative_brief
+                preview_brief = draft_brief(topic, best_bet_pick)
+                # #1588: a menu pick is a headline or a game, not the operator's words - unless
+                # they typed thoughts, which are still read for cues.
+                if preview_brief or not creative_brief:
+                    pick_intent = draft_intent(own_idea=False, preview=preview_brief)
+                creative_brief = preview_brief or creative_brief
             else:
                 topic, creative_brief = _ask_topic_or_thoughts(creative_brief, channel_id)
                 best_bet_pick = pick_record(options, None)
@@ -831,7 +837,11 @@ def _run_new_video_flow_body(
     print_domain_art(profile.domain, topic=topic)
     with DiscoverySpinner("Discovery") as spinner:
         discovery = run_discovery(
-            topic, channel_id=channel_id, progress=spinner.report, brief=creative_brief
+            topic,
+            channel_id=channel_id,
+            progress=spinner.report,
+            brief=creative_brief,
+            intent=pick_intent,
         )
     t_disc = discovery.timings.get("signals_and_variants", 0) + discovery.timings.get(
         "variant_scoring", 0

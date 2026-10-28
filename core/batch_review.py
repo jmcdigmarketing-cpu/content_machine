@@ -1181,6 +1181,11 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
         reasons = [r for r in check.get("why") or ["not clean"] if "hard to say" not in str(r)]
         if reasons:
             return f"script check: {reasons[0]}"  # #1143
+    from core.script_craft import mid_thought_starts
+
+    stranded = mid_thought_starts(draft.script)
+    if stranded:  # #1587: read live - drafts made before the check carry it unflagged
+        return f'script check: a sentence starts mid-thought ("{stranded[0][:60]}")'
     if meta.get("title_warnings"):
         return "its title says something the facts do not"  # #1150
     game = game_block_reason(meta, now=now)

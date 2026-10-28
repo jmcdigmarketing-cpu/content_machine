@@ -10067,3 +10067,36 @@ moments (UFC 334 11-14, GTA 6 11-19, Thanksgiving, Black Friday, The Game Awards
 UFC 336 01-30), targets per week, checkpoints Dec 1, Jan 5 and Jan 31.
 
 `roadmap-index`: open 363 (every one laned), done 1672, parked 94, numbered open 361.
+
+## 2026-10-28 — wave 132, the first five (Claude Code)
+
+**Prompt:** "lets get started on the next 5 on the roadmap"
+
+Picked: wave 132's first five in its brief's build order ([cloud_brief_wave132.md](cloud_brief_wave132.md)),
+all defects from the operator's 10-25 session - the roadmap's line after the bridge.
+
+Shipped (tests first, `tests/test_wave132.py`: 15 of 16 failed on `0bc4e2e`, the 16th a control that
+pins the misread; the stored-fragment test was written after the live count and failed first too):
+1. **#1587** the hook's first sentence no longer ends at a spoken "..." (`apis/topic_tokens.py`
+   `split_sentences`); a swap that would strand a fragment is refused (`content_engine.replace_opener`);
+   the script check and overnight's gate name a sentence starting mid-thought.
+2. **#1588** a `preview` intent; machine drafts say what they are (`batch_generation.draft_intent`,
+   `pipeline.discovery_intent`); main.py's menu picks too.
+3. **#1589** sources only from facts the claim check cited; another game's lines never confident
+   (`vault/relevance.other_game_teams`).
+4. **#1590** donation asks are boilerplate in the reader and the paste filter.
+5. **#1591** a flagged title retried once from the seed, kept only when clean.
+
+Found on the way: 6 of the last 60 stored drafts carry a stranded fragment, today's run 213 among
+them - overnight reads the stored script check, so the gate now reads `mid_thought_starts` live.
+main.py's menu picks had the same misread as overnight's. Two older tests moved with the change:
+`test_intent_card` pins the mode keys (now with v), and a one-letter placeholder script was flagged
+until the check skipped the first sentence.
+
+Not done: #1591 not measured live (a model call); #1596, #1592-#1595 stay for the next five.
+
+Corpus: 10 cases, 9 failed on HEAD (the 10th is a must-keep fact).
+
+Audit: mypy 92; ruff clean. Suite: 6851 forward and 6851 reversed, OK (6 skipped); data/ and output/ untouched; every new function has a production caller.
+
+`roadmap-index`: open 358, done 1677, parked 94, numbered open 356.

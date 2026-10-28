@@ -125,10 +125,18 @@ def collect_source_urls(
     key_facts: list[str] | None = None,
     extra_urls: list[str] | None = None,
     relevance_corpus: str = "",
+    citations: list[str] | None = None,
 ) -> list[str]:
-    """http(s) from operator paste + vault FactRecord.source_url. Deduped, capped."""
+    """http(s) from operator paste + vault FactRecord.source_url. Deduped, capped.
+
+    ``citations`` (#1589): the fact lines the claim check said backed a claim. When given, a
+    key fact's or a vault record's URL is listed only if that fact backed one - run 196 listed
+    four Week-6 links that backed nothing it said."""
     found: list[str] = []
     seen: set[str] = set()
+
+    def _backed(text: str) -> bool:
+        return citations is None or backs_a_claim(text, citations)
 
     from core.source_diversity import clean_urls, urls_from_text
 
@@ -143,6 +151,8 @@ def collect_source_urls(
     for line in extra_urls or []:
         _add(str(line))
     for line in key_facts or []:
+        if not _backed(str(line)):
+            continue
         for url in urls_from_text(str(line)):
             _add(url)
     if channel_id and topic:
@@ -161,10 +171,37 @@ def collect_source_urls(
                 corpus=relevance_corpus,
                 relevance_policy="public",
             ):
-                _add(getattr(rec, "source_url", "") or "")
+                if _backed(str(getattr(rec, "claim", "") or "")):
+                    _add(getattr(rec, "source_url", "") or "")
         except Exception as exc:
             logger.debug("vault source_url collect skipped: %s", exc)
     return found[:8]
+
+
+_CITE_PREFIX = re.compile(r"^(?:\d{4}-\d{2}-\d{2}\s*[·\-]\s*|as of [^:]{1,30}:\s*)", re.I)
+
+
+def _cite_key(text: str) -> str:
+    """A fact line as the claim check quotes it: no URL, no date or "as of" prefix, one case."""
+    from core.source_diversity import urls_from_text
+
+    body = str(text or "")
+    for url in urls_from_text(body):
+        body = body.replace(url, " ")
+    body = _CITE_PREFIX.sub("", body.strip(" -—"))
+    return " ".join(body.lower().split()).strip(" -—.")
+
+
+def backs_a_claim(fact: str, citations: list[str]) -> bool:
+    """#1589: `fact` is one of the lines the claim check cited for a supported claim."""
+    key = _cite_key(fact)
+    if len(key) < 12:
+        return False
+    for citation in citations or []:
+        cite = _cite_key(citation)
+        if len(cite) >= 12 and (cite in key or key[:80] in cite):
+            return True
+    return False
 
 
 def format_sources_block(urls: list[str] | None) -> str:

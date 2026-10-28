@@ -53,26 +53,22 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-28 · **HEAD at write:** `40dda17` (the bridge; this commit follows) · **Tree:**
-clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
+**Written:** 2026-10-28 · **HEAD at write:** `0bc4e2e` (the bridge expanded; this wave's commit
+follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**The phase is the bridge** ([bridge_plan.md](bridge_plan.md), decision 82), now with the math to
-the bar and the top 30 ([bridge_scores.md](bridge_scores.md) scores all 300), a calendar to
-2027-02-01 ([bridge_calendar.md](bridge_calendar.md)) and a build-ready brief per wave.
+**Wave 132, the first five, shipped** (the 10-25 session's defects): #1587 the hook no longer ends at
+a spoken "..." and a swap never strands a fragment - 6 of 60 stored drafts carry one, so overnight
+reads the check live (run 213, today's, waits for review); #1588 a `preview` intent, machine drafts
+say what they are; #1589 sources only from cited facts, another game's lines never confident;
+#1590 donation asks are boilerplate; #1591 a flagged title retried once.
 
-**Next, in order:** wave 132 ([cloud_brief_wave132.md](cloud_brief_wave132.md)), then **133 the GTA
-6 window** ([cloud_brief_wave133.md](cloud_brief_wave133.md) - the countdown should start 10-29 and
-"everything we know" be public by 11-10; GTA 6 launches 11-19), then
-[134](cloud_brief_wave134.md) the scoreboard, [135](cloud_brief_wave135.md) speed and loops,
-[136](cloud_brief_wave136.md) money and reach. Checkpoints Dec 1, Jan 5, Jan 31.
-
-**Fixed today (#1897):** the console windows the operator saw - overnight's render and draft
-children never hid their own children's windows; each child's `main` now calls
-`hide_child_windows()`, and `tests/test_child_windows.py` guards it.
+**Next five:** **#1847** the GTA 6 countdown - it should start 10-29 (wave 133's brief, item 1);
+#1595 the topic gate; #1594 headlines told as the story; #1593 one marquee preview a night; #1592
+the 5-8 minute Week in Review before Monday 11-02. #1596 waits a wave.
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** end the two Oct 26 campaigns in Studio and send the final numbers (and the Oct 8
-row); Amazon Associates and a Facebook Page in Buffer; publish the Google app before Fri 10-30.
+**Operator:** end the two Oct 26 campaigns in Studio and send the final numbers; Amazon Associates
+and a Facebook Page in Buffer; publish the Google app before Fri 10-30.
 
 ## Slot — Cursor
 

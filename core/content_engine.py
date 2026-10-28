@@ -1104,13 +1104,49 @@ def _hook_variants(
     if not best:
         return script, extra
     best = with_full_stop(best)
+    swapped = replace_opener(script, current.hook, best)
+    if swapped is None:
+        extra["refused_swap"] = "the rest of the old opener would start mid-sentence"
+        return script, extra
     extra["picked"] = best
-    rest = script.strip()[len(current.hook) :] if script.strip().startswith(current.hook) else ""
-    if not rest:
-        index = script.find(current.hook)
-        rest = script[index + len(current.hook) :] if index >= 0 else script
     logger.info("Hook variant kept (#987): %s", best)
-    return best + rest, extra
+    return swapped, extra
+
+
+def retry_unbacked_title(
+    title: str, warnings: list[str], *, regenerate, lint
+) -> tuple[str, list[str], str]:
+    """(title, its warnings, the title it replaced or "") - #1591. Run 195 published "Breaking
+    down Real Madrid's set-piece adjustments that won El Clasico": the title check flagged the
+    set-piece premise and nothing acted on it. A flagged title is generated once more without the
+    angle's wording; the retry is kept only when its own check is clean."""
+    if not warnings:
+        return title, warnings, ""
+    try:
+        retry = str(regenerate() or "").strip()
+    except Exception as exc:
+        logger.debug("title retry skipped: %s", exc)
+        return title, warnings, ""
+    if not retry or retry == title:
+        return title, warnings, ""
+    retry_warnings = list(lint(retry) or [])
+    if retry_warnings:
+        return title, warnings, ""
+    logger.warning("Title was not backed by the facts; regenerated: %r -> %r", title, retry)
+    return retry, [], title
+
+
+def replace_opener(script: str, old: str, new: str) -> str | None:
+    """`script` with its opener `old` replaced by `new`, or None when what follows the old
+    opener starts in lower case - the swap would strand a fragment (#1587: run 196 read aloud
+    "...offensive line. for the first time in his *career*.")."""
+    rest = script.strip()[len(old) :] if script.strip().startswith(old) else ""
+    if not rest:
+        index = script.find(old)
+        rest = script[index + len(old) :] if index >= 0 else script
+    if rest.lstrip()[:1].islower():
+        return None
+    return new + rest
 
 
 def with_full_stop(sentence: str) -> str:
@@ -2633,6 +2669,28 @@ def generate_content_package(
             len(title_warnings),
             "; ".join(title_warnings),
         )
+        # #1591: once more from the seed - not the angle's premise - kept only when clean.
+        title, title_warnings, _unbacked_from = retry_unbacked_title(
+            title,
+            title_warnings,
+            regenerate=lambda: strip_label(
+                generate_title(
+                    script=script,
+                    topic=seed_topic or topic,
+                    seed_topic=seed_topic,
+                    key_facts=clean_key_facts,
+                    channel_id=channel_id,
+                    brief=creative_brief,
+                    intent=resolved_intent,
+                )
+            ),
+            lint=lambda candidate: lint_title_grounding(
+                candidate,
+                facts_text=corpus.factual_text,
+                priority_facts=clean_key_facts,
+                topic=topic,
+            ),
+        )
     from core.youtube_meta import check_title_script_consistency
 
     title_script_check = check_title_script_consistency(title, script, topic=topic)
@@ -2729,6 +2787,12 @@ def generate_content_package(
             key_facts=clean_key_facts,
             extra_urls=_urls_from_text(signal_facts),
             relevance_corpus=relevance_corpus or signal_facts or "",
+            # #1589: a key fact's link only when the claim check cited that fact.
+            citations=(
+                [c.citation_line for c in verification.claims if c.supported and c.citation_line]
+                if verification is not None
+                else None
+            ),
         )
     except Exception as exc:  # local resolver, but never fail a run over a sidecar
         logger.warning("source_urls unresolved, sidecar will be sourceless: %s", exc)

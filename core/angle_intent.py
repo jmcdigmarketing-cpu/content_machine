@@ -43,6 +43,10 @@ ANGLE_HOPE = "hope"
 # #1084: the operator's decision (2026-10-10) - a take only when asked for. Until then the
 # take machinery WAS `default`, so every topic without a cue word got one.
 ANGLE_TAKE = "take"
+# #1588 (2026-10-28): a coming game's draft. Its own brief ("what to watch and what is at
+# stake") was read for cues, so all 11 game previews since run 140 were written as explainers.
+# The machine says what a draft is; cues are read only from the operator's words.
+ANGLE_PREVIEW = "preview"
 
 ALL_INTENTS = (
     ANGLE_REACTION,
@@ -54,6 +58,7 @@ ALL_INTENTS = (
     ANGLE_TUTORIAL,
     ANGLE_COMPARISON,
     ANGLE_RETROSPECTIVE,
+    ANGLE_PREVIEW,
     ANGLE_DEFAULT,
 )
 
@@ -473,6 +478,7 @@ _INTENT_NOTES = {
     ANGLE_TUTORIAL: "tutorial (read from your topic) - take/controversy framings suppressed",
     ANGLE_COMPARISON: "comparison (read from your topic)",
     ANGLE_RETROSPECTIVE: "retrospective (read from your topic)",
+    ANGLE_PREVIEW: "preview (a coming game) - every angle backs the call it was offered with",
 }
 
 
@@ -499,6 +505,10 @@ BEATS: dict[str, str] = {
     ),
     ANGLE_REACTION: (
         "hook → what happened, in order → what stands out and why → what it means next"
+    ),
+    ANGLE_PREVIEW: (
+        "hook with the call → why it goes that way, from the facts → what decides it → who is "
+        "in form or out → the call again, graded after the game"
     ),
 }
 
@@ -544,6 +554,7 @@ MODE_KEYS: dict[str, tuple[str, str]] = {
     "c": (ANGLE_COMPARISON, "comparison"),
     "b": (ANGLE_RETROSPECTIVE, "looking back"),
     "r": (ANGLE_REACTION, "reaction"),
+    "v": (ANGLE_PREVIEW, "preview - a coming game, with its call"),
 }
 
 
@@ -705,6 +716,11 @@ def stance_rule(intent: str, idea: str = "") -> str:
             "'hopeium' is their word for optimism, not mockery. Every angle is a different, "
             "fact-checkable reason for optimism. Never question, debunk, psychoanalyse or mock "
             "the hope - no 'critics', 'denial', 'fragile', 'masks', 'reality check'."
+        )
+    if intent == ANGLE_PREVIEW:
+        return (
+            "STANCE: a preview of a game not yet played, with a call. Every angle backs the call "
+            "the brief names, from the facts - never a result, a score or a play as if it happened."
         )
     if intent == ANGLE_TAKE:
         if not stated_side(idea):

@@ -10,6 +10,7 @@ from core.angle_intent import (
     ANGLE_HOPE,
     ANGLE_LIST,
     ANGLE_PLAN,
+    ANGLE_PREVIEW,
     ANGLE_REACTION,
     ANGLE_RETROSPECTIVE,
     ANGLE_TAKE,
@@ -240,6 +241,14 @@ INTENT_ANGLES = {
         "the_difference_that_decides_it",
         "what_changed_between_them",
     ],
+    # #1588: a coming game, written to its call.
+    ANGLE_PREVIEW: [
+        "the_call_and_why",
+        "what_decides_it",
+        "who_is_in_form_or_out",
+        "the_matchup_that_matters",
+        "the_stakes",
+    ],
     ANGLE_RETROSPECTIVE: [
         "what_it_got_right",
         "how_it_holds_up_now",
@@ -296,6 +305,10 @@ _LENS_EXAMPLES = {
     ANGLE_RETROSPECTIVE: (
         "what it got right, how it holds up now, what it changed, the moment it "
         "peaked, what came after"
+    ),
+    ANGLE_PREVIEW: (
+        "the call and the fact behind it, the one thing that decides the game, who is in form "
+        "or out, the matchup that matters most, what is at stake for each side"
     ),
 }
 

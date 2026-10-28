@@ -88,6 +88,14 @@ _JUNK_MARKERS = (
     "kevin o'connor show",
     "intelligent search from bing",
     "makes it easier to quickly find",
+    # #1590 (run 195): a reader-funded outlet's donation ask, kept as two "facts".
+    "consider supporting",
+    "independent journalism",
+    "independent community journalism",
+    "before you close this tab",
+    "support our journalism",
+    "support our work",
+    "make a donation",
 )
 
 

@@ -87,7 +87,8 @@ class TestIntentCard(unittest.TestCase):
         self.assertIn("Source: model", text)
         self.assertIn("Cue: reasons for hope", text)
         keys = [window.mode_box.itemData(i) for i in range(window.mode_box.count())]
-        self.assertEqual(keys, ["n", "h", "t", "p", "e", "u", "l", "c", "b", "r"])
+        # #1588 (2026-10-28): "v" - a preview of a coming game, with its call.
+        self.assertEqual(keys, ["n", "h", "t", "p", "e", "u", "l", "c", "b", "r", "v"])
         window.mode_box.setCurrentIndex(keys.index("p"))
         self.assertEqual(window._bridge._answers.get_nowait(), "m")
         window._show_request(AskRequest(prompt="  Mode (Enter = keep this one): ", kind="text"))

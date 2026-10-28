@@ -575,6 +575,16 @@ def _editorial_scores(
     return angle_scores, angle_fact_fit
 
 
+def discovery_intent(topic: str, brief: str, intent: str = "") -> Any:
+    """The run's intent read (#1089), or - for a draft the machine made - the intent it was
+    given (#1588), recorded as source "machine"."""
+    from core.angle_intent import IntentRead, resolve_intent
+
+    if intent:
+        return IntentRead(intent=intent, source="machine")
+    return resolve_intent(topic, brief)
+
+
 def run_discovery(
     topic: str,
     variant_limit: int = 5,
@@ -582,8 +592,12 @@ def run_discovery(
     *,
     progress: Callable[..., None] | None = None,
     brief: str = "",
+    intent: str = "",
 ) -> DiscoveryResult:
     """Pull signals, generate variants, score in parallel.
+
+    ``intent`` (#1588): what a machine-made draft is ("preview", "default"); given, the topic and
+    brief are not read for cue words - they are a headline and the machine's own brief.
 
     progress: optional callback(phase: str, done: int | None, total: int | None)
     invoked as each discovery phase advances (drives the live spinner).
@@ -674,10 +688,8 @@ def run_discovery(
     )
 
     # #1089: the run's one intent read - the cue words, else one cheap model read - made here
-    # so the angles, the angle screen and the script all use it.
-    from core.angle_intent import resolve_intent
-
-    run_read = resolve_intent(topic, brief)
+    # so the angles, the angle screen and the script all use it. #1588: a machine draft's own.
+    run_read = discovery_intent(topic, brief, intent)
 
     _report("Fetching signals & variants")
     variant_report: dict[str, Any] = {}  # #1008: angles dropped for a stale date

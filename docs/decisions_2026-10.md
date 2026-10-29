@@ -438,3 +438,15 @@ crosspost, TikTok Creator Rewards" and "Park them"; then: "make it 300 ideas". *
 open items became 63 laned, 94 parked, 1 done; 300 ideas filed (#1597-#1896) in
 [bridge_plan.md](bridge_plan.md)'s twelve sections; `tests/test_bridge.py` fails CI on an open
 numbered item without a lane; the backlog ceiling rises from 300 to 400 (decision 68's rule, for the same reason) and the bridge's ideas expire after 90 days like the shortfalls'; the campaigns are in the spend ledger.
+
+## 83. The GTA 6 countdown: the stem then the story, an extra draft, held after its day (2026-10-28)
+**Decision:** from 10-29 to 11-18 a daily "GTA 6: N days to launch" Short (#1847), titled
+"GTA 6: 21 days to launch - <the day's story>" (the stem alone past 100 characters), drafted
+overnight as an extra fourth draft on top of the night's count - even when drafts wait - and held
+and retired once its day ends; the Week in Review plays the week's other Shorts as their openings
+first, then the top 3 whole, counted down #3, #2, #1 (#1592). **Why:** GTA 6 launches 11-19 and
+its Shorts are the channel's best (run 191, 1,030 organic views, the week's top); a countdown
+published a day late states the wrong number. Asked, the operator took "Stem, then the story",
+"An extra fourth" (not the recommended "One of the three") and "Rundown, then top 3".
+**Consequence:** the countdown costs one more cheap script a night and one more draft to decide;
+`config/series.json` holds it and `SERIES_COUNTDOWN=false` stops it; launch day is #1848's.

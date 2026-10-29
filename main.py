@@ -815,7 +815,11 @@ def _run_new_video_flow_body(
                 # #1588: a menu pick is a headline or a game, not the operator's words - unless
                 # they typed thoughts, which are still read for cues.
                 if preview_brief or not creative_brief:
-                    pick_intent = draft_intent(own_idea=False, preview=preview_brief)
+                    pick_intent = draft_intent(  # #1594: a headline pick is told as the story
+                        own_idea=False,
+                        preview=preview_brief,
+                        source=options[int(sel) - 1].source,
+                    )
                 creative_brief = preview_brief or creative_brief
             else:
                 topic, creative_brief = _ask_topic_or_thoughts(creative_brief, channel_id)

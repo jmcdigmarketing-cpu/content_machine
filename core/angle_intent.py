@@ -47,6 +47,10 @@ ANGLE_TAKE = "take"
 # stake") was read for cues, so all 11 game previews since run 140 were written as explainers.
 # The machine says what a draft is; cues are read only from the operator's words.
 ANGLE_PREVIEW = "preview"
+# #1594 (decision 81): a headline's draft - the story and why fans care, not a take and not a
+# breakdown. The default frames and the ranker's weight on numbers turned big stories into
+# "How Cincinnati's tempo keeps Baltimore's young QB off balance" (run 193).
+ANGLE_NEWS = "news"
 
 ALL_INTENTS = (
     ANGLE_REACTION,
@@ -59,6 +63,7 @@ ALL_INTENTS = (
     ANGLE_COMPARISON,
     ANGLE_RETROSPECTIVE,
     ANGLE_PREVIEW,
+    ANGLE_NEWS,
     ANGLE_DEFAULT,
 )
 
@@ -73,6 +78,7 @@ CALM_INTENTS = frozenset(
         ANGLE_TUTORIAL,
         ANGLE_COMPARISON,
         ANGLE_RETROSPECTIVE,
+        ANGLE_NEWS,
     }
 )
 
@@ -479,6 +485,7 @@ _INTENT_NOTES = {
     ANGLE_COMPARISON: "comparison (read from your topic)",
     ANGLE_RETROSPECTIVE: "retrospective (read from your topic)",
     ANGLE_PREVIEW: "preview (a coming game) - every angle backs the call it was offered with",
+    ANGLE_NEWS: "the story (a headline) - what happened and why fans care; no take, no breakdown",
 }
 
 
@@ -509,6 +516,10 @@ BEATS: dict[str, str] = {
     ANGLE_PREVIEW: (
         "hook with the call → why it goes that way, from the facts → what decides it → who is "
         "in form or out → the call again, graded after the game"
+    ),
+    ANGLE_NEWS: (
+        "hook with what happened to the biggest name → the facts of it, in order → why it "
+        "matters to the fans → what happens next"
     ),
 }
 
@@ -555,6 +566,7 @@ MODE_KEYS: dict[str, tuple[str, str]] = {
     "b": (ANGLE_RETROSPECTIVE, "looking back"),
     "r": (ANGLE_REACTION, "reaction"),
     "v": (ANGLE_PREVIEW, "preview - a coming game, with its call"),
+    "s": (ANGLE_NEWS, "the story - what happened and why fans care"),
 }
 
 
@@ -721,6 +733,12 @@ def stance_rule(intent: str, idea: str = "") -> str:
         return (
             "STANCE: a preview of a game not yet played, with a call. Every angle backs the call "
             "the brief names, from the facts - never a result, a score or a play as if it happened."
+        )
+    if intent == ANGLE_NEWS:
+        return (
+            "STANCE: the story itself, not a take and not a breakdown. Every angle says what "
+            "happened to the biggest name in the headline, or what it means to that team's or "
+            "game's fans - never a scheme, a usage rate or a set-piece breakdown."
         )
     if intent == ANGLE_TAKE:
         if not stated_side(idea):

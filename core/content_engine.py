@@ -241,7 +241,14 @@ def _build_prompts(
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
 
-    from core.angle_intent import ANGLE_HOPE, ANGLE_PLAN, ANGLE_TAKE, CALM_INTENTS, read_intent
+    from core.angle_intent import (
+        ANGLE_HOPE,
+        ANGLE_NEWS,
+        ANGLE_PLAN,
+        ANGLE_TAKE,
+        CALM_INTENTS,
+        read_intent,
+    )
 
     if intent:
         resolved_intent, also = intent, intent_also
@@ -293,6 +300,29 @@ def _build_prompts(
             "in order, each tied to a verified fact. Do NOT take a different side, do NOT "
             "write a hot take, do NOT turn it into a debate about something else.\n"
             "- Cut hedging and filler. Every sentence moves the plan forward.\n"
+            '- Close on a SPECIFIC line. NEVER "what do you think? drop your thoughts in the '
+            'comments".'
+        )
+    elif resolved_intent == ANGLE_NEWS:
+        # #1594 (decision 81): a headline told as the story. The calm branch below said "explain
+        # the mechanism", and the best-watched Shorts told the story itself.
+        voice_take = (
+            "- Tell the story. Say what happened to the biggest name in it, plainly, then what it "
+            "means. Not a take, not a breakdown of schemes, usage rates or set pieces."
+        )
+        framing_take = (
+            "- Shape the script as hook (what happened, with its biggest name) → the facts of it, "
+            "in order → why it matters to the fans of that team or game → what happens next → "
+            "payoff. A viewer should walk away knowing the story and why it matters."
+        )
+        must_close = (
+            "- Close on what it means for the fans or what comes next (the next game, card, patch "
+            "or date) - not a hot take and not a comment-bait question."
+        )
+        user_take = (
+            "- FORMAT is the story: what happened, from verified facts, then why it matters to the "
+            "fans. Do NOT take a side, do NOT write a hot take, do NOT break down mechanics.\n"
+            "- Cut hedging and filler. Every sentence moves the story on.\n"
             '- Close on a SPECIFIC line. NEVER "what do you think? drop your thoughts in the '
             'comments".'
         )

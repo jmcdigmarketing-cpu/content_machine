@@ -7655,6 +7655,179 @@
         "falsy": true
       },
       "why": "the markers name the ask, not words a fact uses"
+    },
+    {
+      "id": "a-one-outlet-story-is-held-for-the-menu",
+      "item": 1595,
+      "source": "run 158: Pokemon body pillows, one outlet, 2 organic views",
+      "call": "core.batch_generation:story_passes_gate",
+      "args": [
+        "Pokemon's Snorlax and Bewear body pillows designed by sleep therapist signal positive outlook"
+      ],
+      "kwargs": {
+        "source": "trending",
+        "outlets": 1,
+        "names": [
+          "GTA 6",
+          "Luka Doncic"
+        ]
+      },
+      "expect": {
+        "falsy": true
+      },
+      "why": "an overnight headline needs three outlets or a marquee name"
+    },
+    {
+      "id": "a-marquee-name-passes-on-two-outlets",
+      "item": 1595,
+      "source": "must keep: 10-25's 'Luka Doncic Scores 52 In Win At Jazz', 2 outlets",
+      "call": "core.batch_generation:story_passes_gate",
+      "args": [
+        "Luka Doncic Scores 52 In Win At Jazz"
+      ],
+      "kwargs": {
+        "source": "trending",
+        "outlets": 2,
+        "names": [
+          "GTA 6",
+          "Luka Doncic"
+        ]
+      },
+      "expect": {
+        "truthy": true
+      },
+      "why": "a marquee name is the gate's other door"
+    },
+    {
+      "id": "a-team-you-covered-is-not-a-nights-preview",
+      "item": 1593,
+      "source": "run 193: a 1 PM CBS Bengals-Ravens game drafted on the team rule",
+      "call": "core.batch_generation:preview_qualifies",
+      "args": [
+        "team"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "overnight drafts a national broadcast, a league note or a numbered card"
+    },
+    {
+      "id": "a-fight-night-is-not-a-numbered-card",
+      "item": 1593,
+      "source": "10-25's previews: UFC Fight Night: Bonfim vs. Brady",
+      "call": "core.best_bet:card_kind",
+      "args": [
+        "UFC Fight Night: Bonfim vs. Brady"
+      ],
+      "expect": {
+        "equals": "ufc"
+      },
+      "why": "the sibling: only 'UFC 3##' qualifies"
+    },
+    {
+      "id": "a-breakdown-template-loses-under-news",
+      "item": 1594,
+      "source": "run 195's angle list: 'How Real Madrid's midfield control neutralized ...'",
+      "call": "core.angle_ranker:_mechanics_penalty",
+      "args": [
+        "How Real Madrid's midfield control neutralized Barcelona's pressing in El Clasico"
+      ],
+      "expect": {
+        "equals": 0.25
+      },
+      "why": "a headline is told as the story, not its mechanics"
+    },
+    {
+      "id": "how-a-team-adjusts-is-not-a-breakdown",
+      "item": 1594,
+      "source": "must keep: SNF's 'How Kansas City adjusts after Sunday Night Football setback'",
+      "call": "core.angle_ranker:_mechanics_penalty",
+      "args": [
+        "How Kansas City adjusts after Sunday Night Football setback"
+      ],
+      "expect": {
+        "equals": 0.0
+      },
+      "why": "the template is 'How X's <mechanism>', not every 'How'"
+    },
+    {
+      "id": "the-story-angle-keeps-the-headline",
+      "item": 1594,
+      "source": "SNF 10-25: 'Seahawks defense sets tone early against Chiefs ...' had fidelity 0",
+      "call": "core.angle_ranker:_news_fidelity",
+      "args": [
+        "Seahawks defense sets tone early against Chiefs offensive struggles",
+        "Sunday Night Football: Jaxon Smith-Njigba, Seahawks defense dominate Chiefs, win 20-3"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "its subjects and 'defense' are the headline's"
+    },
+    {
+      "id": "a-headline-pick-is-news",
+      "item": 1594,
+      "source": "decision 81: a headline draft leads with the story and why fans care",
+      "call": "core.batch_generation:draft_intent",
+      "kwargs": {
+        "own_idea": false,
+        "preview": "",
+        "source": "trending"
+      },
+      "expect": {
+        "equals": "news"
+      },
+      "why": "the machine says what a draft is (#1588); a headline is news"
+    },
+    {
+      "id": "one-day-to-launch-is-singular",
+      "item": 1847,
+      "source": "the brief's fixture: 2026-11-18",
+      "call": "core.series.countdown:countdown_topic",
+      "args": [
+        "GTA 6: {n} days to launch"
+      ],
+      "kwargs": {
+        "day": "2026-11-18",
+        "start": "2026-10-29",
+        "until": "2026-11-19"
+      },
+      "expect": {
+        "equals": "GTA 6: 1 day to launch"
+      },
+      "why": "'1 days' is the shape a format string leaves"
+    },
+    {
+      "id": "launch-day-is-not-a-countdown",
+      "item": 1847,
+      "source": "the brief's fixture: 2026-11-19 is #1848's",
+      "call": "core.series.countdown:countdown_topic",
+      "args": [
+        "GTA 6: {n} days to launch"
+      ],
+      "kwargs": {
+        "day": "2026-11-19",
+        "start": "2026-10-29",
+        "until": "2026-11-19"
+      },
+      "expect": {
+        "equals": ""
+      },
+      "why": "'0 days to launch' would ship otherwise"
+    },
+    {
+      "id": "a-long-story-leaves-the-stem-alone",
+      "item": 1847,
+      "source": "the operator 10-28: the stem, then the day's story, within 100 characters",
+      "call": "core.series.countdown:series_title",
+      "args": [
+        "GTA 6: 21 days to launch",
+        "Rockstar confirms the third trailer date and a new look at Vice City's beaches, Leonida and the Keys in one post"
+      ],
+      "expect": {
+        "equals": "GTA 6: 21 days to launch"
+      },
+      "why": "a title over YouTube's 100 characters is cut mid-word"
     }
   ]
 }

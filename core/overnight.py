@@ -81,6 +81,7 @@ class OvernightResult:
     calls_line: str = ""  # wave 112: the week's marquee games called
     # #1253: how many drafts were already waiting, when that cut tonight's count.
     draft_line: str = ""
+    gate_line: str = ""  # #1595: the stories the topic gate held back for the menu
     # #1430: chapter Shorts cut to fill an empty week.
     chapter_lines: list[str] = field(default_factory=list)
 
@@ -270,7 +271,7 @@ def _run_overnight_body(
     file: str | None,
     facts_file: str | None,
 ) -> OvernightResult:
-    from core.batch_generation import collect_topics
+    from core.batch_generation import collect_topics, topic_gate_line
     from core.operator_facts import load_key_facts
 
     want = count
@@ -316,9 +317,14 @@ def _run_overnight_body(
     if want <= 0:
         # Draft fewer while some wait (#1253). Expiry and the rest of the night still run.
         result.requested = 0
+        if not topics and not file:  # #1847: the day's countdown is made on its day or never
+            picked = collect_topics(channel, None, None, 0, picks=picks)
+            result.requested = len(picked)
     else:
-        picked = collect_topics(channel, topics, file, want, picks=picks)
+        held_back: list[str] = []
+        picked = collect_topics(channel, topics, file, want, picks=picks, held_back=held_back)
         result.requested = len(picked)
+        result.gate_line = topic_gate_line(held_back)  # #1595
     if want > 0 and not picked:
         logger.warning("overnight: no topics (best bets unavailable) for %s", channel)
         return result
@@ -497,6 +503,8 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(f"Quota: {result.quota_line}")
     if result.draft_line:
         lines.append(result.draft_line)
+    if result.gate_line:
+        lines.append(result.gate_line)
     if not result.requested:
         if result.draft_line:
             lines.append("Nothing drafted while those drafts wait for a decision.")

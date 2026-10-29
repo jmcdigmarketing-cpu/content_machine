@@ -8,6 +8,7 @@ franchise continuity (e.g. Marvel Rivals on TapIn).
 
 from __future__ import annotations
 
+import json
 import os
 import random
 import re
@@ -77,6 +78,11 @@ class BestBetResult:
     rationale: str
     call: str = ""  # #1301: a preview's prediction, "Packers win - Dallas allows deep balls"
     facts: list[str] = field(default_factory=list)  # #991: the lines a series idea is written from
+    outlets: int = 0  # #1595: a headline's distinct outlets in 48 h - overnight needs 3
+    # #1593: a preview's kind - national / league / team, ufc_numbered / ufc, award, other
+    kind: str = ""
+    title_stem: str = ""  # #1847: a series title starts with it ("GTA 6: 21 days to launch")
+    deadline: str = ""  # #1847: ISO UTC - after it the video's number is wrong
 
 
 # ---------------------------------------------------------------------------
@@ -1156,6 +1162,10 @@ def pick_record(options: list[Any], picked: int | None, *, by: str = "operator")
     facts = [str(f) for f in (getattr(chosen, "facts", None) or []) if str(f).strip()]
     if facts:  # #991: a series pick carries the lines it is written from
         record["facts"] = facts
+    for key in ("title_stem", "deadline"):  # #1847: the countdown's title and its day
+        value = str(getattr(chosen, key, "") or "")
+        if value:
+            record[key] = value
     return record
 
 
@@ -1186,23 +1196,55 @@ def _covered_teams(topics: list[str]) -> set[str]:
 def marquee_note(topic: str, detail: dict[str, Any], covered: set[str] | list[str]) -> str:
     """Why this game is worth a video ("NBC", "NFL London Games", "Chargers, a team you made
     videos about"), or "" - then it is not offered."""
+    return marquee_reason(topic, detail, covered)[1]
+
+
+def marquee_reason(
+    topic: str, detail: dict[str, Any], covered: set[str] | list[str]
+) -> tuple[str, str]:
+    """(kind, note): "national" on the league's national window, "league" when the league marks
+    it, "team" for a team the channel covered - or ("", ""). #1593: overnight drafts the first two
+    kinds only; a 1 PM CBS Bengals game came in on the third (run 193)."""
     from apis.nba_teams import team_names_in as nba_teams
     from apis.nfl_entities import team_names_in as nfl_teams
 
     league = str(detail.get("league") or "")
     national = _NATIONAL_TV.get(league)
     if not national:
-        return ""
+        return "", ""
     on_tv = [name for name in detail.get("broadcasts") or [] if name in national]
     if on_tv:
-        return on_tv[0]
+        return "national", on_tv[0]
     notes = detail.get("notes") or []
     if notes:
-        return str(notes[0])
+        return "league", str(notes[0])
     mine = sorted((set(nfl_teams(topic)) | set(nba_teams(topic))) & set(covered))
     if mine:
-        return f"{mine[0].split()[-1]}, a team you made videos about"
-    return ""
+        return "team", f"{mine[0].split()[-1]}, a team you made videos about"
+    return "", ""
+
+
+def card_kind(topic: str) -> str:
+    """#1593: "ufc_numbered" for a numbered card ("UFC 334: ..."), "ufc" for a Fight Night."""
+    return "ufc_numbered" if re.search(r"\bUFC \d{3}\b", topic or "") else "ufc"
+
+
+_MARQUEE_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "marquee.json"
+)
+
+
+def marquee_names(channel_id: str) -> list[str]:
+    """#1595: the channel's marquee names (`config/marquee.json`, the operator's to edit) - a story
+    naming one may fill an overnight slot on fewer than three outlets. [] when unread."""
+    try:
+        with open(_MARQUEE_FILE, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError) as exc:
+        logger.debug("marquee.json unread: %s", exc)
+        return []
+    names = data.get(channel_id) if isinstance(data, dict) else None
+    return [str(n) for n in names or [] if str(n).strip()]
 
 
 def _kickoff(raw: str) -> str:
@@ -1474,6 +1516,7 @@ def get_best_bets(
                 source="trending",
                 supporting_runs=0,
                 rationale=rationale,
+                outlets=len(c.get("outlets") or []),
             )
         )
         return True
@@ -1691,15 +1734,18 @@ def preview_options(
         detail = game_details(bet.topic)
         offered.add(bet.topic)
         if detail:
+            kind = marquee_reason(bet.topic, detail, _covered_teams(covered_topics))[0]
             kinds["marquee"].append(
-                (str(detail.get("date") or ""), bet, str(detail.get("league") or ""))
-            )
+                (str(detail.get("date") or ""), replace(bet, kind=kind),
+                 str(detail.get("league") or ""))
+            )  # fmt: skip
         elif bet.domain == "ufc":
             when = _event_when(bet.topic)
-            card = replace(bet, rationale=f"{when} · UFC card" if when else "UFC card")
+            card = replace(bet, rationale=f"{when} · UFC card" if when else "UFC card",
+                           kind=card_kind(bet.topic))  # fmt: skip
             kinds["ufc"].append((str(when), card, "ufc"))
         else:
-            kinds["award"].append(("", bet, ""))
+            kinds["award"].append(("", replace(bet, kind="award"), ""))
     for topic, domain in scheduled:
         key = normalize_seed_topic(topic).lower()
         if topic in offered or not key or key in skip or same_story(topic, shown):
@@ -1721,6 +1767,7 @@ def preview_options(
                     source="schedule",
                     supporting_runs=0,
                     rationale=game_line(detail, ""),
+                    kind="other",
                 ),
                 str(detail.get("league") or ""),
             )
@@ -1776,6 +1823,14 @@ def get_idea_menu(
             idea_list = [series, *idea_list][: max(len(idea_list), 1)]
     except Exception as exc:
         logger.debug("series idea skipped: %s", exc)
+    try:  # #1847: the day's countdown leads, an extra idea (the operator: "an extra fourth")
+        from core.series.countdown import countdown_idea
+
+        countdown = countdown_idea(channel_id, now=now)
+        if countdown is not None:
+            idea_list = [countdown, *idea_list]
+    except Exception as exc:
+        logger.debug("countdown idea skipped: %s", exc)
     want = best_bet_preview_count() if previews is None else previews
     if want <= 0:
         return idea_list, []

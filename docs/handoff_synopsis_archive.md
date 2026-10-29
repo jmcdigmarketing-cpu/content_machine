@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-25 (Claude Code): wave 130, the next ten
+
+The intro test had settled - 21% stayed past the swipe with it against 44% without - and the
+operator dropped it (decision 79). A preview is no longer offered or drafted under 3 hours from
+its game (run 193 was drafted 31 minutes before). The insight pass names why it refused and asks
+twice. Preview facts carry ESPN's season leaders; two of five ideas stay gaming while gaming leads
+organic views; a public preview gets one comment asking for the viewer's call; renders a day past
+their game are retired.
+
 ## Previous — 2026-10-25 (Claude Code): wave 129, the next ten after it
 
 Measured first: 18 of 46 drafts in two weeks expired undecided and only 4 of 14 game drafts went

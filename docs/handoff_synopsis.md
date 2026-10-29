@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-28: wave 132, the first five
+# Handoff synopsis — 2026-10-28: wave 132, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-28 (Claude Code): wave 132, the first five
+## Last wave — 2026-10-28 (Claude Code): wave 132, the next five
+
+The GTA 6 countdown starts 10-29 - "GTA 6: N days to launch - <the day's story>", an extra
+fourth draft a night, held after its day (decision 83). Decision 81's four: an overnight story on
+3+ outlets or a marquee name; one marquee preview a night; headlines told as the story (a `news`
+intent); the Week in Review as a rundown then the top 3 in full, 5-8 minutes (this week: 6:46).
+
+## Previous — 2026-10-28 (Claude Code): wave 132, the first five
 
 The 10-25 session's defects: a spoken "..." ended the hook and the swap stranded a fragment (6 of
 60 stored scripts carried one - overnight now reads the check live); previews were read as
@@ -25,15 +32,6 @@ not "three thirty-four"). With the operator's calls (decision 80): one YouTube s
 run, 9 of the 11 playlists made (YouTube's limit refused the 10th; the worker retries daily), the
 menu's domains by organic views per video. Long sentences go to the read-aloud split; why a draft
 waits is recorded and counted weekly.
-
-## Previous — 2026-10-25 (Claude Code): wave 130, the next ten
-
-The intro test had settled - 21% stayed past the swipe with it against 44% without - and the
-operator dropped it (decision 79). A preview is no longer offered or drafted under 3 hours from
-its game (run 193 was drafted 31 minutes before). The insight pass names why it refused and asks
-twice. Preview facts carry ESPN's season leaders; two of five ideas stay gaming while gaming leads
-organic views; a public preview gets one comment asking for the viewer's call; renders a day past
-their game are retired.
 
 ## Pipeline order (operator)
 
@@ -109,7 +107,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - #1847 the GTA 6 countdown, #1595 #1594 #1593 #1592, then the rest of wave 132 from [cloud_brief_wave132.md](cloud_brief_wave132.md), then 133 the GTA 6 window (launch 11-19), 134 the scoreboard, 135 speed and volume, 136 money. **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - #1850 the long-form draft kind, #1748 #1856 #1868 #1596, then the rest of 133 the GTA 6 window (launch 11-19, [cloud_brief_wave133.md](cloud_brief_wave133.md)), 134 the scoreboard, 135 speed and volume, 136 money. **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

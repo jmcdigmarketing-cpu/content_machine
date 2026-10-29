@@ -107,6 +107,8 @@ os.environ["PREVIEW_CALLS"] = "false"
 os.environ["HOLDOUT_EVERY"] = "0"
 # Wave 111 (#138): overnight's Monday compilation runs ffmpeg and queues an upload.
 os.environ["WEEK_COMPILE"] = "false"
+# Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).
+os.environ["SERIES_COUNTDOWN"] = "false"
 # Wave 112: the first-line rule refuses openers without a call; its own tests turn it on.
 os.environ["FIRST_LINE_RULE"] = "false"
 # Wave 112 (#1042): the matchup card reads ESPN; a render test that wants it sets it.

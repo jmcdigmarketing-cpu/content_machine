@@ -314,7 +314,7 @@ class FollowUpTests(unittest.TestCase):
         from core import batch_generation
 
         ideas = [SimpleNamespace(topic="Idea A"), SimpleNamespace(topic="Idea B")]
-        previews = [SimpleNamespace(topic="Preview A")]
+        previews = [SimpleNamespace(topic="Preview A", kind="national")]  # #1593
         picks: dict = {}
         with (
             patch("core.best_bet.get_idea_menu", return_value=(ideas, previews)),

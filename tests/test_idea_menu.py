@@ -160,12 +160,15 @@ class OvernightMixTests(unittest.TestCase):
         from core import batch_generation
         from core.best_bet import BestBetResult
 
-        def bet(topic, source):
+        def bet(topic, source, **extra):
             return BestBetResult(topic=topic, domain="nfl", avg_engaged_rate=0.0,
-                                 source=source, supporting_runs=0, rationale="why")  # fmt: skip
+                                 source=source, supporting_runs=0, rationale="why",
+                                 **extra)  # fmt: skip
 
-        ideas = [bet("idea a", "trending"), bet("idea b", "analytics")]
-        previews = [bet("game a", "schedule"), bet("game b", "schedule")]
+        # Decision 81: a headline on 3+ outlets (#1595), one marquee preview a night (#1593).
+        ideas = [bet("idea a", "trending", outlets=3), bet("idea b", "analytics")]
+        previews = [bet("game a", "schedule", kind="national"),
+                    bet("game b", "schedule", kind="national")]  # fmt: skip
         with patch("core.best_bet.get_idea_menu", return_value=(ideas, previews)):
             topics = batch_generation.collect_topics("tapin", count=3)
         self.assertEqual(topics, ["idea a", "game a", "idea b"])

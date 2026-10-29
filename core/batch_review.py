@@ -986,6 +986,8 @@ def game_block_reason(meta: dict[str, Any], *, now: datetime | None = None) -> s
     if started is None:
         return "its game time is not known"
     if started:
+        if meta.get("series") == "countdown":  # #1847: its number is wrong after its day
+            return f"its countdown day has passed ({event_at[:16].replace('T', ' ')} UTC)"
         return f"its game has started ({event_at[:16].replace('T', ' ')} UTC)"
     if meta.get("unplayed_result"):
         return "it states a result for a game not yet played"

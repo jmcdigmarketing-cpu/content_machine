@@ -28,6 +28,14 @@ logger = get_logger("video.week_compile")
 
 MIN_SHORTS = 5  # fewer is not worth a long video; YouTube's chapters need 3 of 10 s or more
 _MAX_SHORT_SECONDS = 185.0  # a long video already on the channel is not a Short
+# #1592 (decision 81, the operator: "cover all topics ... as well as a deeper dive on the top 3.
+# maybe 5-8 mins long not 11"): the week's other Shorts as their openings, then the top 3 whole.
+DEEP_DIVES = 3
+TARGET_MIN_S, TARGET_MAX_S = 300.0, 480.0
+CLIP_MIN_S, CLIP_MAX_S = 12.0, 25.0
+_CHAPTER_MIN_S = 10.0  # YouTube's shortest chapter
+_CUT_TAIL_S = 0.3  # past the last word's end, so it is not clipped
+_SENTENCE_END = (".", "!", "?")
 _WIDTH, _HEIGHT = 1920, 1080
 _SEGMENT_TIMEOUT = 600
 
@@ -105,8 +113,12 @@ def week_shorts(channel_id: str, *, now: datetime | None = None) -> list[dict[st
         seen.add(int(run_id))
         from video.hook_copy import hook_offset, run_opening
 
+        # #1592: the voice's word timings, for a rundown clip that ends at a sentence
+        audio = str(getattr(run, "mp3_path", "") or "")
+        words = audio + ".words.json" if audio and os.path.isfile(audio + ".words.json") else ""
         # #1419 (wave 113): the run's own intro - a Short rendered without it lost 2.15 s of hook
         out.append({"run_id": int(run_id), "title": str(getattr(run, "title", "") or ""),
+                    "words": words,
                     "path": path, "published_at": when,
                     "offset": hook_offset(run_opening(run), channel_id,
                                           default=_intro_offset(channel_id)),
@@ -194,6 +206,56 @@ def _clock(seconds: float) -> str:
     )  # fmt: skip
 
 
+def sentence_cut(words_path: str, target: float, whole: float) -> float:
+    """#1592: where a rundown clip ends - the end of the sentence nearest `target` seconds into
+    the voice (a `.words.json` word ending in . ! or ?), plus a short tail; at least a chapter's
+    10 s and at most the Short. No sidecar, or no sentence end in reach: the target itself."""
+    goal = min(float(target), float(whole))
+    ends: list[float] = []
+    if words_path:
+        try:
+            with open(words_path, encoding="utf-8") as handle:
+                words = json.load(handle)
+        except (OSError, ValueError) as exc:
+            logger.debug("week compile: words unread %s: %s", words_path, exc)
+            words = []
+        for word in words if isinstance(words, list) else []:
+            text = str((word or {}).get("word") or "").rstrip("\"')]”’")
+            try:
+                end = float(word.get("end")) + _CUT_TAIL_S
+            except (TypeError, ValueError):
+                continue
+            if text.endswith(_SENTENCE_END) and _CHAPTER_MIN_S <= end <= whole:
+                ends.append(end)
+    cut = min(ends, key=lambda e: (abs(e - goal), e)) if ends else goal
+    return round(max(_CHAPTER_MIN_S, min(cut, float(whole))), 2)
+
+
+def plan_clips(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """#1592 (decision 81): the rundown - every Short but the week's top 3 by organic views, in
+    publish order, each its opening cut at a sentence - then the top 3 whole, counted down #3,
+    #2, #1. Clips are (480 s - the deep dives) shared out, 12-25 s each; under 300 s they grow
+    (to the whole Short at most); still over 480 s at 12 s, the least-watched rundown items go.
+    Each item gets `seconds` (what it plays), `clip` (the cut, None for whole) and `deep`."""
+    ranked = sorted(range(len(items)), key=lambda i: (-int(items[i].get("views") or 0), i))
+    top = ranked[:DEEP_DIVES]
+    deep = [{**items[i], "deep": rank, "clip": None} for rank, i in enumerate(top, 1)]
+    rundown = [{**items[i], "deep": 0} for i in range(len(items)) if i not in top]
+    deep_s = sum(float(d["seconds"]) for d in deep)
+    while rundown and deep_s + len(rundown) * CLIP_MIN_S > TARGET_MAX_S:
+        rundown.remove(min(rundown, key=lambda r: int(r.get("views") or 0)))
+    if rundown:
+        target = min(CLIP_MAX_S, max(CLIP_MIN_S, (TARGET_MAX_S - deep_s) / len(rundown)))
+        if deep_s + target * len(rundown) < TARGET_MIN_S:
+            target = (TARGET_MIN_S - deep_s) / len(rundown)
+        for item in rundown:
+            whole = float(item["seconds"])
+            cut = sentence_cut(str(item.get("words") or ""), target, whole)
+            item["clip"] = None if cut >= whole else cut
+            item["seconds"] = cut
+    return [*rundown, *sorted(deep, key=lambda d: -d["deep"])]
+
+
 def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | None:
     """The week's compilation - its title, chapters and parts - or None under MIN_SHORTS."""
     moment = _now(now)
@@ -214,14 +276,19 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
     except Exception:
         name = channel_id
     first, last = items[0]["published_at"], items[-1]["published_at"]
-    span = f"{first:%b %d} - {last:%b %d}".replace(" 0", " ")
+    items = plan_clips(items)  # #1592: the rundown, then the top 3 counted down
     chapters, at = [], 0.0
     for item in items:
-        chapters.append(f"{_clock(at)} {item['title']}")
+        label = f"Deep dive #{item['deep']}: {item['title']}" if item.get("deep") else item["title"]
+        chapters.append(f"{_clock(at)} {label}")
         item["start"] = at
         at += item["seconds"]
     monday = (moment - timedelta(days=moment.weekday())).date().isoformat()
-    description = f"Every {name} Short from {span}, in one place.\n\n" + "\n".join(chapters) + "\n"
+    deep_count = sum(1 for item in items if item.get("deep"))
+    description = (
+        f"Every {name} story from {short_span(first, last)}, then the week's top {deep_count} "
+        "in full.\n\n" + "\n".join(chapters) + "\n"
+    )
     # #1522 (live 2026-10-19): the first compilation was scheduled public without the AI
     # disclosure every other upload carries - this description is built here, not by the SEO path.
     try:
@@ -238,17 +305,19 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
                     description=description, items=items, seconds=at)  # fmt: skip
 
 
-def segment_argv(src: str, dst: str, *, offset: float) -> list[str]:
+def segment_argv(src: str, dst: str, *, offset: float, duration: float | None = None) -> list[str]:
     """One Short as a 1920x1080 part: centred on a blurred, filled copy of itself, from `offset`
-    (past the channel intro), 30 fps, the same codecs every part so they join without re-encoding."""
+    (past the channel intro), 30 fps, the same codecs every part so they join without re-encoding.
+    ``duration`` (#1592): a rundown clip's length; None plays the Short to its end."""
     graph = (
         f"[0:v]scale={_WIDTH}:{_HEIGHT}:force_original_aspect_ratio=increase,"
         f"crop={_WIDTH}:{_HEIGHT},boxblur=20:5[bg];"
         f"[0:v]scale=-2:{_HEIGHT}[fg];"
         "[bg][fg]overlay=(W-w)/2:0,fps=30,format=yuv420p[v]"
     )
+    length = ["-t", str(duration)] if duration else []
     return [
-        "ffmpeg", "-nostdin", "-y", "-ss", str(offset), "-i", src,
+        "ffmpeg", "-nostdin", "-y", "-ss", str(offset), "-i", src, *length,
         "-filter_complex", graph, "-map", "[v]", "-map", "0:a?",
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "21",
         "-c:a", "aac", "-ar", "44100", "-ac", "2", "-movflags", "+faststart", dst,
@@ -312,7 +381,8 @@ def _render(plan: WeekPlan, dst: str) -> str:
         for index, item in enumerate(plan.items):
             part = os.path.join(tmp, f"part{index:02d}.mp4")
             cut = float(item.get("offset", offset))
-            done = subprocess.run(segment_argv(item["path"], part, offset=cut),
+            done = subprocess.run(segment_argv(item["path"], part, offset=cut,
+                                               duration=item.get("clip")),
                                   capture_output=True, stdin=subprocess.DEVNULL,
                                   timeout=_SEGMENT_TIMEOUT, check=False)  # fmt: skip
             if done.returncode != 0 or not os.path.isfile(part):
@@ -334,7 +404,8 @@ def make_thumbnail(plan: WeekPlan, video_path: str) -> str:
     in Review" and the dates painted on (`compose_thumbnail`, its contrast rules). "" when none."""
     if not plan.items:
         return ""
-    first = plan.items[0]
+    # #1592: the week's most-watched Short (deep dive #1), the subject the title names first
+    first = next((i for i in plan.items if i.get("deep") == 1), plan.items[0])
     at = round(float(first.get("start") or 0.0) + 0.4 * float(first.get("seconds") or 0.0), 1)
     stem = os.path.splitext(video_path)[0]
     frame, thumb = f"{stem}_frame.png", f"{stem}_thumb.png"
@@ -346,10 +417,8 @@ def make_thumbnail(plan: WeekPlan, video_path: str) -> str:
     if not os.path.isfile(frame):
         return ""
     # "Oct 15-18": the headline keeps five words, and "Oct 15 - Oct 18" lost its end to that.
-    began, ended = plan.items[0].get("published_at"), plan.items[-1].get("published_at")
-    span = ""
-    if isinstance(began, datetime) and isinstance(ended, datetime):
-        span = short_span(began, ended)
+    dates = [i["published_at"] for i in plan.items if isinstance(i.get("published_at"), datetime)]
+    span = short_span(min(dates), max(dates)) if dates else ""  # #1592: items are not in date order
     try:
         from PIL import Image
 

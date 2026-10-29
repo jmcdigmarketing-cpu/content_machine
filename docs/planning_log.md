@@ -10100,3 +10100,50 @@ Corpus: 10 cases, 9 failed on HEAD (the 10th is a must-keep fact).
 Audit: mypy 92; ruff clean. Suite: 6851 forward and 6851 reversed, OK (6 skipped); data/ and output/ untouched; every new function has a production caller.
 
 `roadmap-index`: open 358, done 1677, parked 94, numbered open 356.
+
+## 2026-10-28 — wave 132, the next five (Claude Code)
+
+**Prompt:** "lets get started on the next 5 on the roadmap"
+
+Picked: the roadmap's five as written - #1847 the GTA 6 countdown (its first day is 10-29), then
+decision 81's four from [cloud_brief_wave132.md](cloud_brief_wave132.md) items 7-10. Built cheapest
+first: #1595, #1593, #1594, #1847, #1592. Asked first (decision 83): the countdown's title ("Stem,
+then the story"), its slot ("An extra fourth", not the recommended one of three), the Week in
+Review's order ("Rundown, then top 3").
+
+Measured first (read-only, 10-28): tonight's 9 headlines were all on 3+ outlets; of 10 previews only
+Panthers at Packers (Prime Video) qualifies, and three came in on "a team you made videos about";
+this week's compilation would be 11 Shorts, 12:57, its top Short run 191 (GTA 6 Online, 1,030
+organic views); 9 of 11 carry a `.words.json`; under today's ranker SNF's story angle ranked 5th of 5
+(fidelity 0) and El Clasico's two breakdown angles 2nd and 3rd.
+
+Shipped (tests first, `tests/test_wave132b.py`: 42 of 44 failed on `1b69b78`, the other 2 controls):
+1. **#1595** the topic gate - `batch_generation.story_passes_gate`, `config/marquee.json` (+ #1859's
+   GTA names), the held count in overnight's report.
+2. **#1593** one marquee preview a night - `best_bet.marquee_reason` / `card_kind` tag every preview;
+   `preview_qualifies` in `collect_topics`.
+3. **#1594** a `news` intent - frames, a script branch, `draft_intent(source=)`, and
+   `angle_ranker.rank_angles(intent=)` ranking on the headline's subjects and event words with a
+   breakdown penalty. The brief's fixtures hold.
+4. **#1847** `core/series/countdown` - the day's idea, the stem-then-story title in `run_pipeline`,
+   its day's end as the draft's `event_at` (render first, slot before midnight, held and retired
+   after), an extra fourth draft even at the waiting cap.
+5. **#1592** `week_compile.plan_clips` and `sentence_cut` - the rundown then the top 3; live, this
+   week's 12 Shorts come to 6:46.
+
+Found on the way: the thumbnail and its dates read the first and last items, which assumed publish
+order - now the #1's frame and the week's real span. A newsletter digest headline ("Rays stay alive
+...; Colts begin NFL trade deadline") was an idea on 3 outlets (#1901). Seven older tests pinned what
+decisions 81 and 83 change - the mode keys (s), the overnight mix and a holdout fixture (ideas with
+no outlet count, previews with no kind), the follow-up's preview, the chapter order twice, and
+overnight's "no collect at the cap" (now the countdown's call).
+
+Not done: views by frame (#1898); the queue's own wording for a late countdown (#1899, parked);
+counting the countdown's misses (#1900); #1596 waits again.
+
+Corpus: 11 cases, all 11 fail on HEAD (2 are must-keep cases that fail only because their function
+is new).
+
+Audit: mypy 92; ruff clean. Suite: 6895 forward and 6895 reversed, OK (6 skipped); data/ and output/ untouched; every new function has a production caller (`best_bet.names_marquee` had none and was removed).
+
+`roadmap-index`: open 355, done 1683, parked 95, numbered open 353.

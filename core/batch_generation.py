@@ -166,12 +166,14 @@ def collect_topics(
     count: int = 3,
     *,
     picks: dict[str, dict] | None = None,
+    held_back: list[str] | None = None,
 ) -> list[str]:
     """Explicit topics → file lines → best bets, capped at `count` for implicit sources.
 
     ``picks`` (optional) is filled with each best-bet topic's `pick_record` (#913) so the
     run records that the batch took it and at which rank; explicit and file topics are
-    not picks.
+    not picks. ``held_back`` (optional) gets the headlines the topic gate kept for the menu
+    (#1595). The day's countdown (#1847) comes on top of `count` - even at 0.
     """
     if topics:
         return [t.strip() for t in topics if t.strip()]
@@ -180,16 +182,36 @@ def collect_topics(
             lines = [ln.strip() for ln in f if ln.strip() and not ln.lstrip().startswith("#")]
         return lines
     try:
-        from core.best_bet import get_idea_menu, pick_record
+        from core.best_bet import get_idea_menu, marquee_names, pick_record
 
-        # Decision 66: an idea, then a preview, in turn.
+        if count <= 0:
+            # #1847: drafts are waiting, so nothing else is - but a countdown is made on its
+            # day or not at all. No menu: it fetches feeds and makes the previews' calls.
+            from core.series.countdown import countdown_idea
+
+            alone = countdown_idea(channel_id)
+            if alone is None:
+                return []
+            if picks is not None:
+                picks[alone.topic] = pick_record([alone], 1, by="batch")
+            return [alone.topic]
         ideas, previews = get_idea_menu(channel_id)
-        bets: list[Any] = []
-        for pair in zip(ideas, previews, strict=False):
-            bets.extend(pair)
-        longer = ideas if len(ideas) > len(previews) else previews
-        bets.extend(longer[min(len(ideas), len(previews)) :])
-        candidates = list(bets)
+        extra = [b for b in ideas if getattr(b, "source", "") == "countdown"][:1]
+        names = marquee_names(channel_id)
+        kept: list[Any] = []
+        for bet in ideas:
+            if getattr(bet, "source", "") == "countdown":
+                continue
+            outlets = int(getattr(bet, "outlets", 0) or 0)
+            if story_passes_gate(bet.topic, source=str(getattr(bet, "source", "") or ""),
+                                 outlets=outlets, names=names):  # fmt: skip
+                kept.append(bet)
+            elif held_back is not None:
+                held_back.append(bet.topic)
+        # #1593 (decision 81): at most one preview a night, marquee only.
+        marquee = [p for p in previews if preview_qualifies(str(getattr(p, "kind", "") or ""))]
+        # Decision 66: an idea, then the preview, then the other ideas.
+        candidates: list[Any] = [*kept[:1], *marquee[:1], *kept[1:]]
         chosen = candidates[:count]
         held = _swap_holdouts(chosen, candidates)
         if picks is not None:
@@ -200,10 +222,45 @@ def collect_topics(
                 else:
                     record = pick_record(chosen, rank, by="batch")
                 picks[bet.topic] = record
-        return _with_follow_up(channel_id, [b.topic for b in chosen], held, picks)
+            for bet in extra:
+                picks[bet.topic] = pick_record([bet], 1, by="batch")
+        out = _with_follow_up(channel_id, [b.topic for b in chosen], held, picks)
+        return [*(b.topic for b in extra), *out]
     except Exception as exc:
         logger.warning("No topics given and best bets unavailable: %s", exc)
         return []
+
+
+OUTLETS_MIN = 3  # #1595 (decision 81): an overnight story is on three outlets, or a marquee name
+_PREVIEW_KINDS = ("national", "league", "ufc_numbered")
+
+
+def story_passes_gate(topic: str, *, source: str, outlets: int, names: list[str]) -> bool:
+    """#1595: a headline (`trending`) fills an overnight slot on `OUTLETS_MIN` outlets or when it
+    names a marquee name. Series, replays, the follow-up and the calendar are not headlines."""
+    if source != "trending":
+        return True
+    from apis.topic_tokens import names_any
+
+    return outlets >= OUTLETS_MIN or names_any(topic or "", names)
+
+
+def preview_qualifies(kind: str) -> bool:
+    """#1593: a national broadcast, a league's own marquee note or a numbered UFC card. A team
+    the channel covered, a Fight Night, an award and the other games stay in the menu."""
+    return kind in _PREVIEW_KINDS
+
+
+def topic_gate_line(held: list[str]) -> str:
+    """The overnight report's line for the stories the gate held back (#1595), or ""."""
+    if not held:
+        return ""
+    noun = "story" if len(held) == 1 else "stories"
+    shown = "; ".join(t[:60] for t in held[:2]) + ("; ..." if len(held) > 2 else "")
+    return (
+        f"The topic gate held back {len(held)} {noun} on fewer than {OUTLETS_MIN} outlets "
+        f"(in the menu): {shown} (#1595)"
+    )
 
 
 FOLLOW_UP_DAYS = 14  # a follow-up on old news is not one
@@ -368,7 +425,9 @@ def generate_draft(
     # #1301: the brief carries the call the preview was offered with.
     preview = draft_brief(topic, best_bet) if upcoming else ""
 
-    machine_intent = draft_intent(own_idea=own_idea, preview=preview)  # #1588
+    machine_intent = draft_intent(  # #1588; #1594 a headline is news
+        own_idea=own_idea, preview=preview, source=pick_source(topic, best_bet)
+    )
     if own_idea:
         discovery = run_discovery(topic, channel_id=channel_id, brief=topic)
     elif preview:
@@ -561,7 +620,11 @@ def generate_draft(
         # #1150: run 139's title was flagged and overnight rendered it - the flag stopped here.
         "title_warnings": list(result.features.get("title_warnings") or []),
         # #1151; #1286: a headline naming a coming event (run 160) records that event's start.
-        "event_at": event_at or _named_event_start(f"{topic} {result.title or ''}") or None,
+        "event_at": draft_event_at(event_at, best_bet)
+        or _named_event_start(f"{topic} {result.title or ''}")
+        or None,
+        # #1847: a countdown's day passing reads as that, not as a game starting
+        **({"series": "countdown"} if (best_bet or {}).get("title_stem") else {}),
         "unplayed_result": unplayed or None,
         "fact_count": fact_count,
         "ungrounded_entities": out.ungrounded,
@@ -612,15 +675,32 @@ def preview_shape_arm(channel_id: str, preview: str) -> tuple[str, str, str] | N
         return None
 
 
-def draft_intent(*, own_idea: bool, preview: str) -> str:
+def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
     """#1588: what a draft is - "" for the operator's own idea (its words are read for cues),
-    "preview" for a coming game, "default" for a headline. Headline words ("vs.", "reaction")
-    and the machine's own brief ("what is at stake") had been read as the operator's ask."""
-    from core.angle_intent import ANGLE_DEFAULT, ANGLE_PREVIEW
+    "preview" for a coming game, "default" otherwise. Headline words ("vs.", "reaction") and
+    the machine's own brief ("what is at stake") had been read as the operator's ask.
+    #1594 (decision 81): a headline (`trending`) is "news" - the story and why fans care."""
+    from core.angle_intent import ANGLE_DEFAULT, ANGLE_NEWS, ANGLE_PREVIEW
 
     if own_idea:
         return ""
-    return ANGLE_PREVIEW if preview else ANGLE_DEFAULT
+    if preview:
+        return ANGLE_PREVIEW
+    return ANGLE_NEWS if source == "trending" else ANGLE_DEFAULT
+
+
+def pick_source(topic: str, best_bet: dict | None) -> str:
+    """The menu source of the option `topic` was taken as ("trending", "series", ...), or ""."""
+    for option in (best_bet or {}).get("offered") or []:
+        if isinstance(option, dict) and option.get("topic") == topic:
+            return str(option.get("source") or "")
+    return ""
+
+
+def draft_event_at(event_at: str, best_bet: dict | None) -> str:
+    """#1847: a draft's deadline - its game's start, else a countdown's day end. The checks built
+    for a kickoff then render it first, slot it before it, hold it after and retire it."""
+    return event_at or str((best_bet or {}).get("deadline") or "")
 
 
 def draft_brief(topic: str, best_bet: dict | None) -> str:

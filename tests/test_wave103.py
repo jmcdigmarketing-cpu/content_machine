@@ -313,10 +313,12 @@ class OvernightDraftTests(unittest.TestCase):
         with (
             patch("core.batch_review.pending_drafts", return_value=[object()] * 22),
             patch("core.overnight_quota.adjust_count", return_value=(3, "")),
-            patch("core.batch_generation.collect_topics") as collect,
+            patch("core.batch_generation.collect_topics", return_value=[]) as collect,
         ):
             _run_overnight_body("tapin", result, count=3, topics=None, file=None, facts_file=None)
-        collect.assert_not_called()
+        # #1847: asked for the day's countdown alone (count 0) - there is none here.
+        collect.assert_called_once()
+        self.assertEqual(collect.call_args.args[3], 0)
         self.assertEqual(result.requested, 0)
         self.assertIn("22", result.draft_line)
         text = render_overnight(result)

@@ -67,6 +67,14 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-10-28 (Claude, wave 132 - the next five).** The GTA 6 countdown starts 10-29: "GTA 6: N
+days to launch - <the day's story>", an extra fourth draft each night, held after its day (#1847,
+decision 83). Decision 81's four: an overnight story on 3+ outlets or a marquee name (#1595,
+`config/marquee.json`); one marquee preview a night (#1593); headlines told as the story - a
+`news` intent, ranked on the headline (#1594); the Week in Review as a rundown then the top 3
+(#1592 - this week's 12 Shorts at 6:46). Next: **#1850** the long-form draft kind ("everything
+we know" public by 11-10); **#1748** the affiliates map; **#1856** search titles; **#1868** two
+GTA slots in launch week; **#1596** the verdicts.
 **2026-10-28 (Claude, wave 132 - the first five).** The 10-25 session's defects: a spoken "..."
 ended the hook and the swap stranded a fragment (#1587; 6 of 60 stored scripts carried one);
 previews read as explainers from their own brief (#1588, a `preview` intent now); another game's
@@ -87,11 +95,7 @@ filed - NFL brings 32 organic views a Short. Yours: publish the Google app befor
 #1586's call on NFL previews (answered, decision 81). Next: wave 132 from
 [cloud_brief_wave132.md](cloud_brief_wave132.md) - the hook splice, previews read as explainers,
 sources, a 5-8 minute Week in Review, one marquee preview a night, headlines told as the story.
-Waves before 114 (the 10-17 grand audit, waves 103-113): [planning_log.md](planning_log.md).
-**2026-10-19 (Claude, wave 114).** Two of wave 113's own defects first: the sync tried a channel with no sign-in (#1518), and a video moved on YouTube kept its old slot so Buffer was sent a day early (#1519, #1520 - run 154's posts removed with your yes). Then: Shorts read against Shorts (#1491 - the softening was one long video; GREEN), subscribers per 1,000 views (#1323), compilation hours (#1314), a stop rule (#354, #1423, #1507), one more render for an empty day (#1428), re-cuts of winners (#1057, #1521), a lockfile (#457). `roadmap-index`: open 243, done 1511, numbered open 234.
-**2026-10-19 (Claude, wave 115).** Uploads stopped at 4 - captions took 1,200 units: a caption file now only with quota (#1525); the AI line appended at upload and added to the compilation with your yes (#1524); the sync's scope (#1523); the sign-in date, the worker's pass and overnight's start in `ops status` (#1437 #1402 #1372); a 2+-subscriber flag (#1325); a toast for a failed Buffer send (#1399); Shorts link the compilation (#1317); #1422's card not shipped - the headline already shows the hook. `roadmap-index`: open 235, done 1523, numbered open 226.
-**2026-10-19 (Claude, wave 116).** A held upload named its reset instead of "overdue" (#1526); the queue listed three public videos, so the next slot was Sat - now Fri, every time in one zone, the two weeks at a glance (#1527 #1429); run 161 off run 156's minute with your yes; the lapsed sign-in holds uploads, a toast a day before, the console page and the mode (#1439 #1438 #1445 #1443); the last line and run-ons in the script check (#1334 #1352); a failed Buffer send retried once (#1400). `roadmap-index`: open 227, done 1533, numbered open 218.
-**2026-10-20 (Claude, wave 117).** Overnight ran 11 h late because the PC was shut down, and the morning now says so from the event log (#1528 #1380), with a doctor wake check (#1371), a Tonight line and an 8 PM toast (#1337); the day-5 sign-in line keeps its date (#1529); `ops agents` reads the slots again (#1530); a follow-up draft for a video that brought subscribers (#1452); a toast when a video goes public (#1404); a schedule read back (#1392); cadence by its own rule (#1435). `roadmap-index`: open 220, done 1543, numbered open 211.
+Waves before 118 (the 10-17 grand audit, waves 103-117): [planning_log.md](planning_log.md).
 **2026-10-20 (Claude, wave 118).** None of today's 3 drafts rendered: "hard to say" now warns only (#1535) and its rewrite keeps a correct split (#1531); one splitter that respects "Oct." and "No." (#1532, run 176 repaired); the Tonight line reads the shelf pause (#1534); the deadline names its day (#1533); a Yours today line (#1407); chapter Shorts for an empty week (#1430); #1378 met, #1432 not needed. `roadmap-index`: open 216, done 1552, numbered open 207.
 **2026-10-21 (Claude, wave 119).** With your yes before the lapse: 168 and 170 public, 171 retired - overnight renders again. A follow-up names the original's date and one that says "since" waits (#1536, run 179's last-season seed); "Yours today" says sign in again after the lapse (#1537); a crash keeps its log and the week counts them (#1466 #1463); each video's drop-off second (#1494); a cheap second read before an unattended render (#1341); "you typed / it wrote" (#1343 #1342). `roadmap-index`: open 210, done 1560, numbered open 201.
 **2026-10-21 (Claude, wave 120).** The lapse landed and "Yours today" says sign in again. Health names its runs, its dates and each line's source (#1474 #1476 #1471 #1395); the weekly report counts the drafts a claim held (#1381); the privacy sync says what it checked (#1389); `ops retention` gives each video's first 3 seconds (#1426); `ops ypp` a monthly card (#1320); the compilation's title names its biggest subjects (#1316); #1386 met by #1083. `roadmap-index`: open 202, done 1570, numbered open 193.

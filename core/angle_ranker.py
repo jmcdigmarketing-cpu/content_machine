@@ -49,6 +49,17 @@ _WEIGHT_SPECIFICITY = 0.25
 _NEUTRAL_FIDELITY = 0.5  # nothing nameable in the seed — do not punish or reward
 _LISTICLE_LEFTOVER_PENALTY = 0.25
 
+# #1594 (decision 81): under `news` the angle must keep the headline - its subjects and what
+# happened - and that outweighs numbers. Run 193's "How Cincinnati's tempo keeps Baltimore's
+# young QB off balance" won on specificity; the best-watched Shorts told the story itself.
+_NEWS_WEIGHT_DISTINCTNESS = 0.30
+_NEWS_WEIGHT_FIDELITY = 0.50
+_NEWS_WEIGHT_SPECIFICITY = 0.20
+_MECHANICS_PENALTY = 0.25
+_MECHANICS = re.compile(
+    r"^how\b[^,:]{0,40}?'s\b|^breaking down\b|\bneutrali[sz]|\busage rate\b", re.IGNORECASE
+)
+
 _WORD_RE = re.compile(r"[a-z0-9']+")
 
 # Listicle leftovers from ANGLE_LIST templates. Run 76's honourable-mention
@@ -252,6 +263,30 @@ def _fidelity(angle: str, seed_terms: list[str]) -> float:
     return round(kept / len(seed_terms), 4)
 
 
+def _news_fidelity(angle: str, headline: str) -> float:
+    """#1594: 0.6 x the share of the headline's subjects the angle names + 0.4 x the share of its
+    other words (what happened: "defense dominate", "win") it keeps, by stem. The subjects come
+    from `apis.topic_tokens` the way `best_bet.rank_by_coverage` reads a story."""
+    from apis.topic_tokens import content_tokens, names_any, subject_markers, subject_terms
+
+    subjects = subject_terms(headline or "", limit=6)
+    if not subjects:
+        return _NEUTRAL_FIDELITY
+    groups = [subject_markers([s]) or [s] for s in subjects]
+    inside = {w for s in subjects for w in content_tokens(s)}
+    events = [w for w in content_tokens(headline) if w not in inside]
+    named = sum(1 for group in groups if names_any(angle or "", group)) / len(groups)
+    stems = {w[:5] for w in content_tokens(angle or "")}
+    kept = sum(1 for w in events if w[:5] in stems) / len(events) if events else 0.0
+    return round(0.6 * named + 0.4 * kept, 4)
+
+
+def _mechanics_penalty(angle: str) -> float:
+    """#1594: a breakdown template under `news` - "How X's ...", "Breaking down ...", "...
+    neutralized ...", "... usage rate ..." (runs 188, 193, 194, 195)."""
+    return _MECHANICS_PENALTY if _MECHANICS.search((angle or "").strip()) else 0.0
+
+
 def _listicle_leftover_penalty(angle: str) -> float:
     low = (angle or "").lower()
     if any(phrase in low for phrase in _LISTICLE_LEFTOVER):
@@ -271,6 +306,7 @@ def _cheap_judge(
     *,
     facts: list[str] | None = None,
     today: str = "",
+    intent: str = "",
 ) -> dict[str, float] | None:
     """Score each angle 0-1 against the typed thesis via the cheap LLM chain.
 
@@ -294,6 +330,12 @@ def _cheap_judge(
         "whether it keeps the operator's stance (an angle that doubts or mocks a hopeful "
         "idea, or turns a neutral one into a hot take, scores near 0)"
     )
+    if intent == "news":  # #1594: the headline told as the story
+        stance += (
+            "; the thesis is a headline, so an angle that tells what happened to its biggest "
+            "name, or why fans care, scores high and a breakdown of schemes, usage rates or "
+            "set pieces scores low"
+        )
     criteria = (
         f"how well it answers the operator's thesis questions and {stance}"
         if not context
@@ -350,8 +392,12 @@ def rank_angles(
     llm_judge: bool = False,
     facts: list[str] | None = None,
     today: str = "",
+    intent: str = "",
 ) -> dict[str, float]:
     """`{angle: 0..1}` — an editorial score per angle. Never raises.
+
+    ``intent="news"`` (#1594): fidelity is the headline's subjects and what happened, and it
+    outweighs specificity; a breakdown template loses `_MECHANICS_PENALTY`.
 
     Deterministic by default (network-free). ``llm_judge=True`` asks the cheap
     chain to score each angle against the typed thesis and blends the result;
@@ -367,20 +413,30 @@ def rank_angles(
     if not cleaned:
         return {}
 
-    terms = _seed_terms(seed_topic)
+    news = intent == "news"
+    terms = [] if news else _seed_terms(seed_topic)
     scores: dict[str, float] = {}
     for angle in cleaned:
         peers = [other for other in cleaned if other != angle]
-        composite = (
-            _WEIGHT_DISTINCTNESS * _distinctness(angle, peers)
-            + _WEIGHT_FIDELITY * _fidelity(angle, terms)
-            + _WEIGHT_SPECIFICITY * _specificity_of(angle)
-            - _listicle_leftover_penalty(angle)
-        )
+        if news:
+            composite = (
+                _NEWS_WEIGHT_DISTINCTNESS * _distinctness(angle, peers)
+                + _NEWS_WEIGHT_FIDELITY * _news_fidelity(angle, seed_topic)
+                + _NEWS_WEIGHT_SPECIFICITY * _specificity_of(angle)
+                - _mechanics_penalty(angle)
+                - _listicle_leftover_penalty(angle)
+            )
+        else:
+            composite = (
+                _WEIGHT_DISTINCTNESS * _distinctness(angle, peers)
+                + _WEIGHT_FIDELITY * _fidelity(angle, terms)
+                + _WEIGHT_SPECIFICITY * _specificity_of(angle)
+                - _listicle_leftover_penalty(angle)
+            )
         scores[angle] = round(min(1.0, max(0.0, composite)), 4)
 
     if llm_judge:
-        judged = _cheap_judge(cleaned, seed_topic, facts=facts, today=today)
+        judged = _cheap_judge(cleaned, seed_topic, facts=facts, today=today, intent=intent)
         if judged:
             for angle in scores:
                 scores[angle] = round(

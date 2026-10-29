@@ -568,7 +568,8 @@ class HoldoutTests(unittest.TestCase):
         from core.predictions import holdouts
 
         ideas = [best_bet.BestBetResult(topic=f"idea {i}", domain="ufc", avg_engaged_rate=0.0,
-                                        source="trending", supporting_runs=0, rationale="")
+                                        source="trending", supporting_runs=0, rationale="",
+                                        outlets=3)  # #1595: on three outlets
                  for i in range(6)]  # fmt: skip
         holdouts.next_slots(4)  # four drafted before tonight
         picks: dict = {}
@@ -663,9 +664,11 @@ class WeekCompileTests(unittest.TestCase):
         with self._patches(rows, runs, durations):
             plan = plan_week("tapin", now=WEEK_NOW)
         self.assertIsNotNone(plan)
-        self.assertIn("0:00 Short 0", plan.description)
-        self.assertIn("0:50 Short 1", plan.description)  # 52 s less the 2 s intro
-        self.assertIn("3:20 Short 4", plan.description)
+        # #1592 (decision 81): the rundown first, then the top 3 counted down - five equal
+        # Shorts keep publish order for the top 3, and two rundown Shorts play whole.
+        self.assertIn("0:00 Short 3", plan.description)
+        self.assertIn("0:50 Short 4", plan.description)  # 52 s less the 2 s intro
+        self.assertIn("3:20 Deep dive #1: Short 0", plan.description)
         self.assertEqual(plan.week, "2026-10-19")
 
     def test_four_shorts_are_not_a_week_yet(self):
@@ -699,7 +702,7 @@ class WeekCompileTests(unittest.TestCase):
         ):
             lines = compile_week("tapin", apply=False, now=WEEK_NOW)
         run.assert_not_called()
-        self.assertTrue(any("0:50 Short 1" in line for line in lines), lines)
+        self.assertTrue(any("0:50 Short 4" in line for line in lines), lines)  # #1592
 
     def test_overnight_compiles_on_monday_only(self):
         import os

@@ -1,0 +1,15 @@
+{
+  "_note": "Series (#1847, the bridge's B11): a dated run of videos with one title stem. A `countdown` row makes one idea a day from `from` to the day before `until`, in the channel's timezone - the topic is `title` with {n} the days left, the facts are the day's headlines naming one of `names` from the `domain`'s feeds (else the date alone). core/series/countdown.py; SERIES_COUNTDOWN=false switches it off. Launch day itself is #1848's.",
+  "tapin": [
+    {
+      "id": "gta6-countdown",
+      "kind": "countdown",
+      "subject": "GTA 6",
+      "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI", "Grand Theft Auto 6"],
+      "title": "GTA 6: {n} days to launch",
+      "from": "2026-10-29",
+      "until": "2026-11-19",
+      "domain": "gaming"
+    }
+  ]
+}

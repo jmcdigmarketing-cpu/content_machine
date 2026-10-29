@@ -9,6 +9,7 @@ from core.angle_intent import (
     ANGLE_EXPLAINER,
     ANGLE_HOPE,
     ANGLE_LIST,
+    ANGLE_NEWS,
     ANGLE_PLAN,
     ANGLE_PREVIEW,
     ANGLE_REACTION,
@@ -249,6 +250,14 @@ INTENT_ANGLES = {
         "the_matchup_that_matters",
         "the_stakes",
     ],
+    # #1594 (decision 81): a headline, told as the story and why fans care.
+    ANGLE_NEWS: [
+        "the_story_itself",
+        "why_fans_care",
+        "the_reaction",
+        "what_happens_next",
+        "the_stakes",
+    ],
     ANGLE_RETROSPECTIVE: [
         "what_it_got_right",
         "how_it_holds_up_now",
@@ -309,6 +318,11 @@ _LENS_EXAMPLES = {
     ANGLE_PREVIEW: (
         "the call and the fact behind it, the one thing that decides the game, who is in form "
         "or out, the matchup that matters most, what is at stake for each side"
+    ),
+    ANGLE_NEWS: (
+        "what happened to the biggest name, plainly; what it changes for that team's or "
+        "game's fans; what the players, coaches or community said; the next game, card, "
+        "patch or date it sets up; the title, playoff spot or career on the line"
     ),
 }
 

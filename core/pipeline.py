@@ -525,8 +525,11 @@ def _editorial_scores(
     brief: str,
     base_signals: dict[str, Any],
     meta: dict[str, Any],
+    *,
+    intent: str = "",
 ) -> tuple[dict[str, float], dict[str, float]]:
     """(angle_scores, angle_fact_fit) for the scored angles; `meta` gets `angle_spread`.
+    ``intent`` (#1594): a `news` draft ranks on the headline's story, not its numbers.
 
     Editorial ranking of the angle text, scored over the whole candidate set at once
     (distinctness is relative), so it runs after the loop rather than inside
@@ -555,6 +558,7 @@ def _editorial_scores(
             llm_judge=flag_enabled("ANGLE_LLM_JUDGE", default=True),
             facts=signal_fact_lines,
             today=run_date().isoformat(),
+            intent=intent,
         )
         meta["angle_spread"] = score_spread(angle_scores)
     except Exception as exc:
@@ -739,7 +743,9 @@ def run_discovery(
         meta["discovery_dropped"] = ", ".join(deadline["dropped"])
         meta["discovery_deadline_s"] = float(deadline.get("budget_s") or 0.0)
 
-    angle_scores, angle_fact_fit = _editorial_scores(evaluated, topic, brief, base_signals, meta)
+    angle_scores, angle_fact_fit = _editorial_scores(
+        evaluated, topic, brief, base_signals, meta, intent=run_read.intent
+    )
 
     # Persist this run's cache hit/miss counters for the reliability dashboard (O8).
     try:
@@ -798,7 +804,12 @@ def regenerate_angles(
     if report.get("angle_frames"):
         meta["angle_frames"] = list(report["angle_frames"])  # #1021
     angle_scores, angle_fact_fit = _editorial_scores(
-        evaluated, discovery.input_topic, discovery.brief, discovery.base_signals, meta
+        evaluated,
+        discovery.input_topic,
+        discovery.brief,
+        discovery.base_signals,
+        meta,
+        intent=intent,
     )
     meta["angle_mode"] = intent
     if hasattr(intent_read, "as_dict"):
@@ -1267,6 +1278,11 @@ def run_pipeline(
     result.timings["content_package"] = time.perf_counter() - t_content
 
     result.title = content.get("title", best_topic)
+    stem = str((best_bet or {}).get("title_stem") or "")
+    if stem:  # #1847 (the operator): "GTA 6: 21 days to launch - <the day's story>"
+        from core.series.countdown import series_title
+
+        result.title = series_title(stem, result.title)
     result.script = clean_script_for_tts(content.get("script", ""))
     result.timings["word_count"] = count_spoken_words(result.script)
     result.description = content.get("description", "")

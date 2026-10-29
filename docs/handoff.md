@@ -53,22 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-28 · **HEAD at write:** `0bc4e2e` (the bridge expanded; this wave's commit
+**Written:** 2026-10-28 · **HEAD at write:** `1b69b78` (wave 132's first five; this wave's commit
 follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 132, the first five, shipped** (the 10-25 session's defects): #1587 the hook no longer ends at
-a spoken "..." and a swap never strands a fragment - 6 of 60 stored drafts carry one, so overnight
-reads the check live (run 213, today's, waits for review); #1588 a `preview` intent, machine drafts
-say what they are; #1589 sources only from cited facts, another game's lines never confident;
-#1590 donation asks are boilerplate; #1591 a flagged title retried once.
+**Wave 132, the next five, shipped:** #1847 the GTA 6 countdown from 10-29 (`core/series/`,
+`config/series.json`) - "GTA 6: N days to launch - <the day's story>", an extra fourth draft, held
+after its day (decision 83); #1595 3+ outlets or a marquee name (`config/marquee.json`, + #1859);
+#1593 one marquee preview a night; #1594 a `news` intent ranked on the headline; #1592 the Week in
+Review as a rundown then the top 3 (this week's 12 Shorts: 6:46). Nothing found broken in shipped
+code; seven older tests pinned what decisions 81 and 83 change and moved with them.
 
-**Next five:** **#1847** the GTA 6 countdown - it should start 10-29 (wave 133's brief, item 1);
-#1595 the topic gate; #1594 headlines told as the story; #1593 one marquee preview a night; #1592
-the 5-8 minute Week in Review before Monday 11-02. #1596 waits a wave.
+**Next five:** **#1850** the long-form draft kind ("everything we know" public by 11-10); #1748 the
+affiliates map; #1856 search titles; #1868 two GTA slots in launch week; #1596 the verdicts.
+Filed #1898 #1900 #1901, parked #1899.
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** end the two Oct 26 campaigns in Studio and send the final numbers; Amazon Associates
-and a Facebook Page in Buffer; publish the Google app before Fri 10-30.
+**Operator:** watch 10-29's countdown draft; end the two Oct 26 campaigns in Studio and send the
+numbers; Amazon Associates (#1747 waits on it) and a Facebook Page in Buffer; the Google app by 10-30.
 
 ## Slot — Cursor
 

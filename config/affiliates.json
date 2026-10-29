@@ -1,0 +1,8 @@
+{
+  "_note": "Affiliate links (#1748, #1747; decision 82's money lane): one link a video, on long-form only - a Short's description links are not clickable. Rows are matched like config/playlists.json (core.playlists._matches, whole words, first row wins). An Amazon url gains tag=AFFILIATE_AMAZON_TAG; with no tag (before your Associates sign-up) no Amazon link is added at all, and whenever a link is added the FTC line is too. TapIn's GTA 6 row is an Amazon search link, not a product id nobody checked - swap in the product page once you have one.",
+  "tapin": [
+    {"keys": ["gta 6", "gta vi", "grand theft auto vi", "grand theft auto 6"],
+     "url": "https://www.amazon.com/s?k=Grand+Theft+Auto+VI",
+     "label": "GTA 6 on Amazon"}
+  ]
+}

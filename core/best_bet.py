@@ -83,6 +83,8 @@ class BestBetResult:
     kind: str = ""
     title_stem: str = ""  # #1847: a series title starts with it ("GTA 6: 21 days to launch")
     deadline: str = ""  # #1847: ISO UTC - after it the video's number is wrong
+    draft_kind: str = ""  # #1850: "long" - a 10-12 minute 16:9 video
+    publish_at: str = ""  # #1870: ISO UTC - when a dated moment goes public
 
 
 # ---------------------------------------------------------------------------
@@ -1162,7 +1164,8 @@ def pick_record(options: list[Any], picked: int | None, *, by: str = "operator")
     facts = [str(f) for f in (getattr(chosen, "facts", None) or []) if str(f).strip()]
     if facts:  # #991: a series pick carries the lines it is written from
         record["facts"] = facts
-    for key in ("title_stem", "deadline"):  # #1847: the countdown's title and its day
+    # #1847: the countdown's title and its day; #1850 a long draft; #1870 its unlock
+    for key in ("title_stem", "deadline", "draft_kind", "publish_at"):
         value = str(getattr(chosen, key, "") or "")
         if value:
             record[key] = value
@@ -1804,9 +1807,10 @@ def get_idea_menu(
     ideas: int | None = None,
     previews: int | None = None,
     now: datetime | None = None,
+    notes: list[str] | None = None,
 ) -> tuple[list[BestBetResult], list[BestBetResult]]:
     """(ideas, previews): five of each by default (the operator, 2026-10-17, decision 66 -
-    "5 ideas 5 previews/predictions")."""
+    "5 ideas 5 previews/predictions"). ``notes`` gets why a dated entry was skipped."""
     scheduled: list[tuple[str, str]] = []
     try:
         from core.seasonal_calendar import fetch_week_topics
@@ -1831,6 +1835,12 @@ def get_idea_menu(
             idea_list = [countdown, *idea_list]
     except Exception as exc:
         logger.debug("countdown idea skipped: %s", exc)
+    try:  # decision 84: the day's launch moments and long videos lead too, as extras
+        from core.series.dated import dated_ideas
+
+        idea_list = [*dated_ideas(channel_id, now=now, notes=notes), *idea_list]
+    except Exception as exc:
+        logger.debug("dated ideas skipped: %s", exc)
     want = best_bet_preview_count() if previews is None else previews
     if want <= 0:
         return idea_list, []

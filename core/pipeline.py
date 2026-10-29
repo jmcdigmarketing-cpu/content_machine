@@ -1283,6 +1283,11 @@ def run_pipeline(
         from core.series.countdown import series_title
 
         result.title = series_title(stem, result.title)
+    search_suggestions: list[str] | None = None
+    if (best_bet or {}).get("draft_kind") == "long":  # #1856: a long video is found by search
+        from core.series.long_form import long_title
+
+        result.title, search_suggestions = long_title(channel_id, topic, result.title)
     result.script = clean_script_for_tts(content.get("script", ""))
     result.timings["word_count"] = count_spoken_words(result.script)
     result.description = content.get("description", "")
@@ -1312,6 +1317,8 @@ def run_pipeline(
         result.features["fact_confidence"] = list(fact_confidence)  # #911
     if best_bet is not None:
         result.features["best_bet"] = dict(best_bet)  # #909
+    if search_suggestions is not None:
+        result.features["search_suggestions"] = list(search_suggestions)  # #1856
     if result.menu_path:
         result.features["menu_path"] = str(result.menu_path)
     if result.angle_intent:

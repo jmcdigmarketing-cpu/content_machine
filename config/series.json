@@ -1,5 +1,5 @@
 {
-  "_note": "Series (#1847, the bridge's B11): a dated run of videos with one title stem. A `countdown` row makes one idea a day from `from` to the day before `until`, in the channel's timezone - the topic is `title` with {n} the days left, the facts are the day's headlines naming one of `names` from the `domain`'s feeds (else the date alone). core/series/countdown.py; SERIES_COUNTDOWN=false switches it off. Launch day itself is #1848's.",
+  "_note": "Series (#1847, the bridge's B11; decision 84): dated videos, read by core/series/. `countdown` - one idea a day from `from` to the day before `until` in the channel's timezone, the topic `title` with {n} the days left, facts the day's headlines naming one of `names` (else the date alone), each Short placed in `playlist` in day order (#1855); SERIES_COUNTDOWN=false stops it. `moment` - a Short drafted on its `on` date as an extra draft; `needs` words must be in that week's subject headlines or it is skipped with the reason; `on: null` waits for a date (set it when Rockstar states it); `publish_at` (ISO UTC) is when it goes public, null = the next free slot (#1870). `long` - a 10-12 minute 16:9 video drafted on its `on` date, rendered only after your review (#1850); its title carries the first YouTube suggestion for subject + one of its `search_terms` (#1856). `slots` - extra public hours for a video naming the subject inside `from`-`to`, and a story on 5+ outlets naming it is drafted first then (#1868, #1867). `style` - the colours a long video's card uses (#1869). SERIES_DATED=false stops the moments and long videos.",
   "tapin": [
     {
       "id": "gta6-countdown",
@@ -9,7 +9,36 @@
       "title": "GTA 6: {n} days to launch",
       "from": "2026-10-29",
       "until": "2026-11-19",
-      "domain": "gaming"
-    }
+      "domain": "gaming",
+      "playlist": "GTA"
+    },
+    {"id": "gta6-everything", "kind": "long", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6 - everything we know before launch", "on": "2026-11-06", "search_terms": ["release date", "price", "things to know"]},
+    {"id": "gta6-map-story", "kind": "long", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6's map, characters and story explained", "on": "2026-11-12", "search_terms": ["map", "story", "characters"]},
+    {"id": "gta6-first-things", "kind": "long", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6: ten things to do first", "on": "2026-11-20", "search_terms": ["tips", "things to do", "guide"]},
+    {"id": "gta6-online", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6 Online - what is confirmed", "on": "2026-11-12"},
+    {"id": "gta6-pc", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "When does GTA 6 come to PC?", "on": "2026-11-14", "needs": ["PC"]},
+    {"id": "gta6-preload", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6 pre-load, file size and unlock times", "on": "2026-11-17"},
+    {"id": "gta6-launch-day", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6 is out: unlock times, file size and what to do first", "on": "2026-11-18", "publish_at": null},
+    {"id": "gta6-first-impressions", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6 first impressions: what players and critics are saying", "on": "2026-11-20"},
+    {"id": "gta6-launch-fixes", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6 launch problems and fixes", "on": "2026-11-21"},
+    {"id": "gta6-black-friday", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6 Black Friday deals", "on": "2026-11-27"},
+    {"id": "gta6-review-scores", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6 review scores, rounded up", "on": null},
+    {"id": "gta6-sales", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6's sales record", "on": null},
+    {"id": "gta6-launch-slots", "kind": "slots", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"],
+     "from": "2026-11-16", "to": "2026-11-22", "extra_hours": [18]},
+    {"id": "gta6-style", "kind": "style", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"],
+     "palette": ["#F25CA2", "#FF9F1C", "#2EC4B6"]}
   ]
 }

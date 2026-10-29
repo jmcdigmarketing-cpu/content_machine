@@ -280,16 +280,25 @@ def _projected_voice(draft: PendingDraft) -> float | None:
 
 def _render(draft: PendingDraft, override: bool) -> bool:
     """Voice + render one accepted draft onto its existing run row."""
-    from core.pipeline import run_media_only
+    import contextlib
 
-    run_media_only(
-        draft.topic,
-        draft.script,
-        channel_id=str(draft.meta.get("channel_id") or "") or None,
-        content_run_id=draft.run_id,
-        title=draft.title,
-        length_choice=draft.length_choice,
-    )
+    from core.pipeline import run_media_only
+    from core.series.long_form import landscape_render
+
+    long_form = draft.meta.get("kind") == "long"  # #1850: rendered 16:9, after review
+    with landscape_render() if long_form else contextlib.nullcontext():
+        run_media_only(
+            draft.topic,
+            draft.script,
+            channel_id=str(draft.meta.get("channel_id") or "") or None,
+            content_run_id=draft.run_id,
+            title=draft.title,
+            length_choice=draft.length_choice,
+        )
+    if long_form:
+        from core.series.long_form import finish_long_render
+
+        finish_long_render(draft.run_id, str(draft.meta.get("channel_id") or "tapin"), draft.title)
     if override:
         from core.claim_verifier import override_features
         from core.run_features import merge_features
@@ -376,6 +385,13 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     made = f"  made {age:.0f}d ago" if age is not None else ""
     print_fn(f"\n  [{index}/{total}] {draft.title}  (run {draft.run_id}){made}")
     print_fn(f"    angle: {draft.topic}")
+    if meta.get("kind") == "long":  # #1850, decision 84
+        print_fn("    ~ a long video (16:9, 10-12 min) - it renders only after you accept it")
+        searches = meta.get("search_suggestions")
+        if searches == []:  # #1856
+            print_fn("    ! nobody searches this - YouTube suggests nothing for its subject")
+        elif searches:
+            print_fn(f"    ~ people search: {', '.join(str(s) for s in searches[:4])}")
     if meta.get("own_idea"):  # #1159
         print_fn("    your own idea, written as angle 1")
         for line in typed_lines(str(meta.get("topic") or ""), draft.script):  # #1343
@@ -1159,6 +1175,8 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
     meta = draft.meta
     if draft.decision:
         return f"already {draft.decision}"
+    if meta.get("kind") == "long":  # #1850, decision 84: the operator reads the script first
+        return "a long video renders after your review"
     dead = dead_reason(meta, now=now)
     if dead:  # #1219: checked first, so the count of drafts past their window is true
         return dead

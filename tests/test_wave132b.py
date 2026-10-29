@@ -435,7 +435,8 @@ class CountdownTests(unittest.TestCase):
     def test_the_real_config_starts_tomorrow(self):
         from core.series.countdown import series_rows
 
-        rows = series_rows("tapin")
+        # Wave 133: the moments, long videos, slots and style share the file.
+        rows = [r for r in series_rows("tapin") if r["kind"] == "countdown"]
         self.assertEqual([r["id"] for r in rows], ["gta6-countdown"])
         self.assertEqual((rows[0]["from"], rows[0]["until"]), ("2026-10-29", "2026-11-19"))
 

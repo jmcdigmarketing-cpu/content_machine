@@ -21,8 +21,10 @@ Env toggles:
 
 from __future__ import annotations
 
+import json
 import os
 import re
+from typing import Any
 
 from config.seo import get_seo_profile
 from core.logging import get_logger
@@ -82,18 +84,67 @@ def finance_disclaimer_line(channel_id: str) -> str:
     return (custom or DEFAULT_FINANCE_DISCLAIMER).strip()
 
 
-def ftc_affiliate_line(channel_id: str) -> str:
-    """FTC affiliate disclosure — copy only; #79 is the tracking spike."""
+def ftc_affiliate_line(channel_id: str, *, affiliate: bool = False) -> str:
+    """FTC affiliate disclosure — copy only; #79 is the tracking spike. ``affiliate`` (#1748):
+    the description carries an affiliate link, so the line is due with no CTA configured."""
     if not _flag("FTC_DISCLOSURE", True):
         return ""
     ctas = monetization_ctas(channel_id)
-    if not ctas:
+    if not ctas and not affiliate:
         return ""
     try:
         custom = get_seo_profile(channel_id).get("ftc_disclosure")
     except Exception:
         custom = None
     return (custom or DEFAULT_FTC_DISCLOSURE).strip()
+
+
+_AFFILIATES_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "affiliates.json"
+)
+
+
+def affiliate_rows(channel_id: str) -> list[dict[str, Any]]:
+    """The channel's `config/affiliates.json` rows (#1748), [] when unread."""
+    try:
+        with open(_AFFILIATES_FILE, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError) as exc:
+        logger.debug("affiliates.json unread: %s", exc)
+        return []
+    rows = data.get(channel_id) if isinstance(data, dict) else None
+    return [r for r in rows or [] if isinstance(r, dict) and r.get("url") and r.get("keys")]
+
+
+def _tagged(url: str, tag: str) -> str:
+    """An Amazon link with the Associates tag, "" without one (#1747); any other link as is."""
+    if "amazon." not in url.lower():
+        return url
+    if not tag:
+        return ""
+    return f"{url}{'&' if '?' in url else '?'}tag={tag}"
+
+
+def affiliate_lines(channel_id: str, title: str, topic: str = "", *, long_form: bool) -> list[str]:
+    """#1748 + #1747 (B07.1-2): one "<label>: <link>" for the first matching row, then the FTC
+    line - on long-form only, since a Short's description links are not clickable. []
+    otherwise, and for an Amazon row before AFFILIATE_AMAZON_TAG is set."""
+    if not long_form:
+        return []
+    from core.playlists import _matches
+
+    text = f"{title or ''} {topic or ''}".lower()
+    tag = os.getenv("AFFILIATE_AMAZON_TAG", "").strip()
+    for row in affiliate_rows(channel_id):
+        if not _matches(text, [str(k) for k in row.get("keys") or []]):
+            continue
+        url = _tagged(str(row["url"]), tag)
+        if not url:
+            return []
+        label = str(row.get("label") or "Link").strip()
+        ftc = ftc_affiliate_line(channel_id, affiliate=True)
+        return [f"{label}: {url}", *([ftc] if ftc else [])]
+    return []
 
 
 def ensure_seo_first_line(description: str, title: str = "") -> str:
@@ -319,6 +370,11 @@ def apply_description_extras(
     for cta in monetization_ctas(channel_id):
         if cta not in body and cta not in additions:
             additions.append(cta)
+
+    # #1748: one affiliate link on a long video (preset "4"), with its FTC line
+    for line in affiliate_lines(channel_id, title, topic, long_form=str(length_choice) == "4"):
+        if line not in body and line not in additions:
+            additions.append(line)
 
     if _flag("DESCRIPTION_SOURCES", True):
         urls = list(source_urls or [])

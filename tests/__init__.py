@@ -109,6 +109,10 @@ os.environ["HOLDOUT_EVERY"] = "0"
 os.environ["WEEK_COMPILE"] = "false"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).
 os.environ["SERIES_COUNTDOWN"] = "false"
+# Wave 133 (decision 84): the GTA 6 moments and long videos read the feeds on their dates.
+os.environ["SERIES_DATED"] = "false"
+# Wave 133 (#1747): no test builds a link with a real Associates tag.
+os.environ["AFFILIATE_AMAZON_TAG"] = ""
 # Wave 112: the first-line rule refuses openers without a call; its own tests turn it on.
 os.environ["FIRST_LINE_RULE"] = "false"
 # Wave 112 (#1042): the matchup card reads ESPN; a render test that wants it sets it.

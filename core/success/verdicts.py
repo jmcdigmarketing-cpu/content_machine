@@ -74,7 +74,12 @@ def _scored(channel_id: str) -> dict[str, Any]:
     from core.success.videos import channel_videos, comparable_views
 
     verdicts = load(channel_id)
-    ranked, heading, unit = comparable_views(channel_videos(channel_id))
+    # #1596: on a measure most rated videos have - 7-day views reached 3 of 28 ratings, and a
+    # floor of 3 still let them win (live, 10-28)
+    cover_min = min(len(verdicts), max(MIN_RATED, len(verdicts) // 2))
+    ranked, heading, unit = comparable_views(
+        channel_videos(channel_id), cover=set(verdicts), cover_min=cover_min
+    )
     rated = [(i, v, value) for i, (v, value) in enumerate(ranked) if v.video_id in verdicts]
     agreed = 0
     loved, doubted = [], []

@@ -7828,6 +7828,136 @@
         "equals": "GTA 6: 21 days to launch"
       },
       "why": "a title over YouTube's 100 characters is cut mid-word"
+    },
+    {
+      "id": "no-associates-tag-no-amazon-link",
+      "item": 1747,
+      "source": "decision 82: links only after the operator's Associates sign-up",
+      "call": "core.description_extras:_tagged",
+      "args": [
+        "https://www.amazon.com/s?k=Grand+Theft+Auto+VI",
+        ""
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "an untagged Amazon link earns nothing and still needs the FTC line"
+    },
+    {
+      "id": "the-tag-joins-a-search-link",
+      "item": 1747,
+      "source": "the sibling: a search URL already has a query",
+      "call": "core.description_extras:_tagged",
+      "args": [
+        "https://www.amazon.com/s?k=Grand+Theft+Auto+VI",
+        "tapin-20"
+      ],
+      "expect": {
+        "equals": "https://www.amazon.com/s?k=Grand+Theft+Auto+VI&tag=tapin-20"
+      },
+      "why": "a second '?' would break the link"
+    },
+    {
+      "id": "a-short-gets-no-affiliate-link",
+      "item": 1748,
+      "source": "B07.12: a Short's description links are not clickable",
+      "call": "core.description_extras:affiliate_lines",
+      "args": [
+        "tapin",
+        "GTA 6 - everything we know before launch"
+      ],
+      "kwargs": {
+        "long_form": false
+      },
+      "expect": {
+        "equals": []
+      },
+      "why": "long-form only"
+    },
+    {
+      "id": "a-gta-title-gets-the-launch-week-evening",
+      "item": 1868,
+      "source": "B11.22: two GTA 6 slots a day, 11-16 to 11-22",
+      "call": "core.series.dated:slot_hours",
+      "args": [
+        "tapin",
+        "GTA 6 pre-load, file size and unlock times",
+        "2026-11-18"
+      ],
+      "expect": {
+        "includes_all": [
+          12,
+          18,
+          22
+        ]
+      },
+      "why": "the extra 6 PM hour inside launch week"
+    },
+    {
+      "id": "another-title-keeps-two-slots",
+      "item": 1868,
+      "source": "the sibling: a UFC title the same day",
+      "call": "core.series.dated:slot_hours",
+      "args": [
+        "tapin",
+        "UFC 335 preview: the main event",
+        "2026-11-18"
+      ],
+      "expect": {
+        "excludes_any": [
+          18
+        ]
+      },
+      "why": "only the subject's videos get the extra hour"
+    },
+    {
+      "id": "a-long-title-carries-the-search",
+      "item": 1856,
+      "source": "B11.10: 'gta 6 release date' is the top YouTube suggestion shape",
+      "call": "core.series.long_form:search_title",
+      "args": [
+        "GTA 6",
+        [
+          "gta 6 release date",
+          "gta 6 map"
+        ],
+        "Everything we know about GTA 6 before launch"
+      ],
+      "expect": {
+        "contains": "GTA 6 Release Date"
+      },
+      "why": "a long video is found by search, not the feed"
+    },
+    {
+      "id": "a-countdown-title-names-its-playlist",
+      "item": 1855,
+      "source": "B11.9: the countdown plays day 21 to day 1",
+      "call": "core.series.countdown:countdown_playlist",
+      "args": [
+        "tapin",
+        "GTA 6: 1 day to launch - the last trailer"
+      ],
+      "expect": {
+        "equals": "GTA"
+      },
+      "why": "'1 day' is singular; the pattern must still match"
+    },
+    {
+      "id": "a-possessive-subject-is-not-stripped",
+      "item": 1856,
+      "source": "live 10-28: \"GTA 6 Trailer: 's map, characters and story explained\"",
+      "call": "core.series.long_form:search_title",
+      "args": [
+        "GTA 6",
+        [
+          "gta 6 story"
+        ],
+        "GTA 6's map, characters and story explained"
+      ],
+      "expect": {
+        "not_contains": ": 's"
+      },
+      "why": "only a separator after the subject is cut"
     }
   ]
 }

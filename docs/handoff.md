@@ -53,23 +53,24 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-28 · **HEAD at write:** `1b69b78` (wave 132's first five; this wave's commit
+**Written:** 2026-10-28 · **HEAD at write:** `30b71df` (wave 132's next five; this wave's commit
 follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 132, the next five, shipped:** #1847 the GTA 6 countdown from 10-29 (`core/series/`,
-`config/series.json`) - "GTA 6: N days to launch - <the day's story>", an extra fourth draft, held
-after its day (decision 83); #1595 3+ outlets or a marquee name (`config/marquee.json`, + #1859);
-#1593 one marquee preview a night; #1594 a `news` intent ranked on the headline; #1592 the Week in
-Review as a rundown then the top 3 (this week's 12 Shorts: 6:46). Nothing found broken in shipped
-code; seven older tests pinned what decisions 81 and 83 change and moved with them.
+**Wave 133, the next ten, shipped** (decision 84): the GTA 6 window in `config/series.json` - three
+long 16:9 videos (11-06, 11-12, 11-20) rendered only after review (`core/series/long_form`), ten
+launch moments as extra drafts (`core/series/dated`), a 6 PM GTA slot and GTA-first drafting
+11-16 to 11-22, launch day at `publish_at`, the countdown in day order in the GTA playlist,
+long titles from search, cards from our own frames, affiliate links once the tag is set; the
+verdicts compare 24 ratings. **Defects found by the live reads, fixed:** the verdicts' first floor
+still let 7-day views win; the subject's own suggestions titled every long video "GTA 6 Trailer";
+"GTA 6's map" lost its subject. Nothing found broken in shipped code.
 
-**Next five:** **#1850** the long-form draft kind ("everything we know" public by 11-10); #1748 the
-affiliates map; #1856 search titles; #1868 two GTA slots in launch week; #1596 the verdicts.
-Filed #1898 #1900 #1901, parked #1899.
+**Next five:** wave 134's scoreboard - #1823 #1824 #1697 #1825 #1822
+([cloud_brief_wave134.md](cloud_brief_wave134.md)). Filed #1902 (the first 16:9 render, unwatched).
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** watch 10-29's countdown draft; end the two Oct 26 campaigns in Studio and send the
-numbers; Amazon Associates (#1747 waits on it) and a Facebook Page in Buffer; the Google app by 10-30.
+**Operator:** review the 11-06 long draft before it renders; the Associates tag; the unlock time and
+embargo date in `config/series.json` when Rockstar states them; the Oct 26 campaigns; the Google app.
 
 ## Slot — Cursor
 

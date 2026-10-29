@@ -170,6 +170,7 @@ def compose_thumbnail(
     subject: Image.Image | None = None,
     min_contrast: float = MIN_CONTRAST,
     channel_id: str | None = None,
+    ink: tuple[int, int, int] | None = None,
 ) -> ThumbnailPlate:
     """Paint the headline onto a copy of ``base`` and save it.
 
@@ -184,7 +185,7 @@ def compose_thumbnail(
     sample = img.getpixel((max(MARGIN, width // 4), height // 2))
     pixel = sample if isinstance(sample, tuple) else (sample, sample, sample)
     rgb = (int(pixel[0]), int(pixel[1]), int(pixel[2]))
-    ink = _channel_ink(channel_id, rgb)
+    ink = ink or _channel_ink(channel_id, rgb)  # #1869: a long video's palette, when given
     ratio = contrast_ratio(ink, rgb)
     empty = (0, 0, 0, 0)
     backed = False

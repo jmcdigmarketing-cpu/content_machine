@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import Callable
 from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from typing import Any
@@ -47,7 +48,7 @@ def series_rows(channel_id: str) -> list[dict[str, Any]]:
         logger.debug("series.json unread: %s", exc)
         return []
     rows = data.get(channel_id) if isinstance(data, dict) else None
-    return [r for r in rows or [] if isinstance(r, dict) and r.get("title")]
+    return [r for r in rows or [] if isinstance(r, dict) and r.get("kind")]
 
 
 def channel_zone(channel_id: str) -> tzinfo:
@@ -102,32 +103,61 @@ def countdown_facts(
     row: dict[str, Any], day: date, headlines: list[dict[str, Any]], *, now: datetime
 ) -> list[str]:
     """The date line, then up to five of the last day's headlines naming the subject."""
-    from apis.topic_tokens import names_any
-
     until = _day(row["until"])
     n = days_left(day, until)
     unit = "day" if n == 1 else "days"
     subject = str(row.get("subject") or "").strip()
-    lines = [
-        f"{subject} launches on {until:%B} {until.day}, {until.year} - {n} {unit} from "
-        f"{day:%B} {day.day}."
-    ]
     names = [str(name) for name in row.get("names") or [subject] if str(name).strip()]
-    horizon = now - timedelta(hours=_FRESH_HOURS)
+    return [
+        f"{subject} launches on {until:%B} {until.day}, {until.year} - {n} {unit} from "
+        f"{day:%B} {day.day}.",
+        *headline_facts(names, headlines, now=now, hours=_FRESH_HOURS, limit=_FACT_HEADLINES),
+    ]
+
+
+def subject_headlines(
+    names: list[str], headlines: list[dict[str, Any]], *, now: datetime, hours: float
+) -> list[dict[str, Any]]:
+    """The dated headlines of the last `hours` naming one of `names`, each title once. An
+    undated headline may be old news, so it is left out."""
+    from apis.topic_tokens import names_any
+
+    horizon = now - timedelta(hours=hours)
     seen: set[str] = set()
+    out: list[dict[str, Any]] = []
     for item in headlines:
         title = " ".join(str(item.get("title") or "").split())
         published = item.get("published")
         if not title or not isinstance(published, datetime):
-            continue  # an undated headline may be old news
+            continue
         stamp = published if published.tzinfo else published.replace(tzinfo=timezone.utc)
         if stamp < horizon or not names_any(title, names) or title.lower() in seen:
             continue
         seen.add(title.lower())
-        lines.append(f"{item.get('source') or 'A source'} reported: {title}")
-        if len(lines) > _FACT_HEADLINES:
-            break
-    return lines
+        out.append({**item, "title": title})
+    return out
+
+
+def headline_facts(
+    names: list[str], headlines: list[dict[str, Any]], *, now: datetime, hours: float, limit: int
+) -> list[str]:
+    """Up to `limit` of `subject_headlines` as fact lines - "Dexerto reported: <title>"."""
+    found = subject_headlines(names, headlines, now=now, hours=hours)
+    return [
+        f"{item.get('source') or 'A source'} reported: {item['title']}" for item in found[:limit]
+    ]
+
+
+def countdown_playlist(channel_id: str, title: str) -> str:
+    """#1855: the playlist a countdown title belongs to in day order ("GTA"), else ""."""
+    for row in series_rows(channel_id):
+        template = str(row.get("title") or "")
+        if row.get("kind") != "countdown" or "{n}" not in template or not row.get("playlist"):
+            continue
+        pattern = re.escape(template).replace(re.escape("{n}"), r"\d+").replace("days", "days?")
+        if re.match(pattern, str(title or "").strip(), flags=re.IGNORECASE):
+            return str(row["playlist"])
+    return ""
 
 
 def feed_headlines(channel_id: str, row: dict[str, Any], _now: datetime) -> list[dict[str, Any]]:

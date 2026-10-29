@@ -228,6 +228,10 @@ def add_to_playlists(
     added: dict[str, list[str]] = dict(data.get("added") or {})
     done = set(added.get(video_id) or [])
     notes: list[str] = []
+    from core.series.countdown import countdown_playlist
+
+    in_order = countdown_playlist(channel_id, title)  # #1855: the countdown plays day 21 to 1
+    series: dict[str, list[str]] = dict(data.get("series") or {})
     for name in names:
         playlist_id = ids.get(name)
         if not playlist_id:
@@ -235,25 +239,27 @@ def add_to_playlists(
             continue
         if name in done:
             continue
+        snippet: dict[str, Any] = {
+            "playlistId": playlist_id,
+            "resourceId": {"kind": "youtube#video", "videoId": video_id},
+        }
+        if name == in_order:
+            snippet["position"] = len(series.get(name) or [])
         try:
             record_call("playlistItems.insert")  # wave 113: it booked nothing
-            service.playlistItems().insert(
-                part="snippet",
-                body={
-                    "snippet": {
-                        "playlistId": playlist_id,
-                        "resourceId": {"kind": "youtube#video", "videoId": video_id},
-                    }
-                },
-            ).execute()
+            service.playlistItems().insert(part="snippet", body={"snippet": snippet}).execute()
         except Exception as exc:
             logger.warning("playlist add failed (%s -> %s): %s", video_id, name, exc)
             notes.append(f"{name}: {exc}")
             continue
         done.add(name)
+        if name == in_order:
+            series[name] = [*(series.get(name) or []), video_id]
         notes.append(f"added to {name}")
     added[video_id] = sorted(done)
     data["added"] = added
+    if series:
+        data["series"] = series
     try:
         _save(path, data)
     except OSError as exc:

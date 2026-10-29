@@ -167,13 +167,15 @@ def collect_topics(
     *,
     picks: dict[str, dict] | None = None,
     held_back: list[str] | None = None,
+    notes: list[str] | None = None,
 ) -> list[str]:
     """Explicit topics → file lines → best bets, capped at `count` for implicit sources.
 
     ``picks`` (optional) is filled with each best-bet topic's `pick_record` (#913) so the
     run records that the batch took it and at which rank; explicit and file topics are
     not picks. ``held_back`` (optional) gets the headlines the topic gate kept for the menu
-    (#1595). The day's countdown (#1847) comes on top of `count` - even at 0.
+    (#1595). The day's countdown (#1847) and dated moments and long videos (decision 84) come
+    on top of `count` - even at 0; ``notes`` gets why a dated entry due today was skipped.
     """
     if topics:
         return [t.strip() for t in topics if t.strip()]
@@ -185,22 +187,24 @@ def collect_topics(
         from core.best_bet import get_idea_menu, marquee_names, pick_record
 
         if count <= 0:
-            # #1847: drafts are waiting, so nothing else is - but a countdown is made on its
-            # day or not at all. No menu: it fetches feeds and makes the previews' calls.
+            # #1847, decision 84: drafts are waiting, so nothing else is - but a countdown or a
+            # dated moment is made on its day or not at all. No menu: it fetches feeds and
+            # makes the previews' calls.
             from core.series.countdown import countdown_idea
+            from core.series.dated import dated_ideas
 
-            alone = countdown_idea(channel_id)
-            if alone is None:
-                return []
+            alone = [b for b in (countdown_idea(channel_id), *dated_ideas(channel_id, notes=notes))
+                     if b is not None]  # fmt: skip
             if picks is not None:
-                picks[alone.topic] = pick_record([alone], 1, by="batch")
-            return [alone.topic]
-        ideas, previews = get_idea_menu(channel_id)
-        extra = [b for b in ideas if getattr(b, "source", "") == "countdown"][:1]
+                for bet in alone:
+                    picks[bet.topic] = pick_record([bet], 1, by="batch")
+            return [b.topic for b in alone]
+        ideas, previews = get_idea_menu(channel_id, notes=notes)
+        extra = [b for b in ideas if getattr(b, "source", "") in DATED_SOURCES]
         names = marquee_names(channel_id)
         kept: list[Any] = []
         for bet in ideas:
-            if getattr(bet, "source", "") == "countdown":
+            if getattr(bet, "source", "") in DATED_SOURCES:
                 continue
             outlets = int(getattr(bet, "outlets", 0) or 0)
             if story_passes_gate(bet.topic, source=str(getattr(bet, "source", "") or ""),
@@ -208,6 +212,9 @@ def collect_topics(
                 kept.append(bet)
             elif held_back is not None:
                 held_back.append(bet.topic)
+        from core.series.dated import channel_day, jump_first, launch_names
+
+        kept = jump_first(kept, launch_names(channel_id, channel_day(channel_id)))  # #1867
         # #1593 (decision 81): at most one preview a night, marquee only.
         marquee = [p for p in previews if preview_qualifies(str(getattr(p, "kind", "") or ""))]
         # Decision 66: an idea, then the preview, then the other ideas.
@@ -231,6 +238,7 @@ def collect_topics(
         return []
 
 
+DATED_SOURCES = ("countdown", "moment", "long")  # decision 84: extra drafts on their day
 OUTLETS_MIN = 3  # #1595 (decision 81): an overnight story is on three outlets, or a marquee name
 _PREVIEW_KINDS = ("national", "league", "ufc_numbered")
 
@@ -480,7 +488,12 @@ def generate_draft(
 
     corpus = build_relevance_corpus(best_signals, operator_facts=key_facts or [])
     packed = select_headless_facts(key_facts, topic=topic, corpus=corpus) if key_facts else None
-    length_choice = _length_choice(channel_id, best_topic)
+    # #1850 (decision 84): a long video - Extended, chapters from its angles, 16:9 after review
+    long_form = (best_bet or {}).get("draft_kind") == "long"
+    length_choice = "4" if long_form else _length_choice(channel_id, best_topic)
+    long_kwargs: dict[str, Any] = {}
+    if long_form:
+        long_kwargs["chapter_angles"] = [str(v) for v, *_ in discovery.evaluated][:5]
     with hook_arm_env(hook_arm):  # #1502
         result = run_pipeline(
             topic,
@@ -505,6 +518,7 @@ def generate_draft(
             best_bet=best_bet,
             own_idea=own_idea,
             own_topic=best_topic if own_idea else "",
+            **long_kwargs,
         )
     if hook_arm and result.run_id:
         try:
@@ -625,6 +639,18 @@ def generate_draft(
         or None,
         # #1847: a countdown's day passing reads as that, not as a game starting
         **({"series": "countdown"} if (best_bet or {}).get("title_stem") else {}),
+        # #1850: a long video; #1856 what YouTube suggests for its subject ([] = nobody searches)
+        **(
+            {"kind": "long", "search_suggestions": result.features.get("search_suggestions")}
+            if long_form
+            else {}
+        ),
+        # #1870: when its entry says it goes public
+        **(
+            {"publish_at": (best_bet or {}).get("publish_at")}
+            if (best_bet or {}).get("publish_at")
+            else {}
+        ),
         "unplayed_result": unplayed or None,
         "fact_count": fact_count,
         "ungrounded_entities": out.ungrounded,

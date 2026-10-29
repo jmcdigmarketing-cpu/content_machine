@@ -14,8 +14,9 @@ unlisted however it was asked for (#754).
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from analytics.post_timing import planned_post_time
@@ -173,15 +174,17 @@ def twice_daily_slots(
     now: datetime | None = None,
     hours: tuple[int, ...] = _TWICE_DAILY,
     lead: timedelta = _FIRST_LEAD,
+    hours_on: Callable[[date], tuple[int, ...]] | None = None,
 ) -> list[datetime]:
     """`count` public slots at noon and 10 PM in the channel's zone, the first one at least
-    `lead` away - an upload has to finish before its slot."""
+    `lead` away - an upload has to finish before its slot. ``hours_on`` (#1868) gives a day's
+    hours instead - launch week's extra GTA 6 hour."""
     tz = _channel_tz(channel_id)
     earliest = ((now or datetime.now(timezone.utc)) + lead).astimezone(tz)
     out: list[datetime] = []
     day = earliest.date()
     while len(out) < count:
-        for hour in sorted(hours):
+        for hour in sorted(hours_on(day) if hours_on else hours):
             slot = datetime.combine(day, time(hour, 0), tzinfo=tz)
             if slot >= earliest and len(out) < count:
                 out.append(slot.astimezone(timezone.utc))
@@ -246,10 +249,13 @@ def free_slots(
     now: datetime | None = None,
     hours: tuple[int, ...] = _TWICE_DAILY,
     taken: set[datetime] | None = None,
+    hours_on: Callable[[date], tuple[int, ...]] | None = None,
 ) -> list[datetime]:
     """`twice_daily_slots` without the ones other uploads already hold."""
     held = _taken_slots(channel_id) if taken is None else set(taken)
-    candidates = twice_daily_slots(channel_id, count + len(held), now=now, hours=hours)
+    candidates = twice_daily_slots(
+        channel_id, count + len(held), now=now, hours=hours, hours_on=hours_on
+    )
     return [slot for slot in candidates if slot not in held][:count]
 
 
@@ -312,6 +318,17 @@ def preview_event(
     return named if named is not None and rendered < named else None
 
 
+def _planned_time(channel_id: str, run_id: int) -> datetime | None:
+    """#1870: the time a draft's entry says it goes public (`publish_at`), or None."""
+    try:
+        from core.batch_review import draft_meta_for_run
+
+        return _when((draft_meta_for_run(channel_id, run_id) or {}).get("publish_at"))
+    except Exception as exc:
+        logger.debug("planned time unread for run %s: %s", run_id, exc)
+        return None
+
+
 def slot_for_run(
     channel_id: str, run_id: int, *, title: str = "", now: datetime | None = None
 ) -> tuple[datetime | None, str]:
@@ -330,7 +347,14 @@ def slot_for_run(
             return None, f"past its {window:.0f}-day window"
         deadline = moment + timedelta(days=window - age)
     taken = _taken_slots(channel_id)
-    main = free_slots(channel_id, 1, now=moment, taken=taken)
+    planned = _planned_time(channel_id, run_id)  # #1870: launch day at the unlock
+    if (planned is not None and planned >= moment + _FIRST_LEAD and planned not in taken
+            and (deadline is None or planned < deadline)):  # fmt: skip
+        return planned, ""
+    from core.series.dated import slot_hours
+
+    main = free_slots(channel_id, 1, now=moment, taken=taken,
+                      hours_on=lambda day: slot_hours(channel_id, title, day))  # fmt: skip
     if main and (deadline is None or main[0] < deadline):
         return main[0], ""
     evening = free_slots(channel_id, 3, now=moment, hours=_EVENING, taken=taken)

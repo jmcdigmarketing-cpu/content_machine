@@ -157,11 +157,17 @@ _MEASURES = {
 
 
 def comparable_views(
-    videos: list[Video], *, min_count: int = COMPARABLE_MIN
+    videos: list[Video],
+    *,
+    min_count: int = COMPARABLE_MIN,
+    cover: set[str] | None = None,
+    cover_min: int = 0,
 ) -> tuple[list[tuple[Video, int]], str, str]:
     """([(video, value)] best first, the ranking's label, the value's unit).
 
-    The first measure that `min_count` videos have wins - a ranking never mixes two.
+    The first measure that `min_count` videos have wins - a ranking never mixes two. With
+    `cover` (#1596), the measure must also reach `cover_min` of those ids: 28 videos were rated
+    and 3 had 7-day views, so the verdicts were compared on 3.
     """
     for key, read in (
         ("7d", lambda v: v.views_7d),
@@ -174,7 +180,8 @@ def comparable_views(
         ("window", lambda v: v.organic_views or None),
     ):
         pairs = [(v, int(value)) for v in videos if (value := read(v))]
-        if len(pairs) >= min_count or key == "window":
+        covered = sum(1 for v, _value in pairs if v.video_id in (cover or set()))
+        if (len(pairs) >= min_count and covered >= cover_min) or key == "window":
             pairs.sort(key=lambda p: p[1], reverse=True)
             heading, unit = _MEASURES[key]
             return pairs, heading, unit

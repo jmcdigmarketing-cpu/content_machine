@@ -450,3 +450,18 @@ published a day late states the wrong number. Asked, the operator took "Stem, th
 "An extra fourth" (not the recommended "One of the three") and "Rundown, then top 3".
 **Consequence:** the countdown costs one more cheap script a night and one more draft to decide;
 `config/series.json` holds it and `SERIES_COUNTDOWN=false` stops it; launch day is #1848's.
+
+## 84. The GTA 6 window scheduled: three long videos after review, moments as extra drafts (2026-10-28)
+**Decision:** `config/series.json` dates the GTA 6 window. Three 10-12 minute 16:9 videos -
+"everything we know before launch" drafted 11-06 (public by 11-10), "the map, characters and
+story explained" 11-12, "ten things to do first" 11-20 - rendered only after the operator
+accepts the script; ten launch moments drafted on their dates as extra drafts; long-form
+thumbnails from our own frames with GTA 6's colours, no outside image. **Why:** long-form is the
+hours lane's only road (10.2 hours in 12 months) and GTA 6 is the channel's biggest subject (run
+191, 1,030 organic views); a long voice costs about five Shorts. Asked, the operator took every
+recommended option: "Three, dated", "After my review", "Extra drafts", "Our own frames".
+**Consequence:** the brief's 11-19 "first impressions" could not be written before anyone had
+played, so the launch-day Short drafted 11-18 is the unlock, size and what to do first, published
+at `publish_at` (null until Rockstar states the time); first impressions move to 11-20 and the
+fixes to 11-21. The review-score and sales Shorts wait for dates. Launch week can be 5-6 drafts a
+night. `SERIES_DATED=false` stops it.

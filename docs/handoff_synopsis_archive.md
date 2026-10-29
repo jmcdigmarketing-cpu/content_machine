@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-25 (Claude Code): wave 131, the next ten
+
+Runs 185 and 186 were held for a claim until their game started; a held preview now toasts within
+6 hours of its game and `ops status` names it. The captions show the script's numbers ("UFC 334",
+not "three thirty-four"). With the operator's calls (decision 80): one YouTube search per topic per
+run, 9 of the 11 playlists made (YouTube's limit refused the 10th; the worker retries daily), the
+menu's domains by organic views per video. Long sentences go to the read-aloud split; why a draft
+waits is recorded and counted weekly.
+
 ## Previous — 2026-10-25 (Claude Code): wave 130, the next ten
 
 The intro test had settled - 21% stayed past the swipe with it against 44% without - and the

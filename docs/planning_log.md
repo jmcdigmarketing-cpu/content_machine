@@ -10147,3 +10147,50 @@ is new).
 Audit: mypy 92; ruff clean. Suite: 6895 forward and 6895 reversed, OK (6 skipped); data/ and output/ untouched; every new function has a production caller (`best_bet.names_marquee` had none and was removed).
 
 `roadmap-index`: open 355, done 1683, parked 95, numbered open 353.
+
+## 2026-10-28 — wave 133, the next ten (Claude Code)
+
+**Prompt:** "lets get started on the next 10 on the roadmap"
+
+Picked: the roadmap's five (#1850 #1748 #1856 #1868 #1596) and the wave 133 brief's next five
+(items 7-11: #1867, the launch moments, #1870, #1855, #1731/#1869). Asked first (decision 84): the
+long videos ("Three, dated"), their render ("After my review"), the moments ("Extra drafts"), the
+thumbnails ("Our own frames") - all recommended. Built in a scratchpad worktree so the 10-29
+overnight (the first countdown) would import a whole tree; copied into main once green.
+
+Measured first (read-only, 10-28): 28 videos rated, 3 with 7-day views, 24 with lifetime views -
+`comparable_views` ranked on 7-day views (40 videos had them); thumbnails are already 1280x720;
+the landscape profile scale-crops the background; `chapter_block` already writes preset 4's
+chapters; the playlist store keeps no positions; `ftc_affiliate_line` needed a CTA to say anything.
+
+Shipped (tests first, `tests/test_wave133.py`: 31 of 33 failed on `30b71df`, the other 2 controls;
+3 more written after the live reads, each failing on the pre-fix code - 36 in all):
+1. **#1596** the verdicts on a measure most rated videos have.
+2. **#1748** (+ #1747's code) affiliate links on long videos only, tagged, with the FTC line.
+3. **#1868** a 6 PM GTA slot 11-16 to 11-22 (`series/dated.slot_hours`, `hours_on`).
+4. **#1867** (part) a GTA 6 story on 5+ outlets drafted first in launch week.
+5. **The moments and long videos** as dated `config/series.json` rows (`series/dated.dated_ideas`),
+   extras on top of the night's count, a `needs` skip with its reason in overnight's report.
+6. **#1870** launch day at `publish_at` (`spaced_queue._planned_time`).
+7. **#1850** the long draft kind - preset 4, chapters, held for review, rendered 16:9 and the run
+   pointed at the `_16x9` file (`series/long_form`).
+8. **#1725** (+ part of #1856) long titles from search, per row's `search_terms`.
+9. **#1731 + #1869** the long card from our own frame in GTA 6's colours.
+10. **#1855** the countdown in day order in the GTA playlist.
+
+Found on the way, by the live reads (both fixed, each with a test that fails on the first fix):
+the verdicts' first floor (`cover_min` 3) still let 7-day views win - 3 rated videos have them;
+the subject's own YouTube suggestions ("trailer", "gameplay", "leak") titled every long video
+"GTA 6 Trailer: ...", and "GTA 6's map" lost its subject to "'s map". `series_rows` kept only rows
+with a `title`, which would have dropped every new kind. The brief's 11-19 "first impressions"
+drafted on 11-18 would have been written before anyone played - moved to 11-20 (decision 84).
+
+Not done: the first 16:9 render is unwatched (#1902); the fast lane's "within the hour" (#1867,
+wave 135); launch week's Shorts from autocomplete (#1856); the quoted-lines format (#1679); the
+Black Friday long video; `ops thumbnail-check` on the long card.
+
+Corpus: 8 cases; all 7 run on HEAD failed (the 8th, the possessive, fails on the first fix).
+
+Audit: mypy 92; ruff clean. Suite: 6931 forward and 6931 reversed, OK (6 skipped); corpus 476 of 476; data/ and output/ untouched; every new function has a production caller. The roadmap moved waves 118-123 to the log to stay under 200 lines.
+
+`roadmap-index`: open 348, done 1691, parked 95, numbered open 346.

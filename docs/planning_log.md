@@ -10194,3 +10194,63 @@ Corpus: 8 cases; all 7 run on HEAD failed (the 8th, the possessive, fails on the
 Audit: mypy 92; ruff clean. Suite: 6931 forward and 6931 reversed, OK (6 skipped); corpus 476 of 476; data/ and output/ untouched; every new function has a production caller. The roadmap moved waves 118-123 to the log to stay under 200 lines.
 
 `roadmap-index`: open 348, done 1691, parked 95, numbered open 346.
+
+## 2026-10-30 — the plans: philosophy, principles, logistics, look and feel, horizons (Claude Code)
+
+**Prompt (verbatim):** "input these. can we just plan a shit ton then commit and push the plans? no
+coding but philosophical, ideological, logistical, aesthetic based, and future based plans. I think
+reeling back on spent money is good given the numbers and critique. i dont like how each video has
+the same thumbnail when i submitted multiple clips for each." - with eight YouTube Studio
+screenshots of the Shorts list and the comments.
+
+**Asked, the operator took:** "Ads + AI thumbnails off" (recommended), "Best frame, no words" (not
+the recommended "Best frame + 3 words"), "Gaming and sports equally" (not the recommended "Gaming
+first, sports beside"). Recorded as decision 85.
+
+**Measured, read-only, on `899ff58`:**
+- Ads had already stopped (decision 82, 10-27); MW4's 37K in the screenshots is mostly the Oct 26
+  campaign.
+- The covers are AI images from one prompt per genre (`assets/flux_thumbnail._build_flux_prompt`);
+  the paid arms are chosen by which API keys exist (`generate_dual_thumbnails`), not by
+  `THUMBNAIL_PROVIDER`; `YOUTUBE_THUMBNAIL_UPLOAD=off` already stops the upload
+  (`youtube/thumbnails.is_thumbnail_upload_enabled`) - the key is not in `.env.example`.
+- A folder's clips are drawn in filename order (`assets/local_provider._folder_clips`), at most 12
+  (`assets/fast_cut.pool_without_recent`, `_MAX_POOL`), skipping the last 8 used in the same
+  process (`assets/clip_memory.py`) unless `CLIP_MEMORY=true` keeps them across runs. A folder's
+  files past the twelfth are likely never seen; the count is on the PC.
+- An untagged clip goes to any team's story (`assets/clip_tags.clips_for_topic`): one FC Barcelona
+  squad menu sat behind the Kane, Real Madrid and Man City Shorts.
+
+**Written (docs only):**
+- [studio_snapshot_2026-10-30.md](studio_snapshot_2026-10-30.md) - "input these": every Short's
+  views, likes and comments, the three comments, the repeated frames, the mismatched footage.
+- [tapin_philosophy.md](tapin_philosophy.md) (charter) - the identity line, the one fan, the six
+  marks of a good video, volume serves the breakout, the operator and the machine, organic only,
+  patience, what TapIn is not.
+- [tapin_principles.md](tapin_principles.md) (charter) - P1-P12 (truth before speed, our own
+  pictures, odds are information, the two worlds equal, money in before money out, the viewer's
+  time, AI said plainly, sources credited, respect, original or nothing, the operator decides, a
+  principle changes by decision) and what we refuse; each says what enforces it today, or "not
+  yet".
+- [logistics_plan.md](logistics_plan.md) - the money table (off, kept, why), the monthly money
+  check, the `.env` steps, the operator's week (about 15 minutes a day), the footage library (how a
+  clip is used today, what to submit, priorities: club-tagged soccer clips, own GTA 6 capture from
+  Nov 19, platform captures, a monthly refresh), publishing, the machine.
+- [look_and_feel.md](look_and_feel.md) - what the operator saw, why (five code reasons), the cover
+  rule, footage rotation and matching, the first second, one look for both worlds, what retires,
+  and the build list L1-L10 with lanes.
+- [horizons_2027.md](horizons_2027.md) - H0 GTA 6 window, H1 the bridge, H2 under the new bar, H3 the
+  fork, H4 questions; proposed signposts (set for real on Jan 31); the branches; a breakout
+  playbook with no money in it; when to stop and ask; money and the operator's time over the
+  horizons.
+- Decision 85; six index entries in docs/README.md.
+
+**Not done, on purpose:** no code, no `.env.example` line for `YOUTUBE_THUMBNAIL_UPLOAD`, no
+backlog numbers for L1-L10 (they take numbers and lanes when a wave builds them, so the backlog
+ceiling and `tests/test_bridge.py` stay whole). The bridge's plan and calendar are unchanged;
+these pages link to them.
+
+**The operator's next steps (no code):** in `.env`, `YOUTUBE_THUMBNAIL_UPLOAD=off`, the image keys
+(`BFL_API_KEY`, `FLUX_API_KEY`, `IDEOGRAM_API_KEY`, `RECRAFT_API_KEY`) commented out,
+`CLIP_MEMORY=true`; tag the soccer clips by club with `py -m scripts.ops footage-tag`; pick the
+caption accent colour (look_and_feel's one proposed choice).

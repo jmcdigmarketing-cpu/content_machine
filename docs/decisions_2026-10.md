@@ -465,3 +465,25 @@ played, so the launch-day Short drafted 11-18 is the unlock, size and what to do
 at `publish_at` (null until Rockstar states the time); first impressions move to 11-20 and the
 fixes to 11-21. The review-score and sales Shorts wait for dates. Launch week can be 5-6 drafts a
 night. `SERIES_DATED=false` stops it.
+
+## 85. TapIn is gaming and sports equally; covers are our own frames with no words; AI covers off (2026-10-30)
+**Decision:** TapIn's identity is gaming and sports, equally - one fan, one look, one voice, one
+cover rule - while the day's mix still follows organic views per video (decisions 79-81 stand). A
+video's cover is a frame of its own footage with no words; until that is built,
+`YOUTUBE_THUMBNAIL_UPLOAD=off` lets YouTube show a frame of the video. The paid image providers
+(Flux, Ideogram, Recraft) are off: their keys come out of `.env`, and the code paths retire with
+[look_and_feel.md](look_and_feel.md) L7. Spending stays reeled back to what viewers hear or see
+(the voice) and what saves the operator time; ads stay off (decision 82). **Why:** the operator,
+10-30, with eight Studio screenshots ([studio_snapshot_2026-10-30.md](studio_snapshot_2026-10-30.md)):
+"i dont like how each video has the same thumbnail when i submitted multiple clips for each" and
+"reeling back on spent money is good given the numbers and critique". Read on `899ff58`: covers
+were AI images from one prompt per genre (`assets/flux_thumbnail._build_flux_prompt`), never our
+footage; a folder's clips are drawn in filename order, at most 12, with an 8-clip memory that is
+off across runs unless `CLIP_MEMORY=true`; an untagged FC Barcelona menu sat behind the Kane, Real
+Madrid and Man City Shorts. Asked, the operator took "Ads + AI thumbnails off", "Best frame, no
+words" and "Gaming and sports equally" (not the recommended "Gaming first"). **Consequence:** the
+charter pages [tapin_philosophy.md](tapin_philosophy.md) and [tapin_principles.md](tapin_principles.md),
+and the plans [logistics_plan.md](logistics_plan.md), [look_and_feel.md](look_and_feel.md) and
+[horizons_2027.md](horizons_2027.md); no code with this decision - the build list L1-L10 waits for
+a wave and takes backlog numbers then; long-form keeps decision 84's own frames, with words a test
+(#1731 without its face).

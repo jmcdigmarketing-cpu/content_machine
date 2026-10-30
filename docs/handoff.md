@@ -53,6 +53,13 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
+**2026-10-30 (the session that ran waves 121-122), at `899ff58`:** docs only - decision 85 (gaming
+and sports equally; covers our own frames, no words; AI covers off) and five plans:
+[tapin_philosophy.md](tapin_philosophy.md), [tapin_principles.md](tapin_principles.md),
+[logistics_plan.md](logistics_plan.md), [look_and_feel.md](look_and_feel.md) (build list L1-L10,
+not yet in the backlog), [horizons_2027.md](horizons_2027.md); the operator's Studio numbers in
+[studio_snapshot_2026-10-30.md](studio_snapshot_2026-10-30.md). The rest of this slot is wave 133's.
+
 **Written:** 2026-10-28 · **HEAD at write:** `30b71df` (wave 132's next five; this wave's commit
 follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 

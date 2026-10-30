@@ -27,6 +27,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [vision.md](vision.md) | 12-month architecture and the thesis |
 | [positioning.md](positioning.md) | Positioning and product split |
 | [project_brief.md](project_brief.md) | The brief in one page |
+| [tapin_philosophy.md](tapin_philosophy.md) | TapIn, the channel: why it exists, who it is for (gaming and sports, equally - decision 85), what a good video is, how it judges itself |
+| [tapin_principles.md](tapin_principles.md) | The rules TapIn holds when they cost views, money or speed - P1-P12, each with why, in practice and what enforces it - and what it refuses |
 
 ## Reference — how it works now
 
@@ -81,6 +83,9 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [bridge_plan.md](bridge_plan.md) | The bridge (decision 82, 2026-10-27): the race to monetization or big views for little money - the measured state, the lanes and the gate, 300 ideas in twelve sections, the waves in order |
 | [bridge_calendar.md](bridge_calendar.md) | The bridge's calendar to 2027-02-01: week by week, the wave, the dated moments (GTA 6 11-19, UFC cards, The Game Awards), the targets and the checkpoints |
 | [bridge_scores.md](bridge_scores.md) | The bridge's 300 ideas scored (effect x confidence x urgency / effort), 2026-10-28 - the source of bridge_plan.md's top 30 |
+| [logistics_plan.md](logistics_plan.md) | How the work runs: the money reeled back (decisions 82, 85), the operator's week, the footage library, publishing, the machine |
+| [look_and_feel.md](look_and_feel.md) | The look: covers from our own frames with no words, every clip in rotation, footage that matches the story, one look for both worlds; why it looked alike on 10-30; the build list L1-L10 |
+| [horizons_2027.md](horizons_2027.md) | After the bridge: horizons H0-H4, proposed signposts, the branches, the breakout playbook, when to stop and ask |
 | [cloud_brief_wave133.md](cloud_brief_wave133.md) | Wave 133 for a cloud or PC session: the GTA 6 window - the countdown series, a 16:9 long-form draft kind, affiliate links, launch week |
 | [cloud_brief_wave134.md](cloud_brief_wave134.md) | Wave 134: the bridge's scoreboard - the dated YPP bars, engaged views, organic subscribers, the race clock, cost per 1,000 views |
 | [cloud_brief_wave135.md](cloud_brief_wave135.md) | Wave 135: speed and volume - Shorts that loop, the breaking-news and results fast lanes, three a day, previews 24-48 hours ahead |
@@ -100,6 +105,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 
 | Doc | Date |
 |---|---|
+| [studio_snapshot_2026-10-30.md](studio_snapshot_2026-10-30.md) | 2026-10-30 — the operator's Studio screenshots: every Short's views, the comments, the repeated frames and mismatched footage (decision 85) |
 | [moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md) | 2026-08-26 — the clip pipeline against MoneyPrinter's (decisions §26) |
 | [cursor_audit_prompt.md](cursor_audit_prompt.md) | the one-off audit prompt handed to Cursor at `e6d5c9c` |
 | [backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md) | 2026-10-18 — 258 open items read: 92 merged into a later entry, 83 retired, 13 shipped, 70 kept |

@@ -171,7 +171,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `signal-diff` | What each signal returned differently between two runs: <A> --run-id B (#586) |
 | `skillopt` | SkillOpt-Sleep — gated skill-directive optimizer (frozen prompt-evals gate) |
 | `source-trust` | Corrections per source and the weight they cost it (#342) |
-| `spend` | Money spent on the project: total, `add --amount N --what X --kind K [--monthly]`, `end --entry N`, `result --entry N --subs N` (#980, #992) |
+| `spend` | Money spent on the project: total, `add --amount N --what X --kind K [--monthly]`, `end --entry N`, `result --entry N --subs N`, `income --amount N --what X` (#980, #992, #1753) |
 | `status` | Queue, uploads, recent runs, SEO/competitors |
 | `status-fields` | Videos an update left with embedding or public view counts off (#1306; dry-run default; --apply restores) |
 | `studio` | Stage 4 Qt thumbnail canvas (last thumb + overlay; requires pip install -e ".[app]") |

@@ -3962,7 +3962,7 @@ def _amount_arg(args: argparse.Namespace) -> float | None:
 @_register(
     "spend",
     "Money spent on the project: total, `add --amount N --what X --kind K [--monthly]`, "
-    "`end --entry N`, `result --entry N --subs N` (#980, #992)",
+    "`end --entry N`, `result --entry N --subs N`, `income --amount N --what X` (#980, #992, #1753)",
 )
 def cmd_spend(args: argparse.Namespace) -> int:
     from datetime import date

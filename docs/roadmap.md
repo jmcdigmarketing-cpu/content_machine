@@ -67,6 +67,18 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-10-31 (Claude, wave 137 - one frame for every app).** Every video's text moved inside the
+apps' safe zone (decision 89): run 219's hook card ran off both edges over the AI line and its
+captions sat under TikTok's and YouTube's buttons - captions now end at 80% of the height, the AI
+line starts at 12%, the hook card is wrapped under it. TikTok's caption opens on the hook with three
+hashtags; the caption test had kept no arm in 73 posts - replayed, TikTok's hook-first read 157 views
+a post against 116. A platform's hour needs 4 posts of its own, in local time (Instagram back to 10
+PM, TikTok 11 PM). Buffer gets each run's own cover frame (it got 3.15 s for every video). The FTC
+line is added under any affiliate link at publish; off YouTube, "Follow for" and no #shorts. Next:
+**#1917** run 199's publish time eight hours ahead (the open defect), **#1760** the Black Friday
+deals long video (Nov 27 - it needs your Associates tag), **#1920** platform hours explored,
+**#1921** TikTok's right-hand buttons, **#1916** the cover in `ops booth`. Yours: **#1922** the hook
+card's size on a phone. The bridge's next brief is still to write.
 **2026-10-31 (Claude, wave 136 - money and reach).** Facebook Reels through Buffer, only Shorts
 made public after you connect a Page (decision 88) - Buffer has none yet; a Short public over an
 hour with no crosspost is sent on the worker's next pass (8 TikTok and 9 Instagram this week were
@@ -92,15 +104,6 @@ topics reach their folders. The scoreboard: the bars as data, engaged views, org
 most 166" until the campaigns' counts are final, the race clock (96 days), one Bridge line in `ops
 status`. Next: **#1797** cost per 1,000 organic views, **#1728** the hours ledger, **#1827**
 experiments with stop dates, **#1836** the wave scorecard, **#1832** a toast for a breakout.
-**2026-10-28 (Claude, wave 133 - the next ten).** The GTA 6 window is scheduled (decision 84):
-three long 16:9 videos - 11-06 ("GTA 6 Release Date: Everything We Know Before Launch"), 11-12,
-11-20 - drafted on their dates, rendered after your review; ten launch moments as extra drafts
-(the unlock Short drafted 11-18 for `publish_at`); a 6 PM GTA slot and GTA-first drafting in
-launch week; the countdown in day order in the GTA playlist; long-form titles from search and
-cards from our own frames; affiliate links on long videos once your Associates tag is set; the
-verdicts compare 24 ratings, not 3. Next: wave 134's scoreboard - **#1823** the YPP bars as
-data, **#1824** engaged views, **#1697** organic subscribers, **#1825** the race clock, **#1822**
-the scoreboard.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

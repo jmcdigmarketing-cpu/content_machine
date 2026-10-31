@@ -177,22 +177,53 @@ def _skin_margin(skin: dict, default: int) -> int:
         return default
 
 
+_HOOK_SIZES = (64, 56, 48, 44)
+_HOOK_LINES = 3
+_ASS_BREAK = "\\N"  # a hard line break inside an ASS event
+
+
+def hook_card_lines(sentence: str) -> tuple[int, list[str]]:
+    """#1775: the hook card's font size and lines - the largest size at which the sentence,
+    wrapped at word ends to the safe width, takes three lines or fewer (the smallest size past
+    that). The script's WrapStyle never wraps, so run 219's hook ran off both edges as one
+    64 px line."""
+    from video.caption_timing import karaoke_max_chars
+
+    words = sentence.split()
+    lines: list[str] = []
+    for size in _HOOK_SIZES:
+        width = karaoke_max_chars(size)
+        lines = []
+        for word in words:
+            if lines and len(lines[-1]) + 1 + len(word) <= width:
+                lines[-1] = f"{lines[-1]} {word}"
+            else:
+                lines.append(word)
+        if len(lines) <= _HOOK_LINES:
+            return size, lines
+    return _HOOK_SIZES[-1], lines
+
+
 def _with_hook_card(ass: str, script: str, channel_id: str | None) -> str:
-    """#1056: the whole hook, top of frame, for the first second."""
+    """#1056: the whole hook, top of frame, for the first second - #1775: wrapped, and under the
+    AI line inside the apps' safe zone."""
     from core.title_generator import _hook_line
     from video.caption_timing import _ass_ts
+    from video.safe_zone import HOOK_CARD_MARGIN
 
     sentence = _hook_line(script).replace("\n", " ").replace("{", "(").replace("}", ")").strip()
     if not sentence:
         return ass
+    size, lines = hook_card_lines(sentence)
     title, _body = caption_fonts(channel_id)
     style = (
-        f"Style: Hook,{title},64,&H00FFFFFF,&H00000000,&H00000000,&H64000000,"
-        "1,0,0,0,100,100,0,0,1,3,2,8,80,80,120,1"
+        f"Style: Hook,{title},{size},&H00FFFFFF,&H00000000,&H00000000,&H64000000,"
+        f"1,0,0,0,100,100,0,0,1,3,2,8,80,80,{HOOK_CARD_MARGIN},1"
     )
     if "\n\n[Events]" in ass:
         ass = ass.replace("\n\n[Events]", "\n" + style + "\n\n[Events]", 1)
-    event = f"Dialogue: 1,{_ass_ts(0)},{_ass_ts(1)},Hook,,0,0,0,,{sentence}\n"
+    text = _ASS_BREAK.join(lines)
+    event = f"Dialogue: 1,{_ass_ts(0)},{_ass_ts(1)},Hook,,0,0,0,,{text}\n"
     return ass + event
 
 
@@ -329,7 +360,8 @@ def generate_subtitle_file(
                 if skin.get("highlight_color")
                 else "&H0000FFFF"
             )
-            margin = _skin_margin(skin, 260) if skin.get("margin_v") not in (None, "") else 260
+            # #1775: 0 takes the safe zone's margin; a skin may only push further in.
+            margin = _skin_margin(skin, 0) if skin.get("margin_v") not in (None, "") else 0
             text = build_ass_karaoke(
                 words,
                 max_words=max(2, min(4, max_words)),

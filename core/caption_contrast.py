@@ -11,13 +11,16 @@ from pathlib import Path
 from PIL import Image, ImageStat
 
 from core.logging import get_logger
+from video.safe_zone import CAPTION_BAND as _SAFE_CAPTION_BAND
 
 logger = get_logger("core.caption_contrast")
 
 # WCAG AA for normal text. Captions are large, but the burned fill is small
 # on a phone, so we keep the stricter 4.5:1 rather than large-text 3:1.
 AA_RATIO = 4.5
-CAPTION_BAND = 0.20
+# #1775: the band the captions occupy (top, bottom) as shares of the height - above the
+# apps' bottom fifth, where they sat until 2026-10-31.
+CAPTION_BAND = _SAFE_CAPTION_BAND
 
 
 @dataclass(frozen=True)
@@ -117,15 +120,16 @@ def inspect_caption_band(
     path: str | Path,
     *,
     fill_hex: str = "#FFFFFF",
-    band: float = CAPTION_BAND,
+    band: tuple[float, float] = CAPTION_BAND,
 ) -> CaptionContrastCheck:
     source = str(path)
     fill = parse_hex(fill_hex)
     with Image.open(source) as image:
         rgb = image.convert("RGB")
         width, height = rgb.size
-        y0 = max(0, int(height * (1.0 - float(band))))
-        crop = rgb.crop((0, y0, width, height))
+        y0 = max(0, int(height * float(band[0])))
+        y1 = min(height, max(y0 + 1, int(height * float(band[1]))))
+        crop = rgb.crop((0, y0, width, y1))
         stats = ImageStat.Stat(crop)
         band_rgb = (
             round(stats.mean[0]),

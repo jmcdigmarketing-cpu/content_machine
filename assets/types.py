@@ -15,3 +15,5 @@ class AssetResult:
     clip_paths: list[str] = field(default_factory=list)
     # Wave 135 (decision 85, L1): a frame of these shots, before captions, with no words.
     cover_path: str = ""
+    # #1791: where that frame sits in the cut, in seconds (0.0 when there is none).
+    cover_at: float = 0.0

@@ -1,6 +1,8 @@
 # Cloud brief — wave 134: the bridge's scoreboard
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-28
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-10-31 · **Superseded by:** [roadmap.md](roadmap.md)
+
+**Shipped** in wave 134 (`a7129c0`), 2026-10-28 - what each item became is in [backlog.md](backlog.md) and [planning_log.md](planning_log.md); the next five are in [roadmap.md](roadmap.md).
 
 Every later wave is judged on the bridge's four numbers ([bridge_plan.md](bridge_plan.md), decision
 82): organic Shorts views (engaged), long-form hours, organic subscribers, money outside YouTube -

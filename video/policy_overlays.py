@@ -38,7 +38,11 @@ def build_policy_overlays_ass(
     if not events:
         return ""
     # Disclosure is top-centre: bottom-centre at MarginV 280 sat on the karaoke captions
-    # (bottom, MarginV 260) for the first 3 s once #783 restored them to full size.
+    # (bottom, MarginV 260) for the first 3 s once #783 restored them to full size. #1775: it
+    # starts at the safe top (it sat at 8%, under TikTok's tabs and the hook card), and the
+    # disclaimer rides above the caption band instead of under the apps' buttons.
+    from video.safe_zone import DISCLOSURE_MARGIN, LOWER_MARGIN
+
     return (
         "[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\n"
         "ScaledBorderAndShadow: yes\n\n[V4+ Styles]\n"
@@ -47,9 +51,9 @@ def build_policy_overlays_ass(
         "ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, "
         "MarginR, MarginV, Encoding\n"
         "Style: Disclaimer,Arial,28,&H00FFFFFF,&H00FFFFFF,&H00000000,&H99000000,"
-        "0,0,0,0,100,100,0,0,3,1,0,1,40,40,80,1\n"
+        f"0,0,0,0,100,100,0,0,3,1,0,1,40,40,{LOWER_MARGIN},1\n"
         "Style: Disclosure,Arial,36,&H00FFFFFF,&H00FFFFFF,&H00000000,&H99000000,"
-        "1,0,0,0,100,100,0,0,3,1,0,8,70,70,160,1\n\n[Events]\n"
+        f"1,0,0,0,100,100,0,0,3,1,0,8,70,70,{DISCLOSURE_MARGIN},1\n\n[Events]\n"
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
         + "\n".join(events)
         + "\n"

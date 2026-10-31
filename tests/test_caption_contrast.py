@@ -10,11 +10,13 @@ from PIL import Image
 
 
 def _frame(band_color: tuple[int, int, int], *, rest=(10, 10, 10)) -> Path:
+    from core.caption_contrast import CAPTION_BAND
+
     tmp = tempfile.mkdtemp()
     path = Path(tmp) / "frame.png"
     img = Image.new("RGB", (108, 192), rest)
-    y0 = int(192 * 0.8)
-    for y in range(y0, 192):
+    # #1775: the band where the captions sit (68-80% of the height), not the bottom fifth.
+    for y in range(int(192 * CAPTION_BAND[0]), int(192 * CAPTION_BAND[1])):
         for x in range(108):
             img.putpixel((x, y), band_color)
     img.save(path)

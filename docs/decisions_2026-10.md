@@ -524,3 +524,21 @@ operator took "From then on", "On your R2 bucket" (both recommended) and "Latest
 week's top Shorts", "Affiliate links". **Consequence:** connecting Facebook in Buffer is the one step
 left for Reels; the bios need the page's address pasted once; a crosspost's lateness is measured from
 when Buffer got it, since decision 64's 10 PM due time is deliberate.
+
+## 89. One safe zone; TikTok hook-first; an hour needs its own posts; Follow off YouTube (2026-10-31)
+**Decision:** every overlay sits inside one safe zone (`video/safe_zone.py`) - clear of the apps'
+top 12% and bottom 20% - so one render fits YouTube, TikTok, Instagram and Facebook: captions end
+at 80% of the height, the AI line starts at 12%, the hook card sits under it wrapped in at most
+three lines, name tags above the caption band. TikTok's caption opens on the hook and ends with
+exactly three hashtags (two from the topic, one for the sport or game), outside the caption test;
+Instagram keeps the test, now recorded. A platform's hour, domain or length wins only with 4 posts
+of its own, and hours are the channel's local hours; without one, decision 64's 10 PM slot. Off
+YouTube, "Subscribe for ..." reads "Follow for ..." and `#shorts` is dropped. **Why:** run 219's
+first second showed the hook card running off both edges over the AI line and the captions under
+the apps' buttons; the caption test had kept no arm in 73 posts, and replayed it read TikTok
+hook-first 157 views a post against 116; Instagram's 8 PM had won on 2 posts against 21 at 10 PM,
+and daylight time ends Nov 1. Asked, the operator took all four recommended answers ("Move all of
+it", "TikTok hook-first always", "4 posts of its own", "Follow for ..."). **Consequence:** every
+video's text moves (captions 104 px up, the top cards down); the #1268 scrim and the contrast check
+read the new caption band; Instagram's crossposts return to 10 PM local; Buffer is sent each run's
+own cover frame (#1791).

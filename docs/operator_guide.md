@@ -1,6 +1,6 @@
 # Operator guide — how a video gets made
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-13
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-31
 
 One pass through the machine, in the order it happens. Each step names the one command and
 links the doc that goes deeper. Run everything from `C:\dev\content_machine`; the PowerShell
@@ -145,6 +145,15 @@ https://pub-....r2.dev` tests it and saves it to `.env`. A video you
 posted by hand in Buffer is found and left on that platform; `crosspost done --run-id N` says so
 for both.
 
+Since 2026-10-31 (decisions 88, 89): a Short still without a post an hour after it went public
+is sent on the worker's next pass; each platform posts at its own local hour once an hour has 4
+posts of its own (10 PM until then); TikTok's caption opens on the hook with three hashtags, and
+off YouTube the sign-off reads "Follow for ..."; Buffer is sent the video's own cover frame.
+**Facebook Reels:** connect a Facebook Page in Buffer, then run
+`py -m scripts.ops crosspost channels --apply --channel tapin` once - only Shorts made public after
+that go to it. **The bio link:** `py -m scripts.ops links` rebuilds the link page on R2 (overnight
+does it each night); paste its address into the TikTok, Instagram and Facebook bios once.
+
 **A `.env` line that is not NAME=value** is skipped. Every command names such lines once, by
 number (never their content) - the line `ops doctor` prints; python-dotenv's own warning, which
 named the line before a bad one, is no longer shown. Give each a `NAME=` or delete it.
@@ -239,8 +248,12 @@ videos with view counts, and `competitor-health` lists any at three times that c
 
 ```powershell
 py -m scripts.ops reliability                     # credits, quota, cache
-py -m scripts.ops spend                           # what has been paid
+py -m scripts.ops spend                           # what has been paid, and the net
+py -m scripts.ops spend income --amount N --what X  # money earned outside YouTube (decision 88)
 py -m scripts.ops promotions --channel tapin      # what each ad campaign bought
 ```
+
+A long video's affiliate links get the FTC line under them at publish if it is missing (#1751);
+a Short's are dropped, since its links are not clickable (#1758).
 
 Pace and cost: [operating_plan.md](operating_plan.md). Every command: [ops_commands.md](ops_commands.md).

@@ -1750,6 +1750,16 @@ def run_media_only(
         # no image model is asked. A stock or plain background has no frame and keeps the old path.
         thumb_path, thumb_provider = frame_cover, "frame"
         progress.note(f"Cover: a frame of the video's own footage - {frame_cover}")
+        cover_at = float(getattr(background, "cover_at", 0.0) or 0.0)
+        if content_run_id and cover_at > 0:
+            try:  # #1791: Buffer sends TikTok and Instagram this moment as their cover
+                from assets.cover_frames import cover_ms
+                from core.run_quality import merge_quality
+
+                intro_s = opening_after_render(channel_id, intro_landed).get("intro_seconds", 0.0)
+                merge_quality(content_run_id, {"cover_ms": cover_ms(cover_at, intro_s)})
+            except Exception as exc:
+                logger.debug("cover moment not recorded: %s", exc)
         try:
             from assets.cover_frames import strip_lines
 

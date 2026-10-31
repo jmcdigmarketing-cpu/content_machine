@@ -53,28 +53,25 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-31 · **HEAD at write:** `1e52c79` (wave 135; this wave's commit follows) ·
+**Written:** 2026-10-31 · **HEAD at write:** `6c7f792` (wave 136; this wave's commit follows) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 136, money and reach (decision 88).** Defects first: my first `platform_baselines` skipped
-every TikTok/Instagram run in a store with no post of theirs (8 older tests caught it - the first two
-platforms are never baselined now); my first `miss_lines` measured lateness from the due time, which
-decision 64 sets to 10 PM on purpose (15 of 22 "late") - it measures when Buffer got the post now.
-Run 199's publish log is public with a publish time 8 hours ahead (#1917, not fixed). Shipped:
-Facebook Reels (`PLATFORMS`, the Reel metadata, per-platform baselines - only Shorts public after a
-Page is connected; Buffer has none), late crossposts sent on the worker's next pass (`late_runs`; 8
-TikTok and 9 Instagram queued late this week), `publishing/link_page.py` live on R2
-(`tapin/links.html`, rebuilt overnight, `ops links`), `ops spend income` and the net line, TikTok's
-Creator Rewards line, `prepublish.without_short_affiliates` (#1758's guard).
+**Wave 137, one frame for every app (decision 89).** Defects first: the caption test (#1197) kept
+0 arms in 73 posts - `send_due`'s "scheduled" write dropped `arm` (fixed; old posts replayed from the
+seed: TikTok hook-first 157 vs 116); run 219's hook card ran off both edges over the AI line, and the
+captions sat in the apps' bottom fifth; Buffer got 3150 ms for every cover with the intro off. Mine:
+`ruff --fix` given `assets/` (excluded in pyproject) rewrote 9 files - restored. A suite flake (#1926, `test_wave23_wraps`' retention test reading fresh files as old) failed once - the test dates its files back now. Shipped:
+`video/safe_zone.py` (captions >= 384, AI line 231, hook card 291 wrapped, name tags 634, scrim and
+contrast on 68-80%, render warns on a style in the chrome); `tiktok_caption` + Follow off YouTube;
+`_best(own=4)` and local hours; `cover_ms` from the cut to Buffer; `prepublish.with_ftc`. Eleven older
+test files re-pinned to the new positions (named in the planning log).
 
-**Open:** #1917 (run 199's time), #1918 (re-read late crossposts 11-07), #1919 (link page clicks).
-**Next five:** #1775 TikTok's safe zone, #1776 TikTok captions, #1791 the cover frame to Buffer,
-#1774 each platform's hour (its "YouTube slot + 1 h" meets decision 64's 10 PM - ask), #1751 the FTC
-line at publish. Wave 136 was the bridge's last brief.
+**Open:** #1917 (run 199's time), #1920-#1924 (hours explored, TikTok's right column, hook card size,
+caption test 11-14, first real `cover_ms`). **Next five:** #1917, #1760 Black Friday long video
+(Nov 27), #1920, #1921, #1916. All five bridge briefs are archived; the next brief is to write.
 
-**Operator:** connect a Facebook Page in Buffer; paste the link page's address into the bios; publish
-the Google app (the sign-in lapses Nov 6); `ops spend result --final`; the Associates tag; the 11-06
-long draft.
+**Operator:** look at the next render's first second on a phone (#1922); connect a Facebook Page in
+Buffer; paste the link page into the bios; publish the Google app (lapses Nov 6); the Associates tag.
 
 ## Slot — Cursor
 

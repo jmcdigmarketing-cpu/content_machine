@@ -1,6 +1,8 @@
 # Cloud brief — wave 132: more interesting topics, a shorter Week in Review
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-25
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-10-31 · **Superseded by:** [roadmap.md](roadmap.md)
+
+**Shipped** in waves 132 (`1b69b78`, `30b71df`), 2026-10-28 - what each item became is in [backlog.md](backlog.md) and [planning_log.md](planning_log.md); the next five are in [roadmap.md](roadmap.md).
 
 The operator, Sun 2026-10-25 night: *"week in review is far too long, video topics have been rough
 and uninteresting as of late. plan plan plan and push to main, might be going cloud tm"* - then, on

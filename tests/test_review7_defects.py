@@ -159,8 +159,8 @@ class TestAutoCaptionPlacementIsGated(unittest.TestCase):
                 text = fh.read()
 
         self.assertTrue(out.endswith(".ass"))
-        self.assertIn(",2,80,80,260,1", text)
-        self.assertNotIn(",8,80,80,260,1", text)
+        self.assertIn(",2,80,80,384,1", text)  # #1775: the safe zone
+        self.assertNotIn(",8,80,80,519,1", text)
 
 
 class TestFfmpegIsActuallyPresentInCI(unittest.TestCase):

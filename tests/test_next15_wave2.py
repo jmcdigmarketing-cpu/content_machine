@@ -550,9 +550,9 @@ class TestAutomaticCaptionPlacement(unittest.TestCase):
         words = [{"word": "Hello", "start": 0.0, "end": 0.4}]
         bottom = build_ass_karaoke(words, max_words=2)
         top = build_ass_karaoke(words, max_words=2, anchor="top")
-        self.assertIn(",2,80,80,260,1", bottom)
-        self.assertIn(",8,80,80,260,1", top)
-        self.assertNotIn(",8,80,80,260,1", bottom)
+        self.assertIn(",2,80,80,384,1", bottom)  # #1775: above the bottom fifth
+        self.assertIn(",8,80,80,519,1", top)
+        self.assertNotIn(",8,80,80,519,1", bottom)
 
     def test_generate_subtitle_file_passes_the_anchor(self):
         from video.subtitles import generate_subtitle_file
@@ -575,7 +575,7 @@ class TestAutomaticCaptionPlacement(unittest.TestCase):
                     background_path=str(bg),
                 )
             text = Path(path).read_text(encoding="utf-8")
-        self.assertIn(",8,80,80,260,1", text)
+        self.assertIn(",8,80,80,519,1", text)  # #1775: below the top cards
 
 
 class TestRenderSmokeInCi(unittest.TestCase):

@@ -10399,3 +10399,97 @@ production caller (`platform_baselines` and `late_runs` in `send_due` and the wo
 `youtube_publisher`).
 
 `roadmap-index`: open 336, done 1720, parked 95, numbered open 334 (highest #1919).
+
+## 2026-10-31 — wave 137: one frame for every app, the next five (Claude Code)
+
+**Prompt:** "next 5 on the roadmap. lets update all docs and artifacts on this run too"
+
+The five were the roadmap's: wave 136's brief items 7-8 (#1775 TikTok's first frame in its safe
+zone, #1776 TikTok captions, #1791 the cover frame to Buffer, #1774 each platform's hour) and #1751
+the FTC line at publish. Asked (decision 89), the operator took all four recommended answers: move
+all text inside the safe zone; TikTok hook-first always, Instagram keeps testing; an hour needs 4
+posts of its own; "Follow for ..." off YouTube.
+
+Measured first, and it changed three of the five:
+- #1774 was built (#1196): TikTok and Instagram already post at their own hour from 4 measured
+  posts. But Instagram's 8 PM had won on 2 posts (138 and 218 views) over 21 at 10 PM, TikTok's on
+  one 894-view post, and hours were UTC with daylight time ending Nov 1. The brief's "YouTube slot
+  + 1 h before ten posts" would have overridden decision 64's 10 PM; not taken.
+- #1775: run 219's frame at 0.5 s showed the hook card as one unwrapped 64 px line running off both
+  edges, over the AI line (MarginV 120 and 160, both top-centre), and the captions' bottom edge at
+  86% - inside the bottom fifth that #502's own draft guides mark as the apps' chrome. The #1268
+  scrim darkened that same fifth. No YouTube-only end line was in the render (the spoken CTA is
+  stripped, #540; the end card says "TAP IN FOR MORE").
+- #1776: the YouTube-only words were in the captions - every description ends "Subscribe for daily
+  UFC takes." and the tags carry `shorts`. And the caption test (#1197) had never kept its arm.
+- #1791: Buffer was sent 3150 ms for every video - the intro's length plus a second, with the intro
+  off since decision 79.
+
+Shipped (built in a scratchpad worktree, overnight safe):
+1. #1751 - `prepublish.with_ftc` (the FTC line right under the last affiliate link), the `_ftc`
+   check, `_affiliate_line` shared with #1758's Short guard; the upload runs it.
+2. #1774 - `platform_recommend._best(own=4)`: an hour, domain or length needs 4 posts of its own;
+   `_measured` reads each post's local hour from when it went out; `crosspost._zone` and
+   `_at_local_hour` schedule it. Live: TikTok 23:00 local (28 samples), Instagram 22:00 (27).
+3. #1791 - `fast_cut._cover_and_open` returns where the cover sits (`AssetResult.cover_at`), the
+   render records `cover_ms` (`cover_frames.cover_ms`, after any intro), `crosspost._thumbnail_ms`
+   sends it; with no cover, 1 s past the intro the run recorded.
+4. #1776 - `platform_captions.tiktok_caption` (hook first when it fits 100 characters, the title and
+   the rest, three hashtags - `tiktok_tags`, `domain_hashtag` in config/seo/tapin.json - and the
+   disclosure); `choose_caption` gives TikTok "hook_first"; `crosspost.follow_line`, `caption_body`,
+   no YouTube-only tags; the scheduled state keeps `arm`; `caption_outcomes` replays an old post's
+   seeded arm where its opening matches.
+5. #1775 - `video/safe_zone.py`: captions' MarginV at least 384 (519 when a HUD sends them up), the
+   AI line at 231, the hook card at 291 wrapped by `subtitles.hook_card_lines` (the largest of
+   64/56/48/44 px that fits three lines), name tags and the disclaimer at 634; the scrim and the
+   contrast check on the caption band (68-80%); `render_video._warn_outside` names any style in the
+   chrome; `channel_outro` and #502's guides read the same zone.
+
+Found on the way:
+- `publishing/crosspost.py` `send_due`: the "scheduled" write replaced the "sending" mark that held
+  `arm`, so 0 of 73 posts kept one and `caption_report` had read nothing since #1197. Replayed and
+  checked against each post's opening: TikTok hook-first 157 views a post (14) against 116 (14),
+  Instagram 105 (13) against 110 (14) - both still "collecting" (#1923 re-reads on 11-14).
+- `video/subtitles.py` `_with_hook_card`: the script's WrapStyle 2 never wraps, so the whole hook
+  sentence went out as one line - corpus case `run-219s-hook-card-fits-in-three-lines`.
+- `video/policy_overlays.py`: the AI line and the hook card overlapped in the first second.
+- `publishing/crosspost.py` `_thumbnail_ms`: run 219's frame at 3.15 s is 32 bits of 64 from its
+  cover; the cover's own moment, 1.3 s, is 13 (a frame scan of the rendered mp4).
+- A 116-character hook fits three lines only at 44 px (#1922); TikTok's right-hand buttons are not
+  in the zone yet (#1921); platform hours were never explored beyond the fallback (#1920).
+- `tests/test_wave23_wraps.py` (not this wave's code): the suite re-run after the slot failed once forward - the retention report read 20 of 25 just-written files as old, since a file's mtime can read a few ms past `time.time()` on Windows; it passed 8 of 8 alone. The test dates its files a minute back now (#1926).
+- My own: `ruff check --fix` given `assets/` explicitly linted a folder `pyproject.toml` excludes and
+  rewrote 9 files; the 8 untouched were restored and the wave's two kept only its own lines.
+
+Live, read-only: the hours above; run 219's TikTok caption opens "Moicano took this fight because
+Ortega pulled out twice..." and ends "#MoicanoVsNolan #RenatoMoicano #UFC"; the safe-zone frames
+from the real builders, old and new, side by side; `with_ftc` on a fixture puts the line under the
+link.
+
+Not done: the right-hand button column (#1921), the hook card's size on a phone (#1922, the
+operator's look), exploring other hours (#1920), the first real crosspost with `cover_ms` (#1924),
+MoneyWise's disclaimer sharing the name-tag height (#1925, parked).
+
+Docs this run (the operator: "update all docs"): backlog, roadmap, decision 89, this entry, the
+synopsis roll (wave 134 archived), the five bridge briefs archived with where each shipped,
+bridge_calendar (all five waves shipped in W1, five weeks ahead), bridge_plan, operator_guide (the
+reach steps, `spend income`, the FTC line), the docs index, the handoff slot.
+
+Tests: `tests/test_wave137.py`, 34 - 33 fail on `6c7f792` (the editable finder stripped); the one
+that passes pins the SRT path's margin, already inside the zone. Eleven older test files changed with
+the behaviour, each named: the karaoke hashes (only MarginV 260 -> 384 differs, checked byte for
+byte), the slide entrance's position, the top/bottom anchor margins (next15_wave2, review7), the
+skin margin and default margin (tag_caption_delivery), the hook-card match across the wrap, the
+scrim box (wave108), the contrast fixture's band, the checklist's names (+ftc), the cover's return
+value (wave135), TikTok's arm (platform_captions), and the platform hour's fixture now carrying
+post times (platform_recommend). Corpus +8 (498), all 8 failing on HEAD.
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite: 7048 forward and 7048
+reversed, OK (6 skipped); corpus 498 of 498; data/ and output/ untouched by the suite; every new
+function has a production caller (`with_ftc` and `_ftc` in the upload and its checklist,
+`_at_local_hour` and `_zone` in `_next_due`, `cover_ms` in the render, `tiktok_caption` in
+`choose_caption`, `caption_outcomes` in `caption_report`, `follow_line` in `caption_body`,
+`hook_card_lines` in `_with_hook_card`, `caption_margin` in `build_ass_karaoke`, `outside` in the
+render's `_warn_outside`, `_scrim_filter` in the render command).
+
+`roadmap-index`: open 336, done 1726, parked 96, numbered open 334 (highest #1924).

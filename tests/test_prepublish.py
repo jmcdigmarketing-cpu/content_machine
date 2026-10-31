@@ -49,7 +49,15 @@ class ChecklistTests(unittest.TestCase):
         checks = self._checks(_request())
         self.assertEqual(
             sorted(checks),
-            ["chapters", "credits", "disclosure", "layout", "made_for_kids", "title"],  # #1051
+            [
+                "chapters",
+                "credits",
+                "disclosure",
+                "ftc",
+                "layout",
+                "made_for_kids",
+                "title",
+            ],  # #1751
         )
         self.assertTrue(all(c.ok for c in checks.values()), checks)
 

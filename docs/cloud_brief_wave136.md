@@ -1,6 +1,8 @@
 # Cloud brief — wave 136: money and reach outside YouTube
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-28
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-10-31 · **Superseded by:** [roadmap.md](roadmap.md)
+
+**Shipped** in wave 136 (`e495f05`) and wave 137 (its items 7-8), 2026-10-31 - what each item became is in [backlog.md](backlog.md) and [planning_log.md](planning_log.md); the next five are in [roadmap.md](roadmap.md).
 
 Money before the Partner Program ([bridge_plan.md](bridge_plan.md), decision 82). The operator
 chose three routes: affiliate links, a Facebook Reels crosspost, and TikTok Creator Rewards as a

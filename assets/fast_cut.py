@@ -639,7 +639,7 @@ def _compose(keys: list[str], windows, topic: str, duration: float, words):
         # Shots are independent; the concat list is rebuilt in playback order afterwards.
         with ThreadPoolExecutor(max_workers=min(shot_workers(), len(shots))) as pool:
             done = sorted(pool.map(_one, enumerate(shots)), key=lambda row: row[0])
-        cover_path = _cover_and_open(done, output)  # L1 L2 L8 (wave 135)
+        cover_path, cover_at = _cover_and_open(done, output)  # L1 L2 L8 (wave 135)
         lines = []
         for i, shot, path in sorted(done, key=lambda row: row[0]):
             shots[i] = shot
@@ -662,37 +662,44 @@ def _compose(keys: list[str], windows, topic: str, duration: float, words):
     record_uses([c for c, _s, _l in shots])  # L3: across runs, on disk
     files = len({clip for clip, _s, _l in shots})
     logger.info("fast cut: %d shots from %d file(s) (%s)", len(shots), files, topic)
-    return fast_cut_result(output, topic, shots, cover_path=cover_path)
+    return fast_cut_result(output, topic, shots, cover_path=cover_path, cover_at=cover_at)
 
 
-def _cover_and_open(done: list, output: str) -> str:
+def _cover_and_open(done: list, output: str) -> tuple[str, float]:
     """L1 + L2: the cover - the best unused frame of the rendered shots (before captions); L8:
     the cut opens on that shot. When the best is shot k, shots 0 and k trade sources, each
-    keeping its own length, so the cuts still land on phrase ends. "" when no frame qualifies.
-    `done` is [(index, (clip, start, length), path)] in playback order, changed in place."""
+    keeping its own length, so the cuts still land on phrase ends. ("", 0.0) when no frame
+    qualifies. `done` is [(index, (clip, start, length), path)] in playback order, changed in
+    place. #1791: the second value is where the cover sits in the cut, in seconds - Buffer is
+    sent that moment, so TikTok and Instagram show the picture YouTube does."""
     try:
         from assets.cover_frames import choose_cover, finish, frame_at
 
         stem = os.path.splitext(output)[0]
         cover = choose_cover([p for _i, _s, p in done], [s[2] for _i, s, _p in done], stem)
         if cover is None:
-            return ""
+            return "", 0.0
         k = cover.index
+        at = 0.4 * float(done[0][1][2])  # choose_cover reads each shot 40% in
         if k:
             (c0, s0, l0), (ck, sk, lk) = done[0][1], done[k][1]
             _render_shot(ck, sk, l0, done[0][2])
             _render_shot(c0, s0, lk, done[k][2])
             done[0] = (0, (ck, sk, l0), done[0][2])
             done[k] = (k, (c0, s0, lk), done[k][2])
-            if not frame_at(done[0][2], min(0.4 * lk, 0.9 * l0), cover.path):
-                return ""
-        return finish(cover, stem)
+            at = min(0.4 * lk, 0.9 * l0)
+            if not frame_at(done[0][2], at, cover.path):
+                return "", 0.0
+        path = finish(cover, stem)
+        return path, (round(at, 3) if path else 0.0)
     except Exception as exc:
         logger.debug("frame cover skipped: %s", exc)
-        return ""
+        return "", 0.0
 
 
-def fast_cut_result(output: str, topic: str, shots, *, cover_path: str = "") -> AssetResult:
+def fast_cut_result(
+    output: str, topic: str, shots, *, cover_path: str = "", cover_at: float = 0.0
+) -> AssetResult:
     """The cut background, with the credits its clips' licences require (#1019)."""
     from assets.local_provider import clip_credits
     from assets.types import AssetResult as _AssetResult
@@ -706,6 +713,7 @@ def fast_cut_result(output: str, topic: str, shots, *, cover_path: str = "") -> 
         credits=clip_credits(clips),
         clip_paths=clips,
         cover_path=cover_path,
+        cover_at=cover_at,
     )
 
 

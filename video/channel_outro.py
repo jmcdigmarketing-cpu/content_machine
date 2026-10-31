@@ -13,14 +13,15 @@ from video.encoder import (
     run_ffmpeg_with_nvenc_fallback,
     video_encoder_args,
 )
+from video.safe_zone import SAFE_BOTTOM, SAFE_TOP
 
 logger = get_logger("video.channel_outro")
 
 TARGET_W = 1080
 TARGET_H = 1920
-# YouTube Shorts chrome: top ~12%, captions + subscribe sit in the bottom 20%.
-_SAFE_TOP = 0.12
-_SAFE_BOTTOM = 0.20
+# The apps' chrome (#1775: one zone, `video/safe_zone`): top ~12%, the bottom 20%.
+_SAFE_TOP = SAFE_TOP
+_SAFE_BOTTOM = SAFE_BOTTOM
 
 
 def _hex(value: Any, default: str) -> str:

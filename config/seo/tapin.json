@@ -30,6 +30,15 @@
     "ufc": "Subscribe for daily UFC takes.",
     "soccer": "Subscribe for daily football takes."
   },
+  "domain_hashtag": {
+    "ufc": "UFC",
+    "mma": "UFC",
+    "nfl": "NFL",
+    "nba": "NBA",
+    "soccer": "football",
+    "gaming": "gaming",
+    "default": "gaming"
+  },
   "domain_tags": {
     "soccer": {"drop": ["gaming", "esports"], "add": ["football", "soccer"]},
     "ufc": {"drop": ["esports"]}

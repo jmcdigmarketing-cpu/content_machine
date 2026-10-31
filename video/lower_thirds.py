@@ -93,6 +93,8 @@ def build_lower_thirds_ass(labels: list[str], words: list[dict] | None) -> str:
         )
     if not events:
         return ""
+    from video.safe_zone import LOWER_MARGIN
+
     return (
         "[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\n"
         "ScaledBorderAndShadow: yes\n\n[V4+ Styles]\n"
@@ -101,7 +103,8 @@ def build_lower_thirds_ass(labels: list[str], words: list[dict] | None) -> str:
         "ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, "
         "MarginR, MarginV, Encoding\n"
         "Style: LowerThird,Arial,52,&H00FFFFFF,&H00FFFFFF,&H00000000,&H99000000,"
-        "1,0,0,0,100,100,0,0,3,1,0,1,70,70,330,1\n\n[Events]\n"
+        # #1775: above the caption band - at 330 it sat at 83%, under the apps' buttons.
+        f"1,0,0,0,100,100,0,0,3,1,0,1,70,70,{LOWER_MARGIN},1\n\n[Events]\n"
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
         + "\n".join(events)
         + "\n"

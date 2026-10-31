@@ -59,9 +59,10 @@ class KaraokeEntranceTests(unittest.TestCase):
         from video.caption_timing import build_ass_karaoke
 
         bottom = _texts(build_ass_karaoke(WORDS, entrance="slide"))[0]
-        self.assertTrue(bottom.startswith(r"{\move(540,1700,540,1660,0,150)}"), bottom)
+        # #1775: the safe zone - bottom edge at 1536 (80%), top below the cards at 519
+        self.assertTrue(bottom.startswith(r"{\move(540,1576,540,1536,0,150)}"), bottom)
         top = _texts(build_ass_karaoke(WORDS, entrance="slide", anchor="top"))[0]
-        self.assertTrue(top.startswith(r"{\move(540,300,540,260,0,150)}"), top)
+        self.assertTrue(top.startswith(r"{\move(540,559,540,519,0,150)}"), top)
 
     def test_the_second_voice_enters_the_same_way(self):
         from video.caption_timing import build_ass_karaoke

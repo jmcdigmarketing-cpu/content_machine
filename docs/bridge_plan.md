@@ -1,6 +1,6 @@
 # The bridge — the race to monetization, or big views for little money
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-27
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-31
 
 The operator, 2026-10-27: *"start preparing for the next big phase of the project. next 100= ideas
 and lets make the bridge to success starting now, with all changes being in race to monetization or
@@ -172,6 +172,12 @@ Each has a build-ready brief - files, functions, test fixtures, done-when - and 
    link-in-bio page, income beside spend, TikTok cuts for Creator Rewards, every Short crossposted
    within the hour - once your sign-ups are done.
 6. Then by lane share: views and hours first while both bars are far (B10.5).
+
+**Where the waves stand (2026-10-31).** All five briefs shipped by 10-31 (waves 132-136), five weeks
+ahead of the calendar, and wave 137 closed 136's last two items (#1774-#1776, #1791) with one safe
+zone for every app's buttons (decision 89). The briefs are archived; the roadmap's next five now
+come from the backlog by lane, and the next brief is still to write. What the waves have not yet
+moved is the four numbers - the checkpoint on Dec 1 reads them.
 
 ## The sections
 

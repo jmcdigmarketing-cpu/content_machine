@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import tempfile
+import time
 import unittest
 from argparse import Namespace
 from io import StringIO
@@ -365,9 +366,12 @@ class TestRetentionReportOrder(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             traces = os.path.join(tmp, "data", "traces")
             os.makedirs(traces)
+            old = time.time() - 60  # #1926: a file written this instant can read newer than now
             for i in range(25):
-                with open(os.path.join(traces, f"{i}.json"), "w", encoding="utf-8") as fh:
+                path = os.path.join(traces, f"{i}.json")
+                with open(path, "w", encoding="utf-8") as fh:
                     fh.write("{}")
+                os.utime(path, (old, old))
             with patch.dict(
                 os.environ, {"OBSIDIAN_VAULT_PATH": "", "ARTIFACT_RETENTION_ROOT": ""}, clear=False
             ):

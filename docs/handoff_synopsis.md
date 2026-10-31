@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-31: wave 136, money and reach
+# Handoff synopsis — 2026-10-31: wave 137, one frame for every app
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-31 (Claude Code): wave 136, money and reach
+## Last wave — 2026-10-31 (Claude Code): wave 137, one frame for every app
+
+One safe zone for every app's buttons (decision 89): captions end at 80%, the AI line at 12%,
+the hook card wrapped under it (run 219's ran off both edges). TikTok's caption hook-first with
+three hashtags; the caption test kept no arm in 73 posts - replayed, hook-first 157 vs 116 on
+TikTok. An hour needs 4 posts of its own, in local time. Buffer gets each run's own cover frame
+(it got 3.15 s). The FTC line at publish; off YouTube "Follow for", no #shorts.
+
+## Previous — 2026-10-31 (Claude Code): wave 136, money and reach
 
 Facebook Reels through Buffer, only Shorts public after a Page is connected (decision 88; none yet);
 a late crosspost sent on the worker's next pass (8 TikTok, 9 Instagram queued late this week); the
@@ -23,12 +31,6 @@ Caught up with the cloud (decision 85). The countdown a day ahead and uploaded f
 (decision 87; days 21 and 20 were missed). The look list L1-L10: clips in rotation, no menu behind
 another club, covers from our own frames never repeated, only frame covers uploaded; the scoreboard's
 cost per 1,000 views, hours ledger, experiment stop dates, wave scorecard and breakout toast.
-
-## Previous — 2026-10-28 (Claude Code): wave 134, the next five
-
-The operator's new backgrounds: 19 downloads credited generically (decision 86), Call of Duty,
-Black Ops and Counter-Strike topics reach their folders. The bridge's scoreboard: the bars as data,
-engaged views, organic subscribers "at most 166" until final, the race clock, a Bridge line.
 
 ## Pipeline order (operator)
 
@@ -104,7 +106,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - 136 money and reach ([cloud_brief_wave136.md](cloud_brief_wave136.md): #1754 #1772 #1750 #1753 #1756), the GTA 6 window running from config/series.json (launch 11-19), 135 speed and volume, 136 money. **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): #1917, #1760 (Black Friday, Nov 27), #1920, #1921, #1916; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

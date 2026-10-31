@@ -30,8 +30,15 @@ def _rows(hour: int, n: int, *, domain: str = "ufc", length: str = "2") -> dict:
     return {"fetched_on": "2026-10-15", "rows": rows}
 
 
+def _posts(hour: int, n: int) -> dict:
+    """#1774: the hour is read from when each post went out (here in UTC)."""
+    sent = {"state": "sent", "sent_at": f"2026-10-10T{hour:02d}:00:00+00:00"}
+    return {"posts": {str(200 + i): {"tiktok": dict(sent)} for i in range(n)}}
+
+
 class RecommendTests(unittest.TestCase):
     def test_four_tiktok_samples_move_the_hour_and_two_stay_on_youtube(self):
+        from publishing import crosspost
         from publishing.crosspost import _next_due
         from publishing.platform_metrics import _save
         from publishing.platform_recommend import learning_line
@@ -42,7 +49,13 @@ class RecommendTests(unittest.TestCase):
                 "publishing.platform_metrics.METRICS_TEMPLATE",
                 os.path.join(tmp, "platform_metrics_{channel}.json"),
             ),
+            patch(
+                "publishing.crosspost.CROSSPOST_TEMPLATE",
+                os.path.join(tmp, "crosspost_{channel}.json"),
+            ),
+            patch.object(crosspost, "_zone", return_value=timezone.utc),
         ):
+            crosspost._save("tapin", _posts(21, 4))
             _save("tapin", _rows(21, 4))
             due, note = _next_due("tapin", "topic", "tiktok", {}, NOW)
             self.assertEqual(due.astimezone(timezone.utc).hour, 21)
@@ -51,12 +64,13 @@ class RecommendTests(unittest.TestCase):
             self.assertIn("ufc", learning_line("tapin", "tiktok"))
             self.assertIn("2", learning_line("tapin", "tiktok"))
 
+            crosspost._save("tapin", _posts(21, 2))
             _save("tapin", _rows(21, 2))
             stayed, stayed_note = _next_due("tapin", "topic", "tiktok", {}, NOW)
             self.assertNotEqual(stayed.astimezone(timezone.utc).hour, 21)
             # Decision 64: until TikTok has its own hours it posts at the 10 PM evening slot.
             self.assertIn("10 PM", stayed_note)
-            self.assertIn("YouTube", learning_line("tapin", "tiktok"))
+            self.assertIn("10 PM", learning_line("tapin", "tiktok"))
 
     def test_the_store_writes_the_hour_the_recommender_reads(self):
         from publishing import crosspost
@@ -171,13 +185,18 @@ class RecommendTests(unittest.TestCase):
             patch("publishing.video_host.host", return_value="https://r2/v.mp4"),
             patch("publishing.video_host.object_key", return_value="k"),
             patch.dict(os.environ, {"CROSSPOST_AUTO": "true", "BUFFER_API_KEY": "k"}),
+            patch("publishing.crosspost._zone", return_value=timezone.utc),
         ):
+            from publishing import crosspost
             from publishing.crosspost import save_channels, switch_on
             from publishing.platform_metrics import _save
 
             open(os.path.join(tmp, "v.mp4"), "wb").close()
             save_channels("tapin", "org", {"tiktok": "tt1", "instagram": "ig1"})
             switch_on("tapin", now=NOW - timedelta(days=1))
+            data = crosspost._load("tapin")
+            data["posts"] = _posts(21, 4)["posts"]  # #1774: when each measured post went out
+            crosspost._save("tapin", data)
             public.append((113, "yt"))
             _save("tapin", _rows(21, 4))
             lines = send_due("tapin", apply=False, now=NOW)

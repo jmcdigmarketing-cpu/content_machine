@@ -36,10 +36,12 @@ class CaptionArmTests(unittest.TestCase):
         allowed = _words(texts["caption"])
         self.assertTrue(_words(texts["first_line"]) <= allowed)
         self.assertNotIn("guaranteed", texts["first_line"])
-        first, _ = choose_caption("tapin", RUN, "tiktok")
-        again, _ = choose_caption("tapin", RUN, "tiktok")
+        # Decision 89 (#1776): TikTok is hook-first outside the test; Instagram keeps the coin.
+        first, _ = choose_caption("tapin", RUN, "instagram")
+        again, _ = choose_caption("tapin", RUN, "instagram")
         self.assertEqual(first, again)
         self.assertIn(first, ("caption", "first_line"))
+        self.assertEqual(choose_caption("tapin", RUN, "tiktok")[0], "hook_first")
 
     def test_the_report_names_the_winner_and_its_interval(self):
         from publishing import crosspost

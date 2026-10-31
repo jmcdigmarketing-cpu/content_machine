@@ -1,6 +1,8 @@
 # Cloud brief — wave 135: speed, volume, and Shorts that loop
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-28
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-10-31 · **Superseded by:** [roadmap.md](roadmap.md)
+
+**Shipped** in wave 135 (`ea93bda`, `1e52c79`), 2026-10-30 - what each item became is in [backlog.md](backlog.md) and [planning_log.md](planning_log.md); the next five are in [roadmap.md](roadmap.md).
 
 The Shorts path needs more shots and faster ones ([bridge_plan.md](bridge_plan.md), "The math to
 the bar"). Today:

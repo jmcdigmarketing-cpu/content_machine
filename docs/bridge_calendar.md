@@ -1,12 +1,13 @@
 # The bridge's calendar — 2026-10-28 to 2027-02-01
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-28
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-31
 
 Week by week until the reported bar change on 2027-02-01: which wave, which dated moments it plans
 for, and the numbers each week is judged on. The plan and its 300 ideas are
 [bridge_plan.md](bridge_plan.md); the waves' briefs are
 [132](cloud_brief_wave132.md) · [133](cloud_brief_wave133.md) · [134](cloud_brief_wave134.md) ·
-[135](cloud_brief_wave135.md) · [136](cloud_brief_wave136.md).
+[135](cloud_brief_wave135.md) · [136](cloud_brief_wave136.md) - all five shipped by 2026-10-31
+(waves 132-137), five weeks ahead of this table's plan; their briefs are archived.
 
 **The targets are targets, not forecasts** - the line a week is judged against, rising with what
 each wave adds. They start from the measured week of 10-27 (~250 organic views a day across the
@@ -36,12 +37,12 @@ Organic views a day (channel), long-form hours a week, organic subscribers a wee
 
 | week | build | plans for | views/day | hours/wk | subs/wk |
 |---|---|---|---:|---:|---:|
-| **W1** Oct 26-Nov 1 | wave 132 (cloud or PC); wave 133 starts: the countdown first | GTA 6: 22 days on Oct 28 | 250 | 0.2 | 1 |
-| **W2** Nov 2-8 | wave 133: the long-form draft kind, the affiliates map, search titles | the NFL trade deadline; the "everything we know" script | 300 | 0.5 | 2 |
-| **W3** Nov 9-15 | wave 134: the scoreboard | "everything we know" public by Nov 10; UFC 334 on Nov 14 | 400 | 2 | 3 |
+| **W1** Oct 26-Nov 1 | **shipped:** waves 132-137 - every brief, plus one safe zone and TikTok-native captions (decision 89) | GTA 6: 22 days on Oct 28 | 250 | 0.2 | 1 |
+| **W2** Nov 2-8 | the backlog by lane (views first); the next brief written | the NFL trade deadline; the "everything we know" script | 300 | 0.5 | 2 |
+| **W3** Nov 9-15 | the backlog by lane; the Black Friday long video drafted (#1760) | "everything we know" public by Nov 10; UFC 334 on Nov 14 | 400 | 2 | 3 |
 | **W4** Nov 16-22 | launch-week operations - no new code unless a defect | **GTA 6 on Nov 19**: two GTA slots a day, launch-day Shorts, guides | 1,000 | 5 | 8 |
-| **W5** Nov 23-29 | wave 135: speed and volume | launch guides; Thanksgiving; Black Friday deals | 800 | 8 | 8 |
-| **W6** Nov 30-Dec 6 | wave 136: money and reach | **checkpoint Dec 1** | 600 | 6 | 5 |
+| **W5** Nov 23-29 | the backlog by lane | launch guides; Thanksgiving; Black Friday deals | 800 | 8 | 8 |
+| **W6** Nov 30-Dec 6 | the backlog by lane | **checkpoint Dec 1** | 600 | 6 | 5 |
 | **W7** Dec 7-13 | the backlog by lane | The Game Awards Dec 10; UFC 335 Dec 12 | 700 | 6 | 5 |
 | **W8** Dec 14-20 | the backlog by lane | NFL playoff races; best-of-2026 long-form drafted | 600 | 6 | 5 |
 | **W9** Dec 21-27 | the backlog by lane | NBA Christmas; "best of 2026" long-form | 600 | 7 | 5 |

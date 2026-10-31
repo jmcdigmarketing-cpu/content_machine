@@ -199,6 +199,41 @@ def _ass_safe_style(style: str) -> str:
     return ",".join(kept)
 
 
+def _scrim_filter(caption_scrim: float) -> str:
+    """#1268: a black band behind the captions, only as dark as the lightest sampled background
+    needs for 4.5:1 (`caption_scrim_for`); "" at 0, so the command stays byte-identical. #1775:
+    the band is where the captions now sit (`safe_zone.CAPTION_BAND`), not the bottom fifth."""
+    if not caption_scrim or float(caption_scrim) <= 0:
+        return ""
+    from video.safe_zone import CAPTION_BAND
+
+    top, bottom = CAPTION_BAND
+    return (
+        f"drawbox=x=0:y=ih*{top:.2f}:w=iw:h=ih*{bottom - top:.2f}:"
+        f"color=black@{float(caption_scrim):.2f}:t=fill,"
+    )
+
+
+def _warn_outside(label: str, path: str | None, progress=None) -> None:
+    """#1775: a subtitle file whose style sits in the apps' chrome is named - a skin's
+    `margin_v` set by hand would otherwise put words under the buttons with nothing said."""
+    if not path or not str(path).lower().endswith(".ass") or not os.path.isfile(path):
+        return
+    try:
+        from video.safe_zone import outside
+
+        with open(path, encoding="utf-8") as handle:
+            styles = outside(handle.read())
+    except Exception as exc:
+        logger.debug("safe zone check skipped (%s): %s", label, exc)
+        return
+    if styles:
+        line = f"{label}: {', '.join(styles)} sit under the apps' buttons (safe zone)"
+        logger.warning(line)
+        if progress is not None:
+            progress.note(line)
+
+
 def build_render_ffmpeg_command(
     *,
     background_path: str,
@@ -279,24 +314,18 @@ def build_render_ffmpeg_command(
     if str(subtitle_path).lower().endswith(".ass"):
         style_escaped = _ass_safe_style(style_escaped)
     force_style_arg = f":force_style='{style_escaped}'" if style_escaped else ""
-    # #502: YouTube chrome zones, draft/preview only. Never on a publish encode.
+    # #502: the apps' chrome zones, draft/preview only. Never on a publish encode.
     draft_guides = ""
     if is_draft:
+        from video.safe_zone import SAFE_BOTTOM, SAFE_TOP
+
         draft_guides = (
-            ",drawbox=x=0:y=0:w=iw:h=ih*0.12:color=yellow@0.25:t=fill"
-            ",drawbox=x=0:y=ih*0.8:w=iw:h=ih*0.2:color=yellow@0.25:t=fill"
+            f",drawbox=x=0:y=0:w=iw:h=ih*{SAFE_TOP:g}:color=yellow@0.25:t=fill"
+            f",drawbox=x=0:y=ih*{1.0 - SAFE_BOTTOM:g}:w=iw:h=ih*{SAFE_BOTTOM:g}"
+            ":color=yellow@0.25:t=fill"
         )
 
-    # #1268: a black band under the captions, only as dark as the lightest sampled background
-    # needs for 4.5:1 (`caption_scrim_for`). 0 leaves the command byte-identical.
-    scrim_filter = ""
-    if caption_scrim and float(caption_scrim) > 0:
-        from core.caption_contrast import CAPTION_BAND
-
-        scrim_filter = (
-            f"drawbox=x=0:y=ih*{1.0 - CAPTION_BAND:.2f}:w=iw:h=ih*{CAPTION_BAND:.2f}:"
-            f"color=black@{float(caption_scrim):.2f}:t=fill,"
-        )
+    scrim_filter = _scrim_filter(caption_scrim)
 
     # Video-only filter graph from input 0; input 1 audio mapped explicitly.
     picture = (
@@ -647,6 +676,12 @@ def render_vertical_video(
                 handle.write(policy_text)
     except Exception as exc:
         logger.warning("Policy overlays skipped: %s", exc)
+    for label, ass_path in (
+        ("captions", subtitle_path),
+        ("name tags", lower_thirds_path),
+        ("policy lines", policy_overlays_path),
+    ):
+        _warn_outside(label, ass_path, progress)
 
     background_path = os.path.abspath(background_path).replace("\\", "/")
     mp3_path = os.path.abspath(mp3_path).replace("\\", "/")

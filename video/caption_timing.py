@@ -408,14 +408,19 @@ def build_ass_karaoke(
     anchor: str = "bottom",
     voice2_primary: str = "&H00F7C34F&",  # #506: the second voice's spoken word
     entrance: str = "none",  # #503: pop / fade / slide / none
-    margin: int = 260,
+    margin: int = 0,
 ) -> str:
     """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing).
 
     Words carrying a non-narrator `role` (a two-voice render, #506) are grouped apart
     and use the `Voice2` style, whose highlight is `voice2_primary`. With no such word
     the output is byte-identical to the single-voice builder.
+
+    #1775: `margin` is raised to the safe zone's - the bottom edge at 80% of the height, or
+    below the top cards when anchored at the top - so no app's buttons sit on the words.
     """
+    from video.safe_zone import caption_margin
+
     two_voices = any(_role(w) != _NARRATOR for w in words)
     grouped = (
         _lines_by_voice(words, max_words) if two_voices else group_into_lines(words, max_words)
@@ -425,7 +430,8 @@ def build_ass_karaoke(
     title = (title_font or font).replace(",", " ").strip() or font
     body = (body_font or font).replace(",", " ").strip() or font
     alignment = 8 if str(anchor).strip().lower() == "top" else 2
-    lead = entrance_tag(entrance, alignment=alignment)
+    margin = caption_margin(anchor, margin)
+    lead = entrance_tag(entrance, alignment=alignment, margin_v=margin)
     events: list[str] = []
     from video.caption_emoji import wrap_emoji
 

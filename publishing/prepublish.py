@@ -120,23 +120,67 @@ def without_short_affiliates(
 
     if _is_long(content_run_id):
         return request, 0
-    try:
-        from config.channels import resolve_channel_id
-        from core.description_extras import affiliate_rows
-
-        known = [str(r["url"]).split("?")[0] for r in affiliate_rows(resolve_channel_id(None))]
-    except Exception:
-        known = []
+    known = _known_affiliates(None)
     kept, dropped = [], 0
     for line in (request.description or "").split("\n"):
-        low = line.lower()
-        if ("amazon." in low and "tag=" in low) or any(k and k.lower() in low for k in known):
+        if _affiliate_line(line, known):
             dropped += 1
             continue
         kept.append(line)
     if not dropped:
         return request, 0
     return replace(request, description="\n".join(kept)), dropped
+
+
+def _known_affiliates(channel_id: str | None) -> list[str]:
+    """The `config/affiliates.json` links (no query), [] when unread."""
+    try:
+        from config.channels import resolve_channel_id
+        from core.description_extras import affiliate_rows
+
+        return [str(r["url"]).split("?")[0] for r in affiliate_rows(resolve_channel_id(channel_id))]
+    except Exception:
+        return []
+
+
+def _affiliate_line(line: str, known: list[str]) -> bool:
+    """An Amazon link carrying an Associates `tag=`, or a link from `config/affiliates.json`."""
+    low = line.lower()
+    return ("amazon." in low and "tag=" in low) or any(k and k.lower() in low for k in known)
+
+
+def with_ftc(request: PublishRequest, channel_id: str) -> tuple[PublishRequest, bool]:
+    """#1751 (B07.5): a description carrying an affiliate link gets the FTC line, right under the
+    last link, when it is missing - the SEO path adds it (#1748), but a description written or
+    edited outside it went out without. (request, whether it was added)."""
+    from dataclasses import replace
+
+    from core.description_extras import ftc_affiliate_line
+
+    description = request.description or ""
+    lines = description.split("\n")
+    known = _known_affiliates(channel_id)
+    links = [i for i, line in enumerate(lines) if _affiliate_line(line, known)]
+    ftc = ftc_affiliate_line(channel_id, affiliate=True)
+    if not links or not ftc or ftc in description:
+        return request, False
+    lines.insert(links[-1] + 1, ftc)
+    return replace(request, description="\n".join(lines)), True
+
+
+def _ftc(request: PublishRequest, channel_id: str) -> Check:
+    from core.description_extras import ftc_affiliate_line
+
+    description = request.description or ""
+    known = _known_affiliates(channel_id)
+    if not any(_affiliate_line(line, known) for line in description.split("\n")):
+        return Check("ftc", True, "no affiliate link")
+    ftc = ftc_affiliate_line(channel_id, affiliate=True)
+    if not ftc:
+        return Check("ftc", False, "an affiliate link without the FTC line (FTC_DISCLOSURE is off)")
+    if ftc in description:
+        return Check("ftc", True, "affiliate link with its FTC line")
+    return Check("ftc", False, "an affiliate link without the FTC line")
 
 
 def with_disclosure(request: PublishRequest, channel_id: str) -> tuple[PublishRequest, bool]:
@@ -223,6 +267,7 @@ def checklist(
     makers = (
         lambda: _title(request),
         lambda: _disclosure(request, channel_id),
+        lambda: _ftc(request, channel_id),
         lambda: _credits(request, run),
         lambda: _chapters(request, run),
         lambda: _layout(request, channel_id),

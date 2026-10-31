@@ -153,6 +153,12 @@ def finish(cover: Cover, dest_stem: str) -> str:
     return final
 
 
+def cover_ms(cover_at: float, intro_seconds: float = 0.0) -> int:
+    """#1791: the cover frame's moment in the finished video, in ms - the cut's own `cover_at`
+    after any intro prepended in front of it."""
+    return int(round((max(0.0, float(intro_seconds or 0.0)) + float(cover_at)) * 1000))
+
+
 def strip_lines(new_path: str, *, last: int = 10) -> list[str]:
     """L10: the new cover beside the last ten - each one's distance in bits, a repeat flagged."""
     from PIL import Image

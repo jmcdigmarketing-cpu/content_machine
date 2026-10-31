@@ -8208,6 +8208,179 @@
         "truthy": true
       },
       "why": "the post over a minute is the one counted toward rewards"
+    },
+    {
+      "id": "an-hour-needs-four-posts-of-its-own",
+      "item": 1774,
+      "source": "wave 137 live read: Instagram's hour won on 2 posts (138, 218) over 21 at 10 PM",
+      "call": "publishing.platform_recommend:_best",
+      "args": [
+        [
+          {
+            "local_hour": 20,
+            "views": 138
+          },
+          {
+            "local_hour": 20,
+            "views": 218
+          },
+          {
+            "local_hour": 22,
+            "views": 111
+          },
+          {
+            "local_hour": 22,
+            "views": 111
+          },
+          {
+            "local_hour": 22,
+            "views": 111
+          },
+          {
+            "local_hour": 22,
+            "views": 111
+          }
+        ],
+        "local_hour"
+      ],
+      "expect": {
+        "equals": 22
+      },
+      "why": "two lucky posts are not an hour's audience"
+    },
+    {
+      "id": "a-domain-needs-four-posts-of-its-own",
+      "item": 1774,
+      "source": "the same shrunk-mean pick reads domain and length",
+      "call": "publishing.platform_recommend:_best",
+      "args": [
+        [
+          {
+            "domain": "gaming",
+            "views": 900
+          },
+          {
+            "domain": "gaming",
+            "views": 700
+          },
+          {
+            "domain": "ufc",
+            "views": 120
+          },
+          {
+            "domain": "ufc",
+            "views": 120
+          },
+          {
+            "domain": "ufc",
+            "views": 120
+          },
+          {
+            "domain": "ufc",
+            "views": 120
+          }
+        ],
+        "domain"
+      ],
+      "expect": {
+        "equals": "ufc"
+      },
+      "why": "the learning line's domain and length follow the hour's rule"
+    },
+    {
+      "id": "no-shorts-tag-off-youtube",
+      "item": 1776,
+      "source": "wave 137: #shorts is YouTube's own tag",
+      "call": "publishing.crosspost:hashtags",
+      "args": [
+        [
+          "shorts",
+          "NFL",
+          "Shorts"
+        ]
+      ],
+      "expect": {
+        "equals": [
+          "#NFL"
+        ]
+      },
+      "why": "a YouTube-only tag means nothing on TikTok, Instagram or Facebook"
+    },
+    {
+      "id": "follow-not-subscribe-off-youtube",
+      "item": 1776,
+      "source": "run 219's caption ended 'Subscribe for daily UFC takes.' on TikTok and Instagram",
+      "call": "publishing.crosspost:follow_line",
+      "args": [
+        "Renato Moicano meets Tom Nolan. Subscribe for daily UFC takes."
+      ],
+      "expect": {
+        "equals": "Renato Moicano meets Tom Nolan. Follow for daily UFC takes."
+      },
+      "why": "there is no Subscribe button off YouTube (decision 89)"
+    },
+    {
+      "id": "run-219s-hook-card-fits-in-three-lines",
+      "item": 1775,
+      "source": "run 219 at 0.5 s: the hook card ran off both edges as one 64 px line",
+      "call": "video.subtitles:hook_card_lines",
+      "args": [
+        "Moicano took this fight because Ortega pulled out twice, and Moicano will cash in on the chance this Saturday night."
+      ],
+      "select": 1,
+      "expect": {
+        "equals": [
+          "Moicano took this fight because Ortega",
+          "pulled out twice, and Moicano will cash",
+          "in on the chance this Saturday night."
+        ]
+      },
+      "why": "the script never wraps, so the card must break its own lines"
+    },
+    {
+      "id": "captions-end-above-the-bottom-fifth",
+      "item": 1775,
+      "source": "run 219: captions' bottom edge at 86%, under TikTok's caption and YouTube's title",
+      "call": "video.safe_zone:caption_margin",
+      "args": [
+        "bottom",
+        260
+      ],
+      "expect": {
+        "equals": 384
+      },
+      "why": "a skin's margin may push further in, never into the apps' chrome"
+    },
+    {
+      "id": "a-style-in-the-chrome-is-named",
+      "item": 1775,
+      "source": "the render's safe-zone warning reads every subtitle file it burns",
+      "call": "video.safe_zone:outside",
+      "args": [
+        "[Script Info]\nPlayResY: 1920\n\n[V4+ Styles]\nFormat: Name, Fontsize, Alignment, MarginV\nStyle: Low,90,2,260\nStyle: Ok,90,2,384\n"
+      ],
+      "expect": {
+        "equals": [
+          "Low"
+        ]
+      },
+      "why": "a hand-set margin_v would otherwise put words under the buttons unsaid"
+    },
+    {
+      "id": "no-intro-no-three-seconds",
+      "item": 1791,
+      "source": "wave 137 live read: Buffer got 3150 ms for every video with the intro off",
+      "call": "publishing.crosspost:_thumbnail_ms",
+      "args": [
+        "tapin"
+      ],
+      "env": {
+        "CHANNEL_INTRO_ENABLED": "false"
+      },
+      "expect": {
+        "equals": 1000
+      },
+      "why": "the intro has been off since decision 79"
     }
   ]
 }

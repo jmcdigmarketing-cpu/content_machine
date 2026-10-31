@@ -548,7 +548,7 @@ class OpeningShotTests(_OwnStores):
             patch.object(cover_frames, "finish", return_value="v_frame_cover.jpg"),
             patch.object(fast_cut, "_render_shot", side_effect=lambda *a: rendered.append(a)),
         ):
-            path = fast_cut._cover_and_open(done, "v.mp4")
+            path, _at = fast_cut._cover_and_open(done, "v.mp4")  # #1791: and where it sits
         self.assertEqual(path, "v_frame_cover.jpg")
         self.assertEqual(done[0][1], ("b.mp4", 5.0, 3.0))  # b's moment, the first shot's length
         self.assertEqual(done[1][1], ("a.mp4", 1.0, 6.0))

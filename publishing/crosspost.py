@@ -119,6 +119,18 @@ def _duration(path: str) -> float | None:
 _EVENING_HOUR = 22  # 10 PM in the channel's time zone
 
 
+def _zone(channel_id: str) -> Any:
+    """The channel's time zone (its post schedule's), UTC when unread."""
+    from zoneinfo import ZoneInfo
+
+    try:
+        from analytics.post_timing import _load_static_post_schedule
+
+        return ZoneInfo(_load_static_post_schedule(channel_id).timezone)
+    except Exception:
+        return timezone.utc
+
+
 def _suggested_slot(channel_id: str, topic: str, *, now: datetime | None = None) -> datetime:
     """The next 10 PM in the channel's time zone - always within a day.
 
@@ -126,16 +138,10 @@ def _suggested_slot(channel_id: str, topic: str, *, now: datetime | None = None)
     took YouTube's learned slot for the topic's sport, and run 157 (UFC) got Thursday 3:00 AM,
     five days after it went public. A platform with its own hours (`hour_choice`) keeps them.
     """
-    from zoneinfo import ZoneInfo
-
     del topic
-    try:
-        from analytics.post_timing import _load_static_post_schedule
-
-        zone: Any = ZoneInfo(_load_static_post_schedule(channel_id).timezone)
-    except Exception:
-        zone = timezone.utc
-    local = ((now or datetime.now(timezone.utc)) + timedelta(minutes=15)).astimezone(zone)
+    local = ((now or datetime.now(timezone.utc)) + timedelta(minutes=15)).astimezone(
+        _zone(channel_id)
+    )
     slot = local.replace(hour=_EVENING_HOUR, minute=0, second=0, microsecond=0)
     if slot < local:
         slot += timedelta(days=1)
@@ -155,12 +161,16 @@ def _youtube_slot(channel_id: str, run_id: int) -> datetime | None:
     return getattr(row, "published_at", None) if row else None
 
 
+# YouTube's own tags - meaningless on TikTok, Instagram and Facebook (#1776).
+_YOUTUBE_ONLY_TAGS = {"shorts", "youtubeshorts", "ytshorts"}
+
+
 def hashtags(tags: list[str], *, limit: int = 5) -> list[str]:
     """ "NBA preseason" -> "#NBApreseason": up to `limit`, deduplicated, in order."""
     out: list[str] = []
     for tag in tags:
         word = re.sub(r"[^0-9A-Za-z]", "", str(tag or ""))
-        if len(word) < 3 or word[0].isdigit():
+        if len(word) < 3 or word[0].isdigit() or word.lower() in _YOUTUBE_ONLY_TAGS:
             continue
         tagged = f"#{word}"
         if tagged.lower() not in (t.lower() for t in out):
@@ -174,13 +184,29 @@ def _disclosure() -> str:
     return os.getenv("AI_CONTENT_DISCLOSURE_LABEL", "").strip() or _DEFAULT_DISCLOSURE
 
 
+def follow_line(text: str) -> str:
+    """#1776 (decision 89): off YouTube there is no Subscribe button - the sign-off "Subscribe for
+    daily UFC takes." reads "Follow for daily UFC takes." there."""
+    text = re.sub(r"\bSubscribe to\b", "Follow", text or "")
+    text = re.sub(r"\bsubscribe to\b", "follow", text)
+    return re.sub(r"\b([Ss])ubscribe for\b", lambda m: ("F" if m[1] == "S" else "f") + "ollow for",
+                  text)  # fmt: skip
+
+
+def caption_body(run: Any) -> str:
+    """The description's first paragraph (its footer cut), worded for a feed with no Subscribe."""
+    return follow_line(
+        _FOOTER_RE.sub("", str(getattr(run, "description", "") or "").strip()).strip()
+    )
+
+
 def caption(run: Any) -> str:
     """Title, the description without its footer, the hashtags and the disclosure line."""
     try:
         tags = json.loads(getattr(run, "tags_json", "") or "[]")
     except (TypeError, ValueError):
         tags = []
-    body = _FOOTER_RE.sub("", str(getattr(run, "description", "") or "").strip()).strip()
+    body = caption_body(run)
     title = str(getattr(run, "title", "") or getattr(run, "selected_topic", "") or "").strip()
     parts = [p for p in (title, body, " ".join(hashtags(list(tags or []))), _disclosure()) if p]
     text = "\n\n".join(parts)
@@ -677,14 +703,31 @@ def _content_run(run_id: int) -> Any:
     return get_content_run_repository().get(int(run_id))
 
 
-def _thumbnail_ms(channel_id: str) -> int:
-    """A frame one second past the channel intro, so the cover is not the intro card."""
+def _thumbnail_ms(channel_id: str, run: Any = None) -> int:
+    """#1791: the moment of the run's own cover frame (`cover_ms`, wave 135's L1), so TikTok and
+    Instagram show the picture YouTube does. Without one, a frame one second past the intro the
+    run recorded - or, unrecorded, past the channel intro only when one is prepended: the intro
+    has been off since decision 79 and 3.15 s went out for every video."""
     try:
-        from config.channels import get_channel_profile
+        quality = json.loads(str(getattr(run, "quality_json", "") or "{}"))
+    except (TypeError, ValueError):
+        quality = {}
+    quality = quality if isinstance(quality, dict) else {}
+    if quality.get("cover_ms") is not None:
+        return int(quality["cover_ms"])
+    opening = quality.get("opening") if isinstance(quality.get("opening"), dict) else {}
+    if opening and opening.get("intro_seconds") is not None:
+        offset = float(opening["intro_seconds"] or 0.0)
+    else:
+        try:
+            from config.channels import get_channel_profile
+            from video.channel_intro import resolve_intro_path
 
-        offset = float(get_channel_profile(channel_id).intro_offset_seconds or 0.0)
-    except Exception:
-        offset = 0.0
+            prepended = bool(resolve_intro_path(channel_id))
+            offset = float(get_channel_profile(channel_id).intro_offset_seconds or 0.0)
+            offset = offset if prepended else 0.0
+        except Exception:
+            offset = 0.0
     return int((offset + 1.0) * 1000)
 
 
@@ -753,7 +796,7 @@ def _next_due(
         if due < now + _LEAD:
             due = now + _LEAD
     else:
-        due = _at_utc_hour(hour, now + _LEAD)
+        due = _at_local_hour(hour, now + _LEAD, _zone(channel_id))
     # Decision 63 (2026-10-17): no spacing between posts - the one-a-day rule pushed a game
     # preview past its kickoff, and there is not the volume to ration.
     del posts
@@ -767,13 +810,17 @@ def _next_due(
     return due, note
 
 
-def _at_utc_hour(hour: int, after: datetime) -> datetime:
-    """The next UTC time at `hour:00` that is not before `after`."""
-    moment = after.astimezone(timezone.utc) if after.tzinfo else after.replace(tzinfo=timezone.utc)
-    candidate = moment.replace(hour=int(hour), minute=0, second=0, microsecond=0)
-    if candidate < moment:
-        candidate += timedelta(days=1)
-    return candidate
+def _at_local_hour(hour: int, after: datetime, zone: Any) -> datetime:
+    """The next `hour:00` in `zone` that is not before `after`, in UTC (#1774: a platform's hour
+    is learned in local time, so 10 PM stays 10 PM across the clock change)."""
+    moment = after if after.tzinfo else after.replace(tzinfo=timezone.utc)
+    local = moment.astimezone(zone)
+    candidate = local.replace(hour=int(hour), minute=0, second=0, microsecond=0)
+    if candidate < local:
+        candidate = (local + timedelta(days=1)).replace(
+            hour=int(hour), minute=0, second=0, microsecond=0
+        )
+    return candidate.astimezone(timezone.utc)
 
 
 def _adopt(org_id: str, buffer_channel: str, state: dict[str, Any]) -> dict[str, Any] | None:
@@ -1029,7 +1076,7 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                     video_url=str(entry["url"]),
                     due_at=due,
                     service=service,
-                    thumbnail_ms=_thumbnail_ms(channel_id),
+                    thumbnail_ms=_thumbnail_ms(channel_id, run),
                 )
             except buffer_api.BufferError as exc:
                 if exc.kind == "input":
@@ -1065,6 +1112,8 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 "post_id": str(post.get("id") or ""),
                 "due_at": due.isoformat(),
                 "text_start": text[:60],
+                # #1776: the caption test's arm - this write dropped it, so 0 of 73 posts kept one
+                "arm": arm,
                 "at": _now_text(moment),
                 **kept,
             }
@@ -1312,7 +1361,7 @@ def buffer_check(channel_id: str) -> list[str]:
             video_url=url,
             due_at=datetime.now(timezone.utc) + timedelta(days=3),
             service="tiktok",
-            thumbnail_ms=_thumbnail_ms(channel_id),
+            thumbnail_ms=_thumbnail_ms(channel_id, run),
             draft=True,
         )
         post_id = str(post.get("id") or "")

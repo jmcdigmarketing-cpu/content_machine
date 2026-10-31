@@ -1,6 +1,8 @@
 # Cloud brief — wave 133: the GTA 6 window (launch 2026-11-19)
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-28
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-10-31 · **Superseded by:** [roadmap.md](roadmap.md)
+
+**Shipped** in wave 133 (`899ff58`), 2026-10-28 - what each item became is in [backlog.md](backlog.md) and [planning_log.md](planning_log.md); the next five are in [roadmap.md](roadmap.md).
 
 The bridge's first time-critical wave ([bridge_plan.md](bridge_plan.md), decision 82): GTA 6
 launches on **2026-11-19**, the biggest window of the year for a gaming channel's views and

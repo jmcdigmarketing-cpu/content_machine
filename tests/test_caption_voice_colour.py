@@ -21,9 +21,10 @@ from unittest.mock import patch
 TEXT = "The card is set. Topuria defends the belt tonight in Vegas."
 WORDS = [{"word": w, "start": i * 0.4, "end": i * 0.4 + 0.35} for i, w in enumerate(TEXT.split())]
 # build_ass_karaoke(WORDS) and (WORDS, title_font="Impact", body_font="Arial") on
-# unmodified code, wave 43 (367428b).
-SINGLE_VOICE_SHA = "d7c260404a41fec259f4fa0422f966955bbd792a8713744c20fea0d5e9049d99"
-PAIRED_SHA = "e48879e4da510063a762764d89d016a13316e109324e9c163097f62a2c33e5b1"
+# unmodified code, wave 43 (367428b). Wave 137 (#1775, decision 89): the same bytes with the
+# captions' MarginV 260 -> 384, the safe zone's bottom edge - checked as the only difference.
+SINGLE_VOICE_SHA = "aa0870726d8c2939a40ba25aa8c157471c0f023b8e1cf275b6bbc55571112fd0"
+PAIRED_SHA = "6972d612a60718f0b3e9e9a2af77bae722de01fd4d1409642b735be579a04966"
 
 
 def _two_voices() -> list[dict]:

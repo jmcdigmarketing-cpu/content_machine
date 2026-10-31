@@ -7,6 +7,12 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-28 (Claude Code): wave 134, the next five
+
+The operator's new backgrounds: 19 downloads credited generically (decision 86), Call of Duty,
+Black Ops and Counter-Strike topics reach their folders. The bridge's scoreboard: the bars as data,
+engaged views, organic subscribers "at most 166" until final, the race clock, a Bridge line.
+
 ## Previous — 2026-10-28 (Claude Code): wave 133, the next ten
 
 The GTA 6 window scheduled (decision 84): three long 16:9 videos (11-06, 11-12, 11-20) after

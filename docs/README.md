@@ -86,11 +86,11 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [logistics_plan.md](logistics_plan.md) | How the work runs: the money reeled back (decisions 82, 85), the operator's week, the footage library, publishing, the machine |
 | [look_and_feel.md](look_and_feel.md) | The look: covers from our own frames with no words, every clip in rotation, footage that matches the story, one look for both worlds; why it looked alike on 10-30; the build list L1-L10 |
 | [horizons_2027.md](horizons_2027.md) | After the bridge: horizons H0-H4, proposed signposts, the branches, the breakout playbook, when to stop and ask |
-| [cloud_brief_wave133.md](cloud_brief_wave133.md) | Wave 133 for a cloud or PC session: the GTA 6 window - the countdown series, a 16:9 long-form draft kind, affiliate links, launch week |
-| [cloud_brief_wave134.md](cloud_brief_wave134.md) | Wave 134: the bridge's scoreboard - the dated YPP bars, engaged views, organic subscribers, the race clock, cost per 1,000 views |
-| [cloud_brief_wave135.md](cloud_brief_wave135.md) | Wave 135: speed and volume - Shorts that loop, the breaking-news and results fast lanes, three a day, previews 24-48 hours ahead |
-| [cloud_brief_wave136.md](cloud_brief_wave136.md) | Wave 136: money and reach outside YouTube - Facebook Reels, a link-in-bio page, income beside spend, TikTok that can earn |
-| [cloud_brief_wave132.md](cloud_brief_wave132.md) | The default for a Claude cloud session (2026-10-26): wave 132 - more interesting topics (decision 81), a 5-8 minute Week in Review, tonight's defects, with each item's fixtures |
+| [cloud_brief_wave133.md](cloud_brief_wave133.md) | *archived* → roadmap.md (shipped 10-28) - wave 133: the GTA 6 window - the countdown series, a 16:9 long-form draft kind, affiliate links, launch week |
+| [cloud_brief_wave134.md](cloud_brief_wave134.md) | *archived* → roadmap.md (shipped 10-28) - wave 134: the bridge's scoreboard - the dated YPP bars, engaged views, organic subscribers, the race clock, cost per 1,000 views |
+| [cloud_brief_wave135.md](cloud_brief_wave135.md) | *archived* → roadmap.md (shipped 10-30) - wave 135: speed and volume - Shorts that loop, the breaking-news and results fast lanes, three a day, previews 24-48 hours ahead |
+| [cloud_brief_wave136.md](cloud_brief_wave136.md) | *archived* → roadmap.md (shipped 10-31, waves 136-137) - wave 136: money and reach outside YouTube - Facebook Reels, a link-in-bio page, income beside spend, TikTok that can earn |
+| [cloud_brief_wave132.md](cloud_brief_wave132.md) | *archived* → roadmap.md (shipped 10-28) - the cloud session of 2026-10-26: wave 132 - more interesting topics (decision 81), a 5-8 minute Week in Review, tonight's defects, with each item's fixtures |
 | [initiative_cross_platform.md](initiative_cross_platform.md) | Offered to Cursor (2026-10-14): learn per platform from TikTok and Instagram results (#1194-#1199) |
 | [content_quality_plan.md](content_quality_plan.md) | Five quality issues, traced and planned |
 | [spec_quality_fixes_1_to_4.md](spec_quality_fixes_1_to_4.md) | Code-ready specs for quality fixes §1–§4 |

@@ -747,6 +747,11 @@ def next_decision(
     return out
 
 
+def event_word(meta: dict[str, Any]) -> str:
+    """#1899: what a draft's `event_at` is - a countdown's day ending, else a game's kickoff."""
+    return "its day ends" if (meta or {}).get("series") == "countdown" else "kicks off"
+
+
 def deadline_line(channel_id: str, *, root: str | None = None, now: datetime | None = None) -> str:
     """Wave 109: the waiting preview with the soonest kickoff, and when it must be decided - the
     last free slot before kickoff, less the upload lead (`spaced_queue`). "" when no game waits.
@@ -756,18 +761,21 @@ def deadline_line(channel_id: str, *, root: str | None = None, now: datetime | N
         return ""
     draft, event = got["draft"], got["kickoff"]
     kickoff = _zone_clock(event, channel_id, day=True)
+    word = event_word(
+        getattr(draft, "meta", {}) or {}
+    )  # #1899: a countdown's day ends; a game kicks off
     if not got.get("read", True):
-        return f"Decide first: {draft.title} - kicks off {kickoff}"
+        return f"Decide first: {draft.title} - {word} {kickoff}"
     if got["slot"] is None:
         return (
-            f"Decide first: {draft.title} - kicks off {kickoff}, and no upload slot is left "
+            f"Decide first: {draft.title} - {word} {kickoff}, and no upload slot is left "
             f"before kickoff. To post it anyway: review it, then py -m scripts.requeue_upload "
             f"--run-id {draft.run_id} --queue --private, then go-public with its video id"
         )
     # #1533 (wave 118): it said "review it by 8:30 PM EDT for the 10:00 PM EDT slot" for Fri
     # 10-23 - read on a Tuesday evening, that was tonight.
     return (
-        f"Decide first: {draft.title} - kicks off {kickoff}; review it by "
+        f"Decide first: {draft.title} - {word} {kickoff}; review it by "
         f"{_zone_clock(got['by'], channel_id, day=True)} for its "
         f"{_zone_clock(got['slot'], channel_id)} slot"
     )
@@ -1288,6 +1296,25 @@ def unattended_candidates(
     return sorted(eligible, key=rank), skipped
 
 
+def _is_countdown(draft: Any) -> bool:
+    return (getattr(draft, "meta", None) or {}).get("series") == "countdown"
+
+
+def _queue_scheduled(run_id: int, channel_id: str) -> int:
+    """Wave 135: a countdown is uploaded private with its publish time (`slot_for_run` - its own
+    noon, else the next slot before its midnight), so YouTube makes it public with the PC off."""
+    from analytics.queue_manager import requeue_content_run
+    from core.spaced_queue import slot_for_run
+
+    when, why = slot_for_run(channel_id, run_id)
+    if when is None:
+        logger.warning("countdown run %s has no slot (%s) - uploaded unlisted", run_id, why)
+        return _queue_unlisted(run_id, channel_id)
+    return requeue_content_run(
+        run_id, channel_id, privacy_status="private", youtube_publish_at=when
+    )
+
+
 def _queue_unlisted(run_id: int, channel_id: str) -> int:
     from analytics.queue_manager import requeue_content_run
 
@@ -1397,9 +1424,14 @@ def render_unattended(
     `paused` (#1152) says why it stopped when finished videos are already waiting.
     """
     out: dict[str, Any] = {"rendered": [], "queued": [], "failed": [], "waiting": []}
+    eligible, skipped = unattended_candidates(channel_id, root=root)
+    # Wave 135: a countdown renders first and outside the limit - on 10-30 the night's one render
+    # went to a game and day 20 had no slot left. It is uploaded scheduled for its own noon.
+    series = [d for d in eligible if _is_countdown(d)]
+    eligible = [*series, *(d for d in eligible if not _is_countdown(d))]
+    limit = max(0, limit) + len(series)
     if limit <= 0:
         return out
-    eligible, skipped = unattended_candidates(channel_id, root=root)
     out["waiting"] = [(d.run_id, why) for d, why in skipped]
     for held, why in skipped:
         if not why.startswith("already "):
@@ -1409,7 +1441,9 @@ def render_unattended(
     for draft in eligible:
         if tried >= limit:
             break
-        paused = shelf_pause(channel_id, waiting=on_shelf)
+        # A countdown goes out scheduled, so it never waits on the shelf (wave 135).
+        countdown = _is_countdown(draft)
+        paused = "" if countdown else shelf_pause(channel_id, waiting=on_shelf)
         if paused:
             out["paused"] = paused
             break
@@ -1438,7 +1472,10 @@ def render_unattended(
         out["rendered"].append(draft.run_id)
         on_shelf += 1
         try:
-            (queue or _queue_unlisted)(draft.run_id, channel_id)
+            if countdown:
+                _queue_scheduled(draft.run_id, channel_id)
+            else:
+                (queue or _queue_unlisted)(draft.run_id, channel_id)
             out["queued"].append(draft.run_id)
         except Exception as exc:
             logger.warning("overnight upload of run %s not queued: %s", draft.run_id, exc)

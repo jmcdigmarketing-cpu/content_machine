@@ -193,14 +193,19 @@ def collect_topics(
             from core.series.countdown import countdown_idea
             from core.series.dated import dated_ideas
 
-            alone = [b for b in (countdown_idea(channel_id), *dated_ideas(channel_id, notes=notes))
-                     if b is not None]  # fmt: skip
+            alone = _unique([countdown_idea(channel_id), countdown_idea(channel_id, ahead=1),
+                             *dated_ideas(channel_id, notes=notes)])  # fmt: skip
             if picks is not None:
                 for bet in alone:
                     picks[bet.topic] = pick_record([bet], 1, by="batch")
             return [b.topic for b in alone]
         ideas, previews = get_idea_menu(channel_id, notes=notes)
         extra = [b for b in ideas if getattr(b, "source", "") in DATED_SOURCES]
+        # Wave 135 (the operator: "a day ahead"): tomorrow's countdown too, scheduled for its
+        # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
+        from core.series.countdown import countdown_idea
+
+        extra = _unique([*extra, countdown_idea(channel_id, ahead=1)])
         names = marquee_names(channel_id)
         kept: list[Any] = []
         for bet in ideas:
@@ -239,6 +244,19 @@ def collect_topics(
 
 
 DATED_SOURCES = ("countdown", "moment", "long")  # decision 84: extra drafts on their day
+
+
+def _unique(bets: list[Any]) -> list[Any]:
+    """The ideas that are not None, each topic once, in order."""
+    seen: set[str] = set()
+    out: list[Any] = []
+    for bet in bets:
+        if bet is not None and bet.topic not in seen:
+            seen.add(bet.topic)
+            out.append(bet)
+    return out
+
+
 OUTLETS_MIN = 3  # #1595 (decision 81): an overnight story is on three outlets, or a marquee name
 _PREVIEW_KINDS = ("national", "league", "ufc_numbered")
 

@@ -8041,6 +8041,21 @@
         "contains": "at most 168"
       },
       "why": "a count that is not final is an upper bound"
+    },
+    {
+      "id": "a-countdowns-day-ends",
+      "item": 1906,
+      "source": "10-30: \"Decide first: GTA 6: 20 days to launch - kicks off Sat Oct 31 12:00 AM\"",
+      "call": "core.batch_review:event_word",
+      "args": [
+        {
+          "series": "countdown"
+        }
+      ],
+      "expect": {
+        "equals": "its day ends"
+      },
+      "why": "a countdown has no kickoff; its number is wrong after midnight"
     }
   ]
 }

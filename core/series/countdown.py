@@ -188,9 +188,12 @@ def countdown_idea(
     *,
     now: datetime | None = None,
     headlines: Callable[[str, dict[str, Any], datetime], list[dict[str, Any]]] | None = None,
+    ahead: int = 0,
 ) -> Any:
     """The day's countdown idea (a `BestBetResult`, source "countdown"), or None - before its
-    first day, from launch day on (#1848's), once it is drafted, or with SERIES_COUNTDOWN off."""
+    first day, from launch day on (#1848's), once it is drafted, or with SERIES_COUNTDOWN off.
+    ``ahead`` (wave 135, the operator: "a day ahead"): the countdown of that many days later,
+    written from today's headlines - day 21 and day 20 were lost to a PC that was off at 5 AM."""
     if not countdown_enabled():
         return None
     from core.batch_generation import series_drafted
@@ -198,7 +201,7 @@ def countdown_idea(
 
     moment = now or datetime.now(timezone.utc)
     zone = channel_zone(channel_id)
-    day = moment.astimezone(zone).date()
+    day = moment.astimezone(zone).date() + timedelta(days=ahead)
     for row in series_rows(channel_id):
         if row.get("kind") != "countdown" or not row.get("from") or not row.get("until"):
             continue
@@ -223,6 +226,10 @@ def countdown_idea(
             facts=facts,
             title_stem=topic,
             deadline=day_deadline(day, zone),
+            # its own noon: uploaded scheduled, YouTube publishes it with the PC off (wave 135)
+            publish_at=datetime.combine(day, time(12, 0), tzinfo=zone)
+            .astimezone(timezone.utc)
+            .isoformat(),
         )
     return None
 

@@ -53,25 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-31 · **HEAD at write:** `6c7f792` (wave 136; this wave's commit follows) ·
+**Written:** 2026-10-31 · **HEAD at write:** `82b78c3` (wave 137; this wave's commit follows) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 137, one frame for every app (decision 89).** Defects first: the caption test (#1197) kept
-0 arms in 73 posts - `send_due`'s "scheduled" write dropped `arm` (fixed; old posts replayed from the
-seed: TikTok hook-first 157 vs 116); run 219's hook card ran off both edges over the AI line, and the
-captions sat in the apps' bottom fifth; Buffer got 3150 ms for every cover with the intro off. Mine:
-`ruff --fix` given `assets/` (excluded in pyproject) rewrote 9 files - restored. A suite flake (#1926, `test_wave23_wraps`' retention test reading fresh files as old) failed once - the test dates its files back now. Shipped:
-`video/safe_zone.py` (captions >= 384, AI line 231, hook card 291 wrapped, name tags 634, scrim and
-contrast on 68-80%, render warns on a style in the chrome); `tiktok_caption` + Follow off YouTube;
-`_best(own=4)` and local hours; `cover_ms` from the cut to Buffer; `prepublish.with_ftc`. Eleven older
-test files re-pinned to the new positions (named in the planning log).
+**Wave 138, the next five (decision 90).** Defects first: run 199's TikTok post went out 31 hours
+before YouTube publishes it - the round held it three passes, then the 10-30 21:07 CDT pass's
+YouTube read failed and "a failure holds nothing" (fixed: a record slot still ahead holds a run;
+the failed read itself is still silent, #1930); the booth showed another run's thumbnail (the
+newest file in thumbnails/, never a frame cover) and the ledger called frame covers "pillow"
+(fixed). Shipped: `send_due`'s slot hold, `run_thumbnail` + `cover_strip_html`, 130 px caption
+sides (`SIDE_PX`; hook card keeps 920), `explore_hour` (1 in 8, noon/3/6/8 PM), the
+`black-friday-deals` long row (Nov 23) with up to three `deals_only` links. Six older pins moved
+with the narrower text (named in the planning log).
 
-**Open:** #1917 (run 199's time), #1920-#1924 (hours explored, TikTok's right column, hook card size,
-caption test 11-14, first real `cover_ms`). **Next five:** #1917, #1760 Black Friday long video
-(Nov 27), #1920, #1921, #1916. All five bridge briefs are archived; the next brief is to write.
+**Open:** #1927-#1932 (hour test 12-01, the Black Friday draft, Cyber Monday, the silent YouTube
+read, Instagram's buttons, covers swept after 3 days). **Next five:** #1930, #1932, #1929, #1752,
+#1919.
 
 **Operator:** look at the next render's first second on a phone (#1922); connect a Facebook Page in
-Buffer; paste the link page into the bios; publish the Google app (lapses Nov 6); the Associates tag.
+Buffer; paste the link page into the bios; publish the Google app (lapses Nov 6); the Associates tag
+(the Black Friday video's links need it).
 
 ## Slot — Cursor
 

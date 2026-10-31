@@ -67,13 +67,20 @@ def record_render_assets(
         )
 
     if thumbnail_path and os.path.isfile(thumbnail_path):
+        from assets.cover_frames import SUFFIX
+
+        lowered = thumbnail_path.lower()
+        provider = (
+            "frame" if lowered.endswith(SUFFIX) else "flux" if "flux" in lowered else "pillow"
+        )
         _safe_create(
             repo,
             {
                 "channel_id": channel_id,
                 "content_run_id": content_run_id,
                 "asset_type": "thumbnail",
-                "provider": "flux" if "flux" in thumbnail_path.lower() else "pillow",
+                # #1916: run 219's frame cover was recorded as "pillow"
+                "provider": provider,
                 "path": thumbnail_path,
                 "query": topic,
             },

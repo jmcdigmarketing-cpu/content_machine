@@ -542,3 +542,18 @@ it", "TikTok hook-first always", "4 posts of its own", "Follow for ..."). **Cons
 video's text moves (captions 104 px up, the top cards down); the #1268 scrim and the contrast check
 read the new caption band; Instagram's crossposts return to 10 PM local; Buffer is sent each run's
 own cover frame (#1791).
+
+## 90. One post in eight tries another hour; captions clear of the side buttons; the Black Friday video (2026-10-31)
+**Decision:** one crosspost in eight - a coin fixed by run and platform - goes at noon, 3 PM, 6 PM
+or 8 PM local, whichever has the fewest posts of its own; a game preview still goes before kickoff,
+and an hour competes once it has 4 posts (decision 89). Captions keep 130 px clear on both sides,
+centred, so TikTok's like / comment / share column never covers them; the hook card keeps its full
+width. A Black Friday gaming-deals long video is drafted Mon Nov 23 from that week's headlines,
+rendered after review; a deals video carries up to three affiliate links with one FTC line (other
+long videos keep one). **Why:** Instagram's 27 measured posts covered 6 hours, 21 at one; 84 of the
+last 466 caption cues reached under TikTok's column; a deals video names several products. Asked,
+the operator took "1 in 8 tries another hour", "Narrow both sides", "Draft Mon Nov 23" and "Up to 3
+links". **Consequence:** about one post a week per platform goes at a new hour; the longest caption
+lines split in two (17 characters a line at 90 px instead of 19); the deals video needs the
+Associates tag for its links.
+

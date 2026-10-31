@@ -22,6 +22,11 @@ SAFE_BOTTOM = 0.20
 # #1268 scrim darkens and the contrast check samples.
 CAPTION_BAND = (0.68, 0.80)
 
+# #1921 (decision 90): TikTok's like / comment / share column covers about the right 12% of the
+# frame beside the captions; the captions keep this much clear on both sides, so they stay
+# centred (84 of 466 recent cues had reached under the column).
+SIDE_PX = 130
+
 TOP_PX = math.ceil(HEIGHT * SAFE_TOP)  # 231
 BOTTOM_PX = math.ceil(HEIGHT * SAFE_BOTTOM)  # 384
 

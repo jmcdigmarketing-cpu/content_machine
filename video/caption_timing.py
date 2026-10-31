@@ -285,7 +285,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,{margin},1
+Style: Default,{font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},{side},{side},{margin},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -300,23 +300,26 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Title,{title_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,{margin},1
-Style: Body,{body_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,{margin},1
+Style: Title,{title_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},{side},{side},{margin},1
+Style: Body,{body_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},{side},{side},{margin},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
 
-# Usable caption width: PlayResX 1080 minus the styles' 80 px side margins.
-_ASS_TEXT_WIDTH = 1080 - 2 * 80
+# Usable caption width: PlayResX 1080 minus the styles' side margins - #1921: 130 px each, clear
+# of TikTok's like / comment / share column (`video/safe_zone.SIDE_PX`). The hook card at the
+# top keeps 80 (`FULL_TEXT_WIDTH`).
+_ASS_TEXT_WIDTH = 1080 - 2 * 130
+FULL_TEXT_WIDTH = 1080 - 2 * 80
 # Bold Arial/Impact averages about half an em per character in mixed-case English.
 _CHAR_EM = 0.52
 
 
-def karaoke_max_chars(size: int) -> int:
+def karaoke_max_chars(size: int, *, width: int = _ASS_TEXT_WIDTH) -> int:
     """Characters that fit on one karaoke line at `size` px (WrapStyle 2 never wraps)."""
-    return max(8, int(_ASS_TEXT_WIDTH / (max(1, int(size)) * _CHAR_EM)))
+    return max(8, int(width / (max(1, int(size)) * _CHAR_EM)))
 
 
 def _fit_chars(lines: list[list[dict]], max_chars: int) -> list[list[dict]]:
@@ -419,7 +422,7 @@ def build_ass_karaoke(
     #1775: `margin` is raised to the safe zone's - the bottom edge at 80% of the height, or
     below the top cards when anchored at the top - so no app's buttons sit on the words.
     """
-    from video.safe_zone import caption_margin
+    from video.safe_zone import SIDE_PX, caption_margin
 
     two_voices = any(_role(w) != _NARRATOR for w in words)
     grouped = (
@@ -460,6 +463,7 @@ def build_ass_karaoke(
             primary=primary,
             secondary=secondary,
             alignment=alignment,
+            side=SIDE_PX,
             margin=int(margin),
         )
     else:
@@ -469,13 +473,14 @@ def build_ass_karaoke(
             primary=primary,
             secondary=secondary,
             alignment=alignment,
+            side=SIDE_PX,
             margin=int(margin),
         )
     if two_voices:
         voice2 = (
             f"Style: Voice2,{body if paired else font},{size},{voice2_primary},{secondary},"
             "&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,"
-            f"{alignment},80,80,{int(margin)},1\n"
+            f"{alignment},{SIDE_PX},{SIDE_PX},{int(margin)},1\n"
         )
         header = header.replace("\n\n[Events]", "\n" + voice2.rstrip("\n") + "\n\n[Events]", 1)
     return header + "\n".join(events) + "\n"

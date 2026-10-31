@@ -10493,3 +10493,62 @@ function has a production caller (`with_ftc` and `_ftc` in the upload and its ch
 render's `_warn_outside`, `_scrim_filter` in the render command).
 
 `roadmap-index`: open 336, done 1726, parked 96, numbered open 334 (highest #1924).
+
+## 2026-10-31 — wave 138, the next five (Claude Code)
+
+**Prompt:** "next 5 on the roadmap"
+
+The roadmap's five: #1917 run 199's publish time, #1760 the Black Friday deals long video, #1920
+platform hours explored, #1921 TikTok's right-hand buttons, #1916 the cover in the booth. Asked
+(decision 90): "1 in 8 tries another hour" (not the recommended 1 in 4), "Narrow both sides",
+"Draft Mon Nov 23", "Up to 3 links".
+
+Measured first, and it changed two of the five:
+- #1917: one YouTube read (1 unit) - run 199 is not public; YouTube holds it private until Nov 1
+  10:15 UTC, and the record's "public" with that slot is a scheduled upload's target, by design. The
+  worker log shows the round holding it on the 17:52, 18:07 and 19:07 CDT passes ("YouTube
+  publishes it at 2026-11-01T10:15Z") and sending its TikTok post on the 21:07 pass - the pass
+  whose YouTube read failed (`_held_by_youtube`: "any failure holds nothing"). The 5:15 AM slot was
+  set on YouTube, not by the code's slots.
+- #1916: the booth's picture was the newest file in output/<channel>/thumbnails/, which frame
+  covers (wave 135, data/tmp/hybrid_backgrounds) never reach - for run 219 it showed run 220's
+  Pillow thumbnail; and the asset ledger recorded run 219's frame cover as "pillow".
+- #1921: 84 of the 466 caption cues in the last 15 renders were wider than 820 px.
+
+Shipped (built in a scratchpad worktree):
+1. #1917 - `crosspost.send_due` holds a run whose record slot is still ahead (`_public_times`),
+   with a line naming the slot, whatever YouTube answers. Live: run 199 is the one held.
+2. #1916 - `review_booth.run_thumbnail` (the run's own thumbnail from the asset ledger, the
+   newest file in thumbnails/ only as a fallback), `cover_strip_html` (strip_lines under the
+   picture), `asset_recorder` records a frame cover as "frame".
+3. #1921 - `safe_zone.SIDE_PX` 130; the karaoke styles' MarginL/MarginR; `karaoke_max_chars(width=)`
+   with the captions' 820 px and the hook card's `FULL_TEXT_WIDTH` 920.
+4. #1920 - `platform_recommend.explore_hour` (one in eight, noon/3/6/8 PM local, the fewest posts
+   of its own, a coin fixed by run and platform); `_next_due(run_id=)` takes it, a game still first.
+   Live: 5 of the next 40 runs per platform.
+5. #1760 - `config/series.json` `black-friday-deals` (long, on 2026-11-23); `description_extras.
+   is_deals`, `affiliate_lines(script=)` - up to three links read from the title, topic and script,
+   one FTC line; PS5, Xbox Series X and Switch 2 rows `deals_only` in config/affiliates.json.
+
+Found on the way:
+- `publishing/crosspost.py` `_held_by_youtube`: a failed read is logged at debug only - the pass that
+  sent run 199 said nothing about YouTube being unread (#1930).
+- `assets/fast_cut.py` `prune_backgrounds` sweeps data/tmp/hybrid_backgrounds after 3 days, where
+  frame covers live - the booth then falls back and `ops thumbnail-check` loses ours (#1932).
+- `core/asset_recorder.py`: the provider was "flux if flux in the name, else pillow" (fixed).
+
+Not done: Cyber Monday (#1929), Instagram's own buttons (#1931), the re-reads (#1927 hours on 12-01,
+#1928 the Black Friday draft), #1930, #1932. Run 199's TikTok post stays up - YouTube publishes it at
+5:15 AM ET Nov 1.
+
+Tests: `tests/test_wave138.py`, 20 - 19 fail on `82b78c3` (the editable finder stripped); the one
+that passes is the guard that a slot already passed still goes. Six older pins moved with the
+100 px narrower caption text (920 -> 820): the karaoke hashes (only the side margins and one line re-split - "Topuria
+defends / the belt" - checked by diff), next15_wave2 and review7's style margins, wave23's 19 -> 17
+characters, and wave 137's hook-card check now against the card's own width. Corpus +5 (503), all 5
+failing on HEAD.
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite: 7068 forward and 7068 reversed, OK (6 skipped); corpus 503 of 503; data/ and output/ untouched by the suite; every new function has a production caller (`explore_hour` in `_next_due`, `run_thumbnail` and `cover_strip_html` in `gather_booth_context`, `is_deals` in `affiliate_lines`, `SIDE_PX` and `FULL_TEXT_WIDTH` in the karaoke and hook-card builders).
+
+`roadmap-index`: open 337, done 1731, parked 96, numbered open 335 (highest #1932).
+

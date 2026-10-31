@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-10-31 (Claude, wave 138 - the next five).** Run 199's TikTok post went out 31 hours before
+YouTube publishes it: the round had held it, then a pass whose YouTube read failed sent it - a
+record slot still ahead now holds a run whatever YouTube answers. The booth shows the run's own
+cover (it showed another run's) with the cover strip. Captions keep 130 px clear of TikTok's
+side buttons; one crosspost in eight tries noon, 3, 6 or 8 PM; the Black Friday deals long video
+is drafted Nov 23 with up to three links (decision 90). Next: **#1930** a failed YouTube read in
+the round said nothing, **#1932** frame covers swept after 3 days, **#1929** a Cyber Monday deals
+Short, **#1752** Amazon tracking IDs per platform, **#1919** the link page's clicks. Yours:
+**#1922** the hook card's size on a phone.
 **2026-10-31 (Claude, wave 137 - one frame for every app).** Every video's text moved inside the
 apps' safe zone (decision 89): run 219's hook card ran off both edges over the AI line and its
 captions sat under TikTok's and YouTube's buttons - captions now end at 80% of the height, the AI
@@ -89,21 +98,6 @@ TikTok's first frame in its safe zone, **#1776** TikTok captions, **#1791** the 
 Buffer, **#1774** each platform's own hour (the brief's "YouTube slot + 1 h" before ten posts meets
 decision 64's 10 PM - a question) - and **#1751** the FTC line checked at publish. Wave 136 was the
 bridge's last brief; the next one is to write.
-**2026-10-30 (Claude, wave 135 - catch-up and the next 15).** Caught up with the cloud's plans
-(decision 85). Countdown days 21 and 20 were missed - the PC off at 5 AM, one render to a game: day
-20 went out by hand at 11:08 PM ET, day 19 is scheduled, and each night now drafts tomorrow's,
-uploaded for its own noon (decision 87). The look list L1-L10 (#1907-#1916): every clip in rotation,
-no menu behind another club, covers cut from our own frames with no words and never repeated, the
-Short opening on the cover's shot, only frame covers uploaded; and the scoreboard's rest - cost per
-1,000 views ($1.67), the hours ledger, experiment stop dates, the wave scorecard, a breakout toast.
-Next: **#1754** Facebook Reels, **#1772** every Short crossposted within the hour, **#1750** a
-link-in-bio page, **#1753** income beside spend, **#1756** TikTok that can earn.
-**2026-10-28 (Claude, wave 134 - the next five).** Your new backgrounds wired in: 19 downloads were
-recorded as owned - now credited generically (decision 86); Call of Duty, Black Ops and Counter-Strike
-topics reach their folders. The scoreboard: the bars as data, engaged views, organic subscribers "at
-most 166" until the campaigns' counts are final, the race clock (96 days), one Bridge line in `ops
-status`. Next: **#1797** cost per 1,000 organic views, **#1728** the hours ledger, **#1827**
-experiments with stop dates, **#1836** the wave scorecard, **#1832** a toast for a breakout.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

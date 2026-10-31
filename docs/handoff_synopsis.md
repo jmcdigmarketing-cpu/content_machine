@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-31: wave 137, one frame for every app
+# Handoff synopsis — 2026-10-31: wave 138, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-31 (Claude Code): wave 137, one frame for every app
+## Last wave — 2026-10-31 (Claude Code): wave 138, the next five
+
+Run 199's TikTok post went out 31 hours before YouTube publishes it - a pass whose YouTube read
+failed sent it; a record slot still ahead now holds a run (#1917). The booth shows the run's own
+cover and the cover strip (#1916). Captions keep 130 px clear of TikTok's side buttons; one
+crosspost in eight tries another hour; the Black Friday deals long video on Nov 23 with up to
+three links (decision 90).
+
+## Previous — 2026-10-31 (Claude Code): wave 137, one frame for every app
 
 One safe zone for every app's buttons (decision 89): captions end at 80%, the AI line at 12%,
 the hook card wrapped under it (run 219's ran off both edges). TikTok's caption hook-first with
@@ -24,23 +32,6 @@ Facebook Reels through Buffer, only Shorts public after a Page is connected (dec
 a late crosspost sent on the worker's next pass (8 TikTok, 9 Instagram queued late this week); the
 link page live on R2; income beside spend (net -$25.65); TikTok against Creator Rewards; a Short loses
 an affiliate line at publish.
-
-## Previous — 2026-10-30 (Claude Code): wave 135, catch-up and the next 15
-
-Caught up with the cloud (decision 85). The countdown a day ahead and uploaded for its own noon
-(decision 87; days 21 and 20 were missed). The look list L1-L10: clips in rotation, no menu behind
-another club, covers from our own frames never repeated, only frame covers uploaded; the scoreboard's
-cost per 1,000 views, hours ledger, experiment stop dates, wave scorecard and breakout toast.
-
-## Pipeline order (operator)
-
-```
-Topic → Discovery (signals + editorial ANGLES) → pick angle → length → KEY FACTS → [fact conflicts] → script → TITLE → grounding → [trade check] → tier warnings → claim verifier → authenticity → [thin facts / event not in facts] → report card → render → [vault dossier]
-```
-
-**Titles are NOT chosen at discovery.** Discovery returns short angle lines; `core/title_generator.py` writes the YouTube title after key facts + script + grounding.
-
-**Vault mirror (Pillar 4):** when `OBSIDIAN_VAULT_PATH` is set, every drafted/rendered run writes `{channel}/_runs/{run_id}_{slug}.md` (layout: [vault.md](vault.md)); `daily_sync` / `ops vault-sync` refresh dossiers with post-sync actuals. Strategy notes feed a bounded `CHANNEL PLAYBOOK` block in the script prompt (style, not facts).
 
 ---
 
@@ -106,7 +97,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): #1917, #1760 (Black Friday, Nov 27), #1920, #1921, #1916; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): #1930, #1932, #1929, #1752, #1919; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

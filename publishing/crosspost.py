@@ -769,6 +769,15 @@ def _kickoff_for(channel_id: str, run_id: int) -> datetime | None:
     return when if made < when else None
 
 
+def _hour_text(hour: int) -> str:
+    """15 -> "3 PM", 12 -> "noon", 0 -> "midnight"."""
+    if hour == 12:
+        return "noon"
+    if hour == 0:
+        return "midnight"
+    return f"{hour % 12} {'PM' if hour > 12 else 'AM'}"
+
+
 def _next_due(
     channel_id: str,
     topic: str,
@@ -777,13 +786,19 @@ def _next_due(
     now: datetime,
     *,
     kickoff: datetime | None = None,
+    run_id: int | None = None,
 ) -> tuple[datetime | None, str]:
     """When to post, and why. A game preview goes before its game (the operator, 2026-10-17:
     run 155's Titans preview had been spaced to nine hours after kickoff); None when its game
-    has started or starts too soon."""
-    from publishing.platform_recommend import hour_choice
+    has started or starts too soon. #1920: one run in eight (`explore_hour`) tries another hour."""
+    from publishing.platform_recommend import explore_hour, hour_choice
 
+    tried = explore_hour(channel_id, service, run_id) if run_id is not None else None
     hour, note = hour_choice(channel_id, service)
+    if tried is not None:
+        hour = tried
+        note = (f"{_LABEL[service]} tries {_hour_text(tried)} (one post in eight tries an hour "
+                "with few posts of its own)")  # fmt: skip
     if hour is None:
         # Wave 105: the note still said "uses YouTube's hour" after decision 64.
         samples = re.search(r"\(([^)]*)\)", note or "")
@@ -943,13 +958,27 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
             and (entry.get(s) or {}).get("state") in (None, "", "sending", "retry")
         ]  # fmt: skip
 
-    due_now = {run: video for run, video in public if run not in baseline and _todo(run) and video}
+    # #1917: a scheduled upload's record says public with its slot; until that slot passes it is
+    # not public, whatever YouTube answers - run 199's TikTok post went out 31 hours early on the
+    # pass whose YouTube read failed (a failed read holds nothing).
+    ahead = {run: when for run, when in _public_times(channel_id).items() if when > moment}
+    due_now = {
+        run: video
+        for run, video in public
+        if run not in baseline and run not in ahead and _todo(run) and video
+    }
     held = _held_by_youtube(channel_id, due_now) if apply else {}
     for run_id, _video in public:
         if run_id in baseline:
             continue
         todo = _todo(run_id)
         if not todo:
+            continue
+        if run_id in ahead:
+            lines.append(
+                f"  run {run_id}: its YouTube slot is {_local(ahead[run_id], channel_id)} - it goes "
+                "to TikTok and Instagram then"
+            )
             continue
         if run_id in held:  # #1519
             lines.append(
@@ -1033,7 +1062,8 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 if marked and moment - marked < _SENDING_GRACE:
                     lines.append(f"  run {run_id} {label}: waiting to see whether Buffer made it")
                     continue
-            due, note = _next_due(channel_id, topic, service, posts, moment, kickoff=kickoff)
+            due, note = _next_due(channel_id, topic, service, posts, moment, kickoff=kickoff,
+                                  run_id=run_id)  # fmt: skip
             if due is None:
                 if apply:
                     entry[service] = {"state": "skipped", "error": note, "at": _now_text(moment)}

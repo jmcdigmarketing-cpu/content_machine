@@ -345,6 +345,43 @@ def tts_cache_pill_html(cached: Any) -> str:
     return "<p class='pill'>TTS cache hit - $0 re-render</p>"
 
 
+def run_thumbnail(run_id: Any) -> str | None:
+    """#1916: the run's own thumbnail from the asset ledger (the newest one still on disk), or
+    None. The booth showed the newest file in output/<channel>/thumbnails/, which a frame cover
+    (wave 135) never reaches - so it showed another run's picture."""
+    if run_id in (None, ""):
+        return None
+    try:
+        from storage.repositories.assets import get_asset_repository
+
+        rows = get_asset_repository().list_for_run(int(run_id))
+    except Exception as exc:
+        logger.debug("booth run thumbnail unread: %s", exc)
+        return None
+    for row in reversed(list(rows or [])):
+        path = str(getattr(row, "path", "") or "")
+        if getattr(row, "asset_type", "") == "thumbnail" and path and os.path.isfile(path):
+            return path
+    return None
+
+
+def cover_strip_html(thumb_path: str | None) -> str:
+    """#1916 (L10): a frame cover beside the last ten covers - each one's distance in bits, a
+    repeat flagged - so the picture is seen before it goes out. "" for any other thumbnail."""
+    from assets.cover_frames import SUFFIX
+
+    if not thumb_path or not str(thumb_path).lower().endswith(SUFFIX):
+        return ""
+    try:
+        from assets.cover_frames import strip_lines
+
+        lines = strip_lines(str(thumb_path))
+    except Exception as exc:
+        logger.debug("booth cover strip skipped: %s", exc)
+        return ""
+    return "<pre class='cover-strip'>" + escape("\n".join(lines)) + "</pre>"
+
+
 def thumb_badge_html(provider: str = "", thumbnail_cost: Any = None) -> str:
     label = (provider or "").strip().lower()
     if not label:
@@ -666,6 +703,7 @@ def booth_html(
     thumbnail_safe_area: str = "",
     thumbnail_picker: str = "",
     expert_panel_html: str = "",
+    cover_strip: str = "",
     channel_id: str = "",
     can_approve: bool = True,
     refuse_reason: str = "",
@@ -759,6 +797,7 @@ def booth_html(
             thumb += thumb_badge
     elif thumb_badge:
         thumb = thumb_badge
+    thumb += cover_strip  # #1916
     rid = _run_label(run_id)
     run_id_int = None
     try:
@@ -940,11 +979,12 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     from core.win_shell import last_media_file
 
     leftover_mp4 = last_media_file("mp4", channel_id=channel_id)
-    thumb = last_media_file("thumb", channel_id=channel_id)
     trace = last_reviewable_trace(channel_id)
     quality = (trace or {}).get("quality") or {}
     cost_d = (trace or {}).get("cost") or {}
     run_id = (trace or {}).get("run_id")
+    # #1916: the run's own cover first; the newest file in thumbnails/ only when none is recorded
+    thumb = run_thumbnail(run_id) or last_media_file("thumb", channel_id=channel_id)
     record = None
     if run_id:
         try:
@@ -1265,6 +1305,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         "grade_breakdown": grade_breakdown + script_diff_html(quality),
         "tts_cache_pill": tts_cache_pill,
         "thumb_badge": thumb_badge,
+        "cover_strip": cover_strip_html(thumb),
         "signal_dots": signal_dots,
         "feed_stale": feed_stale,
         "render_gate": render_gate,

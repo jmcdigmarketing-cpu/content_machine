@@ -71,6 +71,29 @@ def hour_choice(channel_id: str, platform: str) -> tuple[int | None, str]:
     return hour, f"{label}'s hour {hour:02d}:00 local ({len(rows)} samples)"
 
 
+# #1920 (decision 90): one crosspost in eight tries an hour with few posts of its own - the 10 PM
+# fallback meant Instagram's 27 measured posts covered 6 hours, 21 of them at one.
+EXPLORE_SHARE = 1 / 8
+EXPLORE_HOURS = (12, 15, 18, 20)  # local: noon, 3 PM, 6 PM, 8 PM
+
+
+def explore_hour(channel_id: str, platform: str, run_id: int) -> int | None:
+    """The local hour this run's post tries, or None (the usual hour). A coin fixed by the run
+    and platform; the hour of `EXPLORE_HOURS` with the fewest posts of its own, a tie settled
+    by the same coin."""
+    import random
+
+    coin = random.Random(f"crosspost_hour:{channel_id}:{platform}:{int(run_id)}")
+    if coin.random() >= EXPLORE_SHARE:
+        return None
+    counts = dict.fromkeys(EXPLORE_HOURS, 0)
+    for row in _measured(channel_id, platform):
+        if row.get("local_hour") in counts:
+            counts[row["local_hour"]] += 1
+    fewest = min(counts.values())
+    return coin.choice([hour for hour in EXPLORE_HOURS if counts[hour] == fewest])
+
+
 def learning_line(channel_id: str, platform: str) -> str:
     """Domain, length and hour for one feed. Empty when that feed has no rows."""
     rows = _measured(channel_id, platform)

@@ -514,7 +514,7 @@ class TestCaptionFit(unittest.TestCase):
     def test_smaller_font_fits_more(self):
         from video.caption_timing import karaoke_max_chars
 
-        self.assertEqual(karaoke_max_chars(90), 19)
+        self.assertEqual(karaoke_max_chars(90), 17)  # #1921: 130 px kept clear each side
         self.assertGreater(karaoke_max_chars(60), karaoke_max_chars(90))
 
 

@@ -18,6 +18,7 @@
      "topic": "GTA 6's map, characters and story explained", "on": "2026-11-12", "search_terms": ["map", "story", "characters"]},
     {"id": "gta6-first-things", "kind": "long", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
      "topic": "GTA 6: ten things to do first", "on": "2026-11-20", "search_terms": ["tips", "things to do", "guide"]},
+    {"id": "black-friday-deals", "kind": "long", "subject": "Black Friday", "names": ["Black Friday"], "domain": "gaming", "topic": "Black Friday 2026 gaming deals worth buying", "on": "2026-11-23", "search_terms": ["deals", "best deals", "ps5 deals"]},
     {"id": "gta6-online", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
      "topic": "GTA 6 Online - what is confirmed", "on": "2026-11-12"},
     {"id": "gta6-pc", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",

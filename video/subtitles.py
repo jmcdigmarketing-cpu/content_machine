@@ -187,12 +187,12 @@ def hook_card_lines(sentence: str) -> tuple[int, list[str]]:
     wrapped at word ends to the safe width, takes three lines or fewer (the smallest size past
     that). The script's WrapStyle never wraps, so run 219's hook ran off both edges as one
     64 px line."""
-    from video.caption_timing import karaoke_max_chars
+    from video.caption_timing import FULL_TEXT_WIDTH, karaoke_max_chars
 
     words = sentence.split()
     lines: list[str] = []
     for size in _HOOK_SIZES:
-        width = karaoke_max_chars(size)
+        width = karaoke_max_chars(size, width=FULL_TEXT_WIDTH)  # the top has no side buttons
         lines = []
         for word in words:
             if lines and len(lines[-1]) + 1 + len(word) <= width:

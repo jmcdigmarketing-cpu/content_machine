@@ -8381,6 +8381,97 @@
         "equals": 1000
       },
       "why": "the intro has been off since decision 79"
+    },
+    {
+      "id": "captions-keep-clear-of-tiktoks-buttons",
+      "item": 1921,
+      "source": "wave 138: 84 of 466 recent caption cues reached TikTok's right-hand column",
+      "call": "video.caption_timing:karaoke_max_chars",
+      "args": [
+        90
+      ],
+      "expect": {
+        "equals": 17
+      },
+      "why": "820 px of text, 130 px kept clear each side (decision 90)"
+    },
+    {
+      "id": "the-hook-card-keeps-the-full-width",
+      "item": 1921,
+      "source": "the top of the frame has no side buttons; the hook card wraps at 920 px",
+      "call": "video.caption_timing:karaoke_max_chars",
+      "args": [
+        64
+      ],
+      "kwargs": {
+        "width": 920
+      },
+      "expect": {
+        "equals": 27
+      },
+      "why": "narrowing the captions must not shrink run 219's hook card further"
+    },
+    {
+      "id": "a-deals-video-carries-three-links",
+      "item": 1760,
+      "source": "decision 90: the Black Friday deals video, up to three links, one FTC line",
+      "call": "core.description_extras:affiliate_lines",
+      "args": [
+        "tapin",
+        "Black Friday 2026: the gaming deals worth buying",
+        "Black Friday 2026 gaming deals worth buying"
+      ],
+      "kwargs": {
+        "long_form": true,
+        "script": "GTA 6 is the year's biggest launch, a PS5 bundle is down to its lowest price, the Xbox Series X drops too, and the Switch 2 has its first discount."
+      },
+      "env": {
+        "AFFILIATE_AMAZON_TAG": "tapin-20"
+      },
+      "expect": {
+        "equals": [
+          "GTA 6 on Amazon: https://www.amazon.com/s?k=Grand+Theft+Auto+VI&tag=tapin-20",
+          "PS5 on Amazon: https://www.amazon.com/s?k=PlayStation+5+console&tag=tapin-20",
+          "Xbox Series X on Amazon: https://www.amazon.com/s?k=Xbox+Series+X&tag=tapin-20",
+          "Some links may be affiliate links. We may earn a commission at no extra cost to you."
+        ]
+      },
+      "why": "a deals video names several products; the FTC line appears once"
+    },
+    {
+      "id": "a-console-link-is-for-a-deals-video-only",
+      "item": 1760,
+      "source": "the console rows are deals_only - an Xbox Game Pass long video gets none",
+      "call": "core.description_extras:affiliate_lines",
+      "args": [
+        "tapin",
+        "Xbox Game Pass in November",
+        "Xbox Game Pass"
+      ],
+      "kwargs": {
+        "long_form": true,
+        "script": "GTA 6 is the year's biggest launch, a PS5 bundle is down to its lowest price, the Xbox Series X drops too, and the Switch 2 has its first discount."
+      },
+      "env": {
+        "AFFILIATE_AMAZON_TAG": "tapin-20"
+      },
+      "expect": {
+        "equals": []
+      },
+      "why": "an unrelated long video must not grow console links"
+    },
+    {
+      "id": "no-cover-strip-for-a-drawn-thumbnail",
+      "item": 1916,
+      "source": "the booth's cover strip is for a frame cover; a Flux or Pillow thumb has none",
+      "call": "core.review_booth:cover_strip_html",
+      "args": [
+        "C:/t/run219_pillow.jpg"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "the strip compares frame covers only"
     }
   ]
 }

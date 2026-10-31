@@ -125,26 +125,49 @@ def _tagged(url: str, tag: str) -> str:
     return f"{url}{'&' if '?' in url else '?'}tag={tag}"
 
 
-def affiliate_lines(channel_id: str, title: str, topic: str = "", *, long_form: bool) -> list[str]:
+DEALS_KEYS = ("black friday", "cyber monday", "deals")
+DEALS_LINKS = 3  # #1760 (decision 90): a deals video names several products
+
+
+def is_deals(title: str, topic: str = "") -> bool:
+    """A deals video: its title or topic names Black Friday, Cyber Monday or deals."""
+    from core.playlists import _matches
+
+    return _matches(f"{title or ''} {topic or ''}".lower(), list(DEALS_KEYS))
+
+
+def affiliate_lines(
+    channel_id: str, title: str, topic: str = "", *, long_form: bool, script: str = ""
+) -> list[str]:
     """#1748 + #1747 (B07.1-2): one "<label>: <link>" for the first matching row, then the FTC
     line - on long-form only, since a Short's description links are not clickable. []
-    otherwise, and for an Amazon row before AFFILIATE_AMAZON_TAG is set."""
+    otherwise, and for an Amazon row before AFFILIATE_AMAZON_TAG is set. #1760: a deals video
+    takes up to `DEALS_LINKS`, matched in its script as well, and the `deals_only` rows (the
+    consoles); one FTC line under them all."""
     if not long_form:
         return []
     from core.playlists import _matches
 
-    text = f"{title or ''} {topic or ''}".lower()
+    deals = is_deals(title, topic)
+    text = f"{title or ''} {topic or ''}" + (f" {script or ''}" if deals else "")
+    text = text.lower()
     tag = os.getenv("AFFILIATE_AMAZON_TAG", "").strip()
+    links: list[str] = []
     for row in affiliate_rows(channel_id):
+        if row.get("deals_only") and not deals:
+            continue
         if not _matches(text, [str(k) for k in row.get("keys") or []]):
             continue
         url = _tagged(str(row["url"]), tag)
         if not url:
-            return []
-        label = str(row.get("label") or "Link").strip()
-        ftc = ftc_affiliate_line(channel_id, affiliate=True)
-        return [f"{label}: {url}", *([ftc] if ftc else [])]
-    return []
+            continue
+        links.append(f"{str(row.get('label') or 'Link').strip()}: {url}")
+        if len(links) >= (DEALS_LINKS if deals else 1):
+            break
+    if not links:
+        return []
+    ftc = ftc_affiliate_line(channel_id, affiliate=True)
+    return [*links, *([ftc] if ftc else [])]
 
 
 def ensure_seo_first_line(description: str, title: str = "") -> str:
@@ -371,8 +394,11 @@ def apply_description_extras(
         if cta not in body and cta not in additions:
             additions.append(cta)
 
-    # #1748: one affiliate link on a long video (preset "4"), with its FTC line
-    for line in affiliate_lines(channel_id, title, topic, long_form=str(length_choice) == "4"):
+    # #1748: one affiliate link on a long video (preset "4"), with its FTC line; #1760: a deals
+    # video up to three, read from its script too
+    for line in affiliate_lines(
+        channel_id, title, topic, long_form=str(length_choice) == "4", script=script
+    ):
         if line not in body and line not in additions:
             additions.append(line)
 

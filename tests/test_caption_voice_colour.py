@@ -23,8 +23,10 @@ WORDS = [{"word": w, "start": i * 0.4, "end": i * 0.4 + 0.35} for i, w in enumer
 # build_ass_karaoke(WORDS) and (WORDS, title_font="Impact", body_font="Arial") on
 # unmodified code, wave 43 (367428b). Wave 137 (#1775, decision 89): the same bytes with the
 # captions' MarginV 260 -> 384, the safe zone's bottom edge - checked as the only difference.
-SINGLE_VOICE_SHA = "aa0870726d8c2939a40ba25aa8c157471c0f023b8e1cf275b6bbc55571112fd0"
-PAIRED_SHA = "6972d612a60718f0b3e9e9a2af77bae722de01fd4d1409642b735be579a04966"
+# Wave 138 (#1921, decision 90): side margins 80 -> 130 and the 19-character line re-split to
+# fit 17 ("Topuria defends" / "the belt") - checked as the only differences.
+SINGLE_VOICE_SHA = "ca9d190f9ea4f49ed7be52929d333454b3226dcd080d894da44f6d5407e5f0e5"
+PAIRED_SHA = "e5f6e6f45ac2a2c52f8c64d2f89c5ae78fdc2cf674e2ff590377e1c12d9d8a86"
 
 
 def _two_voices() -> list[dict]:

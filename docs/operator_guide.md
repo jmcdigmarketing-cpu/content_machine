@@ -147,7 +147,8 @@ for both.
 
 Since 2026-10-31 (decisions 88, 89): a Short still without a post an hour after it went public
 is sent on the worker's next pass; each platform posts at its own local hour once an hour has 4
-posts of its own (10 PM until then); TikTok's caption opens on the hook with three hashtags, and
+posts of its own (10 PM until then), and one post in eight tries noon, 3, 6 or 8 PM (decision
+90); TikTok's caption opens on the hook with three hashtags, and
 off YouTube the sign-off reads "Follow for ..."; Buffer is sent the video's own cover frame.
 **Facebook Reels:** connect a Facebook Page in Buffer, then run
 `py -m scripts.ops crosspost channels --apply --channel tapin` once - only Shorts made public after

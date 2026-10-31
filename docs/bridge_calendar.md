@@ -39,9 +39,9 @@ Organic views a day (channel), long-form hours a week, organic subscribers a wee
 |---|---|---|---:|---:|---:|
 | **W1** Oct 26-Nov 1 | **shipped:** waves 132-137 - every brief, plus one safe zone and TikTok-native captions (decision 89) | GTA 6: 22 days on Oct 28 | 250 | 0.2 | 1 |
 | **W2** Nov 2-8 | the backlog by lane (views first); the next brief written | the NFL trade deadline; the "everything we know" script | 300 | 0.5 | 2 |
-| **W3** Nov 9-15 | the backlog by lane; the Black Friday long video drafted (#1760) | "everything we know" public by Nov 10; UFC 334 on Nov 14 | 400 | 2 | 3 |
+| **W3** Nov 9-15 | the backlog by lane | "everything we know" public by Nov 10; UFC 334 on Nov 14 | 400 | 2 | 3 |
 | **W4** Nov 16-22 | launch-week operations - no new code unless a defect | **GTA 6 on Nov 19**: two GTA slots a day, launch-day Shorts, guides | 1,000 | 5 | 8 |
-| **W5** Nov 23-29 | the backlog by lane | launch guides; Thanksgiving; Black Friday deals | 800 | 8 | 8 |
+| **W5** Nov 23-29 | the Black Friday deals long video drafted Mon Nov 23, public by Nov 25 (#1760, decision 90) | launch guides; Thanksgiving; Black Friday deals | 800 | 8 | 8 |
 | **W6** Nov 30-Dec 6 | the backlog by lane | **checkpoint Dec 1** | 600 | 6 | 5 |
 | **W7** Dec 7-13 | the backlog by lane | The Game Awards Dec 10; UFC 335 Dec 12 | 700 | 6 | 5 |
 | **W8** Dec 14-20 | the backlog by lane | NFL playoff races; best-of-2026 long-form drafted | 600 | 6 | 5 |

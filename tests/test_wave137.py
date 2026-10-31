@@ -370,7 +370,7 @@ class SafeZoneTests(unittest.TestCase):
         self.assertGreater(int(_styles(ass)["Default"]["MarginV"]), HOOK_CARD_MARGIN + 3 * 64)
 
     def test_the_hook_card_wraps_inside_the_frame(self):
-        from video.caption_timing import build_ass_karaoke, karaoke_max_chars
+        from video.caption_timing import FULL_TEXT_WIDTH, build_ass_karaoke, karaoke_max_chars
         from video.subtitles import _with_hook_card
 
         ass = _with_hook_card(build_ass_karaoke(_WORDS), _HOOK, "tapin")
@@ -383,7 +383,7 @@ class SafeZoneTests(unittest.TestCase):
         self.assertLessEqual(len(lines), 3)
         size = int(hook["Fontsize"])
         for line in lines:
-            self.assertLessEqual(len(line), karaoke_max_chars(size))
+            self.assertLessEqual(len(line), karaoke_max_chars(size, width=FULL_TEXT_WIDTH))  # #1921
         self.assertEqual(" ".join(lines), _HOOK.split(". ")[0] + ".")
 
     def test_the_hook_card_is_below_the_ai_line(self):

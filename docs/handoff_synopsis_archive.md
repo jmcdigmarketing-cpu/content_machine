@@ -7,6 +7,23 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-30 (Claude Code): wave 135, catch-up and the next 15
+
+Caught up with the cloud (decision 85). The countdown a day ahead and uploaded for its own noon
+(decision 87; days 21 and 20 were missed). The look list L1-L10: clips in rotation, no menu behind
+another club, covers from our own frames never repeated, only frame covers uploaded; the scoreboard's
+cost per 1,000 views, hours ledger, experiment stop dates, wave scorecard and breakout toast.
+
+## Pipeline order (operator)
+
+```
+Topic → Discovery (signals + editorial ANGLES) → pick angle → length → KEY FACTS → [fact conflicts] → script → TITLE → grounding → [trade check] → tier warnings → claim verifier → authenticity → [thin facts / event not in facts] → report card → render → [vault dossier]
+```
+
+**Titles are NOT chosen at discovery.** Discovery returns short angle lines; `core/title_generator.py` writes the YouTube title after key facts + script + grounding.
+
+**Vault mirror (Pillar 4):** when `OBSIDIAN_VAULT_PATH` is set, every drafted/rendered run writes `{channel}/_runs/{run_id}_{slug}.md` (layout: [vault.md](vault.md)); `daily_sync` / `ops vault-sync` refresh dossiers with post-sync actuals. Strategy notes feed a bounded `CHANNEL PLAYBOOK` block in the script prompt (style, not facts).
+
 ## Previous — 2026-10-28 (Claude Code): wave 134, the next five
 
 The operator's new backgrounds: 19 downloads credited generically (decision 86), Call of Duty,

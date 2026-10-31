@@ -386,6 +386,14 @@ def _buffer_tail(channel_id: str) -> str:
         parts.extend(feed_lines(channel_id))
     except Exception as exc:
         logger.debug("platform results skipped in the weekly report: %s", exc)
+    try:  # #1772 the week's late or missing crossposts, #1757 TikTok against Creator Rewards
+        from publishing.crosspost import miss_lines
+        from publishing.platform_metrics import tiktok_lines
+
+        parts.extend(miss_lines(channel_id))
+        parts.extend(tiktok_lines(channel_id))
+    except Exception as exc:
+        logger.debug("crosspost misses skipped in the weekly report: %s", exc)
     if not parts:
         return ""
     return "\n\n" + "\n".join(f"  {part}" for part in parts)

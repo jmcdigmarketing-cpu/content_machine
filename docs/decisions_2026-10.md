@@ -511,3 +511,16 @@ frames. Asked, the operator took "Yes, post it now" (day 20, 11:08 PM ET after a
 (day 19) and "Yes, frames only" - every recommended option. **Consequence:** a countdown no longer
 waits for a person; a Short's cover is a frame of its own shots, never one used before, and the Short
 opens on that shot; the two experiments already running stop 14 days from their start.
+
+## 88. Facebook from then on; the link page on R2; income beside spend (2026-10-31)
+**Decision:** a Facebook Page connected in Buffer takes only Shorts made public after it is
+connected - each platform keeps its own baseline, recorded the first round it is seen; the
+link-in-bio page lives on the R2 bucket Buffer already reads (`tapin/links.html`), rebuilt each
+night, and shows the latest long video, the week's three top Shorts and the affiliate links (with the
+FTC line, once the Associates tag is set) - no profile links; income is entered beside spend and the
+scoreboard's money row shows the net. **Why:** connecting a platform would otherwise send about 40
+old Shorts at once; R2 needs no new account or host; the operator chose the contents. Asked, the
+operator took "From then on", "On your R2 bucket" (both recommended) and "Latest long video", "The
+week's top Shorts", "Affiliate links". **Consequence:** connecting Facebook in Buffer is the one step
+left for Reels; the bios need the page's address pasted once; a crosspost's lateness is measured from
+when Buffer got it, since decision 64's 10 PM due time is deliberate.

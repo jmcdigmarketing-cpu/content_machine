@@ -4007,6 +4007,22 @@ def cmd_spend(args: argparse.Namespace) -> int:
                 print(f"This takes {when:%B}'s ads over your ${cap:,.2f} cap.")
             print(ledger.ads_budget_line(today=on))
         return 0
+    if action == "income":  # #1753: money earned outside YouTube, beside the spend
+        amount = _amount_arg(args)
+        if amount is None:
+            print('spend income needs --amount and --what, e.g. --amount 3.12 --what "Amazon '
+                  'Associates, November"')  # fmt: skip
+            return 2
+        try:
+            earned = ledger.add_income(amount, str(getattr(args, "what", "") or ""), on=on)
+        except ValueError as exc:
+            print(f"Not added: {exc}")
+            return 2
+        print(
+            f"Income #{earned['id']}: ${earned['amount']:,.2f} - {earned['what']} ({earned['date']})"
+        )
+        print(ledger.money_line())
+        return 0
     if action == "result":  # #992: what the campaign's page in YouTube Studio reports
         entry_id = getattr(args, "entry", None)
         subs = getattr(args, "subs", None)
@@ -4042,6 +4058,22 @@ def cmd_spend(args: argparse.Namespace) -> int:
         return 1
     for line in ledger.ledger_lines():
         print(line)
+    return 0
+
+
+@_register("links", "The link-in-bio page: rebuild it, put it on R2, print its address (#1750)")
+def cmd_links(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from publishing import video_host
+    from publishing.link_page import build_and_host
+
+    channel_id = resolve_channel_id(getattr(args, "channel", None))
+    if not video_host.configured():
+        print("The link page needs the R2 bucket: " + ", ".join(video_host.missing()))
+        return 1
+    url = build_and_host(channel_id)
+    print(f"Link page: {url}")
+    print("Paste it into the TikTok, Instagram and Facebook bios once; overnight keeps it current.")
     return 0
 
 

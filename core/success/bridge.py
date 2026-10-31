@@ -216,7 +216,13 @@ def scoreboard_lines(
             f"  long-form hours (365 days): {float(hours):,.1f} of {int(bar['hours']):,} - "
             f"{_days_to(bar['hours'], hours, per_day)}"
         )
-    lines.append("  money outside YouTube: not tracked yet (wave 136)")
+    try:  # #1753 (wave 136): income beside spend
+        from core.money.ledger import money_line
+
+        lines.append(f"  {money_line(today=day)}")
+    except Exception as exc:
+        logger.debug("money line unread: %s", exc)
+        lines.append("  money outside YouTube: not measured")
     # #1797 and #1728 (wave 135); the store reads only when the numbers are the stored ones
     from core.success import scorecard
 

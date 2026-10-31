@@ -103,6 +103,42 @@ def with_compilation_link(
     return replace(request, description=joined), True
 
 
+def _is_long(content_run_id: int | None) -> bool:
+    """A compilation or a long render (`long_form`) - its description's links are clickable."""
+    if _is_compilation(content_run_id):
+        return True
+    return bool(_features(_run(content_run_id)).get("long_form"))
+
+
+def without_short_affiliates(
+    request: PublishRequest, content_run_id: int | None
+) -> tuple[PublishRequest, int]:
+    """#1758 (B07.12): a Short's description links are not clickable, and an affiliate link there
+    earns nothing but reads as an ad - each line carrying one (an Amazon `tag=`, or a link from
+    `config/affiliates.json`) is dropped. A long video keeps them. (request, lines dropped)."""
+    from dataclasses import replace
+
+    if _is_long(content_run_id):
+        return request, 0
+    try:
+        from config.channels import resolve_channel_id
+        from core.description_extras import affiliate_rows
+
+        known = [str(r["url"]).split("?")[0] for r in affiliate_rows(resolve_channel_id(None))]
+    except Exception:
+        known = []
+    kept, dropped = [], 0
+    for line in (request.description or "").split("\n"):
+        low = line.lower()
+        if ("amazon." in low and "tag=" in low) or any(k and k.lower() in low for k in known):
+            dropped += 1
+            continue
+        kept.append(line)
+    if not dropped:
+        return request, 0
+    return replace(request, description="\n".join(kept)), dropped
+
+
 def with_disclosure(request: PublishRequest, channel_id: str) -> tuple[PublishRequest, bool]:
     """#1524 (wave 114 found it, the operator: append it): (the request with the channel's AI
     disclosure line at the end of its description, whether it was added). The first weekly

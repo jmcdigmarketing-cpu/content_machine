@@ -8120,6 +8120,94 @@
         ]
       },
       "why": "a cover is a frame of the video's own footage"
+    },
+    {
+      "id": "a-new-platform-skips-the-old-public-runs",
+      "item": 1754,
+      "source": "decision 88: Facebook takes only Shorts made public after it is connected",
+      "call": "publishing.crosspost:platform_baselines",
+      "args": [
+        {},
+        [
+          "tiktok",
+          "facebook"
+        ],
+        {
+          "101": {
+            "tiktok": {
+              "state": "sent"
+            }
+          }
+        }
+      ],
+      "kwargs": {
+        "public": [
+          101,
+          102
+        ]
+      },
+      "expect": {
+        "equals": {
+          "tiktok": [],
+          "facebook": [
+            101,
+            102
+          ]
+        }
+      },
+      "why": "connecting a platform must not send every old Short at once"
+    },
+    {
+      "id": "the-first-platforms-are-never-baselined",
+      "item": 1754,
+      "source": "wave 136 audit: a store with no Instagram post yet skipped every public run",
+      "call": "publishing.crosspost:platform_baselines",
+      "args": [
+        {},
+        [
+          "tiktok",
+          "instagram"
+        ],
+        {}
+      ],
+      "kwargs": {
+        "public": [
+          113
+        ]
+      },
+      "expect": {
+        "equals": {
+          "tiktok": [],
+          "instagram": []
+        }
+      },
+      "why": "the switch-on baseline already covers the platforms crossposting started with"
+    },
+    {
+      "id": "a-minute-is-not-over-a-minute",
+      "item": 1756,
+      "source": "TikTok Creator Rewards count videos over one minute",
+      "call": "publishing.platform_metrics:reward_eligible",
+      "args": [
+        60
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a 60-second post earns nothing"
+    },
+    {
+      "id": "seventy-five-seconds-can-earn",
+      "item": 1756,
+      "source": "TikTok Creator Rewards count videos over one minute",
+      "call": "publishing.platform_metrics:reward_eligible",
+      "args": [
+        75
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the post over a minute is the one counted toward rewards"
     }
   ]
 }

@@ -97,6 +97,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `intro-waveform` | Draw a waveform of the intro sting and print duration vs the 2.15s offset (--path audio) |
 | `learn-schedule` | Show static vs learned post slots |
 | `lightbox` | Thumbnail lightbox for the last Pillow thumb |
+| `links` | The link-in-bio page: rebuild it, put it on R2, print its address (#1750) |
 | `list` | List all operator commands |
 | `list-uploads` | Rendered MP4s not yet on YouTube |
 | `log` | Print the last lines of the log, and the warnings in them (#990) |

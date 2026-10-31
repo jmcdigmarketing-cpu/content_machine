@@ -631,6 +631,10 @@ class YouTubePublisher(Publisher):
             request, linked = prepublish.with_compilation_link(request, channel_id, content_run_id)
             if linked:  # #1317
                 logger.info("pre-publish: linked the week's compilation")
+            request, dropped = prepublish.without_short_affiliates(request, content_run_id)
+            if dropped:  # #1758
+                print(f"  pre-publish: {dropped} affiliate link line(s) dropped - a Short's links "
+                      "are not clickable")  # fmt: skip
             request, added = prepublish.with_disclosure(request, channel_id)  # #1524
             if added:
                 logger.info("pre-publish: the AI disclosure line was missing - appended")

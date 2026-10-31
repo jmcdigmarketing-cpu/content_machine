@@ -277,7 +277,7 @@ class ScoreboardTests(unittest.TestCase):
         self.assertIn("organic subscribers 107", text)
         self.assertIn("engaged Shorts views (90 days): not measured", text)
         self.assertIn("long-form hours (365 days): 10.2", text)
-        self.assertIn("money outside YouTube: not tracked yet", text)
+        self.assertIn("money outside YouTube: $0.00 earned (0 entries)", text)  # wave 136 (#1753)
         self.assertIn("96 days", text)
 
     def test_no_numbers_says_so(self):

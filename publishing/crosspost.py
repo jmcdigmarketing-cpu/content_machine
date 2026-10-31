@@ -385,14 +385,126 @@ def waiting_lines(channel_id: str) -> list[str]:
 
 # ---- through the Buffer API (#1187-#1190) --------------------------------------------------------
 
-PLATFORMS = ("tiktok", "instagram")
-_LABEL = {"tiktok": "TikTok", "instagram": "Instagram"}
-_CHANNEL_ENV = {"tiktok": "BUFFER_TIKTOK_CHANNEL_ID", "instagram": "BUFFER_INSTAGRAM_CHANNEL_ID"}
+PLATFORMS = ("tiktok", "instagram", "facebook")  # #1754: Facebook Reels
+_LABEL = {"tiktok": "TikTok", "instagram": "Instagram", "facebook": "Facebook"}
+_CHANNEL_ENV = {
+    "tiktok": "BUFFER_TIKTOK_CHANNEL_ID",
+    "instagram": "BUFFER_INSTAGRAM_CHANNEL_ID",
+    "facebook": "BUFFER_FACEBOOK_CHANNEL_ID",
+}
+LATE_MINUTES = 60  # #1772: a public Short is on every connected platform within the hour
+_LATE_LOOKBACK = timedelta(days=3)
+
+
+_FIRST_PLATFORMS = ("tiktok", "instagram")  # the two crossposting was switched on with
+
+
+def platform_baselines(
+    baselines: dict[str, list[int]],
+    services: list[str],
+    posts: dict[str, Any],
+    *,
+    public: list[int],
+) -> dict[str, list[int]]:
+    """#1754 (decision 88, the operator: from then on): the runs each platform skips. A platform seen
+    connected for the first time with no post of its own skips every run public at that moment -
+    connecting Facebook would otherwise send about 40 old Shorts at once. One that already has posts
+    skips nothing, and so do TikTok and Instagram - crossposting was switched on with them, and the
+    switch-on baseline already covers them. Recorded once per platform."""
+    out = {k: list(v) for k, v in (baselines or {}).items()}
+    for service in services:
+        if service in out:
+            continue
+        established = service in _FIRST_PLATFORMS or any(
+            isinstance(e, dict) and service in e for e in (posts or {}).values()
+        )
+        out[service] = [] if established else sorted(int(r) for r in public)
+    return out
+
+
 _LIVE = ("scheduled", "sending", "retry")  # states that still need the hosted copy
 _LEAD = timedelta(minutes=15)
 # A create call with no answer: Buffer makes a post at once, so one not found this long after
 # the call was never made, and may be sent.
 _SENDING_GRACE = timedelta(minutes=10)
+
+
+def _public_times(channel_id: str) -> dict[int, datetime]:
+    """{run id: when it went public} from the publish log."""
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    out: dict[int, datetime] = {}
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        run_id = getattr(row, "content_run_id", None)
+        when = getattr(row, "published_at", None)
+        if not run_id or when is None:
+            continue
+        if str(getattr(row, "privacy_status", "") or "").strip().lower() != "public":
+            continue
+        out[int(run_id)] = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+    return out
+
+
+def late_runs(channel_id: str, *, now: datetime | None = None) -> list[tuple[int, list[str]]]:
+    """#1772 (B08.1): public Shorts more than an hour past public, in the last three days, that a
+    connected platform has no post for - the worker sends them on its next pass."""
+    moment = now or datetime.now(timezone.utc)
+    data = _load(channel_id)
+    block = data.get("buffer") or {}
+    if not block.get("since"):
+        return []
+    ids = buffer_channel_ids(channel_id)
+    posts = data.get("posts") or {}
+    baseline = {int(x) for x in block.get("baseline") or []}
+    skips = block.get("baselines") or {}
+    out: list[tuple[int, list[str]]] = []
+    for run_id, when in sorted(_public_times(channel_id).items()):
+        if run_id in baseline or not (moment - _LATE_LOOKBACK <= when <= moment):
+            continue
+        if moment - when < timedelta(minutes=LATE_MINUTES):
+            continue
+        entry = posts.get(str(run_id)) or {}
+        missing = [s for s in PLATFORMS if s in ids and run_id not in set(skips.get(s) or [])
+                   and not (entry.get(s) or {}).get("state")]  # fmt: skip
+        if missing:
+            out.append((run_id, missing))
+    return out
+
+
+def miss_lines(channel_id: str, *, days: int = 7, now: datetime | None = None) -> list[str]:
+    """#1772: the week's crossposts that were not on time - per platform, queued late (handed to
+    Buffer over an hour after YouTube), too long, a Buffer error, or not connected at all. The due
+    time is not the measure: decision 64 sets it to the next 10 PM on purpose, and read that way 15
+    of the week's 22 TikTok posts were "late" (wave 136's live read)."""
+    moment = now or datetime.now(timezone.utc)
+    data = _load(channel_id)
+    posts = data.get("posts") or {}
+    ids = buffer_channel_ids(channel_id)
+    week = {r: w for r, w in _public_times(channel_id).items()
+            if moment - timedelta(days=days) <= w <= moment}  # fmt: skip
+    lines: list[str] = []
+    for service in PLATFORMS:
+        label = _LABEL[service]
+        if service not in ids:
+            lines.append(f"{label}: not connected ({len(week)} public Short(s) this week)")
+            continue
+        late = long_ = errors = 0
+        for run_id, public in week.items():
+            state = (posts.get(str(run_id)) or {}).get(service) or {}
+            kind = str(state.get("state") or "")
+            if kind == "skipped" and "longer than a Reel" in str(state.get("error") or ""):
+                long_ += 1
+            elif kind in ("retry", "failed", "error"):
+                errors += 1
+            elif kind in ("scheduled", "sent", "sending"):
+                queued = _stamp(state.get("at"))
+                if queued is not None and queued - public > timedelta(minutes=LATE_MINUTES):
+                    late += 1
+        parts = [f"{n} {word}" for n, word in ((late, "queued late"), (long_, "too long"),
+                                               (errors, "Buffer error")) if n]  # fmt: skip
+        if parts:
+            lines.append(f"{label}: {', '.join(parts)}")
+    return lines
 
 
 def auto_enabled() -> bool:
@@ -731,6 +843,7 @@ def switch_on(channel_id: str, *, now: datetime | None = None) -> list[str]:
     public = _public_runs(channel_id)
     block["since"] = _now_text(now or datetime.now(timezone.utc))
     block["baseline"] = sorted(run_id for run_id, _ in public)
+    block["baselines"] = {service: [] for service in buffer_channel_ids(channel_id)}
     _save(channel_id, data)
     return [
         f"Crosspost - {channel_id}: switched on. {len(public)} video(s) already public stay as "
@@ -769,11 +882,18 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 in_buffer[service] = []
         return in_buffer[service]
 
+    skips = platform_baselines(block.get("baselines") or {}, list(ids), posts,
+                               public=[run for run, _video in public])  # fmt: skip
+    if skips != (block.get("baselines") or {}) and apply:
+        block["baselines"] = skips
+        _save(channel_id, data)
+
     def _todo(run_id: int) -> list[str]:
         entry = posts.get(str(run_id)) or {}
         return [
             s for s in PLATFORMS
-            if s in ids and (entry.get(s) or {}).get("state") in (None, "", "sending", "retry")
+            if s in ids and int(run_id) not in set(skips.get(s) or [])
+            and (entry.get(s) or {}).get("state") in (None, "", "sending", "retry")
         ]  # fmt: skip
 
     due_now = {run: video for run, video in public if run not in baseline and _todo(run) and video}
@@ -812,7 +932,7 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
         for service in todo:
             label = _LABEL[service]
             state = dict(entry.get(service) or {})
-            if service == "instagram" and seconds is not None and seconds > limit:
+            if service in ("instagram", "facebook") and seconds is not None and seconds > limit:
                 if apply:
                     entry[service] = {
                         "state": "skipped",

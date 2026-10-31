@@ -87,6 +87,49 @@ def _length_choice(run: Any) -> str:
     return choice if choice in {"1", "2", "3", "4"} else ""
 
 
+REWARD_SECONDS = 60.0  # #1756: TikTok's Creator Rewards pays for videos over a minute
+REWARD_VIEWS, REWARD_FOLLOWERS = 100_000, 10_000  # #1757: in 30 days; followers
+
+
+def reward_eligible(seconds: float | None) -> bool:
+    return seconds is not None and float(seconds) > REWARD_SECONDS
+
+
+def tiktok_line(rows: dict[str, Any], posts: dict[str, Any], *, now: datetime | None = None) -> str:
+    """#1757: TikTok's 30-day views against the 100k bar, the posts over a minute, and followers -
+    which Buffer's post metrics do not carry."""
+    from datetime import timedelta
+
+    moment = now or datetime.now(timezone.utc)
+    views, eligible, counted = 0, 0, 0
+    for run_id, slot in (rows or {}).items():
+        row = (slot or {}).get("tiktok") if isinstance(slot, dict) else None
+        state = ((posts or {}).get(str(run_id)) or {}).get("tiktok") or {}
+        stamp = state.get("sent_at") or state.get("due_at") or state.get("at")
+        try:
+            when = datetime.fromisoformat(str(stamp).replace("Z", "+00:00")) if stamp else None
+        except ValueError:
+            when = None
+        if not isinstance(row, dict) or when is None or moment - when > timedelta(days=30):
+            continue
+        counted += 1
+        views += int(row.get("views") or 0)
+        eligible += 1 if row.get("reward_eligible") else 0
+    return (
+        f"TikTok: {views:,} of {REWARD_VIEWS:,} views in 30 days; {eligible} of {counted} posts "
+        "over a minute; followers not read"
+    )
+
+
+def tiktok_lines(channel_id: str) -> list[str]:
+    from publishing import crosspost
+
+    rows = load(channel_id).get("rows") or {}
+    if not rows:
+        return []
+    return [tiktok_line(rows, crosspost._load(channel_id).get("posts") or {})]
+
+
 def _stored_metrics(node: dict[str, Any], state: dict[str, Any], run_id: str) -> dict[str, Any]:
     """The metric row plus the hour, domain and length the recommender reads."""
     from publishing import crosspost
@@ -118,6 +161,11 @@ def _stored_metrics(node: dict[str, Any], state: dict[str, Any], run_id: str) ->
     length = _length_choice(run)
     if length:
         stored["length"] = length
+    path = str(getattr(run, "mp4_path", "") or "")
+    seconds = crosspost._duration(path) if path and os.path.isfile(path) else None
+    if seconds is not None:  # #1756: Creator Rewards needs over a minute
+        stored["seconds"] = round(float(seconds), 1)
+        stored["reward_eligible"] = reward_eligible(seconds)
     return stored
 
 

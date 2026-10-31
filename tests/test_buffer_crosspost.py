@@ -408,7 +408,10 @@ class ChannelsTests(unittest.TestCase):
 
         picked, notes = choose_channels(self.CHANNELS)
         self.assertEqual(picked, {"tiktok": "tt1", "instagram": "ig1"})
-        self.assertEqual(notes, [])
+        # #1754: Facebook, not connected in this list, is the one note
+        self.assertEqual(
+            notes, ["no Facebook channel in Buffer - connect one at publish.buffer.com"]
+        )
 
     def test_a_disconnected_channel_is_not_picked(self):
         from publishing.crosspost import choose_channels

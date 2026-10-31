@@ -82,10 +82,10 @@ def link(key: str, *, client: Any = None) -> str:
     return f"{base.rstrip('/')}/{quote(key)}"
 
 
-def host(path: str, key: str, *, client: Any = None) -> str:
-    """Put the mp4 at `key` and return its public address."""
+def host(path: str, key: str, *, client: Any = None, content_type: str = "video/mp4") -> str:
+    """Put the file at `key` and return its public address (#1750: the link page as text/html)."""
     client = client or _client()
-    client.upload_file(path, _bucket(), key, ExtraArgs={"ContentType": "video/mp4"})
+    client.upload_file(path, _bucket(), key, ExtraArgs={"ContentType": content_type})
     url = link(key)
     logger.info("video hosted for Buffer: %s", safe_url(url))
     return url

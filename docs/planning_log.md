@@ -10333,3 +10333,69 @@ Tests: `tests/test_wave135.py` - D1 8 of 9 failed on `a7129c0`; the other 32 all
 Audit: mypy 92; ruff clean. Suite: 6994 forward and 6994 reversed, OK (6 skipped); corpus 486 of 486; data/ and output/ untouched by the suite; every new function has a production caller. The library measurement (motion on 193 clips) wrote data/clip_index.json, as overnight now does.
 
 `roadmap-index`: open 340, done 1713, parked 95, numbered open 338.
+
+## 2026-10-31 — wave 136: money and reach, the next five (Claude Code)
+
+**Prompt:** "next 5 on the roadmap"
+
+The five were wave 136's brief (`docs/cloud_brief_wave136.md`): #1754/#1755 Facebook Reels, #1772
+every Short crossposted within the hour, #1750 a link-in-bio page, #1753 income beside spend,
+#1756/#1757 TikTok that can earn - plus #1758's guard, which wave 135 had ticked on the generator
+alone. Asked (decision 88): Facebook "From then on", the page "On your R2 bucket", its contents the
+latest long video, the week's top Shorts and the affiliate links - no profile links.
+
+Measured first: Buffer has two channels (TikTok, Instagram business), no Facebook; connecting a
+platform would have put every public run since switch-on into one round (about 40 posts); the
+worker's crosspost pass ran a round only when a video turned public; R2 configured; 30 TikTok rows
+holding 3,970 views; the ledger had spend kinds only.
+
+Shipped (built in a scratchpad worktree, overnight safe, copied back once green):
+1. #1754 + #1755 - `crosspost.PLATFORMS` gains facebook, `buffer_api.post_input`'s Reel metadata,
+   Instagram's 90 s limit for Facebook too, per-platform baselines (`platform_baselines`, recorded
+   once; switch-on records each platform connected then); `platform_metrics.refresh` reads it like
+   the others.
+2. #1772 - `crosspost.late_runs` and the worker's pass running a round for them; `miss_lines` in the
+   weekly report.
+3. #1750 - `publishing/link_page.py`, `video_host.host(content_type=)`, overnight's rebuild, `ops links`.
+4. #1753 - `ledger.add_income`, `income_rows`, `money_line`; `ops spend income`; the scoreboard's
+   money row.
+5. #1756 + #1757 - `platform_metrics.reward_eligible`, `seconds` on each row, `tiktok_line(s)` in the
+   weekly report. No Short lengthened (decision 81).
+6. #1758 - `prepublish.without_short_affiliates`, beside `with_disclosure` in `youtube_publisher`.
+
+Found on the way:
+- `publishing/crosspost.py` `platform_baselines` (the first draft): it treated TikTok and Instagram
+  as newly connected in any store with no post of theirs, so their public runs went into the
+  baseline and were skipped - 8 older crosspost tests failed (`KeyError: '113'`). TikTok and
+  Instagram are now never baselined; corpus case `the-first-platforms-are-never-baselined`.
+- `crosspost.miss_lines` (the first draft) measured lateness from the post's due time; the live read
+  called 15 of the week's 22 TikTok posts late, but decision 64 sets the due time to the next 10 PM on
+  purpose. It now measures from when Buffer got the post (`at`): 8 TikTok, 9 Instagram, queued 3-49
+  hours after YouTube - the defect #1772 fixes. The corrected test was watched failing against the
+  due-time measure.
+- Run 199's publish log row is public with `published_at` eight hours ahead (#1917).
+
+Live, read-only except the link page (the operator's R2 answer): `crosspost channels` - "no Facebook
+channel in Buffer"; `late_runs` - none now; the TikTok line "3,970 of 100,000 views in 30 days; 0 of
+30 posts over a minute; followers not read"; the money line "$0.00 earned (0 entries); $25.65 spent;
+net -$25.65"; the link page uploaded - https://pub-322b91f3542b46bea5fa5199ed774bb6.r2.dev/tapin/links.html
+answers 200 text/html, the Week in Review and three Shorts, no affiliate block until the tag.
+
+Not done: connecting a Facebook Page in Buffer and pasting the page's address into the bios (the
+operator's; no API sets either); the link page's clicks (#1919); the re-read of late crossposts on
+11-07 (#1918). Wave 136's items 7-8 (#1775 #1776 #1791 #1774) are next; #1774's "YouTube slot + 1 h"
+meets decision 64's 10 PM and needs a call.
+
+Tests: `tests/test_wave136.py`, 20 - all 20 fail on `1e52c79` (8 failures, 12 errors, the editable
+finder stripped), then pass. Two older assertions changed with the behaviour, each named: the channel
+list's notes now include "no Facebook channel" (test_buffer_crosspost), and the scoreboard's money row
+is the money line, not "not tracked yet" (test_wave134). Corpus +4 (490).
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite: 7014 forward and 7014 reversed, OK (6
+skipped); corpus 490 of 490; data/ and output/ untouched by the suite; every new function has a
+production caller (`platform_baselines` and `late_runs` in `send_due` and the worker, `miss_lines` and
+`tiktok_lines` in the weekly report, `build_and_host` in overnight and `ops links`, `add_income` in
+`ops spend income`, `money_line` in the scoreboard and `ops spend`, `without_short_affiliates` in
+`youtube_publisher`).
+
+`roadmap-index`: open 336, done 1720, parked 95, numbered open 334 (highest #1919).

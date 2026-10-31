@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-30: wave 135, catch-up and the next 15
+# Handoff synopsis — 2026-10-31: wave 136, money and reach
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-30 (Claude Code): wave 135, catch-up and the next 15
+## Last wave — 2026-10-31 (Claude Code): wave 136, money and reach
+
+Facebook Reels through Buffer, only Shorts public after a Page is connected (decision 88; none yet);
+a late crosspost sent on the worker's next pass (8 TikTok, 9 Instagram queued late this week); the
+link page live on R2; income beside spend (net -$25.65); TikTok against Creator Rewards; a Short loses
+an affiliate line at publish.
+
+## Previous — 2026-10-30 (Claude Code): wave 135, catch-up and the next 15
 
 Caught up with the cloud (decision 85). The countdown a day ahead and uploaded for its own noon
 (decision 87; days 21 and 20 were missed). The look list L1-L10: clips in rotation, no menu behind
@@ -22,13 +29,6 @@ cost per 1,000 views, hours ledger, experiment stop dates, wave scorecard and br
 The operator's new backgrounds: 19 downloads credited generically (decision 86), Call of Duty,
 Black Ops and Counter-Strike topics reach their folders. The bridge's scoreboard: the bars as data,
 engaged views, organic subscribers "at most 166" until final, the race clock, a Bridge line.
-
-## Previous — 2026-10-28 (Claude Code): wave 133, the next ten
-
-The GTA 6 window scheduled (decision 84): three long 16:9 videos (11-06, 11-12, 11-20) after
-review, ten launch moments as extra drafts, a 6 PM GTA slot and GTA-first drafting in launch
-week, the countdown in day order, long titles from search, cards from our own frames, affiliate
-links once the tag is set; the verdicts compare 24 ratings, not 3.
 
 ## Pipeline order (operator)
 

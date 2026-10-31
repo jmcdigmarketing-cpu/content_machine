@@ -46,12 +46,53 @@ def _load() -> list[dict[str, Any]]:
     return [r for r in rows or [] if isinstance(r, dict)]
 
 
-def _save(rows: list[dict[str, Any]]) -> None:
+def _save(rows: list[dict[str, Any]], income: list[dict[str, Any]] | None = None) -> None:
+    """The spend rows, and the income rows (#1753) - kept as they are unless given."""
+    keep = income_rows() if income is None else income
     os.makedirs(os.path.dirname(LEDGER_FILE) or ".", exist_ok=True)
     tmp = f"{LEDGER_FILE}.tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump({"entries": rows}, f, indent=2)
+        json.dump({"entries": rows, "income": keep}, f, indent=2)
     os.replace(tmp, LEDGER_FILE)
+
+
+def income_rows() -> list[dict[str, Any]]:
+    """#1753 (B07.7): money earned outside YouTube - stored beside the spend, never counted as it."""
+    try:
+        with open(LEDGER_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return []
+    rows = data.get("income") if isinstance(data, dict) else None
+    return [r for r in rows or [] if isinstance(r, dict)]
+
+
+def add_income(amount: float, what: str, *, on: date | None = None) -> dict[str, Any]:
+    """Record money earned (an affiliate payout, Creator Rewards); ValueError for a negative amount
+    or no description."""
+    if amount is None or float(amount) < 0:
+        raise ValueError("the amount must be 0 or more")
+    what = " ".join(str(what or "").split())
+    if not what:
+        raise ValueError('say what it was, e.g. --what "Amazon Associates, November"')
+    income = income_rows()
+    row = {"id": max((int(r.get("id") or 0) for r in income), default=0) + 1,
+           "amount": round(float(amount), 2), "what": what,
+           "date": (on or date.today()).isoformat()}  # fmt: skip
+    _save(_load(), [*income, row])
+    return row
+
+
+def money_line(*, today: date | None = None) -> str:
+    """#1753: income beside spend, and the net - "net -$22.53"."""
+    spent = float(total_spent(today=today)["total"])
+    earned = round(sum(float(r.get("amount") or 0) for r in income_rows()), 2)
+    net = round(earned - spent, 2)
+    sign = "-" if net < 0 else ""
+    return (
+        f"money outside YouTube: ${earned:,.2f} earned ({len(income_rows())} entr"
+        f"{'y' if len(income_rows()) == 1 else 'ies'}); ${spent:,.2f} spent; net {sign}${abs(net):,.2f}"
+    )
 
 
 def entries() -> list[dict[str, Any]]:
@@ -242,6 +283,7 @@ def ledger_lines(*, today: date | None = None) -> list[str]:
     ads = ads_budget_line(today=today)  # #996
     if ads:
         lines.append(ads)
+    lines.append(money_line(today=today))  # #1753
     return lines
 
 

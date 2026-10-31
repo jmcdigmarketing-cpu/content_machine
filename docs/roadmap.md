@@ -67,6 +67,16 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-10-31 (Claude, wave 136 - money and reach).** Facebook Reels through Buffer, only Shorts
+made public after you connect a Page (decision 88) - Buffer has none yet; a Short public over an
+hour with no crosspost is sent on the worker's next pass (8 TikTok and 9 Instagram this week were
+queued 3-49 hours late); the link page is live on R2 for the bios; income beside spend (net -$25.65);
+TikTok's line against Creator Rewards (3,970 of 100,000; 0 of 30 posts over a minute); a Short's
+description loses an affiliate line at publish (#1758's guard). Next: wave 136's 7-8 - **#1775**
+TikTok's first frame in its safe zone, **#1776** TikTok captions, **#1791** the cover frame sent to
+Buffer, **#1774** each platform's own hour (the brief's "YouTube slot + 1 h" before ten posts meets
+decision 64's 10 PM - a question) - and **#1751** the FTC line checked at publish. Wave 136 was the
+bridge's last brief; the next one is to write.
 **2026-10-30 (Claude, wave 135 - catch-up and the next 15).** Caught up with the cloud's plans
 (decision 85). Countdown days 21 and 20 were missed - the PC off at 5 AM, one render to a game: day
 20 went out by hand at 11:08 PM ET, day 19 is scheduled, and each night now drafts tomorrow's,
@@ -93,19 +103,6 @@ data, **#1824** engaged views, **#1697** organic subscribers, **#1825** the race
 the scoreboard.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
-**2026-10-25 (Claude, wave 131).** Measured first: runs 185 and 186 were held for a claim
-until their game started and nothing pushed them - a held preview now toasts within 6 hours of
-its game (#1582); the captions spelled numbers as the voice said them on 5 of 12 renders - they
-show the script's digits (#1583). With the operator's calls (decision 80): one YouTube search per
-topic per run (#1579); 9 of the 11 playlists made, the worker finishing the last two (#1584); the
-menu's domains by organic views per video (#1448). Also long sentences split (#1360), why drafts
-wait recorded and counted (#1585), the Oct 13 drafts as fixtures (#1339), #1353 pinned; #1586
-filed - NFL brings 32 organic views a Short. Yours: publish the Google app before Fri 10-30;
-#1586's call on NFL previews (answered, decision 81). Next: wave 132 from
-[cloud_brief_wave132.md](cloud_brief_wave132.md) - the hook splice, previews read as explainers,
-sources, a 5-8 minute Week in Review, one marquee preview a night, headlines told as the story.
-Wave 132 and waves before 127 (the 10-17 grand audit, waves 103-126): [planning_log.md](planning_log.md).
-**2026-10-24 (Claude, wave 127).** Caught up with the cloud's decision 74 (`f2d7897`). The PC was shut down at 1:00 AM, so run 184's UFC 333 preview missed the card - and Friday's pass had uploaded two that could wait before it: a preview due soon is now claimed first (#1563). A dropped connection is an outage, not a broken signal (#1562); google's notice is out of the logs (#1561). With the operator's calls: a preview needs a call (#1367) and is read for a stated result before its event, bouts included (#1361), live games leave the ideas (#1364), Shorts' titles read who stayed (#1409); `ops thumbnail-check` (#1541) and the weekly mix (#1365). Decision 70's r corrected to -0.08 on healed numbers. #1560 filed after its first diagnosis was wrong. `roadmap-index`: open 167, done 1631, numbered open 158.
 The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:

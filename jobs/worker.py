@@ -642,19 +642,23 @@ def _crosspost_scheduled_live(now: datetime | None = None) -> int:
                     str(getattr(row, "content_run_id", "") or "")
                 ):
                     public.append(row)
-            if not private and not public:
+            late = crosspost.late_runs(channel_id, now=moment)  # #1772: within the hour
+            if not private and not public and not late:
                 continue
-            if not public:
+            if public:
+                went = [str(getattr(r, "youtube_video_id", "") or "") for r in public]
+            elif private:
                 from analytics.privacy_sync import sync_privacy
 
                 report = sync_privacy(channel_id)
                 changed = report.get("changed") or []
                 went = [str(c.get("video_id") or "") for c in changed if c.get("now") == "public"]
-                if not went:
+                if not went and not late:
                     continue
             else:
-                went = [str(getattr(r, "youtube_video_id", "") or "") for r in public]
-            _toast_public(_titled(rows, went))  # #1404
+                went = []
+            if went:
+                _toast_public(_titled(rows, went))  # #1404
             from publishing.crosspost import step
 
             for line in step(channel_id):

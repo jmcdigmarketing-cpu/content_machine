@@ -221,6 +221,8 @@ def post_input(
         metadata = {"instagram": {"type": "reel", "shouldShareToFeed": True, "isAiGenerated": True}}
     elif service == "tiktok":
         metadata = {"tiktok": {"isAiGenerated": True}}
+    elif service == "facebook":  # #1754: a Reel (Buffer's PostTypeFacebook: post | reel | story)
+        metadata = {"facebook": {"type": "reel"}}
     else:
         metadata = {}
     body: dict[str, Any] = {

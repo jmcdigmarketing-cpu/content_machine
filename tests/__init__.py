@@ -113,6 +113,8 @@ os.environ["SERIES_COUNTDOWN"] = "false"
 os.environ["SERIES_DATED"] = "false"
 # Wave 133 (#1747): no test builds a link with a real Associates tag.
 os.environ["AFFILIATE_AMAZON_TAG"] = ""
+# Wave 136 (#1754): no test posts to a Facebook Page.
+os.environ["BUFFER_FACEBOOK_CHANNEL_ID"] = ""
 # Wave 112: the first-line rule refuses openers without a call; its own tests turn it on.
 os.environ["FIRST_LINE_RULE"] = "false"
 # Wave 112 (#1042): the matchup card reads ESPN; a render test that wants it sets it.

@@ -53,27 +53,28 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-30 · **HEAD at write:** `ea93bda` (wave 135's countdown fix; this wave's commit
-follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
+**Written:** 2026-10-31 · **HEAD at write:** `1e52c79` (wave 135; this wave's commit follows) ·
+**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 135, caught up and the next 15.** The cloud's `067983b` (decision 85, the five plans) is in;
-my wave 134 sits on it (decision 86). Countdown days 21 and 20 were missed - fixed first and alone
-(`ea93bda`, #1906): tomorrow's drafted too, countdowns render outside the limit, uploaded for their
-own noon (decision 87). Day 20 posted 10-30 11:08 PM ET; day 19 scheduled Sat 6 PM ET. Then the look
-list L1-L10 (#1907-#1916): `assets/clip_ledger` (rotation), `clip_tags.without_ui` (motion measured -
-7 of 193 clips are menus), platform aliases, `assets/cover_frames` (own-frame covers, never repeated,
-the Short opens on the cover's shot), image models only with `THUMBNAIL_AI`, the `long_cover`
-experiment; and #1797 #1728 #1827 #1836 #1832 (`core/success/scorecard.py`). `.env`: the Flux key
-commented out, `YOUTUBE_THUMBNAIL_UPLOAD=frames` (the operator's yes). Nothing found broken in shipped
-code; the live reads fixed two wordings.
+**Wave 136, money and reach (decision 88).** Defects first: my first `platform_baselines` skipped
+every TikTok/Instagram run in a store with no post of theirs (8 older tests caught it - the first two
+platforms are never baselined now); my first `miss_lines` measured lateness from the due time, which
+decision 64 sets to 10 PM on purpose (15 of 22 "late") - it measures when Buffer got the post now.
+Run 199's publish log is public with a publish time 8 hours ahead (#1917, not fixed). Shipped:
+Facebook Reels (`PLATFORMS`, the Reel metadata, per-platform baselines - only Shorts public after a
+Page is connected; Buffer has none), late crossposts sent on the worker's next pass (`late_runs`; 8
+TikTok and 9 Instagram queued late this week), `publishing/link_page.py` live on R2
+(`tapin/links.html`, rebuilt overnight, `ops links`), `ops spend income` and the net line, TikTok's
+Creator Rewards line, `prepublish.without_short_affiliates` (#1758's guard).
 
-**Open:** #1913 (face_forward arm, pick-thumbnail between frames), #1916 (the strip in `ops booth`),
-L5's club naming in footage-gaps, the platform folders (operator).
-**Next five:** wave 136 - #1754 Facebook Reels, #1772 crosspost within the hour, #1750 link-in-bio,
-#1753 income beside spend, #1756 TikTok that can earn.
+**Open:** #1917 (run 199's time), #1918 (re-read late crossposts 11-07), #1919 (link page clicks).
+**Next five:** #1775 TikTok's safe zone, #1776 TikTok captions, #1791 the cover frame to Buffer,
+#1774 each platform's hour (its "YouTube slot + 1 h" meets decision 64's 10 PM - ask), #1751 the FTC
+line at publish. Wave 136 was the bridge's last brief.
 
-**Operator:** publish the Google app (the sign-in lapses Nov 6); final campaign counts with
-`ops spend result --entry N --subs N --final`; the Associates tag; the 11-06 long draft.
+**Operator:** connect a Facebook Page in Buffer; paste the link page's address into the bios; publish
+the Google app (the sign-in lapses Nov 6); `ops spend result --final`; the Associates tag; the 11-06
+long draft.
 
 ## Slot — Cursor
 

@@ -53,15 +53,62 @@ def _nearest_license_file(clip_path: str) -> str | None:
     return None
 
 
-def _license_attribution(clip_path: str) -> str | None:
+# Wave 134 (the operator, 2026-10-28: "credit generically"): 19 clips dropped in by hand were
+# YouTube downloads ("Free To Use / No Copyright Gameplay") and inherited the library's "owned"
+# licence, so no video credited them. A clip named like a download, with no licence of its own, is
+# third party and credited - tonight's and the next drop's alike.
+_DOWNLOAD_NAME = re.compile(
+    r"no[\s_-]*copyright|free[\s_-]+to[\s_-]+use|copyright[\s_-]*free|royalty[\s_-]*free"
+    r"|video[\s_-]*downloader",
+    re.IGNORECASE,
+)
+DOWNLOAD_LICENCE = {
+    "owner": "YouTube free-to-use gameplay uploaders",
+    "license": "Free to use with credit (attribution); downloaded from YouTube, uploader not recorded",
+    "commercial_use": True,
+}
+
+
+def looks_downloaded(name: str) -> bool:
+    """A file name that marks a downloaded free-to-use clip, not a capture of ours."""
+    return bool(_DOWNLOAD_NAME.search(os.path.basename(name or "")))
+
+
+def clip_licence(clip_path: str) -> tuple[dict | None, str]:
+    """(licence, folder it credits) - the clip's own `.license.yaml`, else the generic third-party
+    licence for a download, else the nearest folder's file. (None, "") when there is none."""
+    own = os.path.splitext(clip_path)[0] + ".license.yaml"
+    folder = os.path.basename(os.path.dirname(clip_path))
+    if not (clip_path and os.path.isfile(own)) and looks_downloaded(clip_path):
+        return dict(DOWNLOAD_LICENCE), folder
     sidecar = _nearest_license_file(clip_path)
     if not sidecar:
-        return None
+        return None, ""
+    with open(sidecar, encoding="utf-8") as fh:
+        data = json.load(fh)
+    if not isinstance(data, dict):
+        raise ValueError("expected an object")
+    return data, os.path.basename(os.path.dirname(sidecar))
+
+
+def downloaded_clips(base: str = BASE_VIDEO_DIR) -> list[str]:
+    """The library's clips credited as downloads (no licence of their own) - `ops footage`."""
+    out: list[str] = []
+    for root, _dirs, files in os.walk(base):
+        for name in files:
+            path = os.path.join(root, name)
+            own = os.path.splitext(path)[0] + ".license.yaml"
+            if (name.lower().endswith((".mp4", ".mov")) and looks_downloaded(name)
+                    and not os.path.isfile(own)):  # fmt: skip
+                out.append(path)
+    return sorted(out)
+
+
+def _license_attribution(clip_path: str) -> str | None:
     try:
-        with open(sidecar, encoding="utf-8") as fh:
-            data = json.load(fh)
-        if not isinstance(data, dict):
-            raise ValueError("expected an object")
+        data, _folder = clip_licence(clip_path)
+        if data is None:
+            return None
         owner = str(data.get("owner") or "").strip()
         license_name = str(data.get("license") or "").strip()
         commercial = data.get("commercial_use")
@@ -74,7 +121,7 @@ def _license_attribution(clip_path: str) -> str | None:
             parts.append(f"commercial use: {'yes' if bool(commercial) else 'no'}")
         return "; ".join(parts) or None
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-        logger.warning("Local clip license unreadable (%s): %s", sidecar, exc)
+        logger.warning("Local clip license unreadable (%s): %s", clip_path, exc)
         return None
 
 
@@ -86,23 +133,19 @@ def _needs_credit(license_name: str) -> bool:
 def clip_credit(clip_path: str) -> str | None:
     """#1019: the credit line a clip's licence requires (CC BY), else None.
 
-    Owned footage and licences without an attribution term need no credit.
+    Owned footage and licences without an attribution term need no credit. A downloaded clip
+    (wave 134) is credited generically.
     """
-    sidecar = _nearest_license_file(clip_path)
-    if not sidecar:
-        return None
     try:
-        with open(sidecar, encoding="utf-8") as fh:
-            data = json.load(fh)
+        data, folder = clip_licence(clip_path)
     except (OSError, ValueError, TypeError) as exc:
-        logger.debug("clip credit: licence unreadable (%s): %s", sidecar, exc)
+        logger.debug("clip credit: licence unreadable (%s): %s", clip_path, exc)
         return None
     if not isinstance(data, dict):
         return None
     license_name = str(data.get("license") or "").strip()
     if not _needs_credit(license_name):
         return None
-    folder = os.path.basename(os.path.dirname(sidecar))
     short = license_name.split(";")[0].strip()
     sources = [str(s).strip() for s in data.get("sources") or [] if str(s).strip()]
     owner = str(data.get("owner") or "").strip()
@@ -215,6 +258,24 @@ def _keyword_choose_folder(
     return scored[0][2]
 
 
+_ALIASES_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "footage_aliases.json"
+)
+
+
+def footage_aliases(channel_id: str) -> list[dict]:
+    """`config/footage_aliases.json`'s rows for the channel - {folder, keys}, most specific
+    first (wave 134: "Call of Duty: Modern Warfare 4" reached no COD folder). [] when unread."""
+    try:
+        with open(_ALIASES_FILE, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError) as exc:
+        logger.debug("footage_aliases.json unread: %s", exc)
+        return []
+    rows = data.get(channel_id) if isinstance(data, dict) else None
+    return [r for r in rows or [] if isinstance(r, dict) and r.get("folder") and r.get("keys")]
+
+
 def _alias_choose_folder(topic: str, folders: list[str], channel_id=None) -> str | None:
     """The footage folder of the first franchise playlist the topic matches (#786).
 
@@ -230,6 +291,12 @@ def _alias_choose_folder(topic: str, folders: list[str], channel_id=None) -> str
         return None
     hay = (topic or "").lower()
     by_name = {os.path.basename(f).casefold(): f for f in folders}
+    # Wave 134: the folders whose names no headline uses ("COD", "CSGO"), first - a playlist row
+    # for them would make the worker create a YouTube playlist.
+    for alias in footage_aliases(channel_id or "tapin"):
+        folder = by_name.get(str(alias.get("folder") or "").casefold())
+        if folder and _matches(hay, [str(k) for k in alias.get("keys") or []]):
+            return folder
     try:
         from apis.topic_scorer import names_other_2k
 

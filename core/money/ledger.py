@@ -101,11 +101,14 @@ def set_result(
     subscribers: int | None = None,
     spent: float | None = None,
     on: date | None = None,
+    final: bool | None = None,
 ) -> dict[str, Any] | None:
     """#992: what an ad campaign's page in YouTube Studio reports - the subscribers it brought and
     what it charged. None when there is no such entry; ValueError for another kind, a negative
-    number or nothing to record. A second call changes only what it is given."""
-    if subscribers is None and spent is None:
+    number or nothing to record. A second call changes only what it is given. ``final`` (#1697,
+    decision 86): the campaign has stopped and its count will not change - until then the
+    organic subscriber count is "at most"."""
+    if subscribers is None and spent is None and final is None:
         raise ValueError("give the subscribers (--subs) or what it charged (--amount)")
     if (subscribers is not None and int(subscribers) < 0) or (spent is not None and spent < 0):
         raise ValueError("numbers must be 0 or more")
@@ -120,6 +123,8 @@ def set_result(
             result["subscribers"] = int(subscribers)
         if spent is not None:
             result["spent"] = round(float(spent), 2)
+        if final is not None:
+            result["final"] = bool(final)
         result["date"] = (on or date.today()).isoformat()
         row["result"] = result
         _save(rows)

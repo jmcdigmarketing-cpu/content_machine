@@ -1,0 +1,9 @@
+{
+  "_note": "The YouTube Partner Program's bars by date (#1823, decision 82). Each row is in force from `from` until the next; a video's numbers count against the bar of the day they are read. The 2027 row rests on third-party reports, not YouTube's help page - its `source` says so and core/success/bridge.py prints it. Correct a row here when YouTube states the bar.",
+  "bars": [
+    {"from": "2023-06-13", "subscribers": 1000, "hours": 4000, "shorts": 10000000,
+     "source": "YouTube Help"},
+    {"from": "2027-02-01", "subscribers": 1000, "hours": 8000, "shorts": 20000000,
+     "source": "third-party reports, 2026-08; not yet on YouTube's help page"}
+  ]
+}

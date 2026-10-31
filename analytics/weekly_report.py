@@ -353,6 +353,17 @@ def _scoreboard_head(channel_id: str) -> str:
         return ""
 
 
+def _bridge_block(channel_id: str) -> str:
+    """#1822: the bridge's scoreboard after the goal's - what counts toward YPP."""
+    try:
+        from core.success.bridge import scoreboard_lines
+
+        return "\n".join(scoreboard_lines(channel_id)) + "\n\n"
+    except Exception as exc:
+        logger.debug("bridge scoreboard skipped in the weekly report: %s", exc)
+        return ""
+
+
 def _buffer_tail(channel_id: str) -> str:
     """What went to TikTok and Instagram, and which feed liked what (#979, #1198)."""
     parts: list[str] = []
@@ -377,7 +388,12 @@ def _buffer_tail(channel_id: str) -> str:
 
 def format_report(report: dict[str, Any]) -> str:
     channel_id = str(report.get("channel_id") or "")
-    return _scoreboard_head(channel_id) + _format_body(report) + _buffer_tail(channel_id)
+    return (
+        _scoreboard_head(channel_id)
+        + _bridge_block(channel_id)
+        + _format_body(report)
+        + _buffer_tail(channel_id)
+    )
 
 
 def draft_mix_line(drafts: list[dict[str, Any]]) -> str:

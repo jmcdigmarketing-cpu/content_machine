@@ -459,6 +459,15 @@ def fetch_ypp_numbers(
         shorts = {k: v for k, v in views.items() if k[1] == SHORTS_TYPE}
         out["shorts_views_90d"] = int(sum(v for k, v in shorts.items() if k[0] not in PAID_SOURCES))
         out["shorts_paid_90d"] = int(sum(v for k, v in shorts.items() if k[0] in PAID_SOURCES))
+    # #1824 (B10.3): the Shorts path counts engaged views. A refused metric leaves the key out -
+    # the scoreboard then says "not measured", never 0.
+    engaged = _by_source_and_type(
+        service, (end - timedelta(days=90)).isoformat(), end.isoformat(), "engagedViews"
+    )
+    if engaged is not None:
+        out["shorts_engaged_90d"] = int(
+            sum(v for k, v in engaged.items() if k[1] == SHORTS_TYPE and k[0] not in PAID_SOURCES)
+        )
     if minutes is not None:
         organic = sum(
             v for k, v in minutes.items() if k[1] in LONG_FORM_TYPES and k[0] not in PAID_SOURCES

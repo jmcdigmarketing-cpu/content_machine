@@ -1,0 +1,8 @@
+{
+  "_note": "Footage aliases (wave 134): the words that send a topic to a background folder whose name no headline uses - 'COD', 'CSGO'. Most specific first; the first row whose `keys` the topic names (whole words, core.playlists._matches) wins, and only when the folder exists. Read before config/playlists.json's `footage` (a playlist row would also make the worker create a YouTube playlist). Add a row when a new folder's name is not what headlines call the game.",
+  "tapin": [
+    {"folder": "Call of Duty Black Ops 3", "keys": ["black ops 3", "bo3"]},
+    {"folder": "COD", "keys": ["call of duty", "modern warfare", "black ops", "warzone", "mw4", "cod"]},
+    {"folder": "CSGO", "keys": ["counter-strike", "counter strike", "cs2", "csgo", "cs:go"]}
+  ]
+}

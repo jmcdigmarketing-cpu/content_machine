@@ -67,6 +67,12 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-10-28 (Claude, wave 134 - the next five).** Your new backgrounds wired in: 19 downloads were
+recorded as owned - now credited generically (decision 86); Call of Duty, Black Ops and Counter-Strike
+topics reach their folders. The scoreboard: the bars as data, engaged views, organic subscribers "at
+most 166" until the campaigns' counts are final, the race clock (96 days), one Bridge line in `ops
+status`. Next: **#1797** cost per 1,000 organic views, **#1728** the hours ledger, **#1827**
+experiments with stop dates, **#1836** the wave scorecard, **#1832** a toast for a breakout.
 **2026-10-28 (Claude, wave 133 - the next ten).** The GTA 6 window is scheduled (decision 84):
 three long 16:9 videos - 11-06 ("GTA 6 Release Date: Everything We Know Before Launch"), 11-12,
 11-20 - drafted on their dates, rendered after your review; ten launch moments as extra drafts
@@ -84,13 +90,6 @@ decision 83). Decision 81's four: an overnight story on 3+ outlets or a marquee 
 (#1592 - this week's 12 Shorts at 6:46). Next: **#1850** the long-form draft kind ("everything
 we know" public by 11-10); **#1748** the affiliates map; **#1856** search titles; **#1868** two
 GTA slots in launch week; **#1596** the verdicts.
-**2026-10-28 (Claude, wave 132 - the first five).** The 10-25 session's defects: a spoken "..."
-ended the hook and the swap stranded a fragment (#1587; 6 of 60 stored scripts carried one);
-previews read as explainers from their own brief (#1588, a `preview` intent now); another game's
-lines as sources (#1589); donation asks as facts (#1590); a flagged title retried (#1591). Next:
-**#1847** the GTA 6 countdown (it should start 10-29); **#1595** the topic gate; **#1594**
-headlines told as the story; **#1593** one marquee preview a night; **#1592** the 5-8 minute
-Week in Review (Monday 11-02). #1596 (verdicts) waits a wave - it moves no number this week.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 **2026-10-25 (Claude, wave 131).** Measured first: runs 185 and 186 were held for a claim
@@ -104,10 +103,7 @@ filed - NFL brings 32 organic views a Short. Yours: publish the Google app befor
 #1586's call on NFL previews (answered, decision 81). Next: wave 132 from
 [cloud_brief_wave132.md](cloud_brief_wave132.md) - the hook splice, previews read as explainers,
 sources, a 5-8 minute Week in Review, one marquee preview a night, headlines told as the story.
-Waves before 124 (the 10-17 grand audit, waves 103-123): [planning_log.md](planning_log.md).
-**2026-10-23 (Claude, wave 124).** Measured first: run 181, a Cavaliers-76ers preview, was still queued a day after its tip-off and nothing would have stopped it (#1547), and run 176, the UFC 333 preview, read "past its window" the day before the card (#1548) - both fixed. With the operator's calls: the hook score out of the grade and overnight's order (#1499, decision 70) and a power-on run is normal (decision 69). The five and two neighbours: `ops hooks` - each opener trait against who stayed, the first 3 s and TikTok (#1500 #1501 #1506) and length (#1505: longer held more, r=+0.36); why a curve is missing (#1546); the GPU driver in `ops doctor` (#1470); `roadmap-index` by shortfall (#1510). Filed #1549 #1550. `roadmap-index`: open 180, done 1603, numbered open 171.
-**2026-10-23 (Claude, wave 125).** UFC 333 first: run 184 named the card by number and matched no event, so it was queued for Sun noon (#1551), and nothing re-checked a queued job against its event (#1552); with the operator's yes run 180 went to Fri 10:45 PM EDT and run 179 (last season's seed) off the schedule through a new `ops unschedule` (#1555). Captions wait for queued uploads (#1553), the weak-hook hold is lifted (#1549, decision 72), the lapse is dated (#1554). The five: ten best-held openers and settled notes in the prompt (#1504), one of three hooks at review (#1503), a render per process (#1464), `ops shortfalls` weekly (#1517) - and the hook rewrite, which had adopted nothing on 17 of 18 runs, writes calls again (#1557). `roadmap-index`: open 175, done 1615, numbered open 166.
-**2026-10-23 (Claude, wave 126).** A phantom slot first: run 186, held by the grounding gate and so never public at a slot, held Sat noon - the slot run 184's UFC 333 preview needed before the card (#1558); the pass line said "Sent" for passes that sent nothing (#1559). With the operator's yes run 175 is set for Sun 10 PM EDT. The five: hook variants ranked by measured traits (#1556), the rewrite on/off as an experiment (#1502), the thumbnail confirmed by thumbnails.set's answer (#1540), the idea-expiry date (#1509), open items per public video (#1515). `roadmap-index`: open 170, done 1622, numbered open 161.
+Wave 132's first five and waves before 127 (the 10-17 grand audit, waves 103-126): [planning_log.md](planning_log.md).
 **2026-10-24 (Claude, wave 127).** Caught up with the cloud's decision 74 (`f2d7897`). The PC was shut down at 1:00 AM, so run 184's UFC 333 preview missed the card - and Friday's pass had uploaded two that could wait before it: a preview due soon is now claimed first (#1563). A dropped connection is an outage, not a broken signal (#1562); google's notice is out of the logs (#1561). With the operator's calls: a preview needs a call (#1367) and is read for a stated result before its event, bouts included (#1361), live games leave the ideas (#1364), Shorts' titles read who stayed (#1409); `ops thumbnail-check` (#1541) and the weekly mix (#1365). Decision 70's r corrected to -0.08 on healed numbers. #1560 filed after its first diagnosis was wrong. `roadmap-index`: open 167, done 1631, numbered open 158.
 The step-by-step: [operator_guide.md](operator_guide.md).
 

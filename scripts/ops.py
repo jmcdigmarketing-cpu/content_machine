@@ -474,9 +474,14 @@ def cmd_explain(args: argparse.Namespace) -> int:
 
 @_register("ypp", "YPP readiness: YouTube's own numbers with ads excluded, disclosure, cadence")
 def cmd_ypp(args: argparse.Namespace) -> int:
+    from core.success.bridge import bar_lines, scoreboard_lines
     from core.ypp_readiness import inspect_ypp, render_report
 
     print(render_report(inspect_ypp(args.channel)))
+    from config.channels import resolve_channel_id
+
+    # #1823 the bars by date; #1822 the scoreboard
+    print("\n".join(["", *bar_lines(), "", *scoreboard_lines(resolve_channel_id(args.channel))]))
     return 0
 
 
@@ -2138,6 +2143,15 @@ def cmd_footage(args: argparse.Namespace) -> int:
             f"({tally['with_bands']} carry a band, {tally['skipped']} already measured)."
         )
     print(render_coverage(footage_coverage(args.channel)))
+    from assets.local_provider import downloaded_clips
+
+    downloads = downloaded_clips()  # wave 134 (the operator: "credit generically")
+    if downloads:
+        print(
+            f"{len(downloads)} clip(s) named like free-to-use downloads, with no licence file of "
+            'their own: credited as "free to use with credit" in each video\'s description. '
+            "Give one its own <clip>.license.yaml (ops footage-add) to name its uploader."
+        )
     return 0
 
 
@@ -3984,14 +3998,17 @@ def cmd_spend(args: argparse.Namespace) -> int:
     if action == "result":  # #992: what the campaign's page in YouTube Studio reports
         entry_id = getattr(args, "entry", None)
         subs = getattr(args, "subs", None)
-        if not entry_id or (subs is None and _amount_arg(args) is None):
+        final = True if getattr(args, "final", False) else None  # #1697: the count is final
+        if not entry_id or (subs is None and _amount_arg(args) is None and final is None):
             print(
                 "spend result needs the campaign and a number: py -m scripts.ops spend result "
-                "--entry N --subs N [--amount WHAT_IT_CHARGED]"
+                "--entry N --subs N [--amount WHAT_IT_CHARGED] [--final]"
             )
             return 2
         try:
-            row = ledger.set_result(int(entry_id), subscribers=subs, spent=_amount_arg(args), on=on)
+            row = ledger.set_result(
+                int(entry_id), subscribers=subs, spent=_amount_arg(args), on=on, final=final
+            )
         except ValueError as exc:
             print(f"Not recorded: {exc}")
             return 2
@@ -4263,6 +4280,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--subs", type=int, default=None,
         help="spend result: subscribers the campaign's page in YouTube Studio reports (#992)",
+    )  # fmt: skip
+    parser.add_argument(
+        "--final", action="store_true",
+        help="spend result: the campaign has stopped and its count is final (#1697)",
     )  # fmt: skip
     parser.add_argument("--email", default="", help="policy-site: the contact address (#956)")
     parser.add_argument(

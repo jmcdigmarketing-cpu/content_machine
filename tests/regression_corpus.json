@@ -7958,6 +7958,89 @@
         "not_contains": ": 's"
       },
       "why": "only a separator after the subject is cut"
+    },
+    {
+      "id": "a-downloaded-clip-is-not-owned",
+      "item": 1903,
+      "source": "the operator's 10-28 drop: 19 YouTube downloads inherited the library's 'owned'",
+      "call": "assets.local_provider:looks_downloaded",
+      "args": [
+        "Clipto AI video downloader_MW4 DMZ No Copyright Gameplay _ Free to Use _ No Commentary #1.mp4"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a download is third party and credited"
+    },
+    {
+      "id": "a-capture-stays-owned",
+      "item": 1903,
+      "source": "must keep: the operator's own Xbox capture",
+      "call": "assets.local_provider:looks_downloaded",
+      "args": [
+        "fortnite-2026-08-27-10-59-51-08-win.mp4"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "our own footage needs no credit"
+    },
+    {
+      "id": "call-of-duty-reaches-the-cod-folder",
+      "item": 1904,
+      "source": "the 325-view Short's subject reached no folder after the COD drop",
+      "call": "assets.local_provider:_alias_choose_folder",
+      "args": [
+        "Call Of Duty: Modern Warfare 4's First DLC Is Out Now",
+        [
+          "lib/COD",
+          "lib/CSGO"
+        ],
+        "tapin"
+      ],
+      "expect": {
+        "equals": "lib/COD"
+      },
+      "why": "no headline says COD"
+    },
+    {
+      "id": "counter-strike-reaches-csgo",
+      "item": 1904,
+      "source": "the sibling: the CSGO folder",
+      "call": "assets.local_provider:_alias_choose_folder",
+      "args": [
+        "Counter-Strike 2 major results",
+        [
+          "lib/COD",
+          "lib/CSGO"
+        ],
+        "tapin"
+      ],
+      "expect": {
+        "equals": "lib/CSGO"
+      },
+      "why": "no headline says CSGO"
+    },
+    {
+      "id": "a-count-to-date-is-at-most",
+      "item": 1697,
+      "source": "decision 86: 134 became 195 in a day with both campaigns 'ended'",
+      "call": "core.success.bridge:organic_line",
+      "args": [
+        195,
+        [
+          {
+            "kind": "ads",
+            "result": {
+              "subscribers": 27
+            }
+          }
+        ]
+      ],
+      "expect": {
+        "contains": "at most 168"
+      },
+      "why": "a count that is not final is an upper bound"
     }
   ]
 }

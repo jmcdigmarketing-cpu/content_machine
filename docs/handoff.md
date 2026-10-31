@@ -53,31 +53,28 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**2026-10-30 (the session that ran waves 121-122), at `899ff58`:** docs only - decision 85 (gaming
-and sports equally; covers our own frames, no words; AI covers off) and five plans:
-[tapin_philosophy.md](tapin_philosophy.md), [tapin_principles.md](tapin_principles.md),
-[logistics_plan.md](logistics_plan.md), [look_and_feel.md](look_and_feel.md) (build list L1-L10,
-not yet in the backlog), [horizons_2027.md](horizons_2027.md); the operator's Studio numbers in
-[studio_snapshot_2026-10-30.md](studio_snapshot_2026-10-30.md). The rest of this slot is wave 133's.
+**Written:** 2026-10-30 · **HEAD at write:** `067983b` (the cloud's 10-30 plans; this wave's commit follows) ·
+**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Written:** 2026-10-28 · **HEAD at write:** `30b71df` (wave 132's next five; this wave's commit
-follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
+**Wave 134, the next five, shipped.** The operator's background drop first (files only, no commit):
+19 YouTube downloads were recorded as owned - now credited generically (#1903, decision 86 - the cloud took 85 on 10-30 - no file
+written into the library); Call of Duty, Black Ops and Counter-Strike topics reach their folders
+(#1904, `config/footage_aliases.json`). Then the scoreboard: #1823 the bars as data, #1824 engaged
+views (stored by the next sync), #1697 organic subscribers "at most 166" until the campaigns' counts
+are final, #1825 the race clock (96 days), #1822 the scoreboard in `ops ypp`, the weekly report and
+`ops status`. Nothing found broken in shipped code.
 
-**Wave 133, the next ten, shipped** (decision 84): the GTA 6 window in `config/series.json` - three
-long 16:9 videos (11-06, 11-12, 11-20) rendered only after review (`core/series/long_form`), ten
-launch moments as extra drafts (`core/series/dated`), a 6 PM GTA slot and GTA-first drafting
-11-16 to 11-22, launch day at `publish_at`, the countdown in day order in the GTA playlist,
-long titles from search, cards from our own frames, affiliate links once the tag is set; the
-verdicts compare 24 ratings. **Defects found by the live reads, fixed:** the verdicts' first floor
-still let 7-day views win; the subject's own suggestions titled every long video "GTA 6 Trailer";
-"GTA 6's map" lost its subject. Nothing found broken in shipped code.
+**Caught up 10-30:** the cloud's `067983b` (decision 85, the five plans, look_and_feel's L1-L10) is
+under this commit. Live: countdown days 21 and 20 were missed (the PC off at 5 AM; one render went to
+a game) - day 20 posted by hand at 11:08 PM ET (rXPoLUQnWow) after a sign-in renewal; `.env` now has
+YOUTUBE_THUMBNAIL_UPLOAD=off and the Flux key commented out (the operator's yes).
 
-**Next five:** wave 134's scoreboard - #1823 #1824 #1697 #1825 #1822
-([cloud_brief_wave134.md](cloud_brief_wave134.md)). Filed #1902 (the first 16:9 render, unwatched).
+**Next 15 (wave 135):** the countdown a day ahead (defect), look_and_feel's L1-L10 in its order, and
+wave 134's 6-10 - #1797 #1728 #1827 #1836 #1832. Filed #1905 (each uploader named).
 
 **Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** review the 11-06 long draft before it renders; the Associates tag; the unlock time and
-embargo date in `config/series.json` when Rockstar states them; the Oct 26 campaigns; the Google app.
+**Operator:** enter the Oct 26 campaigns' final counts with `ops spend result --entry N --subs N
+--final`; publish the Google app (the sign-in lapses Nov 6); the Associates tag; the 11-06 long draft.
 
 ## Slot — Cursor
 

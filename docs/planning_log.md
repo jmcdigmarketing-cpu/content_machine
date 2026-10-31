@@ -10254,3 +10254,41 @@ these pages link to them.
 (`BFL_API_KEY`, `FLUX_API_KEY`, `IDEOGRAM_API_KEY`, `RECRAFT_API_KEY`) commented out,
 `CLIP_MEMORY=true`; tag the soccer clips by club with `py -m scripts.ops footage-tag`; pick the
 caption accent colour (look_and_feel's one proposed choice).
+
+## 2026-10-28 — wave 134, the next five (Claude Code)
+
+**Prompt:** "next 5 on the roadmap. I have also updated our background selection."
+
+Picked: the operator's background update first (it arrived as files, no commit), then the roadmap's
+five - wave 134's scoreboard, [cloud_brief_wave134.md](cloud_brief_wave134.md) items 1-5. Asked
+first (decision 86): the new clips ("Credit generically" - not the recommended lookup of each
+source) and the subscriber jump ("Count it as unknown").
+
+Measured first (read-only, 10-28 22:00): 19 clips added 21:45-22:01, all "Clipto AI video
+downloader" YouTube downloads ("Free To Use / No Copyright Gameplay"), in seven new folders and five
+old ones; every one inherited an "owned" licence (9 the root file, 10 a folder file naming one older
+clip), so no credit line; "Call of Duty: Modern Warfare 4 ...", "Black Ops 3 ..." and
+"Counter-Strike 2 ..." reached no folder (COD, CSGO, "Call of Duty Black Ops 3"); `ops ypp` read 195
+subscribers (134 on 10-27) with both Oct 26 campaigns "ended 10-27" at 29.
+
+Shipped (tests first, `tests/test_wave134.py`: 18 of 22 failed on `899ff58`, the other 4 controls):
+1. **#1903** downloads credited generically (`local_provider.clip_licence`, `looks_downloaded`).
+2. **#1904** footage aliases (`config/footage_aliases.json`, before the playlist rows).
+3. **#1823** the bars as data (`config/ypp.json`, `core/success/bridge.bar_on`).
+4. **#1824** engaged Shorts views (`fetch_ypp_numbers`' `engagedViews` query).
+5. **#1697** organic subscribers, "at most" until final (`ledger.set_result(final=)`).
+6. **#1825** the race clock - 96 days; both paths "not reachable at this pace".
+7. **#1822** the scoreboard in `ops ypp`, the weekly report and an `ops status` Bridge line.
+
+Found on the way: a playlist row for COD would have made the worker create a YouTube playlist, so
+the aliases have their own file; two older clips were download-named too (21 credited, not 19).
+
+Not done: each uploader named (#1905); engaged views read live (the next sync); money outside
+YouTube (wave 136).
+
+Corpus: 5 cases; the 3 that call new functions fail on HEAD (`looks_downloaded`, `organic_line`),
+and the 2 alias cases fail on HEAD's `_alias_choose_folder`.
+
+Audit: mypy 92; ruff clean. Suite: 6953 forward and 6953 reversed, OK (6 skipped); corpus 481 of 481; data/ and output/ untouched; every new function has a production caller.
+
+`roadmap-index`: open 344, done 1698, parked 95, numbered open 342.

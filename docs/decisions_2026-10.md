@@ -487,3 +487,14 @@ and the plans [logistics_plan.md](logistics_plan.md), [look_and_feel.md](look_an
 [horizons_2027.md](horizons_2027.md); no code with this decision - the build list L1-L10 waits for
 a wave and takes backlog numbers then; long-form keeps decision 84's own frames, with words a test
 (#1731 without its face).
+
+## 86. Downloaded backgrounds credited generically; organic subscribers "at most" until final (2026-10-28)
+**Decision:** a background clip named like a free-to-use download, with no licence file of its own, is
+third party and credited "Free to use with credit (attribution) - YouTube free-to-use gameplay
+uploaders"; the organic subscriber count is YouTube's less the campaigns' entered subscribers, and
+reads "at most" until every campaign's count is marked final. **Why:** the operator's 10-28 drop
+of 19 YouTube downloads inherited the library's "owned" licence, so no video credited them; the
+subscriber count went from 134 to 195 in a day with both Oct 26 campaigns recorded as ended at 29.
+Asked, the operator took "Credit generically" (not the recommended source lookup) and "Count it as
+unknown". **Consequence:** no file is written into the library and the next drop is covered; naming
+each uploader is #1905; `ops spend result --entry N --subs N --final` ends the "at most".

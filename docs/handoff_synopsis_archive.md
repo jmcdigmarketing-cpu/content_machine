@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-28 (Claude Code): wave 132, the first five
+
+The 10-25 session's defects: a spoken "..." ended the hook and the swap stranded a fragment (6 of
+60 stored scripts carried one - overnight now reads the check live); previews were read as
+explainers from their own brief (a `preview` intent now, and machine drafts say what they are);
+another game's lines became sources; donation asks became facts; a flagged title is retried.
+
 ## Previous — 2026-10-25 (Claude Code): wave 131, the next ten
 
 Runs 185 and 186 were held for a claim until their game started; a held preview now toasts within

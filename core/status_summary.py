@@ -200,6 +200,13 @@ def _tonight(channel_id: str) -> str:
     return tonight_line(channel_id) or "Tonight: overnight has nothing to do"
 
 
+def _bridge(channel_id: str) -> str:
+    """#1822: the bridge's numbers in one line - what counts toward YPP."""
+    from core.success.bridge import status_line
+
+    return status_line(channel_id)
+
+
 FAMILIES: list[tuple[str, str, Callable[[str], str]]] = [
     ("Yours today", "ops batch-review", _yours),  # #1407
     ("Sign-in", "ops check-youtube", _sign_in),
@@ -210,6 +217,7 @@ FAMILIES: list[tuple[str, str, Callable[[str], str]]] = [
     ("Keys", "ops secrets-doctor", _secrets),
     ("Health", "ops health", _health),
     ("Budget", "ops reliability", _budget),
+    ("Bridge", "ops ypp", _bridge),  # wave 134
 ]
 
 

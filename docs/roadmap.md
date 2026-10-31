@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-10-30 (Claude, wave 135 - catch-up and the next 15).** Caught up with the cloud's plans
+(decision 85). Countdown days 21 and 20 were missed - the PC off at 5 AM, one render to a game: day
+20 went out by hand at 11:08 PM ET, day 19 is scheduled, and each night now drafts tomorrow's,
+uploaded for its own noon (decision 87). The look list L1-L10 (#1907-#1916): every clip in rotation,
+no menu behind another club, covers cut from our own frames with no words and never repeated, the
+Short opening on the cover's shot, only frame covers uploaded; and the scoreboard's rest - cost per
+1,000 views ($1.67), the hours ledger, experiment stop dates, the wave scorecard, a breakout toast.
+Next: **#1754** Facebook Reels, **#1772** every Short crossposted within the hour, **#1750** a
+link-in-bio page, **#1753** income beside spend, **#1756** TikTok that can earn.
 **2026-10-28 (Claude, wave 134 - the next five).** Your new backgrounds wired in: 19 downloads were
 recorded as owned - now credited generically (decision 86); Call of Duty, Black Ops and Counter-Strike
 topics reach their folders. The scoreboard: the bars as data, engaged views, organic subscribers "at
@@ -82,14 +91,6 @@ cards from our own frames; affiliate links on long videos once your Associates t
 verdicts compare 24 ratings, not 3. Next: wave 134's scoreboard - **#1823** the YPP bars as
 data, **#1824** engaged views, **#1697** organic subscribers, **#1825** the race clock, **#1822**
 the scoreboard.
-**2026-10-28 (Claude, wave 132 - the next five).** The GTA 6 countdown starts 10-29: "GTA 6: N
-days to launch - <the day's story>", an extra fourth draft each night, held after its day (#1847,
-decision 83). Decision 81's four: an overnight story on 3+ outlets or a marquee name (#1595,
-`config/marquee.json`); one marquee preview a night (#1593); headlines told as the story - a
-`news` intent, ranked on the headline (#1594); the Week in Review as a rundown then the top 3
-(#1592 - this week's 12 Shorts at 6:46). Next: **#1850** the long-form draft kind ("everything
-we know" public by 11-10); **#1748** the affiliates map; **#1856** search titles; **#1868** two
-GTA slots in launch week; **#1596** the verdicts.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 **2026-10-25 (Claude, wave 131).** Measured first: runs 185 and 186 were held for a claim
@@ -103,7 +104,7 @@ filed - NFL brings 32 organic views a Short. Yours: publish the Google app befor
 #1586's call on NFL previews (answered, decision 81). Next: wave 132 from
 [cloud_brief_wave132.md](cloud_brief_wave132.md) - the hook splice, previews read as explainers,
 sources, a 5-8 minute Week in Review, one marquee preview a night, headlines told as the story.
-Wave 132's first five and waves before 127 (the 10-17 grand audit, waves 103-126): [planning_log.md](planning_log.md).
+Wave 132 and waves before 127 (the 10-17 grand audit, waves 103-126): [planning_log.md](planning_log.md).
 **2026-10-24 (Claude, wave 127).** Caught up with the cloud's decision 74 (`f2d7897`). The PC was shut down at 1:00 AM, so run 184's UFC 333 preview missed the card - and Friday's pass had uploaded two that could wait before it: a preview due soon is now claimed first (#1563). A dropped connection is an outage, not a broken signal (#1562); google's notice is out of the logs (#1561). With the operator's calls: a preview needs a call (#1367) and is read for a stated result before its event, bouts included (#1361), live games leave the ideas (#1364), Shorts' titles read who stayed (#1409); `ops thumbnail-check` (#1541) and the weekly mix (#1365). Decision 70's r corrected to -0.08 on healed numbers. #1560 filed after its first diagnosis was wrong. `roadmap-index`: open 167, done 1631, numbered open 158.
 The step-by-step: [operator_guide.md](operator_guide.md).
 

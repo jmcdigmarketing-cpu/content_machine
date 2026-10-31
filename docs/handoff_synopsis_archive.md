@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-28 (Claude Code): wave 132, the next five
+
+The GTA 6 countdown starts 10-29 - "GTA 6: N days to launch - <the day's story>", an extra
+fourth draft a night, held after its day (decision 83). Decision 81's four: an overnight story on
+3+ outlets or a marquee name; one marquee preview a night; headlines told as the story (a `news`
+intent); the Week in Review as a rundown then the top 3 in full, 5-8 minutes (this week: 6:46).
+
 ## Previous — 2026-10-28 (Claude Code): wave 132, the first five
 
 The 10-25 session's defects: a spoken "..." ended the hook and the swap stranded a fragment (6 of

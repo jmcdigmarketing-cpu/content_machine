@@ -53,28 +53,27 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-30 · **HEAD at write:** `067983b` (the cloud's 10-30 plans; this wave's commit follows) ·
-**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
+**Written:** 2026-10-30 · **HEAD at write:** `ea93bda` (wave 135's countdown fix; this wave's commit
+follows) · **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 134, the next five, shipped.** The operator's background drop first (files only, no commit):
-19 YouTube downloads were recorded as owned - now credited generically (#1903, decision 86 - the cloud took 85 on 10-30 - no file
-written into the library); Call of Duty, Black Ops and Counter-Strike topics reach their folders
-(#1904, `config/footage_aliases.json`). Then the scoreboard: #1823 the bars as data, #1824 engaged
-views (stored by the next sync), #1697 organic subscribers "at most 166" until the campaigns' counts
-are final, #1825 the race clock (96 days), #1822 the scoreboard in `ops ypp`, the weekly report and
-`ops status`. Nothing found broken in shipped code.
+**Wave 135, caught up and the next 15.** The cloud's `067983b` (decision 85, the five plans) is in;
+my wave 134 sits on it (decision 86). Countdown days 21 and 20 were missed - fixed first and alone
+(`ea93bda`, #1906): tomorrow's drafted too, countdowns render outside the limit, uploaded for their
+own noon (decision 87). Day 20 posted 10-30 11:08 PM ET; day 19 scheduled Sat 6 PM ET. Then the look
+list L1-L10 (#1907-#1916): `assets/clip_ledger` (rotation), `clip_tags.without_ui` (motion measured -
+7 of 193 clips are menus), platform aliases, `assets/cover_frames` (own-frame covers, never repeated,
+the Short opens on the cover's shot), image models only with `THUMBNAIL_AI`, the `long_cover`
+experiment; and #1797 #1728 #1827 #1836 #1832 (`core/success/scorecard.py`). `.env`: the Flux key
+commented out, `YOUTUBE_THUMBNAIL_UPLOAD=frames` (the operator's yes). Nothing found broken in shipped
+code; the live reads fixed two wordings.
 
-**Caught up 10-30:** the cloud's `067983b` (decision 85, the five plans, look_and_feel's L1-L10) is
-under this commit. Live: countdown days 21 and 20 were missed (the PC off at 5 AM; one render went to
-a game) - day 20 posted by hand at 11:08 PM ET (rXPoLUQnWow) after a sign-in renewal; `.env` now has
-YOUTUBE_THUMBNAIL_UPLOAD=off and the Flux key commented out (the operator's yes).
+**Open:** #1913 (face_forward arm, pick-thumbnail between frames), #1916 (the strip in `ops booth`),
+L5's club naming in footage-gaps, the platform folders (operator).
+**Next five:** wave 136 - #1754 Facebook Reels, #1772 crosspost within the hour, #1750 link-in-bio,
+#1753 income beside spend, #1756 TikTok that can earn.
 
-**Next 15 (wave 135):** the countdown a day ahead (defect), look_and_feel's L1-L10 in its order, and
-wave 134's 6-10 - #1797 #1728 #1827 #1836 #1832. Filed #1905 (each uploader named).
-
-**Cursor is out of usage for the month** - its queue is Claude's.
-**Operator:** enter the Oct 26 campaigns' final counts with `ops spend result --entry N --subs N
---final`; publish the Google app (the sign-in lapses Nov 6); the Associates tag; the 11-06 long draft.
+**Operator:** publish the Google app (the sign-in lapses Nov 6); final campaign counts with
+`ops spend result --entry N --subs N --final`; the Associates tag; the 11-06 long draft.
 
 ## Slot — Cursor
 

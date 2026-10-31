@@ -30,6 +30,16 @@ _LEVERS: dict[str, dict] = {
             ),
         },
     },
+    # L9 (look_and_feel.md, decision 85; wave 135): does a long video's cover carry three words?
+    # Decision 84's own frames either way; judged on click-through and who stayed, 2+ per arm.
+    "long_cover": {
+        "description": "Whether a long video's cover carries three words of its title",
+        "kind": "long_cover",
+        "arms": {
+            "words": "LONG COVER: three words of the title on our own frame.",
+            "none": "LONG COVER: our own frame with no words.",
+        },
+    },
     # #1502 (the operator, 2026-10-23: alternate): does the hook rewrite hold more viewers?
     # Overnight drafts take an arm; "off" keeps the first-draft opener (main.py always rewrites).
     "hook_rewrite": {

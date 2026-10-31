@@ -8056,6 +8056,70 @@
         "equals": "its day ends"
       },
       "why": "a countdown has no kickoff; its number is wrong after midnight"
+    },
+    {
+      "id": "a-still-clip-is-a-menu",
+      "item": 1911,
+      "source": "10-30: the FC 26 squad menu behind the Kane, Real Madrid and Man City Shorts measured 4.5",
+      "call": "assets.clip_tags:is_ui_clip",
+      "args": [
+        "EA SPORTS FC 26 2026-08-19 12-40-15.mp4",
+        {
+          "motion": 4.52
+        }
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a menu backs only a story about its own game"
+    },
+    {
+      "id": "slow-gameplay-is-not-a-menu",
+      "item": 1911,
+      "source": "must keep: the slowest 2K capture measured 7.9",
+      "call": "assets.clip_tags:is_ui_clip",
+      "args": [
+        "NBA 2K24 for Xbox Series X_S-2025_12_17-04_40_38.mp4",
+        {
+          "motion": 7.89
+        }
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the threshold sits between them"
+    },
+    {
+      "id": "no-views-is-not-a-price",
+      "item": 1797,
+      "source": "the brief: $0.27 spent, 0 organic views at 7 days",
+      "call": "core.success.scorecard:cost_per_thousand",
+      "args": [
+        0.27,
+        0
+      ],
+      "expect": {
+        "equals": "no views"
+      },
+      "why": "a division by zero reads as a word, not infinity"
+    },
+    {
+      "id": "no-image-model-unless-asked",
+      "item": 1913,
+      "source": "decision 85: AI covers off; THUMBNAIL_PROVIDER=ideogram alone no longer asks one",
+      "call": "assets.flux_thumbnail:_provider_chain",
+      "args": [
+        "ideogram"
+      ],
+      "env": {
+        "THUMBNAIL_AI": ""
+      },
+      "expect": {
+        "equals": [
+          "pillow"
+        ]
+      },
+      "why": "a cover is a frame of the video's own footage"
     }
   ]
 }

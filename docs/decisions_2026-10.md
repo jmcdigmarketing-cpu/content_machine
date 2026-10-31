@@ -498,3 +498,16 @@ subscriber count went from 134 to 195 in a day with both Oct 26 campaigns record
 Asked, the operator took "Credit generically" (not the recommended source lookup) and "Count it as
 unknown". **Consequence:** no file is written into the library and the next drop is covered; naming
 each uploader is #1905; `ops spend result --entry N --subs N --final` ends the "at most".
+
+## 87. The countdown a day ahead; only frame covers upload; the look list built (2026-10-30)
+**Decision:** each night drafts tomorrow's countdown as well as today's, and every countdown renders
+outside the night's limit and is uploaded private with its own noon as the publish time, so YouTube
+publishes it with the PC off; `YOUTUBE_THUMBNAIL_UPLOAD=frames` - only a cover cut from the video's
+own footage uploads - with the image models' keys out of `.env`; the next 15 are look_and_feel.md's
+L1-L10 and wave 134's last five. **Why:** days 21 and 20 were missed (no runs on 10-29, the PC off;
+on 10-30 overnight ran at 5:44 PM and its one render went to a game), and decision 85 wanted our own
+frames. Asked, the operator took "Yes, post it now" (day 20, 11:08 PM ET after a sign-in renewal),
+"A day ahead", "Yes, change it now" (`.env`), "Look list + scoreboard", "Yes, schedule it now"
+(day 19) and "Yes, frames only" - every recommended option. **Consequence:** a countdown no longer
+waits for a person; a Short's cover is a frame of its own shots, never one used before, and the Short
+opens on that shot; the two experiments already running stop 14 days from their start.

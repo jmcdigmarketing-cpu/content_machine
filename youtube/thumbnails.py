@@ -35,6 +35,11 @@ def is_thumbnail_upload_enabled() -> bool:
     return mode not in ("0", "false", "no", "off")
 
 
+def frames_only() -> bool:
+    """`YOUTUBE_THUMBNAIL_UPLOAD=frames`: upload a cover only when it is a frame of the video."""
+    return os.getenv("YOUTUBE_THUMBNAIL_UPLOAD", "auto").strip().lower() == "frames"
+
+
 def _mimetype_for_path(path: str) -> str:
     lower = path.lower()
     if lower.endswith(".png"):
@@ -144,6 +149,11 @@ def maybe_upload_thumbnail(
         return ThumbnailUploadResult(
             "not_found",
             "No thumbnail file (render with THUMBNAIL_MODE=auto or add assets row)",
+        )
+    if frames_only() and not str(path).endswith("_frame_cover.jpg"):
+        # Wave 135 (the operator: "frames only"): only a frame of the video's own footage goes up.
+        return ThumbnailUploadResult(
+            "skipped", "YOUTUBE_THUMBNAIL_UPLOAD=frames - not a frame cover"
         )
 
     return set_video_thumbnail(service, video_id, path)

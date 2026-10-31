@@ -255,6 +255,13 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
     from core.ypp_readiness import save_ypp_numbers
 
     numbers = youtube_metrics.fetch_ypp_numbers(channel_id=channel_id)
+    try:  # #1832 (wave 135): a Short past 1,000 organic views in a day - one toast
+        from core.success.scorecard import toast_breakouts
+
+        for title in toast_breakouts(channel_id):
+            print(f"  Breakout: {title}")
+    except Exception as exc:
+        print(f"  Breakout check skipped: {exc}")
     if numbers:
         save_ypp_numbers(channel_id, numbers)
         subs = numbers.get("subscribers")

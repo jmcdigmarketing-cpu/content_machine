@@ -1,0 +1,35 @@
+{
+  "_note": "The wave scorecard (#1836): a row per shipped wave - its lane and the number it is judged on, 14 days after against 14 days before (core/success/scorecard.py, in the weekly report). The next-five skill's docs step adds the row when a wave ships. Metric: organic views a day (the channel's daily views less paid).",
+  "waves": [
+    {
+      "wave": "132a",
+      "shipped": "2026-10-28",
+      "lane": "defect",
+      "metric": "organic views a day"
+    },
+    {
+      "wave": "132b",
+      "shipped": "2026-10-28",
+      "lane": "views",
+      "metric": "organic views a day"
+    },
+    {
+      "wave": "133",
+      "shipped": "2026-10-28",
+      "lane": "hours",
+      "metric": "organic views a day"
+    },
+    {
+      "wave": "134",
+      "shipped": "2026-10-30",
+      "lane": "views",
+      "metric": "organic views a day"
+    },
+    {
+      "wave": "135",
+      "shipped": "2026-10-31",
+      "lane": "views",
+      "metric": "organic views a day"
+    }
+  ]
+}

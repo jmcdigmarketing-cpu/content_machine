@@ -138,6 +138,70 @@ def clips_for_topic(paths: list[str], topic: str, index: dict[str, Any] | None =
     return matched or untagged
 
 
+# L5 (look_and_feel.md, wave 135): an untagged FC Barcelona squad menu sat behind the Kane, Real
+# Madrid and Man City Shorts. A menu or UI clip backs only a story about its own game: one tagged
+# "ui" or "menu", named like one, or measured near still (mean frame change under MOTION_UI; the
+# menu capture measured 4.5, gameplay 7.9-47 on 10-30).
+MOTION_UI = 6.0
+_UI_NAME = re.compile(
+    r"\b(menu|menus|ui|lobby|loading|lineup|squad|roster|ratings|team select|select screen)\b",
+    re.IGNORECASE,
+)
+
+
+def is_ui_clip(path: str, meta: dict[str, Any] | None = None) -> bool:
+    meta = meta or {}
+    tags = {str(t).casefold() for t in meta.get("tags") or []}
+    if tags & {"ui", "menu"}:
+        return True
+    if _UI_NAME.search(_words(os.path.basename(path))):
+        return True
+    motion = meta.get("motion")
+    return isinstance(motion, (int, float)) and float(motion) < MOTION_UI
+
+
+def without_ui(paths: list[str], topic: str, index: dict[str, Any] | None = None) -> list[str]:
+    """L5: `paths` less their menu/UI clips, unless the topic names that clip's game."""
+    clips = ((index if index is not None else load_index()) or {}).get("clips") or {}
+    if not isinstance(clips, dict):
+        clips = {}
+    from assets.local_provider import _keyword_choose_folder
+
+    out: list[str] = []
+    for path in paths:
+        meta = _meta_for(path, clips)
+        if is_ui_clip(path, meta) and not _keyword_choose_folder(topic, [os.path.dirname(path)]):
+            continue
+        out.append(path)
+    return out
+
+
+def measure_motion(path: str, *, frames: int = 8, size: tuple[int, int] = (64, 36)) -> float | None:
+    """Mean change between frames a second apart (0-255) - a menu is near still. None when the
+    file cannot be read."""
+    import subprocess
+
+    w, h = size
+    try:
+        proc = subprocess.run(
+            ["ffmpeg", "-nostdin", "-v", "error", "-ss", "2", "-i", path, "-frames:v", str(frames),
+             "-vf", f"fps=1,scale={w}:{h},format=gray", "-f", "rawvideo", "-"],
+            capture_output=True, stdin=subprocess.DEVNULL, timeout=60, check=False,
+        )  # fmt: skip
+    except (OSError, subprocess.SubprocessError):
+        return None
+    data, cell = proc.stdout, w * h
+    count = len(data) // cell
+    if count < 2:
+        return None
+    total = sum(
+        abs(data[i * cell + j] - data[(i - 1) * cell + j])
+        for i in range(1, count)
+        for j in range(cell)
+    )
+    return round(total / ((count - 1) * cell), 2)
+
+
 def canonical_team(name: str) -> str:
     """A nickname or a full name, as the index stores it. Empty when it is neither."""
     raw = (name or "").strip()

@@ -66,8 +66,14 @@ def _flux_api_key() -> str:
     return os.getenv("BFL_API_KEY") or os.getenv("FLUX_API_KEY") or ""
 
 
+def ai_covers_on() -> bool:
+    """Decision 85 (L7): the image models (Flux, Ideogram, Recraft) make covers only when
+    THUMBNAIL_AI=true - a cover is a frame of the video's own footage. Off by default."""
+    return os.getenv("THUMBNAIL_AI", "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def is_flux_configured() -> bool:
-    return bool(_flux_api_key())
+    return ai_covers_on() and bool(_flux_api_key())
 
 
 def _safe_slug(text: str, max_len: int = 40) -> str:
@@ -337,7 +343,7 @@ def _recraft_thumbnail(
 
 def _provider_chain(selected: str) -> list[str]:
     """Fail-open order for an explicit THUMBNAIL_PROVIDER value."""
-    if selected == "pillow":
+    if selected == "pillow" or not ai_covers_on():  # L7: no image model unless asked for
         return ["pillow"]
     if selected in ("ideogram", "recraft", "flux"):
         chain = [selected]

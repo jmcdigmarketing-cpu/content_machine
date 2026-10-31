@@ -13,3 +13,5 @@ class AssetResult:
     credits: list[str] = field(default_factory=list)
     # #424: source clip paths the run actually cut from, for the licence ledger.
     clip_paths: list[str] = field(default_factory=list)
+    # Wave 135 (decision 85, L1): a frame of these shots, before captions, with no words.
+    cover_path: str = ""

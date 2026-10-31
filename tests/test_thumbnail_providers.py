@@ -11,11 +11,13 @@ import os
 import tempfile
 import unittest
 from unittest import mock
+from unittest.mock import patch
 
 from assets import flux_thumbnail as ft
 from assets.flux_thumbnail import ThumbnailResult
 
 
+@patch.dict(os.environ, {"THUMBNAIL_AI": "true"})  # decision 85: the image models only when on
 class TestProviderChainOrder(unittest.TestCase):
     def test_order(self):
         self.assertEqual(ft._provider_chain("ideogram"), ["ideogram", "flux", "pillow"])
@@ -50,6 +52,7 @@ class TestDispatch(unittest.TestCase):
                 self.assertEqual(out.path, "x.png")
 
 
+@patch.dict(os.environ, {"THUMBNAIL_AI": "true"})  # decision 85: the image models only when on
 class TestChainFailOpen(unittest.TestCase):
     def test_falls_through_to_pillow(self):
         with (
@@ -72,7 +75,7 @@ class TestChainFailOpen(unittest.TestCase):
 
     def test_first_success_wins(self):
         with (
-            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.dict(os.environ, {"THUMBNAIL_AI": "true"}, clear=True),
             mock.patch("core.experiments.next_arm", return_value=None),
             mock.patch.object(
                 ft,

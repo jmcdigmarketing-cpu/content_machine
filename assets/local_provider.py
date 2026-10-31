@@ -641,9 +641,9 @@ class LocalAssetProvider(AssetProvider):
             clips = []
         else:
             clips = _folder_clips(chosen_folder)
-        from assets.clip_tags import clips_for_topic
+        from assets.clip_tags import clips_for_topic, without_ui
 
-        return clips_for_topic(clips, topic)
+        return without_ui(clips_for_topic(clips, topic), topic)  # L5: no other game's menu
 
     def find_video(self, topic: str, category: str, channel_id=None) -> Optional[AssetResult]:
         video_files = self.candidate_clips(topic, category, channel_id)

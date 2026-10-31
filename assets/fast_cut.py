@@ -449,12 +449,12 @@ def _clip_pool(topic: str, channel_id: str | None) -> list[str]:
 
     clips = LocalAssetProvider().candidate_clips(topic, detect_category(topic), channel_id)
     try:
-        from assets.clip_memory import recent
+        # L3 (wave 135): the least recently used across runs, not the first 12 by file name.
+        from assets.clip_ledger import least_used
 
-        seen = set(recent())
-        return pool_without_recent(clips, seen)
+        return least_used(clips, _MAX_POOL)
     except Exception as exc:
-        logger.debug("clip memory ordering skipped: %s", exc)
+        logger.debug("clip ledger ordering skipped: %s", exc)
     return clips[:_MAX_POOL]
 
 
@@ -638,7 +638,8 @@ def _compose(keys: list[str], windows, topic: str, duration: float, words):
 
         # Shots are independent; the concat list is rebuilt in playback order afterwards.
         with ThreadPoolExecutor(max_workers=min(shot_workers(), len(shots))) as pool:
-            done = list(pool.map(_one, enumerate(shots)))
+            done = sorted(pool.map(_one, enumerate(shots)), key=lambda row: row[0])
+        cover_path = _cover_and_open(done, output)  # L1 L2 L8 (wave 135)
         lines = []
         for i, shot, path in sorted(done, key=lambda row: row[0]):
             shots[i] = shot
@@ -656,12 +657,42 @@ def _compose(keys: list[str], windows, topic: str, duration: float, words):
             record(clip)
     except Exception as exc:
         logger.debug("clip memory record skipped: %s", exc)
+    from assets.clip_ledger import record_uses
+
+    record_uses([c for c, _s, _l in shots])  # L3: across runs, on disk
     files = len({clip for clip, _s, _l in shots})
     logger.info("fast cut: %d shots from %d file(s) (%s)", len(shots), files, topic)
-    return fast_cut_result(output, topic, shots)
+    return fast_cut_result(output, topic, shots, cover_path=cover_path)
 
 
-def fast_cut_result(output: str, topic: str, shots) -> AssetResult:
+def _cover_and_open(done: list, output: str) -> str:
+    """L1 + L2: the cover - the best unused frame of the rendered shots (before captions); L8:
+    the cut opens on that shot. When the best is shot k, shots 0 and k trade sources, each
+    keeping its own length, so the cuts still land on phrase ends. "" when no frame qualifies.
+    `done` is [(index, (clip, start, length), path)] in playback order, changed in place."""
+    try:
+        from assets.cover_frames import choose_cover, finish, frame_at
+
+        stem = os.path.splitext(output)[0]
+        cover = choose_cover([p for _i, _s, p in done], [s[2] for _i, s, _p in done], stem)
+        if cover is None:
+            return ""
+        k = cover.index
+        if k:
+            (c0, s0, l0), (ck, sk, lk) = done[0][1], done[k][1]
+            _render_shot(ck, sk, l0, done[0][2])
+            _render_shot(c0, s0, lk, done[k][2])
+            done[0] = (0, (ck, sk, l0), done[0][2])
+            done[k] = (k, (c0, s0, lk), done[k][2])
+            if not frame_at(done[0][2], min(0.4 * lk, 0.9 * l0), cover.path):
+                return ""
+        return finish(cover, stem)
+    except Exception as exc:
+        logger.debug("frame cover skipped: %s", exc)
+        return ""
+
+
+def fast_cut_result(output: str, topic: str, shots, *, cover_path: str = "") -> AssetResult:
     """The cut background, with the credits its clips' licences require (#1019)."""
     from assets.local_provider import clip_credits
     from assets.types import AssetResult as _AssetResult
@@ -674,6 +705,7 @@ def fast_cut_result(output: str, topic: str, shots) -> AssetResult:
         attribution=f"Gameplay (local), {len(shots)} shots",
         credits=clip_credits(clips),
         clip_paths=clips,
+        cover_path=cover_path,
     )
 
 

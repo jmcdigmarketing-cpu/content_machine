@@ -2152,6 +2152,18 @@ def cmd_footage(args: argparse.Namespace) -> int:
             'their own: credited as "free to use with credit" in each video\'s description. '
             "Give one its own <clip>.license.yaml (ops footage-add) to name its uploader."
         )
+    from assets.clip_ledger import report_lines
+    from assets.local_provider import BASE_VIDEO_DIR, _get_subfolders, footage_aliases
+
+    print("\n".join(report_lines(_get_subfolders(BASE_VIDEO_DIR))))  # L4 (wave 135)
+    have = {os.path.basename(f).casefold() for f in _get_subfolders(BASE_VIDEO_DIR)}
+    platforms = [r["folder"] for r in footage_aliases("tapin") if r.get("platform")]
+    missing = [name for name in platforms if name.casefold() not in have]
+    if missing:  # L6: platform news shows the platform once these exist
+        print(
+            f"Platform footage to record (L6): {', '.join(missing)} - a folder each under "
+            "video/backgrounds/gaming/platforms/, screen captures of the store and dashboard."
+        )
     return 0
 
 

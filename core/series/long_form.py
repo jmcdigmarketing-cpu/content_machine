@@ -152,6 +152,9 @@ def long_thumbnail(
 
         from assets.thumbnail_compose import compose_thumbnail
 
+        if not title:  # L9's "none" arm: the frame alone, no words
+            Image.open(frame).convert("RGB").resize((1280, 720)).save(dest)
+            return dest if os.path.isfile(dest) else ""
         ink = next((c for c in (_hex(p) for p in palette or []) if c), None)
         plate = compose_thumbnail(
             Image.open(frame).convert("RGB"), three_words(title) or title, dest,
@@ -161,6 +164,29 @@ def long_thumbnail(
         logger.warning("long-form thumbnail skipped: %s", exc)
         return ""
     return plate.path if plate.path and os.path.isfile(plate.path) else ""
+
+
+def cover_arm(channel_id: str, run_id: int) -> str:
+    """L9 (wave 135): "words" or "none" for this long video's cover - the `long_cover`
+    experiment's next arm, started when the first long video renders; recorded on the run."""
+    try:
+        from core.experiments import (
+            active_experiment,
+            next_arm,
+            record_assignment,
+            start_experiment,
+        )
+
+        if active_experiment(channel_id, "long_cover") is None:
+            start_experiment(channel_id, "long_cover", days=60)  # long videos come a few a month
+        picked = next_arm(channel_id, kind="long_cover")
+        if picked is None:
+            return "words"
+        record_assignment(channel_id, run_id, picked[0], picked[1])
+        return picked[1]
+    except Exception as exc:
+        logger.debug("long cover arm unread: %s", exc)
+        return "words"
 
 
 @contextlib.contextmanager
@@ -194,10 +220,13 @@ def finish_long_render(run_id: int, channel_id: str, title: str) -> str:
     update_content_run_media(
         int(run_id), mp3_path=str(getattr(run, "mp3_path", "") or ""), mp4_path=wide
     )
-    thumb = long_thumbnail(wide, title, f"{stem}{WIDE_SUFFIX}_thumb.png", channel_id=channel_id,
-                           palette=style_palette(channel_id, title))  # fmt: skip
-    if thumb:
-        from core.run_features import merge_features
+    arm = cover_arm(channel_id, int(run_id))  # L9: three words against none
+    thumb = long_thumbnail(wide, title if arm == "words" else "", f"{stem}{WIDE_SUFFIX}_thumb.png",
+                           channel_id=channel_id, palette=style_palette(channel_id, title))  # fmt: skip
+    from core.run_features import merge_features
 
+    # the hours ledger (#1728) counts the runs marked long_form
+    merge_features(int(run_id), {"long_form": True})
+    if thumb:
         merge_features(int(run_id), {"thumbnail_pick": {"path": thumb, "arm": "long"}})
     return wide

@@ -10292,3 +10292,44 @@ and the 2 alias cases fail on HEAD's `_alias_choose_folder`.
 Audit: mypy 92; ruff clean. Suite: 6953 forward and 6953 reversed, OK (6 skipped); corpus 481 of 481; data/ and output/ untouched; every new function has a production caller.
 
 `roadmap-index`: open 344, done 1698, parked 95, numbered open 342.
+
+## 2026-10-30 — wave 135: caught up with the cloud, the countdown a day ahead, the next 15 (Claude Code)
+
+**Prompt:** "catch up with the cloud and next 15. I will be here, feel free to ask. thank you"
+
+Caught up: the cloud's `067983b` (docs only: decision 85, the philosophy, principles, logistics,
+look-and-feel and horizons plans) was on origin; my wave 134 was still uncommitted, its decision
+numbered 85 - renumbered 86, committed on top (`a7129c0`, CI green).
+
+Measured live: no runs on 10-29 (the PC off from Wed 10:40 PM) - countdown day 21 never drafted; on
+10-30 overnight ran at 5:44 PM, drafted day 20 (run 216) and gave its one render to the Lakers preview;
+`.env` still had the Flux key and no `YOUTUBE_THUMBNAIL_UPLOAD`. Asked (decision 87): post day 20 now,
+a day ahead, change `.env` now, the next 15, schedule day 19 now, frames only - all yes.
+
+Done live, with the operator's yes: run 216 rendered, uploaded after the operator renewed the YouTube
+sign-in (it had ended), public at 11:08 PM ET (rXPoLUQnWow); day 19 drafted (run 220 - the
+authenticity check asked for a person, the operator read it), scheduled for Sat 6 PM ET (noon and
+10 PM were taken; S5kHrVUmoX4); `.env` - the Flux key commented out, `YOUTUBE_THUMBNAIL_UPLOAD=frames`.
+
+Shipped: D1 first and alone (`ea93bda`, #1906) - tomorrow's countdown, countdowns first and outside the
+limit and the shelf pause, uploaded scheduled; then in a worktree (overnight safe) and copied back:
+L3 + L4 `assets/clip_ledger`, L5 `clip_tags.without_ui` + motion measured (overnight measures new
+clips), L6 platform aliases, L1 + L2 + L8 `assets/cover_frames` and `fast_cut._cover_and_open`, L7
+image models only with `THUMBNAIL_AI`, the `frames` upload mode, L10 the strip in the render's lines,
+L9 the `long_cover` experiment; #1797 #1728 #1827 #1836 #1832 in `core/success/scorecard.py` and
+`core/experiments.py`. #1758 found already done.
+
+Found on the way: the render child crashed on a cp1252 stdout when run by hand (production's task sets
+UTF-8 - not a production defect); an older test passed on HEAD for a folder-name reason (the platform
+test, rewritten); the live reads found "is no pace yet away" and "no stop date" on the two running
+experiments (both fixed with tests). 7 of 193 clips measure as menus.
+
+Not done: L7's face_forward arm and `pick-thumbnail` between frames (#1913); L10 in `ops booth`
+(#1916); `footage-gaps` naming the club to record (L5); the Steam/Xbox/PlayStation folders (L6, yours).
+
+Tests: `tests/test_wave135.py` - D1 8 of 9 failed on `a7129c0`; the other 32 all fail on
+`ea93bda` (the platform test was rewritten after it passed there for a folder-name reason). Corpus +5 (486).
+
+Audit: mypy 92; ruff clean. Suite: 6994 forward and 6994 reversed, OK (6 skipped); corpus 486 of 486; data/ and output/ untouched by the suite; every new function has a production caller. The library measurement (motion on 193 clips) wrote data/clip_index.json, as overnight now does.
+
+`roadmap-index`: open 340, done 1713, parked 95, numbered open 338.

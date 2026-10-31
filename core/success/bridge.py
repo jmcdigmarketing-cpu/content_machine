@@ -217,6 +217,19 @@ def scoreboard_lines(
             f"{_days_to(bar['hours'], hours, per_day)}"
         )
     lines.append("  money outside YouTube: not tracked yet (wave 136)")
+    # #1797 and #1728 (wave 135); the store reads only when the numbers are the stored ones
+    from core.success import scorecard
+
+    try:
+        costs = scorecard.cost_rows(channel_id, today=day) if numbers is None else []
+        minutes = scorecard.long_minutes(channel_id) if numbers is None else []
+    except Exception as exc:
+        logger.debug("scorecard rows unread: %s", exc)
+        costs, minutes = [], []
+    lines.append(f"  {scorecard.week_cost_line(costs)}")
+    hours_bars = (int(bar["hours"]), int(bar_on(NEW_BAR_DAY)["hours"]))
+    lines.extend(f"  {line}" for line in scorecard.hours_lines(
+        minutes, have=nums.get("long_hours_365d"), bars=hours_bars))  # fmt: skip
     lines.extend(f"  {line}" for line in race_clock(nums, today=day)["lines"])
     return lines
 

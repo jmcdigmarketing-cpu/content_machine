@@ -22,6 +22,9 @@ CACHE_STATS_FILE = os.path.join(DATA_DIR, "cache_stats.json")
 EXPERIMENTS_FILE = os.path.join(DATA_DIR, "experiments.json")
 TOPIC_GRAPH_FILE = os.path.join(DATA_DIR, "topic_graph.json")
 CLIP_INDEX_FILE = os.path.join(DATA_DIR, "clip_index.json")
+# Wave 135 (look_and_feel.md L3/L4): each clip's use times; L2: the covers already used.
+CLIP_USES_FILE = os.path.join(DATA_DIR, "clip_uses.json")
+COVERS_FILE = os.path.join(DATA_DIR, "covers.json")
 SEASONAL_CALENDAR_FILE = os.path.join(ROOT_DIR, "config", "seasonal_calendar.json")
 # #946: athlete / fighter names per sport, checked after every keyword list.
 DOMAIN_NAMES_FILE = os.path.join(ROOT_DIR, "config", "domain_names.json")

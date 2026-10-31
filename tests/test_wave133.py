@@ -376,6 +376,8 @@ class LongDraftTests(unittest.TestCase):
                 patch("storage.repositories.content_runs.get_content_run_repository") as repo,
                 patch("core.run_recorder.update_content_run_media") as media,
                 patch("core.series.long_form.long_thumbnail", return_value=""),
+                patch("core.run_features.merge_features"),  # wave 135: long_form, no DB
+                patch("core.series.long_form.cover_arm", return_value="words"),
             ):
                 repo.return_value.get.return_value = run
                 batch_review._render(draft, False)

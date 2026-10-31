@@ -35,6 +35,7 @@ class HeadroomTests(unittest.TestCase):
         self.assertIn(f"{summary['remaining']} YouTube units left", line)
 
 
+@patch.dict(os.environ, {"THUMBNAIL_AI": "true"})  # decision 85: the image models only when on
 class ProjectedThumbnailTests(unittest.TestCase):
     def test_the_estimate_carries_the_thumbnail(self):
         from core.cost_meter import estimate_run_cost, thumbnail_cost

@@ -1744,7 +1744,20 @@ def run_media_only(
     thumb_provider: str | None = None
     thumb_safe_area: dict[str, Any] = {}
     thumbnail_candidates: list[dict[str, Any]] = []
-    if render_preset == "publish" and os.getenv("THUMBNAIL_MODE", "auto").lower() != "off":
+    frame_cover = str(getattr(background, "cover_path", "") or "")
+    if render_preset == "publish" and frame_cover and os.path.isfile(frame_cover):
+        # Decision 85 (L1, L7): the cover is a frame of the video's own footage, with no words -
+        # no image model is asked. A stock or plain background has no frame and keeps the old path.
+        thumb_path, thumb_provider = frame_cover, "frame"
+        progress.note(f"Cover: a frame of the video's own footage - {frame_cover}")
+        try:
+            from assets.cover_frames import strip_lines
+
+            for line in strip_lines(frame_cover):  # L10: beside the last ten
+                progress.note(line)
+        except Exception as exc:
+            logger.debug("cover strip skipped: %s", exc)
+    elif render_preset == "publish" and os.getenv("THUMBNAIL_MODE", "auto").lower() != "off":
         progress.stage("Thumbnail (Flux or Pillow)...")
         t_thumb = time.perf_counter()
         from assets.flux_thumbnail import generate_dual_thumbnails, generate_thumbnail

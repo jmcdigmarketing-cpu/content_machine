@@ -360,6 +360,12 @@ def _run_overnight_body(
 
     # #1078 (operator, 2026-10-11): overnight may render. Only when the channel says how
     # many, only drafts nothing is flagged on, and every one is queued unlisted.
+    try:  # L5 (wave 135): the operator's new clips get their bands and motion before a render
+        from assets.clip_ingest import measure_library
+
+        measure_library()
+    except Exception as exc:
+        logger.debug("overnight clip measurement skipped: %s", exc)
     try:
         from core.batch_review import overnight_render_limit, render_unattended
 

@@ -55,6 +55,7 @@ class _Cap(unittest.TestCase):
         return guard_before_discovery()
 
 
+@patch.dict(os.environ, {"THUMBNAIL_AI": "true"})  # decision 85: the image models only when on
 class DegradeTests(_Cap):
     def test_the_thumbnail_alone_can_bring_it_under(self):
         warnings = self._guard("2.02")

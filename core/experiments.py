@@ -31,6 +31,7 @@ import os
 import tempfile
 import threading
 import time
+from datetime import date, timedelta
 from typing import Any
 
 from core import experiment_levers, experiment_stats
@@ -91,8 +92,14 @@ def _measured_n(channel_id: str) -> int:
         return 0
 
 
-def start_experiment(channel_id: str, lever: str) -> dict[str, Any]:
-    """Activate `lever` for the channel (replaces any running experiment)."""
+EXPERIMENT_DAYS = 14  # #1827: an experiment runs this long unless started with its own days
+
+
+def start_experiment(
+    channel_id: str, lever: str, *, days: int = EXPERIMENT_DAYS, today: date | None = None
+) -> dict[str, Any]:
+    """Activate `lever` for the channel (replaces any running experiment). #1827: it carries
+    its stop date, `days` from `today`."""
     if not experiment_levers.known(lever):
         raise ValueError(
             f"Unknown lever '{lever}' — known: {', '.join(experiment_levers.levers())}"
@@ -108,7 +115,11 @@ def start_experiment(channel_id: str, lever: str) -> dict[str, Any]:
             f"Cannot start {lever} ({n_arms} arms) with n={n} measured videos; "
             f"need at least {n_arms}"
         )
-    record = {"lever": lever, "started_at": time.time()}
+    record = {
+        "lever": lever,
+        "started_at": time.time(),
+        "stop": ((today or date.today()) + timedelta(days=int(days))).isoformat(),
+    }
     with _lock:
         data = _load()
         by_kind = _by_kind(data["active"].get(channel_id))
@@ -147,6 +158,34 @@ def stop_experiment(channel_id: str, lever: str | None = None) -> None:
         else:
             data["active"].pop(channel_id, None)
         _save(data)
+
+
+def experiment_lines(channel_id: str, *, today: date | None = None) -> list[str]:
+    """#1827 (B10.6): the open experiments - lever, arms, days left or "stops today" - for the
+    weekly report. A record from before #1827 has no stop date and says so."""
+    day = today or date.today()
+    lines: list[str] = []
+    for record in active_experiments(channel_id):
+        lever = str(record.get("lever") or "")
+        try:
+            arms = ", ".join(experiment_levers.arms(lever))
+        except Exception:
+            arms = "?"
+        stop = str(record.get("stop") or "")
+        if not stop and record.get("started_at"):  # started before #1827: its start + 14 days
+            began = date.fromtimestamp(float(record["started_at"]))
+            stop = (began + timedelta(days=EXPERIMENT_DAYS)).isoformat()
+        if not stop:
+            when = "no stop date"
+        else:
+            left = (date.fromisoformat(stop[:10]) - day).days
+            when = (
+                "stops today" if left == 0
+                else f"{left} day(s) left (stops {stop[:10]})" if left > 0
+                else f"past its stop date ({stop[:10]}) - py -m core.experiments stop {lever}"
+            )  # fmt: skip
+        lines.append(f"  {lever} ({arms}): {when}")
+    return (["Open experiments (#1827):", *lines]) if lines else []
 
 
 def active_experiments(channel_id: str) -> list[dict[str, Any]]:

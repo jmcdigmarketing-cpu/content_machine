@@ -648,11 +648,15 @@ def measure_library(*, library_root: str | None = None, force: bool = False) -> 
                 continue
             path = os.path.join(folder, entry)
             meta = clips.get(path) or clips.get(os.path.abspath(path)) or {}
-            if not force and isinstance(meta.get("bands"), dict):
+            if not force and isinstance(meta.get("bands"), dict) and "motion" in meta:
                 tally["skipped"] += 1
                 continue
-            bands = measure_bands(path)
-            meta["bands"] = bands
+            if force or not isinstance(meta.get("bands"), dict):
+                meta["bands"] = measure_bands(path)
+            bands = meta["bands"]
+            from assets.clip_tags import measure_motion
+
+            meta["motion"] = measure_motion(path)  # L5: a near-still clip is a menu (None: unread)
             meta.setdefault("source", "library")
             clips[path] = meta
             tally["measured"] += 1

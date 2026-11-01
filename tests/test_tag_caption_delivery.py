@@ -221,11 +221,11 @@ class CaptionSkinTests(unittest.TestCase):
             "font": "Arial",
             "title_font": "Impact",
             "body_font": "Arial",
-            "margin_v": 450,  # #1775: a skin may push further in than the safe zone's 384
+            "margin_v": 500,  # #1775: a skin may push further in than the safe zone's 450
         }
         text = self._captions("tapin", skin)
         style = next(line for line in text.splitlines() if line.startswith("Style: Title,"))
-        self.assertIn(",450,1", style)
+        self.assertIn(",500,1", style)
 
     def test_a_skin_without_those_fields_keeps_yellow_and_the_word_margin(self):
         from video.subtitles import caption_force_style
@@ -233,7 +233,7 @@ class CaptionSkinTests(unittest.TestCase):
         text = self._captions("tapin", {"mode": "karaoke", "font": "Arial"})
         style = next(line for line in text.splitlines() if line.startswith("Style:"))
         self.assertIn("&H0000FFFF,", style)
-        self.assertIn(",384,1", style)  # #1775: the safe zone's bottom edge
+        self.assertIn(",450,1", style)  # #1775, #1931: the safe zone's bottom edge
         with patch("video.subtitles._caption_skin", return_value={"font": "Arial"}):
             forced = caption_force_style("tapin")
         self.assertIn("MarginV=72", forced)

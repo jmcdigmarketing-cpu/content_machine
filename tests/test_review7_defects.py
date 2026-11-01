@@ -159,7 +159,7 @@ class TestAutoCaptionPlacementIsGated(unittest.TestCase):
                 text = fh.read()
 
         self.assertTrue(out.endswith(".ass"))
-        self.assertIn(",2,130,130,384,1", text)  # #1775, #1921: the safe zone
+        self.assertIn(",2,130,130,450,1", text)  # #1775, #1921, #1931: the safe zone
         self.assertNotIn(",8,130,130,519,1", text)
 
 

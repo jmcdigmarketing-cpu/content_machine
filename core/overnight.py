@@ -186,12 +186,12 @@ def _crosspost(result: OvernightResult) -> None:
         result.crosspost_line = "\n".join(step(result.channel_id))
     except Exception as exc:
         logger.debug("overnight crosspost skipped: %s", exc)
-    try:  # #1750 (decision 88): the link page, rebuilt with the night's videos
+    try:  # #1750 (decision 88): the link pages, one per bio (#1752), rebuilt with the night's videos
         from publishing import video_host
-        from publishing.link_page import build_and_host
+        from publishing.link_page import build_all
 
         if video_host.configured():
-            build_and_host(result.channel_id)
+            build_all(result.channel_id)
     except Exception as exc:
         logger.debug("overnight link page skipped: %s", exc)
 

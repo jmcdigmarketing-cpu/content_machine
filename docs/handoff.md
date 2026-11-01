@@ -53,22 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-01 · **HEAD at write:** `4c72cda` (wave 140; this wave's commit follows) ·
+**Written:** 2026-11-01 · **HEAD at write:** `f63ccee` (wave 141; this wave's commit follows) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 141, the next five with S01 (decision 93).** The operator set `AFFILIATE_AMAZON_TAG` and
-turned on the Reporting API (the reach job exists; S11 now WAITING on YouTube's first file). S01:
-the sync keeps `minutes_by_source` for a video off the Shorts feed and `long_sources_line` says
-where long views come from (`ops ypp`, S01) - #1315 waits. S15: the menu within 15 points of 28
-days' organic views (`ledger.menu_mix`, `_domain_views`); `GAMING_FLOOR` 3. Found and fixed: a
-chapter Short counted for no domain (`growth._kind` follows `parent_run_id`) - gaming 41% -> 59%.
-Cyber Monday long video row (Nov 28); S09 counts each applied sync's corrections
-(data/privacy_sync.json); `unclaim --apply` marks what it leaves - run after the merge for run 220.
+**Wave 142, the next five with S05 (decision 94).** Defect first: `video_grade.below_gate` let a
+missing letter pass a floor (`"" in "ABCDF"`) - an older test caught it before commit; fixed, corpus
+case. The grade gates nothing unless `GRADE_GATE` is set (`gate_letter`, both gates); S05 reads it
+against the audience (15 of 40 in their views' third) and is BUILT. NFL nicknames read nfl
+(`_nfl_by_nickname`); `ops domains --apply` corrected 10 stored subjects on the operator's word
+(done from the scratchpad with this wave's code - re-running it lists none). Captions end 450 px up
+(`CAPTION_BOTTOM_PX`). `AFFILIATE_AMAZON_TAGS` per place; overnight builds a link page per bio;
+the sync keeps `ext_url_detail`; `ops links` prints the addresses and the pages' views.
 
-**Open:** #1947-#1950. **Next:** S05 with #1919, #1752, #1947, #1931.
+**Open:** #1953-#1956. **Next:** S06 with #1730, #1749, #1741, #1764.
 
-**Operator:** publish the Google app (lapses Nov 7); the hook card on a phone (#1922); Facebook in
-Buffer; the bio link.
+**Operator:** publish the Google app (lapses Nov 7); paste the three bio addresses (`ops links`);
+make four tracking IDs in Associates Central; Facebook in Buffer; #1922 and #1956 on a phone;
+#1954 (refile runs 120 and 126 under Gaming) on your word.
 
 ## Slot — Cursor
 

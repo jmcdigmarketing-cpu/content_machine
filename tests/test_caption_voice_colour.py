@@ -25,8 +25,10 @@ WORDS = [{"word": w, "start": i * 0.4, "end": i * 0.4 + 0.35} for i, w in enumer
 # captions' MarginV 260 -> 384, the safe zone's bottom edge - checked as the only difference.
 # Wave 138 (#1921, decision 90): side margins 80 -> 130 and the 19-character line re-split to
 # fit 17 ("Topuria defends" / "the belt") - checked as the only differences.
-SINGLE_VOICE_SHA = "ca9d190f9ea4f49ed7be52929d333454b3226dcd080d894da44f6d5407e5f0e5"
-PAIRED_SHA = "e5f6e6f45ac2a2c52f8c64d2f89c5ae78fdc2cf674e2ff590377e1c12d9d8a86"
+# Wave 142 (#1931, decision 94): MarginV 384 -> 450, Instagram's caption rows - checked as the
+# only difference.
+SINGLE_VOICE_SHA = "210d11eca62589bca244af8ee11f1aba71459a2b263f4f1350dd10d7eb8e0b42"
+PAIRED_SHA = "4d422190ea005ab743042d1d7360ccc37971cc24f4ee446909903df221d52763"
 
 
 def _two_voices() -> list[dict]:

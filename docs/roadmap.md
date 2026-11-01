@@ -67,6 +67,16 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-01 (Claude, wave 142 - the next five, S05).** Your verdicts tracked the views (0.65);
+the grade did not - 15 of 40 measured videos in their views' third, chance 33% - so it gates
+nothing now (decision 94; GRADE_GATE brings a floor back) and S05 reads it against the audience.
+An NFL team named by nickname reads NFL, and 10 stored subjects were corrected (S15: gaming 67% of
+the views). Amazon links carry a tracking ID per place - long videos and a link page per bio -
+and the sync keeps which outside site sent a view. The captions end 450 px up, clear of
+Instagram's caption rows. Next, with **S06** (4 of 48 public videos read as a recap): **#1730**
+each Short's related video set to its topic's long video (GTA 6 on Nov 6), **#1749** GTA 6
+edition links before 11-19, **#1741** long descriptions with the search terms, **#1764** no
+gambling affiliate, ever.
 **2026-11-01 (Claude, wave 141 - the next five, S01).** You set the Associates tag and turned on
 the Reporting API (the report job runs; S11 now waits on YouTube's first file). S01: the two
 Weeks in Review drew 4 views and 0, so the slot measured where long views come from - by
@@ -94,15 +104,6 @@ post (fixed; the recent ones re-sent). The backlog is under its 300 ceiling: 47 
 bridge ideas parked, a test holds it. Next, with one shortfall each wave: **S02** subscribers from
 videos (4 of 162) - its ten ideas first; **#1936** the 9 recaps that went public; **#1930** a failed
 YouTube read said nothing; **#1932** covers swept after 3 days; **#1933** S03 measured.
-**2026-10-31 (Claude, wave 138 - the next five).** Run 199's TikTok post went out 31 hours before
-YouTube publishes it: the round had held it, then a pass whose YouTube read failed sent it - a
-record slot still ahead now holds a run whatever YouTube answers. The booth shows the run's own
-cover (it showed another run's) with the cover strip. Captions keep 130 px clear of TikTok's
-side buttons; one crosspost in eight tries noon, 3, 6 or 8 PM; the Black Friday deals long video
-is drafted Nov 23 with up to three links (decision 90). Next: **#1930** a failed YouTube read in
-the round said nothing, **#1932** frame covers swept after 3 days, **#1929** a Cyber Monday deals
-Short, **#1752** Amazon tracking IDs per platform, **#1919** the link page's clicks. Yours:
-**#1922** the hook card's size on a phone.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

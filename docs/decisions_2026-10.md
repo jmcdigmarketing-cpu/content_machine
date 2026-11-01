@@ -607,3 +607,29 @@ operator took "Measure where long views come from", "Mark it, and 3 gaming ideas
 "A long deals video, drafted Sat Nov 28" (all three recommended). **Consequence:** about one
 more gaming idea a night while gaming leads; a long video costs one more Analytics query a
 sync; S15 re-read 11-15 (#1949), S01 on 11-13 (#1948).
+
+## 94. The grade gates nothing; subjects corrected; a tracking ID per place; captions 450 px up (2026-11-01)
+**Decision:** the report card gates nothing - not the backlog's render-on-its-own floor, not the
+unattended render gate (both were B) - unless `GRADE_GATE` sets a letter (`BACKLOG_MIN_GRADE`, its
+old name, is still read); an unsupported claim, an authenticity block, a weak hook and a stale draft
+still hold a draft. S05 measures the grade against the audience - both ranked in thirds over the
+graded, measured videos - and is built while the grade gates nothing; with a floor back, the grade
+must put half the videos in their views' third, of 30+. An NFL team named by nickname reads nfl
+(two nicknames, or one no other league or title shares), and the 10 stored subjects today's
+reading disputes are corrected, the old kept. Amazon links carry a tracking ID per place - a long
+video's description, and a link page per bio (TikTok, Instagram, Facebook) - and the sync keeps
+which outside site sent a video's outside-link views. The captions end 450 px from the bottom,
+clear of Instagram's caption rows, in one render for every app. **Why:** your verdicts tracked the
+views (Spearman 0.65, 14 of 24 in their third - though review-week shows the views before you rate);
+the grade did not: the system's reader puts 15 of 40 measured videos in their 7-day views' third
+(38%; chance 33%), no component above 0.11, and its frozen letters ran against the engaged rate
+(r=-0.36 over 40) - the question said 20 of 67 (30%), read with the calibration's re-grades on views
+to date. The menu's gaming floor reads the best bet's own subject, so an NFL game read as gaming
+could fill a gaming place. YouTube shows 1 outside-link view ever: no bio carries the page yet.
+Instagram publishes no organic figure; estimates run 250-450 px. Asked, the operator answered
+"something else" with no text, then took "Retire the grade as a gate"; then "Correct all 10", "A
+page per bio, each its own ID" and "Lift captions 66 px, every app". **Consequence:** run 222 (a C,
+GTA 6's map), held by its grade alone, can render on its own; every render from tonight has its
+captions 66 px higher; the bios take three addresses (`ops links`) and Amazon four IDs (yours); S15
+reads gaming 67% of the views (59% before the corrections); the formerly-held drafts are read on
+11-15 (#1953).

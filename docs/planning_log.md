@@ -10703,3 +10703,59 @@ Audit: mypy 92 == baseline; ruff and format clean. Suite: 7131 forward and rever
 `_domain` in `_kind`. Fields traced: `minutes_by_source` stored beside `views_by_source` and read by
 the sources line; `left` from `unclaim` to S10; the day counts from the applied sync (the metrics
 sync and the worker) to S09.
+
+## 2026-11-01 — wave 142: the next five, S05 (Claude Code)
+
+**Prompt:** "next 5".
+
+Measured first (read-only): your 28 verdicts against the views - 14 of 24 in their third,
+Spearman 0.65 - while `review-week` prints each video's views before it asks the rating
+(`core/success/review.py:89`). The grade against the same views: 30% in their third on the
+calibration's re-grades, Spearman 0.11 over 67; no component above 0.11; the ledger's frozen grades
+r=-0.36 with the engaged rate over 40. Two gates read it: `publishing/backlog.py` (B to render on its
+own) and `core/render_gate.py` (B and authenticity ok). Today's subject reading disputed 14 stored
+subjects and was wrong on three NFL titles itself. 1 outside-link view ever (`views_by_source`).
+
+**Asked (four, then one):** S05 - "something else", no text; asked again: "Retire the grade as a
+gate". #1947 - "Correct all 10". #1752/#1919 - "A page per bio, each its own ID". #1931 - "Lift
+captions 66 px, every app". The S05 question said 20 of 67; the system's reader (7-day views,
+today's grade) says 15 of 40 (38%) - about chance either way.
+
+Shipped (built in a scratchpad worktree, decision 94):
+1. S05 / #1951 `video_grade.gate_letter` / `below_gate`, read by `backlog_gate` and the render gate;
+   `verdicts.grade_agreement`, S05 BUILT, the grade line in `ops verdicts`.
+2. #1947 `topic_scorer._nfl_by_nickname`; `core/runs/domains.py` (`drift`, `apply`), `ops domains`;
+   applied on the operator's word: 10 corrected.
+3. #1931 `safe_zone.CAPTION_BOTTOM_PX` 450; `CAPTION_BAND` (0.6458, 0.7656); `LOWER_MARGIN` 700.
+4. #1752 `description_extras.amazon_tag`; `link_page.BIO_PAGES`, `build_all`, `links_lines`.
+5. #1919 `youtube_metrics._fetch_source_detail` - `ext_url_detail`; `link_page.clicks`.
+
+Found on the way:
+- core/video_grade.py `below_gate`: `"" in "ABCDF"` is True, so a missing letter passed a floor -
+  `tests/test_render_gate.py`'s missing-grade test caught it before commit (fixed; corpus case).
+- apis/topic_scorer.py: NFL nicknames were unread - an NFL game could fill a gaming place under the
+  gaming floor, which reads the best bet's own subject (#1947, fixed).
+- After the corrections S15 reads gaming 67% of 28 days' organic views (was 59%): run 126's 411
+  views were popculture.
+- Runs 120 and 126 still carry their upload-time category on YouTube (#1954, your word).
+
+Not done: #1952 (blind rating) parked by the decision; no live upload of the link pages - overnight
+builds them tonight; the YouTube category fix waits on your word (#1954).
+
+Tests: `tests/test_wave142.py`, 18 - 17 fail on `f63ccee` (a clean HEAD worktree, the editable
+finder stripped: 6 failures, 11 errors); the 18th pins that one shared nickname ("Teen Titans",
+"Giants of the deep") stays non-NFL. Older tests changed for the decision, each saying so: the
+render-gate and backlog-gate tests set `GRADE_GATE=B` to keep testing the floor; wave 139's S05
+test reads the grade and its closed set adds S05; wave 4's plain reason uses an authenticity hold; the caption tests move 384 to
+450 (the pinned karaoke hashes checked against HEAD's bytes: MarginV the only difference); wave 136
+reads `build_all`; one corpus case 384 -> 450. Corpus: +3 (the two NFL readings, the missing
+letter), each failing on HEAD.
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite: 7149 forward and reversed, OK
+(6 skipped); corpus 511 of 511; data/ and output/ untouched by the suite. Production callers:
+`gate_letter` in the backlog gate, the render gate and S05; `grade_agreement` in S05 and
+`ops verdicts`; `_nfl_by_nickname` in `_infer_domain_from_text`; `drift`/`apply` in `ops domains`;
+`amazon_tag` in `affiliate_lines` and `collect`; `build_all` in overnight and `ops links`; `clicks`
+in `ops links`; `_fetch_source_detail` in `fetch_video_metrics`. Fields traced: `ext_url_detail`
+from the sync to `clicks`; `domains.effective`/`was` from `apply` to `growth._domain`,
+`run_domain` and the category fix; `GRADE_GATE` from the env to both gates and S05.

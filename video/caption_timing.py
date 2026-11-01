@@ -419,8 +419,9 @@ def build_ass_karaoke(
     and use the `Voice2` style, whose highlight is `voice2_primary`. With no such word
     the output is byte-identical to the single-voice builder.
 
-    #1775: `margin` is raised to the safe zone's - the bottom edge at 80% of the height, or
-    below the top cards when anchored at the top - so no app's buttons sit on the words.
+    #1775: `margin` is raised to the safe zone's - the bottom edge 450 px up (#1931, Instagram's
+    caption rows), or below the top cards when anchored at the top - so no app's buttons sit on
+    the words.
     """
     from video.safe_zone import SIDE_PX, caption_margin
 

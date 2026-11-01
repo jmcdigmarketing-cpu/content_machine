@@ -13,9 +13,10 @@ The operator's calls:
 - **Topics** - fresh best bets. News (trending / calendar / news-shaped, `batch_review.
   freshness_window_days`) takes the first slots and is dropped when its slot would be more
   than `BACKLOG_NEWS_DAYS` (3) days out; evergreen topics fill the rest.
-- **Approval** - a draft that clears every gate (`backlog_gate`: grade, unsupported claims,
-  authenticity, hook, freshness) is rendered and queued on its own; anything else waits for
-  `ops batch-review`. The operator vetoes with `ops backlog pull --run-id N`.
+- **Approval** - a draft that clears every gate (`backlog_gate`: unsupported claims,
+  authenticity, hook, freshness - and the grade only when GRADE_GATE sets a floor, decision 94)
+  is rendered and queued on its own; anything else waits for `ops batch-review`. The operator
+  vetoes with `ops backlog pull --run-id N`.
 
 The worker uploads (about 6 a day on the default YouTube quota - the rest wait a day), and
 each video goes public at its slot whether the PC is on or not.
@@ -37,7 +38,6 @@ logger = get_logger("publishing.backlog")
 
 _WINDOW = timedelta(days=7)
 _NEWS_SOURCES = frozenset({"trending", "calendar"})
-_GRADES = "ABCDF"
 
 
 def news_days() -> int:
@@ -48,8 +48,10 @@ def news_days() -> int:
 
 
 def min_grade() -> str:
-    raw = (os.getenv("BACKLOG_MIN_GRADE") or "B").strip().upper()[:1]
-    return raw if raw in _GRADES else "B"
+    """The grade floor a draft needs to render on its own, "" for none (decision 94)."""
+    from core.video_grade import gate_letter
+
+    return gate_letter()
 
 
 def _utc(when: datetime) -> datetime:
@@ -204,17 +206,18 @@ def backlog_gate(draft: Any) -> list[str]:
 
     meta = draft.meta
     reasons: list[str] = []
-    try:
-        grade = video_grade.grade_run(int(draft.run_id))
-    except Exception as exc:
-        logger.debug("backlog: grade for run %s unavailable: %s", draft.run_id, exc)
-        grade = None
     floor = min_grade()
-    letter = str(getattr(grade, "letter", "") or "").upper()[:1]
-    if not letter:
-        reasons.append("no grade")
-    elif letter not in _GRADES or _GRADES.index(letter) > _GRADES.index(floor):
-        reasons.append(f"grade {letter} (needs {floor} or better)")
+    if floor:  # decision 94: off unless GRADE_GATE sets one
+        try:
+            grade = video_grade.grade_run(int(draft.run_id))
+        except Exception as exc:
+            logger.debug("backlog: grade for run %s unavailable: %s", draft.run_id, exc)
+            grade = None
+        letter = str(getattr(grade, "letter", "") or "").upper()[:1]
+        if not letter:
+            reasons.append("no grade")
+        elif video_grade.below_gate(letter, floor):
+            reasons.append(f"grade {letter} (needs {floor} or better)")
     blocking = blocking_unsupported(meta.get("claim_verification"))
     if blocking:
         reasons.append(f"{len(blocking)} unsupported claim(s)")

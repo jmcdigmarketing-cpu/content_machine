@@ -162,9 +162,12 @@ class GateTests(_Stores):
         self._draft(3, "Weak hook", hook_verdict="weak")
         drafts = {d.run_id: d for d in pending_drafts("tapin", root=self.drafts)}
         grades = {1: "B", 2: "A", 3: "C"}
-        with patch(
-            "core.video_grade.grade_run",
-            side_effect=lambda r: SimpleNamespace(letter=grades[r], score=80),
+        with (
+            patch.dict(os.environ, {"GRADE_GATE": "B"}),  # decision 94: the floor is opt-in now
+            patch(
+                "core.video_grade.grade_run",
+                side_effect=lambda r: SimpleNamespace(letter=grades[r], score=80),
+            ),
         ):
             self.assertEqual(backlog_gate(drafts[1]), [])
             self.assertIn("unsupported claim", " ".join(backlog_gate(drafts[2])))

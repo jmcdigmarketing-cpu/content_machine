@@ -424,6 +424,28 @@ def domain_phrases(text: str) -> list[str]:
     return [name for _s, _e, name in sorted(found)]
 
 
+# #1947: nicknames another league, a film or a game also uses - one of these alone says nothing.
+_SHARED_NFL_NICKNAMES = frozenset({
+    "bears", "bills", "cardinals", "commanders", "cowboys", "dolphins", "eagles", "falcons", "giants",
+    "jaguars", "jets", "lions", "panthers", "raiders", "rams", "ravens", "saints", "texans", "titans",
+    "vikings",
+})  # fmt: skip
+
+
+def _nfl_by_nickname(topic_lower: str) -> bool:
+    """#1947: two NFL teams named by nickname, or one no other league or title shares.
+
+    "Tennessee Titans' offensive line faces test vs Colts" and "Jets vs Patriots Preview" read as
+    gaming (the channel's fallback), "Washington vs 49ers preview" as nba - so an NFL game could
+    fill one of the menu's gaming places. Checked before the NBA list, whose "draft",
+    "contender" and "standings" are NFL words too.
+    """
+    from apis.nfl_entities import NFL_TEAM_NAMES
+
+    named = [n for n in NFL_TEAM_NAMES if re.search(r"\b" + re.escape(n) + r"\b", topic_lower)]
+    return len(named) >= 2 or any(n not in _SHARED_NFL_NICKNAMES for n in named)
+
+
 def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: bool = True) -> str:
     """Classify domain from free text; optional channel profile fallback."""
     topic_lower = (text or "").lower()
@@ -438,6 +460,9 @@ def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: 
     # NBA list below and is checked first, so the same title with no feed tag was nba.
     if _mentions(topic_lower, ["contender series"]):
         return "ufc"
+
+    if _nfl_by_nickname(topic_lower):
+        return "nfl"
 
     if _mentions(
         topic_lower,

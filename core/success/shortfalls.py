@@ -33,8 +33,6 @@ CLOSED = (MET, BUILT)
 ORDER = (NOT_YET, YOURS, WAITING, NO_MEASURE, MET, BUILT)
 
 # The pass marks decision 91 wrote down where the plan named none.
-VERDICT_AGREE = 0.7  # S05: your 1-5 agrees with the audience on 70% ...
-VERDICT_MIN = 20  # ... of at least 20 rated videos
 CLAIM_HOLD_MAX = 0.2  # S08 (the plan's own mark)
 CLAIM_MIN = 5  # S08: a week with fewer checked drafts says nothing
 HOURS_FLOOR = 0.2  # S01: "rising from 0.2" long-form hours a week
@@ -164,15 +162,24 @@ def _s04(channel_id: str, now: datetime) -> Reading:
 
 
 def _s05(channel_id: str, now: datetime) -> Reading:
-    from core.success.verdicts import agreement
+    """Decision 94: the grade against the audience. "Clean" was the grade, and it ranked videos no
+    better than chance against their views - so it gates nothing (built); with a GRADE_GATE floor
+    back, it must earn it: half the measured videos in their views' third, of 30+."""
+    from core.success import verdicts
+    from core.video_grade import gate_letter
 
-    agree, total = agreement(channel_id)
+    agree, total = verdicts.grade_agreement(channel_id)
     share = agree / total if total else 0.0
-    text = (f"you agree with the audience on {agree} of {total} rated videos ({share:.0%}; goal "
-            f"{VERDICT_AGREE:.0%} of {VERDICT_MIN}+)")  # fmt: skip
-    if total < VERDICT_MIN:
+    text = (f"the grade puts {agree} of {total} measured videos in their views' third ({share:.0%};"
+            " chance is 33%)")  # fmt: skip
+    floor = gate_letter()
+    if not floor:
+        return Reading(BUILT, f"{text} - it gates nothing (decision 94)")
+    text += (f" - GRADE_GATE holds drafts below {floor} (goal: {verdicts.GRADE_AGREE:.0%} of "
+             f"{verdicts.GRADE_MIN}+)")  # fmt: skip
+    if total < verdicts.GRADE_MIN:
         return Reading(WAITING, text)
-    return Reading(MET if share >= VERDICT_AGREE else NOT_YET, text)
+    return Reading(MET if share >= verdicts.GRADE_AGREE else NOT_YET, text)
 
 
 def _saved_script(run_id: Any) -> str | None:

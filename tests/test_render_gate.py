@@ -13,6 +13,13 @@ from core.render_gate import (
 
 
 class TestRenderGate(unittest.TestCase):
+    # Decision 94: the report card gates nothing unless GRADE_GATE sets a floor; these tests
+    # exercise that floor (tests/test_wave142.py pins the default).
+    def setUp(self):
+        floor = patch.dict(os.environ, {"GRADE_GATE": "B"})
+        floor.start()
+        self.addCleanup(floor.stop)
+
     def test_a_and_ok_passes(self):
         self.assertIsNone(unattended_render_block_reason(letter="A", authenticity_verdict="ok"))
         self.assertIsNone(unattended_render_block_reason(letter="B", authenticity_verdict="ok"))

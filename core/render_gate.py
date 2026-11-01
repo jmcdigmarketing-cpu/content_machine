@@ -2,10 +2,11 @@
 
 Overnight drafts are render-free; the cron path that *does* render is
 ``scripts/auto_generate`` plus any ``job_type=render`` worker job. Unattended
-volume cannot tank the 2026 policy: report card ≥ B **and** authenticity ``ok``,
-or the render does not start. Interactive ``main.py`` stays operator-controlled.
+volume cannot tank the 2026 policy: authenticity ``ok``, or the render does not start.
+Interactive ``main.py`` stays operator-controlled.
 
-Missing grade/verdict fail-closed (the candidate is a require-both gate).
+Decision 94 (S05): the report card gates nothing unless ``GRADE_GATE`` sets a floor - it ranked
+videos no better than chance against their views. A missing verdict fails closed.
 ``--force`` / ``OVERNIGHT_RENDER_GATE=false`` bypass. Verifier import failures
 fail-open so a broken grade module cannot freeze the worker.
 """
@@ -19,7 +20,6 @@ from core.logging import get_logger
 
 logger = get_logger("core.render_gate")
 
-_PASS_LETTERS = frozenset({"A", "B"})
 _AUTH_OK = "ok"
 
 
@@ -40,10 +40,12 @@ def unattended_render_block_reason(
     """Why an unattended render must not start, or None when both bars pass."""
     if not gate_enabled():
         return None
-    grade = (letter or "").strip().upper()
-    if grade not in _PASS_LETTERS:
-        shown = grade or "missing"
-        return f"unattended render gate: report card {shown} (need >= B)"
+    from core.video_grade import below_gate, gate_letter
+
+    floor = gate_letter()
+    if below_gate(letter, floor):
+        shown = (letter or "").strip().upper() or "missing"
+        return f"unattended render gate: report card {shown} (need >= {floor})"
     verdict = (authenticity_verdict or "").strip().lower()
     if verdict != _AUTH_OK:
         shown = verdict or "missing"
@@ -66,10 +68,10 @@ def block_reason_from_quality(quality: dict[str, Any] | None) -> str | None:
     quality = quality or {}
     letter = ""
     try:
-        from core.video_grade import grade_from_parts
+        from core.video_grade import gate_letter, grade_from_parts
 
-        grade = grade_from_parts(quality=quality)
-        letter = grade.letter
+        if gate_letter():  # decision 94: graded only when a floor is set
+            letter = grade_from_parts(quality=quality).letter
     except Exception as exc:
         logger.debug("render-gate grade rollup skipped: %s", exc)
         return None  # fail-open: a broken grader must not freeze the worker

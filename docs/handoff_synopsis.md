@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-01: wave 141, the next five
+# Handoff synopsis — 2026-11-01: wave 142, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-01 (Claude Code): wave 141, the next five (S01)
+## Last wave — 2026-11-01 (Claude Code): wave 142, the next five (S05)
+
+The grade gates nothing (decision 94): your verdicts tracked the views and the grade did not (15 of
+40 in their views' third, chance 33%); S05 reads it against the audience. NFL nicknames read NFL and
+10 stored subjects were corrected (S15: gaming 67%). Amazon links carry a tracking ID per place - a
+link page per bio - and the sync keeps which outside site sent a view. Captions end 450 px up.
+
+## Previous — 2026-11-01 (Claude Code): wave 141, the next five (S01)
 
 The Associates tag is set and the Reporting API is on (S11 waits on YouTube's first file). The
 two Weeks in Review drew 4 views and 0: `ops ypp` and S01 now say where long views come from.
@@ -25,13 +32,6 @@ draft that still reads as a recap gets one rewrite before review, and review sho
 earned (decision 92); read with today's detector, 4 of S06's 9 recaps are. A crosspost round that
 cannot read YouTube says so; frame covers are kept past the 3-day sweep; a retired render records
 why, so S03 is measured.
-
-## Previous — 2026-11-01 (Claude Code): wave 139, the shortfalls measured
-
-`ops shortfalls` runs each of the 22 checks (decision 91): 7 met and 2 built closed in the plan
-with their number; S07's check is now "every night". Its first run found 8 crossposts never sent
-- a sibling's own Buffer post taken as a hand post (fixed; `crosspost unclaim`). The backlog is
-under 300: 47 lowest-scored bridge ideas parked, a test holds the ceiling.
 
 ---
 
@@ -97,7 +97,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S05 (one shortfall a wave), #1919, #1752, #1947, #1931; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S06 (one shortfall a wave), #1730, #1749, #1741, #1764; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

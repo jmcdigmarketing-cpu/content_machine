@@ -8347,9 +8347,9 @@
         260
       ],
       "expect": {
-        "equals": 384
+        "equals": 450
       },
-      "why": "a skin's margin may push further in, never into the apps' chrome"
+      "why": "a skin's margin may push further in, never into the apps' chrome - 450 px since decision 94 (#1931, Instagram's caption rows)"
     },
     {
       "id": "a-style-in-the-chrome-is-named",
@@ -8581,6 +8581,47 @@
         "not_contains": "0 days"
       },
       "why": "the day before launch is never 'Tomorrow: 0 days to go'"
+    },
+    {
+      "id": "an-nfl-nickname-is-nfl",
+      "item": 1947,
+      "source": "live 2026-11-01: run 169 'Washington vs 49ers preview' read as nba, run 159 'Jets vs Patriots' as gaming - an NFL game could fill a gaming place",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Washington vs 49ers preview: San Francisco's 5-0 start faces test"
+      ],
+      "expect": {
+        "equals": "nfl"
+      },
+      "why": "a nickname no other league or title shares names the sport"
+    },
+    {
+      "id": "two-nfl-nicknames-beat-the-channel-fallback",
+      "item": 1947,
+      "source": "live 2026-11-01: run 155 'Titans ... vs Colts' read as gaming by the channel's fallback",
+      "call": "apis.topic_scorer:infer_domain",
+      "args": [
+        "Tennessee Titans' offensive line faces test vs Colts' revamped pass rush",
+        "tapin"
+      ],
+      "expect": {
+        "equals": "nfl"
+      },
+      "why": "the weighting reader is the topic reader's sibling - two teams named is a game"
+    },
+    {
+      "id": "a-missing-letter-is-below-a-floor",
+      "item": 1951,
+      "source": "wave 142 build: '' in 'ABCDF' is True, so a missing grade passed GRADE_GATE",
+      "call": "core.video_grade:below_gate",
+      "args": [
+        "",
+        "B"
+      ],
+      "expect": {
+        "equals": true
+      },
+      "why": "with a floor set, no grade is never a pass"
     }
   ]
 }

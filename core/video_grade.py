@@ -108,6 +108,35 @@ def _letter(score: float) -> str:
     return "F"
 
 
+_GATE_LETTERS = "ABCDF"
+
+
+def gate_letter() -> str:
+    """The letter a draft must reach before a gate lets it render on its own, or "" - none.
+
+    Decision 94 (S05, the operator's call): the grade gates nothing by default. Against the
+    audience it ranked videos about as well as chance - 15 of 40 in the same third as their 7-day
+    views, where chance is one in three - and its frozen letters ran against the engaged rate
+    (r=-0.36 over 40), while the checks it rolls up still hold a draft on their own (an unsupported
+    claim, an authenticity block, a weak hook). GRADE_GATE=B, or its old name
+    BACKLOG_MIN_GRADE, brings a floor back.
+    """
+    import os
+
+    raw = (os.getenv("GRADE_GATE") or os.getenv("BACKLOG_MIN_GRADE") or "").strip().upper()[:1]
+    return raw if raw in _GATE_LETTERS else ""
+
+
+def below_gate(letter: str | None, floor: str) -> bool:
+    """True when `letter` (missing counts) is worse than `floor`; never with no floor."""
+    if not floor:
+        return False
+    shown = (letter or "").strip().upper()[:1]
+    if not shown or shown not in _GATE_LETTERS:  # "" is "in" every string
+        return True
+    return _GATE_LETTERS.index(shown) > _GATE_LETTERS.index(floor)
+
+
 def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
     ungrounded = int(quality.get("ungrounded_count") or 0)
     trades = int(quality.get("trade_warning_count") or 0)

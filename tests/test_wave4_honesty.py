@@ -214,7 +214,7 @@ class TestGatesPlainEnglish(unittest.TestCase):
             {
                 "hook_score": 20,
                 "authenticity_score": 20,
-                "authenticity_verdict": "ok",
+                "authenticity_verdict": "review",  # decision 94: the grade alone holds nothing
                 "ungrounded_count": 0,
             }
         )

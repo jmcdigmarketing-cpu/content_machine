@@ -19,7 +19,7 @@ logger = get_logger("core.caption_contrast")
 # on a phone, so we keep the stricter 4.5:1 rather than large-text 3:1.
 AA_RATIO = 4.5
 # #1775: the band the captions occupy (top, bottom) as shares of the height - above the
-# apps' bottom fifth, where they sat until 2026-10-31.
+# apps' bottom fifth, where they sat until 2026-10-31; #1931: 450 px up for Instagram.
 CAPTION_BAND = _SAFE_CAPTION_BAND
 
 

@@ -306,6 +306,39 @@ def _fetch_watch_by_source(
     return out
 
 
+def _fetch_source_detail(
+    video_id: str, service: Any, start_date: str, end_date: str, source: str
+) -> dict[str, int] | None:
+    """{referrer: views} for one traffic source of one video - for EXT_URL, the outside sites
+    (#1919: are the link pages sending anyone?) - or None on a failed read."""
+    try:
+        resp = (
+            service.reports()
+            .query(
+                ids="channel==MINE",
+                startDate=start_date,
+                endDate=end_date,
+                metrics="views",
+                dimensions="insightTrafficSourceDetail",
+                filters=f"video=={video_id};insightTrafficSourceType=={source}",
+                sort="-views",
+                maxResults=25,
+            )
+            .execute()
+        )
+    except Exception as exc:
+        logger.debug("%s detail failed for %s: %s", source, video_id, exc)
+        return None
+    out: dict[str, int] = {}
+    for row in _named_rows(resp or {}):
+        try:
+            site, views = str(row["insightTrafficSourceDetail"]), int(float(row["views"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        out[site] = out.get(site, 0) + views
+    return out
+
+
 def organic_engaged_rate(
     average_view_percentage: float, watch: dict[str, tuple[int, float]]
 ) -> float | None:
@@ -668,6 +701,12 @@ def fetch_video_metrics(
             organic = organic_engaged_rate(avg_pct, watch) if watch and paid_total > 0 else None
             if organic is not None:
                 result["organic_engaged_rate"] = organic
+        if by_source.get("EXT_URL"):  # #1919: which outside site sent them - the link pages?
+            detail = _fetch_source_detail(
+                youtube_video_id, service, start_date, end_date, "EXT_URL"
+            )
+            if detail is not None:
+                result["ext_url_detail"] = detail
     return result
 
 

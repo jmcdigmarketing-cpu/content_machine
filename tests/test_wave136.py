@@ -196,7 +196,7 @@ class LinkPageTests(unittest.TestCase):
         from core import overnight
         from scripts import ops
 
-        self.assertIn("build_and_host(", inspect.getsource(overnight))
+        self.assertIn("build_all(", inspect.getsource(overnight))  # #1752: a page per bio
         self.assertIn('_register("links"', inspect.getsource(ops))
 
 

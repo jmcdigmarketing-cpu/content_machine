@@ -813,6 +813,19 @@ def cmd_verdicts(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "domains", "Runs stored under another subject than their title reads; --apply fixes (#1947)"
+)
+def cmd_domains(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.runs.domains import drift_lines
+
+    channel_id = resolve_channel_id(getattr(args, "channel", None))
+    for line in drift_lines(channel_id, apply_fixes=bool(getattr(args, "apply", False))):
+        print(line)
+    return 0
+
+
 @_register("winners", "The channel's top videos by views, as the script prompt sees them (#937)")
 def cmd_winners(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
@@ -4067,19 +4080,18 @@ def cmd_spend(args: argparse.Namespace) -> int:
     return 0
 
 
-@_register("links", "The link-in-bio page: rebuild it, put it on R2, print its address (#1750)")
+@_register("links", "The link-in-bio pages, one per bio: rebuild, put on R2, print (#1750, #1752)")
 def cmd_links(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
     from publishing import video_host
-    from publishing.link_page import build_and_host
+    from publishing.link_page import build_all, links_lines
 
     channel_id = resolve_channel_id(getattr(args, "channel", None))
     if not video_host.configured():
-        print("The link page needs the R2 bucket: " + ", ".join(video_host.missing()))
+        print("The link pages need the R2 bucket: " + ", ".join(video_host.missing()))
         return 1
-    url = build_and_host(channel_id)
-    print(f"Link page: {url}")
-    print("Paste it into the TikTok, Instagram and Facebook bios once; overnight keeps it current.")
+    for line in links_lines(channel_id, build_all(channel_id)):
+        print(line)
     return 0
 
 

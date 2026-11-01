@@ -114,11 +114,16 @@ instead of in a published video.
 fixed (#1181, and #1211 checks old titles).
 
 **How.** Add checks for what reads badly, not only for what is false, and keep your own rating
-beside the grade so "clean" is tested against "good".
+beside the grade so "clean" is tested against "good". Measured 11-01 (decision 94): your verdicts
+tracked the views (Spearman 0.65) and the grade did not (15 of 40 in their views' third, chance 33%),
+so the grade stopped gating; S05 reads it against the audience.
 
-**Who:** Code. **Done when:** `py -m scripts.ops verdicts` - your 1-5 agreeing with the grade.
+**Who:** Code. **Done when:** `py -m scripts.ops verdicts` - the grade gates nothing, or, with a
+`GRADE_GATE` floor, puts half the measured videos in their views' third (30+).
 
-**Ideas:** #1352-#1360 in [backlog.md](backlog.md) under "S05", and already open: #537.
+**Closed:** 2026-11-01 - BUILT - the grade puts 15 of 40 measured videos in their views' third (38%; chance is 33%) - it gates nothing (decision 94) (`py -m scripts.ops shortfalls`, wave 142; it says so if this stops passing).
+
+**Ideas:** #1352-#1360 in [backlog.md](backlog.md) under "S05", and already open: #537; #1953.
 
 ### S06 Every overnight draft was a game written as a recap (Oct 11-14)
 

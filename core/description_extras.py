@@ -116,6 +116,22 @@ def affiliate_rows(channel_id: str) -> list[dict[str, Any]]:
     return [r for r in rows or [] if isinstance(r, dict) and r.get("url") and r.get("keys")]
 
 
+TAG_PLACES = ("long", "tiktok", "instagram", "facebook")
+
+
+def amazon_tag(place: str = "") -> str:
+    """#1752 (decision 94): the Associates tracking ID for where a link sits - `long` (a long
+    video's description) or a bio's link page (`tiktok`, `instagram`, `facebook`) - from
+    AFFILIATE_AMAZON_TAGS ("long=name-yt-20,tiktok=name-tt-20"), else AFFILIATE_AMAZON_TAG.
+    Amazon's report counts clicks and earnings per ID, so it says which place earned."""
+    wanted = (place or "").strip().lower()
+    for pair in os.getenv("AFFILIATE_AMAZON_TAGS", "").split(","):
+        key, _sep, value = pair.partition("=")
+        if wanted and key.strip().lower() == wanted and value.strip():
+            return value.strip()
+    return os.getenv("AFFILIATE_AMAZON_TAG", "").strip()
+
+
 def _tagged(url: str, tag: str) -> str:
     """An Amazon link with the Associates tag, "" without one (#1747); any other link as is."""
     if "amazon." not in url.lower():
@@ -151,7 +167,7 @@ def affiliate_lines(
     deals = is_deals(title, topic)
     text = f"{title or ''} {topic or ''}" + (f" {script or ''}" if deals else "")
     text = text.lower()
-    tag = os.getenv("AFFILIATE_AMAZON_TAG", "").strip()
+    tag = amazon_tag("long")
     links: list[str] = []
     for row in affiliate_rows(channel_id):
         if row.get("deals_only") and not deals:

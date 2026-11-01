@@ -6,7 +6,8 @@ the views, it says where your gut and the audience agree - and the two lists wor
 videos you loved that the audience did not, and ones you rated low that did well.
 
 Views are ranked into thirds among the measured videos (views > 0); a rating of 4-5 agrees
-with the top third, 3 with the middle, 1-2 with the bottom.
+with the top third, 3 with the middle, 1-2 with the bottom. Decision 94 (S05): the engine's
+grade is set against the same views the same way - your gut tracked them, the grade did not.
 """
 
 from __future__ import annotations
@@ -17,9 +18,14 @@ from datetime import date
 from typing import Any
 
 from config.paths import DATA_DIR
+from core.logging import get_logger
+
+logger = get_logger("core.success.verdicts")
 
 VERDICTS_FILE = os.path.join(DATA_DIR, "verdicts.json")
 MIN_RATED = 3
+GRADE_AGREE = 0.5  # S05, decision 94: half the measured videos in their views' third ...
+GRADE_MIN = 30  # ... of at least 30 graded - chance is one in three
 
 
 def _read() -> dict[str, Any]:
@@ -101,6 +107,42 @@ def agreement(channel_id: str) -> tuple[int, int]:
     return scored["agreed"], scored["rated"]
 
 
+def grade_agreement(channel_id: str) -> tuple[int, int]:
+    """(agreed, graded): measured videos whose grade sits in the same third as their views.
+
+    Decision 94 (S05): both ranked in thirds over the videos that have a grade - chance is one
+    in three. On 11-01 the grade agreed on 15 of 40 (7-day views) while your verdicts tracked them.
+    """
+    from core import video_grade
+    from core.success import videos
+
+    ranked, _heading, _unit = videos.comparable_views(videos.channel_videos(channel_id))
+    graded: list[tuple[str, float]] = []
+    for video, _value in ranked:
+        if not video.run_id:
+            continue
+        try:
+            grade = video_grade.grade_run(int(video.run_id))
+        except Exception as exc:
+            logger.debug("verdicts: grade for run %s unavailable: %s", video.run_id, exc)
+            continue
+        if grade is not None:
+            graded.append((video.video_id, float(grade.score)))
+    total = len(graded)
+    by_grade = {vid: i for i, (vid, _s) in enumerate(sorted(graded, key=lambda p: -p[1]))}
+    agreed = sum(1 for i, (vid, _s) in enumerate(graded)
+                 if _third(i, total) == _third(by_grade[vid], total))  # fmt: skip
+    return agreed, total
+
+
+def _grade_line(channel_id: str) -> str:
+    agreed, graded = grade_agreement(channel_id)
+    if not graded:
+        return "  the grade against the audience: no graded video has views yet"
+    return (f"  the grade against the audience: {agreed} of {graded} in the same third "
+            f"({agreed / graded:.0%}; chance is 1 in 3) - it gates nothing (decision 94)")  # fmt: skip
+
+
 def verdict_report(channel_id: str) -> list[str]:
     scored = _scored(channel_id)
     head = f"Your verdicts vs the audience - {channel_id}"
@@ -110,6 +152,7 @@ def verdict_report(channel_id: str) -> list[str]:
             head,
             f"  {rated} rated video(s) with views; rate {MIN_RATED - rated} more "
             "(py -m scripts.ops review-week) and this compares your gut with the views.",
+            _grade_line(channel_id),
         ]
     lines = [
         f"{head} ({rated} rated videos with views)",
@@ -120,4 +163,5 @@ def verdict_report(channel_id: str) -> list[str]:
         lines.append("  rated 4-5, landed in the bottom third: " + "; ".join(scored["loved"]))
     if scored["doubted"]:
         lines.append("  rated 1-2, landed in the top third: " + "; ".join(scored["doubted"]))
+    lines.append(_grade_line(channel_id))
     return lines

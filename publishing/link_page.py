@@ -6,6 +6,11 @@ week's three Shorts with the most organic views, and the affiliate links of `con
 with the FTC line - only once `AFFILIATE_AMAZON_TAG` is set. No personal data. Overnight rebuilds it
 and puts it on the R2 bucket Buffer already reads (`<channel>/links.html`); `ops links` prints the
 address to paste into the bios once.
+
+#1752 (decision 94): a page per bio - TikTok, Instagram, Facebook - each linking Amazon with its
+own tracking ID (`description_extras.amazon_tag`), so Amazon's report says which bio earned;
+`links.html` stays for an address already pasted. #1919: YouTube names the outside site that
+sent a view, so `clicks` counts the views the pages sent to the videos they list.
 """
 
 from __future__ import annotations
@@ -15,12 +20,14 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import urlparse
 
 from core.logging import get_logger
 
 logger = get_logger("publishing.link_page")
 
 _TOP_SHORTS = 3
+BIO_PAGES = ("tiktok", "instagram", "facebook")
 
 
 def links_html(
@@ -73,8 +80,9 @@ def _organic(metrics: dict[str, Any]) -> int:
     return max(0, int(total) - int(metrics.get("paid_views") or 0))
 
 
-def collect(channel_id: str, *, now: datetime | None = None) -> dict[str, Any]:
-    """What the page shows, read from the publish log, the runs and the affiliates map."""
+def collect(channel_id: str, *, now: datetime | None = None, page: str = "") -> dict[str, Any]:
+    """What the page shows, read from the publish log, the runs and the affiliates map; `page`
+    names the bio, whose tracking ID the Amazon links carry (#1752)."""
     from storage.repositories.content_runs import get_content_run_repository
     from storage.repositories.publish_log import get_publish_log_repository
 
@@ -103,9 +111,9 @@ def collect(channel_id: str, *, now: datetime | None = None) -> dict[str, Any]:
             longs.append((when, item))
         elif moment - when <= timedelta(days=7):
             week.append((_organic(metrics), item))
-    from core.description_extras import _tagged, affiliate_rows, ftc_affiliate_line
+    from core.description_extras import _tagged, affiliate_rows, amazon_tag, ftc_affiliate_line
 
-    tag = os.getenv("AFFILIATE_AMAZON_TAG", "").strip()
+    tag = amazon_tag(page)
     affiliates = []
     for aff in affiliate_rows(channel_id):
         url = _tagged(str(aff["url"]), tag)
@@ -125,12 +133,12 @@ def _out_dir(channel_id: str) -> str:
     return os.path.join(ROOT_DIR, "output", channel_id, "links")
 
 
-def page_key(channel_id: str) -> str:
-    return f"{channel_id}/links.html"
+def page_key(channel_id: str, page: str = "") -> str:
+    return f"{channel_id}/links/{page}.html" if page else f"{channel_id}/links.html"
 
 
-def build_and_host(channel_id: str) -> str:
-    """Write the page and put it on R2; its public address."""
+def build_and_host(channel_id: str, page: str = "") -> str:
+    """Write the page (a bio's, or the shared `links.html`) and put it on R2; its address."""
     from config.channels import get_channel_profile
     from publishing import video_host
 
@@ -138,10 +146,62 @@ def build_and_host(channel_id: str) -> str:
         name = str(get_channel_profile(channel_id).name or channel_id)
     except Exception:
         name = channel_id
-    page = links_html(name, **collect(channel_id))
+    html_text = links_html(name, **collect(channel_id, page=page))
     out = _out_dir(channel_id)
     os.makedirs(out, exist_ok=True)
-    path = os.path.join(out, "links.html")
+    path = os.path.join(out, f"{page or 'links'}.html")
     with open(path, "w", encoding="utf-8", newline="\n") as handle:
-        handle.write(page)
-    return video_host.host(path, page_key(channel_id), content_type="text/html; charset=utf-8")
+        handle.write(html_text)
+    return video_host.host(
+        path, page_key(channel_id, page), content_type="text/html; charset=utf-8"
+    )
+
+
+def build_all(channel_id: str) -> dict[str, str]:
+    """#1752: the shared page and one per bio; {page ("" the shared one): address}."""
+    return {page: build_and_host(channel_id, page) for page in ("", *BIO_PAGES)}
+
+
+def clicks(channel_id: str) -> tuple[int, int]:
+    """#1919: (views, videos) YouTube says the link pages sent - each video's outside-link views
+    whose referring site is the pages' host (the sync's `ext_url_detail`, kept for a video with
+    EXT_URL views). (0, 0) before R2_PUBLIC_BASE_URL is set."""
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    host = urlparse(os.getenv("R2_PUBLIC_BASE_URL", "").strip()).netloc.lower()
+    if not host:
+        return 0, 0
+    views = videos = 0
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        try:
+            detail = (json.loads(getattr(row, "metrics_json", "") or "{}") or {}).get(
+                "ext_url_detail"
+            )
+        except ValueError:
+            continue
+        sent = sum(int(n or 0) for site, n in (detail or {}).items() if host in str(site).lower())
+        if sent:
+            views, videos = views + sent, videos + 1
+    return views, videos
+
+
+def links_lines(channel_id: str, urls: dict[str, str]) -> list[str]:
+    """`ops links`: the addresses to paste, which bios have their own tracking ID, the views."""
+    from core.description_extras import TAG_PLACES, amazon_tag
+
+    lines = ["Link pages - paste each into its own bio once; overnight keeps them current:"]
+    lines += [f"  {page.capitalize()} bio: {urls[page]}" for page in BIO_PAGES if page in urls]
+    shared = amazon_tag("")
+    own = [place for place in TAG_PLACES if amazon_tag(place) and amazon_tag(place) != shared]
+    if own:
+        lines.append(
+            "Own tracking IDs: " + ", ".join(own) + " - Amazon's report says which earned."
+        )
+    else:
+        lines.append("One tracking ID for every place - make long, tiktok, instagram and facebook IDs "
+                     "in Associates Central and set AFFILIATE_AMAZON_TAGS so Amazon's report says "
+                     "which bio earned.")  # fmt: skip
+    views, count = clicks(channel_id)
+    lines.append(f"YouTube counted {views:,} views from the link pages on {count} video(s) - "
+                 "outside-link views whose site is the pages' host.")  # fmt: skip
+    return lines

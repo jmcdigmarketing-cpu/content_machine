@@ -120,8 +120,19 @@ class CheckTests(unittest.TestCase):
     def test_s05_verdicts(self):
         from core.success import shortfalls as sf
 
-        for found, status in (((14, 24), sf.NOT_YET), ((17, 22), sf.MET), ((5, 10), sf.WAITING)):
-            with patch("core.success.verdicts.agreement", return_value=found):
+        # Decision 94: S05 reads the grade against the audience; with no GRADE_GATE it gates
+        # nothing and is built, with one it must earn it.
+        env = {k: v for k, v in os.environ.items() if k not in ("GRADE_GATE", "BACKLOG_MIN_GRADE")}
+        with (
+            patch.dict(os.environ, env, clear=True),
+            patch("core.success.verdicts.grade_agreement", return_value=(20, 67)),
+        ):
+            self.assertEqual(sf.reading("S05", "tapin", now=NOW).status, sf.BUILT)
+        for found, status in (((20, 67), sf.NOT_YET), ((40, 67), sf.MET), ((5, 10), sf.WAITING)):
+            with (
+                patch.dict(os.environ, {**env, "GRADE_GATE": "B"}, clear=True),
+                patch("core.success.verdicts.grade_agreement", return_value=found),
+            ):
                 self.assertEqual(sf.reading("S05", "tapin", now=NOW).status, status, found)
 
     def test_s08_the_weeks_claim_holds(self):
@@ -334,8 +345,10 @@ class PlanTests(unittest.TestCase):
         from core.roadmap_index import sections
 
         closed = {s["key"] for s in sections() if s["closed"]}
-        # measured 2026-11-01: 7 met, 2 built (S04, S18)
-        self.assertEqual(closed, {"S04", "S08", "S12", "S16", "S17", "S18", "S19", "S20", "S21"})
+        # measured 2026-11-01: 7 met, 2 built (S04, S18); wave 142 built S05 (decision 94)
+        self.assertEqual(
+            closed, {"S04", "S05", "S08", "S12", "S16", "S17", "S18", "S19", "S20", "S21"}
+        )
 
     def test_the_backlog_stays_under_its_ceiling(self):
         from core.roadmap_index import counts

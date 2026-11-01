@@ -18,9 +18,16 @@ HEIGHT = 1920  # the render's PlayResY
 
 SAFE_TOP = 0.12
 SAFE_BOTTOM = 0.20
+# #1931 (decision 94): Instagram draws its caption, name and audio rows over the bottom of a Reel
+# - estimates for organic Reels run 250-450 px - so the captions keep 450 px clear, 66 px above
+# YouTube's 384, and one render serves every app.
+CAPTION_BOTTOM_PX = 450
 # The band the karaoke captions occupy (one or two lines above the bottom chrome) - where the
-# #1268 scrim darkens and the contrast check samples.
-CAPTION_BAND = (0.68, 0.80)
+# #1268 scrim darkens and the contrast check samples: 230 px tall, ending 450 px up.
+CAPTION_BAND = (
+    round(1 - (CAPTION_BOTTOM_PX + 230) / HEIGHT, 4),
+    round(1 - CAPTION_BOTTOM_PX / HEIGHT, 4),
+)
 
 # #1921 (decision 90): TikTok's like / comment / share column covers about the right 12% of the
 # frame beside the captions; the captions keep this much clear on both sides, so they stay
@@ -36,12 +43,12 @@ DISCLOSURE_MARGIN = TOP_PX
 HOOK_CARD_MARGIN = TOP_PX + 60
 CAPTION_TOP_MARGIN = HOOK_CARD_MARGIN + 3 * 76
 # Name tags and the MoneyWise disclaimer: above the caption band.
-LOWER_MARGIN = BOTTOM_PX + 250
+LOWER_MARGIN = CAPTION_BOTTOM_PX + 250
 
 
 def caption_margin(anchor: str, margin: int | float | None) -> int:
     """The captions' MarginV: the skin's, but never inside the chrome or under the top cards."""
-    floor = CAPTION_TOP_MARGIN if str(anchor).strip().lower() == "top" else BOTTOM_PX
+    floor = CAPTION_TOP_MARGIN if str(anchor).strip().lower() == "top" else CAPTION_BOTTOM_PX
     try:
         wanted = int(margin) if margin is not None else floor
     except (TypeError, ValueError):

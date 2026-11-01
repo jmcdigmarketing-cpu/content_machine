@@ -60,6 +60,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `diff-runs` | Compare grade/cost/ungrounded/disputed for two run ids |
 | `digest` | This week's three operator decisions, written to the vault |
 | `doctor` | One shot: free stack + feeds + oauth + quota + CUDA + RAM + secrets |
+| `domains` | Runs stored under another subject than their title reads; --apply fixes (#1947) |
 | `dossier` | One run end-to-end: quality, cost, metrics, trace (--run-id required) |
 | `economics` | Per-video cost vs revenue -> contribution margin (Pillar 1) |
 | `end-card-preview` | Render the channel end card as a PNG still before a full encode (--path dest.png) |
@@ -97,7 +98,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `intro-waveform` | Draw a waveform of the intro sting and print duration vs the 2.15s offset (--path audio) |
 | `learn-schedule` | Show static vs learned post slots |
 | `lightbox` | Thumbnail lightbox for the last Pillow thumb |
-| `links` | The link-in-bio page: rebuild it, put it on R2, print its address (#1750) |
+| `links` | The link-in-bio pages, one per bio: rebuild, put on R2, print (#1750, #1752) |
 | `list` | List all operator commands |
 | `list-uploads` | Rendered MP4s not yet on YouTube |
 | `log` | Print the last lines of the log, and the warnings in them (#990) |

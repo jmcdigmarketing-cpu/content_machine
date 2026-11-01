@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-01 (Claude Code): wave 139, the shortfalls measured
+
+`ops shortfalls` runs each of the 22 checks (decision 91): 7 met and 2 built closed in the plan
+with their number; S07's check is now "every night". Its first run found 8 crossposts never sent
+- a sibling's own Buffer post taken as a hand post (fixed; `crosspost unclaim`). The backlog is
+under 300: 47 lowest-scored bridge ideas parked, a test holds the ceiling.
+
 ## Previous — 2026-10-31 (Claude Code): wave 138, the next five
 
 Run 199's TikTok post went out 31 hours before YouTube publishes it - a pass whose YouTube read

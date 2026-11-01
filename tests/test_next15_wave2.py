@@ -550,7 +550,7 @@ class TestAutomaticCaptionPlacement(unittest.TestCase):
         words = [{"word": "Hello", "start": 0.0, "end": 0.4}]
         bottom = build_ass_karaoke(words, max_words=2)
         top = build_ass_karaoke(words, max_words=2, anchor="top")
-        self.assertIn(",2,130,130,384,1", bottom)  # #1775, #1921: the safe zone
+        self.assertIn(",2,130,130,450,1", bottom)  # #1775, #1921, #1931: the safe zone
         self.assertIn(",8,130,130,519,1", top)
         self.assertNotIn(",8,130,130,519,1", bottom)
 

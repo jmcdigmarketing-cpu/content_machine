@@ -424,8 +424,8 @@ class SafeZoneTests(unittest.TestCase):
         from video.render_video import _scrim_filter
         from video.safe_zone import CAPTION_BAND
 
-        self.assertEqual(CAPTION_BAND, (0.68, 0.80))
-        self.assertIn("y=ih*0.68:w=iw:h=ih*0.12", _scrim_filter(0.4))
+        self.assertEqual(CAPTION_BAND, (0.6458, 0.7656))  # #1931 (decision 94): 450 px up
+        self.assertIn("y=ih*0.65:w=iw:h=ih*0.12", _scrim_filter(0.4))
         self.assertEqual(_scrim_filter(0.0), "")
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "f.png")

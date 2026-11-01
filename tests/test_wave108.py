@@ -368,7 +368,7 @@ class ScrimTests(unittest.TestCase):
         self.assertEqual(self._cmd(), self._cmd(caption_scrim=0.0))
         cmd = self._cmd(caption_scrim=0.12)
         graph = cmd[cmd.index("-filter_complex") + 1]
-        box = "drawbox=x=0:y=ih*0.68:w=iw:h=ih*0.12:color=black@0.12:t=fill,"  # #1775
+        box = "drawbox=x=0:y=ih*0.65:w=iw:h=ih*0.12:color=black@0.12:t=fill,"  # #1775, #1931
         self.assertIn(box, graph)
         self.assertLess(graph.index(box), graph.index("subtitles='"))
 

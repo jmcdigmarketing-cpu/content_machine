@@ -248,12 +248,14 @@ def render(
 PLAN = DOCS / "hands_off_plan.md"
 _HEADING_RE = re.compile(r"^### (S\d{2}) (.+?)\s*$")
 _DONE_RE = re.compile(r"\*\*Done when:\*\*\s*(.*)$")
+_CLOSED_RE = re.compile(r"\*\*Closed:\*\*\s*(.*)$")
 _OPS_RE = re.compile(r"py -m scripts\.ops ([a-z][a-z0-9-]*)")
 
 
 def sections(text: str | None = None) -> list[dict[str, Any]]:
-    """[{key, name, done_when, commands}] in plan order. `done_when` is the sentence, its wrapped
-    lines joined; `commands` the `ops` commands it names."""
+    """[{key, name, done_when, commands, closed}] in plan order. `done_when` is the sentence, its
+    wrapped lines joined; `commands` the `ops` commands it names; `closed` the plan's
+    "**Closed:**" line (wave 139), "" while open."""
     lines = (PLAN.read_text(encoding="utf-8") if text is None else text).splitlines()
     out: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
@@ -262,7 +264,7 @@ def sections(text: str | None = None) -> list[dict[str, Any]]:
         heading = _HEADING_RE.match(line)
         if heading:
             current = {"key": heading.group(1), "name": heading.group(2), "done_when": "",
-                       "commands": []}  # fmt: skip
+                       "commands": [], "closed": ""}  # fmt: skip
             out.append(current)
             reading = False
             continue
@@ -270,6 +272,11 @@ def sections(text: str | None = None) -> list[dict[str, Any]]:
             current, reading = None, False
             continue
         if current is None:
+            continue
+        closed = _CLOSED_RE.search(line)
+        if closed:
+            current["closed"] = closed.group(1).strip()
+            reading = False
             continue
         done = _DONE_RE.search(line)
         if done:
@@ -284,18 +291,34 @@ def sections(text: str | None = None) -> list[dict[str, Any]]:
     return out
 
 
-def shortfall_lines() -> list[str]:
-    """`ops shortfalls`: one line a shortfall - its open items and its done-when."""
+def shortfall_lines(channel_id: str | None = None, *, now: Any = None) -> list[str]:
+    """`ops shortfalls`: each shortfall's check run (wave 139, decision 91) - its status, today's
+    number and its open items. It printed only the checks, so whether one passed was read by hand
+    and the Story kept every line it had on 10-18. A shortfall the plan closed that no longer
+    passes says so."""
+    from collections import Counter
+
+    from config.channels import resolve_channel_id
+    from core.success.shortfalls import CLOSED, ORDER, readings
+
     try:
         open_by = counts().get("by_shortfall") or {}
     except Exception:
         open_by = {}
     found = sections()
-    out = [
-        f"Shortfalls - {len(found)} in docs/hands_off_plan.md, each with the check that closes it"
-    ]
+    got = readings(resolve_channel_id(channel_id), now=now)
+    tally = Counter(r.status for r in got.values())
+    summary = ", ".join(f"{tally[s]} {s.lower()}" for s in ORDER if tally[s])
+    out = [f"Shortfalls - {len(found)} in docs/hands_off_plan.md, each check run: {summary}"]
     for s in found:
+        r = got.get(s["key"])
+        if r is None:
+            continue
         n = open_by.get(s["key"], 0) if isinstance(open_by, dict) else 0
-        out.append(f"  {s['key']} {s['name'][:52]} - {n} open")
-        out.append(f"      done when {s['done_when'] or '(none written)'}")
+        items = f" ({n} open)" if n else ""
+        flag = ""
+        if s.get("closed") and r.status not in CLOSED:
+            flag = f" - the plan closed it ({s['closed'][:10]}); it no longer passes"
+        out.append(f"  {s['key']} {r.status:<10} {s['name'][:50]}{items}{flag}")
+        out.append(f"      {r.today}")
     return out

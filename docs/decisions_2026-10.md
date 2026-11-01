@@ -557,3 +557,19 @@ links". **Consequence:** about one post a week per platform goes at a new hour; 
 lines split in two (17 characters a line at 90 px instead of 19); the deals video needs the
 Associates tag for its links.
 
+## 91. The shortfalls measure themselves; the backlog under 300 by score (2026-11-01)
+**Decision:** `ops shortfalls` runs each of the hands-off plan's 22 checks and prints its status -
+met, built, waiting, yours, not yet, no measure - with today's number; a shortfall that passes is
+closed in the plan with the date and the number, and the command says if it stops passing. The
+pass marks the plan did not write are set here: S05 your 1-5 agrees with the audience on 70% of 20+
+rated videos; S08 under 20% of 5+ checked drafts held for a claim; S01 long-form hours above 0.2 a
+week. S07's check is "overnight ran every night for a week" (decision 69 made power-on runs normal).
+The backlog stays at or under 300 open (decision 68), held by a test: the sweep parks the
+lowest-scored open bridge ideas (bridge_scores.md; ties by lowest effect, then largest effort).
+Each wave takes one open shortfall beside its five - S02 first, then S01. **Why:** the operator,
+2026-11-01: "how can we chip away on the long long list of 'Where it falls short'" - and "yes, do
+wave 139". The Story's list was the 10-18 snapshot with notes added; half of it was done. **Asked**
+(S10's first reading found 8 crossposts never sent): "Send the recent ones, skip stale countdown".
+**Consequence:** the Story's panel shows the open ones with today's number; 47 bridge ideas are
+parked and can be reopened by changing `[-]` back to `[ ]`.
+

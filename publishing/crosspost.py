@@ -875,16 +875,94 @@ def _rendered_at(path: str) -> datetime | None:
         return None
 
 
-def _hand_post(posts: list[dict[str, Any]], run_text: str, rendered: datetime | None):
+def _hand_post(
+    posts: list[dict[str, Any]],
+    run_text: str,
+    rendered: datetime | None,
+    taken: set[str] | frozenset[str] = frozenset(),
+):
     """The Buffer post that already carries this video, made no earlier than a day before it
-    was rendered - an older post on the same subject is another video."""
+    was rendered - an older post on the same subject is another video. Wave 139: a post the
+    store already records for another run (`taken`) is that run's - the round's own post for
+    run 203 was taken as a hand post of runs 204 and 205, and 8 Shorts in a week never went."""
     for post in posts:
+        if str(post.get("id") or "") in taken:
+            continue
         when = _stamp(str(post.get("sentAt") or post.get("dueAt") or "").replace("Z", "+00:00"))
         if rendered and when and when < rendered - timedelta(days=1):
             continue
         if hand_post_matches(str(post.get("text") or ""), run_text):
             return post
     return None
+
+
+def _taken_post_ids(posts: dict[str, Any], run_id: Any) -> set[str]:
+    """The Buffer post ids the store records for every run but `run_id`."""
+    taken: set[str] = set()
+    for rid, entry in (posts or {}).items():
+        if str(rid) == str(run_id) or not isinstance(entry, dict):
+            continue
+        for state in entry.values():
+            if isinstance(state, dict) and state.get("post_id"):
+                taken.add(str(state["post_id"]))
+    return taken
+
+
+def false_hand_posts(channel_id: str) -> list[dict[str, Any]]:
+    """Wave 139: each "posted by hand" record whose Buffer post the round made for another run
+    (that run's own record holds it in another state) - the post this run never got."""
+    posts = _load(channel_id).get("posts") or {}
+    owner: dict[str, str] = {}
+    for rid, entry in posts.items():
+        for state in entry.values() if isinstance(entry, dict) else []:
+            if isinstance(state, dict) and state.get("post_id") and state.get("state") != "manual":
+                owner[str(state["post_id"])] = str(rid)
+    out: list[dict[str, Any]] = []
+    for rid, entry in posts.items():
+        for service, state in entry.items() if isinstance(entry, dict) else []:
+            if not isinstance(state, dict) or state.get("state") != "manual":
+                continue
+            other = owner.get(str(state.get("post_id") or ""))
+            if other and other != str(rid):
+                out.append({"run_id": int(rid), "service": service, "owner": int(other),
+                            "at": str(state.get("at") or "")})  # fmt: skip
+    return sorted(out, key=lambda x: (x["run_id"], x["service"]))
+
+
+_COUNTDOWN_RE = re.compile(r"\b\d+ days? to launch\b", re.I)
+
+
+def unclaim(channel_id: str, *, apply: bool = False, now: datetime | None = None) -> list[str]:
+    """`ops crosspost unclaim`: clear each false hand-post record (`false_hand_posts`) of a video
+    public within the late window, so the next round sends it - the operator, 2026-11-01: "send
+    the recent ones, skip stale countdown". A countdown Short is left: its day's number has
+    passed. Older ones are left too. Nothing changes without `apply`."""
+    moment = now or datetime.now(timezone.utc)
+    public = _public_times(channel_id)
+    data = _load(channel_id)
+    posts = data.get("posts") or {}
+    lines: list[str] = []
+    changed = False
+    for item in false_hand_posts(channel_id):
+        rid, service = item["run_id"], item["service"]
+        label = f"run {rid} {_LABEL.get(service, service)}"
+        title = str((posts.get(str(rid)) or {}).get("title") or "")
+        when = public.get(rid)
+        if _COUNTDOWN_RE.search(title):
+            lines.append(f"  {label}: left - a countdown Short whose day has passed")
+            continue
+        if when is not None and moment - when > _LATE_LOOKBACK:
+            lines.append(f"  {label}: left - public over {_LATE_LOOKBACK.days} days ago")
+            continue
+        lines.append(f"  {label}: was taken for run {item['owner']}'s own post - "
+                     + ("cleared; the next round sends it" if apply else "would be cleared"))  # fmt: skip
+        if apply:
+            posts[str(rid)].pop(service, None)
+            changed = True
+    if changed:
+        _save(channel_id, data)
+    head = f"Crosspost unclaim - {channel_id}: {len(lines)} false hand post(s)"
+    return [head, *lines] if lines else [f"Crosspost unclaim - {channel_id}: none"]
 
 
 def _now_text(now: datetime) -> str:
@@ -1024,7 +1102,8 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
 
             arm, text = choose_caption(channel_id, run, service)
             if state.get("state") != "sending":
-                hand = _hand_post(buffer_posts(service), run_text, rendered)
+                hand = _hand_post(buffer_posts(service), run_text, rendered,
+                                  _taken_post_ids(posts, run_id))  # fmt: skip
                 if hand:  # #1200 (operator: skip that platform only)
                     if apply:
                         entry[service] = {

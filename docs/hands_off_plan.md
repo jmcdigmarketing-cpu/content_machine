@@ -1,6 +1,6 @@
 # The hands-off plan
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-18
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-01
 
 The forward plan from 2026-10-18; it supersedes [optimization_plan_2026-10.md](optimization_plan_2026-10.md)
 ("the next 100"), whose open rows the [backlog audit](backlog_audit_2026-10-18.md) merged,
@@ -23,6 +23,12 @@ command or page.
 ---
 
 ## The 22 shortfalls
+
+**Measured, 2026-11-01 (wave 139, decision 91).** `py -m scripts.ops shortfalls` now runs each
+section's check: 7 met and 2 built (closed below with their number), 2 waiting on time (S07,
+S13), 2 yours (S11 the Reporting API, S14 the Google app), 6 not yet (S01, S02, S05, S06, S10,
+S22 - S22 closed by this wave's sweep) and 3 with no measure yet (S03 #1933, S09 #1934, S15
+#1935). Each wave takes one open shortfall beside its five, S02 first, then S01.
 
 The operator, 2026-10-18: *"I would like a written description on how we will adress each one
 of these alongside 10 ideas per bullet to go in the backlog."* Each section is one line of the
@@ -94,6 +100,8 @@ instead of in a published video.
 
 **Who:** Code. **Done when:** `py main.py, option 5` - a fidelity line on every own-idea review.
 
+**Closed:** 2026-11-01 - BUILT - the angle screen shows each angle's seed fidelity for a typed idea; 0 open items (`py -m scripts.ops shortfalls`, wave 139; it says so if this stops passing).
+
 **Ideas:** #1342-#1351 in [backlog.md](backlog.md) under "S04".
 
 ### S05 Clean is not the same as good (Oct 14)
@@ -129,7 +137,9 @@ The last run started 10-18 at 08:04; the next 5:00 start shows whether the wake 
 
 **How.** Make the wake checkable and a missed run loud.
 
-**Who:** Code. **Done when:** `data/overnight_last.json` - started at 05:0x for a week.
+**Who:** Code. **Done when:** `py -m scripts.ops shortfalls` - overnight ran every night for a
+week, at 5:00 or at power-on (decision 69; rewritten 2026-11-01, wave 139 - it asked for 5:00
+starts only, after the operator had made power-on runs normal).
 
 **Ideas:** #1371-#1380 in [backlog.md](backlog.md) under "S07". Decision 69 (wave 124, the
 operator): a run at power-on after a shutdown is normal - nothing asks for Sleep any more.
@@ -144,6 +154,8 @@ draft.
 
 **Who:** Code. **Done when:** `py -m scripts.ops auto-research` - under 20% of drafts held for
 claims, with a replay sample confirming the holds.
+
+**Closed:** 2026-11-01 - 4 of 25 drafts this week held for a claim (16%, under 20%) (`py -m scripts.ops shortfalls`, wave 139; it says so if this stops passing).
 
 **Ideas:** #1381-#1388 in [backlog.md](backlog.md) under "S08", and already open: #547, #555.
 
@@ -200,6 +212,8 @@ each, then you decide.
 
 **Who:** Code; you for the YouTube intro. **Done when:** `py -m scripts.ops growth` - TikTok
 average watch above 3 s; the intro split settled.
+
+**Closed:** 2026-11-01 - TikTok's average watch 3.82 s over 41 posts; the intro dropped (decision 79) (`py -m scripts.ops shortfalls`, wave 139; it says so if this stops passing).
 
 **Ideas:** #1417-#1426 in [backlog.md](backlog.md) under "S12". Built in wave 113: #1417, #1418,
 #1419. Built in wave 121: #1538 (the share who stayed beside the 3-second number).
@@ -259,6 +273,8 @@ carry the stake and the call (#1311).
 **Who:** Code. **Done when:** `py -m scripts.ops growth` - stayed share after #1311 against
 before, at n of 10.
 
+**Closed:** 2026-11-01 - stayed 35% after the first-line rule (n 18) against 25% before (n 23) (`py -m scripts.ops shortfalls`, wave 139; it says so if this stops passing).
+
 **Ideas:** #1454-#1462 in [backlog.md](backlog.md) under "S16", and already open: #50.
 
 ### S17 Overnight crashed, and the morning said it ran (Oct 16)
@@ -269,6 +285,8 @@ its Python line (faulthandler).
 **How.** Isolate each render so one crash costs one video, and keep the evidence.
 
 **Who:** Code. **Done when:** the weekly report - 0 crashes over 4 weeks.
+
+**Closed:** 2026-11-01 - 0 overnight crashes in 28 days (`py -m scripts.ops shortfalls`, wave 139; it says so if this stops passing).
 
 **Ideas:** #1463-#1470 in [backlog.md](backlog.md) under "S17", and already open: #457, #445.
 Built in wave 121: #1469 (the crash's Python line in the morning). Built in wave 122: #1468 (a
@@ -286,6 +304,8 @@ is.
 
 **Who:** Code. **Done when:** `py -m scripts.ops health` - no line built on a missing input.
 
+**Closed:** 2026-11-01 - BUILT - a missing input reads unknown, never red (wave 121); each line tested (wave 122) (`py -m scripts.ops shortfalls`, wave 139; it says so if this stops passing).
+
 **Ideas:** #1471-#1480 in [backlog.md](backlog.md) under "S18". Built in wave 121: #1472
 (unknown, never RED), #1475 (a line a day), #1478 (cost from the spend entered), #1479 (the
 thresholds in one versioned table). Built in wave 122: #1473 (each line read back from what its
@@ -300,6 +320,8 @@ Built in wave 124: #1546 (why a curve is missing, and which videos never synced)
 **How.** Check names everywhere text reaches the viewer: captions, thumbnails, the voice.
 
 **Who:** Code. **Done when:** 0 broken names in titles, captions and thumbnails for a month.
+
+**Closed:** 2026-11-01 - 0 of 48 titles in 30 days break a team's name (`py -m scripts.ops shortfalls`, wave 139; it says so if this stops passing).
 
 **Ideas:** #1481-#1488 in [backlog.md](backlog.md) under "S19", and already open: #334, #553.
 Built in wave 121: #1486 (every mention read, cases for every league), #1487 (NE -> New
@@ -318,6 +340,8 @@ a 406 s NBA video at 11%, is most of the drop).
 **Who:** Code. **Done when:** `py -m scripts.ops health` - the engagement window includes a video
 from the last 7 days.
 
+**Closed:** 2026-11-01 - the newest measured video (run 215) is 3 days old (`py -m scripts.ops shortfalls`, wave 139; it says so if this stops passing).
+
 **Ideas:** #1489-#1498 in [backlog.md](backlog.md) under "S20". Built in wave 113: #1489, #1490.
 Fixed in wave 122: #1542 - since 10-05 the sync stored nothing after a video's first day, so the
 engagement it reads was day-one engagement.
@@ -333,6 +357,8 @@ logic change, and the learned gaps steer the rewrite from n=21 (decision 67).
 
 **Who:** Code; you for the grade. **Done when:** `py -m scripts.ops growth` - hook r at or above
 0, or the score out of the grade.
+
+**Closed:** 2026-11-01 - the hook score's weight in the grade is 0 (out since wave 124) (`py -m scripts.ops shortfalls`, wave 139; it says so if this stops passing).
 
 **Ideas:** #1499-#1507 in [backlog.md](backlog.md) under "S21", and already open: #1290.
 Built in wave 124: #1499 - the score out of the grade and overnight's order (decision 70), which

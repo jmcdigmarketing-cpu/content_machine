@@ -2214,18 +2214,18 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1630. **The voice at 1.1x on news Shorts as an experiment arm, judged on stayed share** *(B02.9, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1631. **The first sentence under 12 words on overnight drafts** *(B02.10, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1632. **Captions 2-3 words a line, larger and centred, as an arm against today's style** *(B02.11, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1633. **The subject and the number coloured in the captions** *(B02.12, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1633. **The subject and the number coloured in the captions** *(B02.12, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [ ] 1634. **Face in the first frame or not, measured on our own 76 videos before any rule** *(B02.13, filed 2026-10-27)* `[M]` · lane: views
 - [ ] 1635. **A punch-in on the first image so the first second moves** *(B02.14, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1636. **A sound hit under the first word** *(B02.15, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1636. **A sound hit under the first word** *(B02.15, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [ ] 1637. **Length by format as an experiment: news 30-45 s, previews 45-60 s, on stayed share and views** *(B02.16, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1638. **A cut every 2-3 s through the first 10 s for stills as for gameplay** *(B02.17, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1639. **A question hook arm ('Did Seattle just expose Mahomes?') against a statement hook** *(B02.18, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1640. **The one big number as a full-screen card when the voice says it** *(B02.19, filed 2026-10-27)* `[M]` · lane: views
-- [ ] 1641. **The on-screen title and the first spoken line never say the same words** *(B02.20, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1640. **The one big number as a full-screen card when the voice says it** *(B02.19, filed 2026-10-27)* `[M]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
+- [-] 1641. **The on-screen title and the first spoken line never say the same words** *(B02.20, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [ ] 1642. **Debate Shorts end on an honest question, measured on comments per 1,000 views** *(B02.21, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1643. **The frame YouTube shows for a Short set to the text card** *(B02.22, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1644. **No lower-third labels in the first 3 seconds** *(B02.23, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1643. **The frame YouTube shows for a Short set to the text card** *(B02.22, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
+- [-] 1644. **No lower-third labels in the first 3 seconds** *(B02.23, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [ ] 1645. **A re-hook beat at the drop-off second (#1494 measures it) to hold past it** *(B02.24, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1646. **The lane's number: the week's median stayed share against 45% - done when four weeks are above** *(B02.25, filed 2026-10-27)* `[S]` · lane: views
 
@@ -2262,7 +2262,7 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1672. **A named-series template: one title stem, one opener, one playlist, a day-N counter** *(B04.1, filed 2026-10-27)* `[M]` · lane: views
 - [ ] 1673. **'Who wins?' debate Shorts on marquee matchups, ending on the question** *(B04.2, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1674. **Rankings with an on-screen countdown ('Top 5 ...')** *(B04.3, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1675. **Quiz Shorts: 'Guess the fighter from three stats', the reveal at the end** *(B04.4, filed 2026-10-27)* `[M]` · lane: views
+- [-] 1675. **Quiz Shorts: 'Guess the fighter from three stats', the reveal at the end** *(B04.4, filed 2026-10-27)* `[M]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1.5, among the lowest open)* · lane: views
 - [ ] 1676. **Stat-shock Shorts: one surprising number is the whole video** *(B04.5, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1677. **A top comment answered in a Short, the comment shown on screen** *(B04.6, filed 2026-10-27)* `[M]` · lane: subscribers
 - [ ] 1678. **Two-voice debate as an experiment arm (#506 multi-voice)** *(B04.7, filed 2026-10-27)* `[S]` · lane: views
@@ -2281,7 +2281,7 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1691. **The format recorded on each run, ranked weekly by organic views and subscribers per 1,000** *(B04.20, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1692. **A format rotates out after 4 Shorts below the channel median** *(B04.21, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1693. **Honest comment bait: a real question the next Short answers** *(B04.22, filed 2026-10-27)* `[S]` · lane: subscribers
-- [ ] 1694. **A comment poll on debate Shorts ('1 for Topuria, 2 for ...') through the call-comment machinery (#1327)** *(B04.23, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1694. **A comment poll on debate Shorts ('1 for Topuria, 2 for ...') through the call-comment machinery (#1327)** *(B04.23, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [ ] 1695. **A 'Picks, graded' companion Short the morning after each graded week** *(B04.24, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1696. **The lane's number: organic views per Short by format, and the best format's share of uploads rising** *(B04.25, filed 2026-10-27)* `[S]` · lane: views
 
@@ -2291,11 +2291,11 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1698. **Subscribers per 1,000 organic views by format and by frame, weekly** *(B05.2, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1699. **A true follow reason per format in the last line ('day 13 tomorrow', 'graded after the game') against none** *(B05.3, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1700. **Part-2 Shorts: a strong story in two, a day apart, the first ending on what part 2 answers** *(B05.4, filed 2026-10-27)* `[M]` · lane: subscribers
-- [ ] 1701. **Weekday format slots in the channel description ('GTA daily, UFC Saturdays')** *(B05.5, filed 2026-10-27)* `[S]` · lane: subscribers
+- [-] 1701. **Weekday format slots in the channel description ('GTA daily, UFC Saturdays')** *(B05.5, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: subscribers
 - [ ] 1702. **Channel sections from the playlists (channelSections.insert): GTA, UFC, Week in Review, Picks graded** *(B05.6, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1703. **The channel description rewritten for search and with a reason to subscribe** *(B05.7, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1704. **A short reply to each new comment within 24 hours, drafted and posted (comments.insert) - your call before it goes live** *(B05.8, filed 2026-10-27)* `[M]` · lane: subscribers
-- [ ] 1705. **A subscriber milestone Short at 250 and 500 organic** *(B05.9, filed 2026-10-27)* `[S]` · lane: subscribers
+- [-] 1705. **A subscriber milestone Short at 250 and 500 organic** *(B05.9, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: subscribers
 - [ ] 1706. **Each long video's end asks for the subscription with the reason (the weekly show)** *(B05.10, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1707. **A `?sub_confirmation=1` subscribe link in every long-form description and bio** *(B05.11, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1708. **Subscribers per video in its first 48 hours in the morning line** *(B05.12, filed 2026-10-27)* `[S]` · lane: subscribers
@@ -2304,11 +2304,11 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1711. **One voice per format (UFC one voice, gaming another) so the show is recognised** *(B05.15, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1712. **A 0-second brand mark: a corner logo or colour band on every Short** *(B05.16, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1713. **Unsubscribes a week read from Analytics** *(B05.17, filed 2026-10-27)* `[S]` · lane: subscribers
-- [ ] 1714. **Remixing our Shorts allowed, so remixes carry the channel** *(B05.18, filed 2026-10-27)* `[S]` · lane: subscribers
+- [-] 1714. **Remixing our Shorts allowed, so remixes carry the channel** *(B05.18, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: subscribers
 - [ ] 1715. **The organic subscriber goal on the Back-Home page with the week's gain** *(B05.19, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1716. **Days to 1,000 organic subscribers at the 28-day pace in `ops status`** *(B05.20, filed 2026-10-27)* `[S]` · lane: subscribers
-- [ ] 1717. **The month's best-converting video as the channel's featured video** *(B05.21, filed 2026-10-27)* `[S]` · lane: subscribers
-- [ ] 1718. **A Short's description opens with the series name and 'follow for day N+1'** *(B05.22, filed 2026-10-27)* `[S]` · lane: subscribers
+- [-] 1717. **The month's best-converting video as the channel's featured video** *(B05.21, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: subscribers
+- [-] 1718. **A Short's description opens with the series name and 'follow for day N+1'** *(B05.22, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: subscribers
 - [ ] 1719. **The follow line's wording A/B over two weeks** *(B05.23, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1720. **A comment from the channel on each new Short asking the follow question honestly (#1327's machinery)** *(B05.24, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1721. **The lane's number: organic subscribers a week against +1.0 today - done at +10 a week for four weeks** *(B05.25, filed 2026-10-27)* `[S]` · lane: subscribers
@@ -2332,12 +2332,12 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1736. **Playlists ordered for binge-watching so autoplay keeps the session** *(B06.15, filed 2026-10-27)* `[S]` · lane: hours
 - [ ] 1737. **'Every X ranked' evergreen long-form ('every UFC champion ranked')** *(B06.16, filed 2026-10-27)* `[M]` · lane: hours
 - [ ] 1738. **Season previews for marquee leagues and games** *(B06.17, filed 2026-10-27)* `[M]` · lane: hours
-- [ ] 1739. **A 20-minute two-voice podcast-style episode as a test** *(B06.18, filed 2026-10-27)* `[M]` · lane: hours
+- [-] 1739. **A 20-minute two-voice podcast-style episode as a test** *(B06.18, filed 2026-10-27)* `[M]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1.5, among the lowest open)* · lane: hours
 - [ ] 1740. **A long video on any Short's topic once that Short passes 1,000 views, within 5 days** *(B06.19, filed 2026-10-27)* `[M]` · lane: hours
 - [ ] 1741. **Long-form descriptions: a 200-word summary with the search terms, sources and chapters** *(B06.20, filed 2026-10-27)* `[S]` · lane: hours
 - [ ] 1742. **Long-form category and tags set for search** *(B06.21, filed 2026-10-27)* `[S]` · lane: hours
 - [ ] 1743. **A month's best Shorts as a $0 long compilation at month end** *(B06.22, filed 2026-10-27)* `[S]` · lane: hours
-- [ ] 1744. **Long-form published at the hour long views peak (Analytics by hour)** *(B06.23, filed 2026-10-27)* `[S]` · lane: hours
+- [-] 1744. **Long-form published at the hour long views peak (Analytics by hour)** *(B06.23, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: hours
 - [ ] 1745. **The first 30 seconds of each long video measured and the opener style learned, as for Shorts' hooks** *(B06.24, filed 2026-10-27)* `[S]` · lane: hours
 - [ ] 1746. **The lane's number: qualified long-form hours a week against 0.2 - done at 10 a week for four weeks** *(B06.25, filed 2026-10-27)* `[S]` · lane: hours
 
@@ -2355,16 +2355,16 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [x] 1756. **TikTok cuts of 61 s or more - Creator Rewards pays only for videos over a minute** *(B07.10, filed 2026-10-27)* `[S]` **Done (2026-10-31, Claude, wave 136):** as the brief set it: each TikTok row carries `seconds` and `reward_eligible` (over 60 s) from the run's mp4; no Short is lengthened for TikTok alone (decision 81). Live: 0 of 30 TikTok posts are over a minute. Corpus +2. · lane: money
 - [x] 1757. **TikTok followers and 30-day views tracked against Creator Rewards' 10k and 100k** *(B07.11, filed 2026-10-27)* `[S]` **Done (2026-10-31, Claude, wave 136):** the weekly report's line, live: "TikTok: 3,970 of 100,000 views in 30 days; 0 of 30 posts over a minute; followers not read" - Buffer's post metrics carry no follower count. · lane: money
 - [x] 1758. **No affiliate link on a Short (Shorts descriptions' links are not clickable) - a check at publish** *(B07.12, filed 2026-10-27)* `[S]` **Done (2026-10-30, found in wave 135):** wave 133's `description_extras.affiliate_lines` adds a link only on preset 4 (long-form); a Short gets none (its corpus case pins it). **The check at publish (2026-10-31, Claude, wave 136):** wave 135 ticked this on the generator alone; `prepublish.without_short_affiliates` now drops any description line carrying an Amazon `tag=` or an `affiliates.json` link from an upload that is not long-form, beside `with_disclosure` in `youtube_publisher`, and says so. A long video keeps it. · lane: money
-- [ ] 1759. **A media-kit page with the numbers filled in weekly, once views pass 10k a week** *(B07.13, filed 2026-10-27)* `[S]` · lane: money
+- [-] 1759. **A media-kit page with the numbers filled in weekly, once views pass 10k a week** *(B07.13, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: money
 - [x] 1760. **A Black Friday gaming-deals long video with affiliate links (Nov 27)** *(B07.14, filed 2026-10-27)* `[M]` **Done (2026-10-31, Claude, wave 138; decision 90):** `config/series.json` `black-friday-deals`, a `long` row drafted Mon Nov 23 from that week's Black Friday headlines and rendered after your review; a deals video (`is_deals`: Black Friday, Cyber Monday or deals in its title or topic) carries up to three links matched in its title, topic and script, with one FTC line; three console rows (PS5, Xbox Series X, Switch 2) are `deals_only`. No Amazon link appears until `AFFILIATE_AMAZON_TAG` is set. · lane: money
 - [ ] 1761. **Humble Bundle and Fanatical partner links for game deals** *(B07.15, filed 2026-10-27)* `[S]` · lane: money
-- [ ] 1762. **Green Man Gaming affiliate for PC game deals** *(B07.16, filed 2026-10-27)* `[S]` · lane: money
+- [-] 1762. **Green Man Gaming affiliate for PC game deals** *(B07.16, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: money
 - [ ] 1763. **Fanatics links for marquee players' jerseys in NFL and NBA long-form** *(B07.17, filed 2026-10-27)* `[S]` · lane: money
 - [ ] 1764. **A rule: no gambling or betting affiliate or promo, ever** *(B07.18, filed 2026-10-27)* `[S]` · lane: money
 - [ ] 1765. **Income per 1,000 long-form views once a link earns** *(B07.19, filed 2026-10-27)* `[S]` · lane: money
-- [ ] 1766. **A tip link (Ko-fi) in the bios - fan funding before YPP** *(B07.20, filed 2026-10-27)* `[S]` · lane: money
+- [-] 1766. **A tip link (Ko-fi) in the bios - fan funding before YPP** *(B07.20, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: money
 - [ ] 1767. **Snapchat Spotlight crosspost if Buffer can post to it, else parked** *(B07.21, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1768. **X's creator revenue (Premium + 5M impressions in 3 months) tracked, not chased** *(B07.22, filed 2026-10-27)* `[S]` · lane: money
+- [-] 1768. **X's creator revenue (Premium + 5M impressions in 3 months) tracked, not chased** *(B07.22, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: money
 - [ ] 1769. **A monthly money section on the Story page: costs, income, net** *(B07.23, filed 2026-10-27)* `[S]` · lane: money
 - [ ] 1770. **A money line with no click in four weeks is dropped** *(B07.24, filed 2026-10-27)* `[S]` · lane: money
 - [ ] 1771. **The lane's number: dollars earned a month outside YouTube, against $0** *(B07.25, filed 2026-10-27)* `[S]` · lane: money
@@ -2372,7 +2372,7 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 ### B08 Reach outside YouTube
 
 - [x] 1772. **Every public Short crossposted to TikTok and Instagram within an hour, and the misses counted** *(B08.1, filed 2026-10-27)* `[S]` **Done (2026-10-31, Claude, wave 136):** `crosspost.late_runs`: a Short public over an hour (in the last 3 days) with no post on a connected platform; the worker's crosspost pass now runs a round for them (it ran only when a video turned public). `miss_lines` in the weekly report, measured from when Buffer got the post, not its due time - decision 64's 10 PM slot is deliberate, and read by due time 15 of the week's 22 TikTok posts were "late" (the live read caught it; the test now pins it). Live: "TikTok: 8 queued late, 1 Buffer error", "Instagram: 9 queued late, 2 too long", Facebook not connected; none late now (#1918 re-reads it). · lane: views
-- [ ] 1773. **X video posts for sports news through Buffer** *(B08.2, filed 2026-10-27)* `[M]` · lane: views
+- [-] 1773. **X video posts for sports news through Buffer** *(B08.2, filed 2026-10-27)* `[M]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1.5, among the lowest open)* · lane: views
 - [x] 1774. **Each platform's best hour from its own metrics (`platform_recommend`)** *(B08.3, filed 2026-10-27)* `[S]` **Done (2026-10-31, Claude, wave 137; decision 89):** built as #1196 - a platform's own hour from 4 measured posts. Two flaws fixed: an hour won on any count (Instagram's 8 PM on 2 posts, 138 and 218 views, over 21 at 10 PM) - `_best` now takes only hours, domains and lengths with 4 posts of their own; and hours were learned in UTC with daylight time ending Nov 1 - they are now the channel's local hours, read from when each post went out, and `_at_local_hour` schedules them. Live: TikTok 23:00 local (28 samples), Instagram 22:00 local (27). The brief's "YouTube slot + 1 h before ten posts" was not taken: decision 64's 10 PM stays the fallback (Facebook uses it). · lane: views
 - [x] 1775. **TikTok-native first frame: text inside TikTok's safe zone, no YouTube-only end lines** *(B08.4, filed 2026-10-27)* `[S]` **Done (2026-10-31, Claude, wave 137; decision 89):** `video/safe_zone.py` - the apps' top 12% and bottom 20%, which #502's draft guides had drawn while the captions sat inside the bottom band (bottom edge 86%). Captions end at 80% (MarginV 384; under the top cards at 519 when a HUD sends them up); the AI line starts at 12%; the hook card sits under it, wrapped to the width in at most three lines (run 219's ran off both edges as one 64 px line, over the AI line); name tags above the caption band; the #1268 scrim and the contrast check read the band the captions now occupy (68-80%); the render names any style anchored in the chrome. No YouTube-only end line was found in the render - the spoken CTA is stripped (#540) and the end card says "TAP IN FOR MORE"; the YouTube-only words were in the captions (#1776). · lane: views
 - [x] 1776. **TikTok captions: the hook as the first line and three hashtags, one trending** *(B08.5, filed 2026-10-27)* `[S]` **Done (2026-10-31, Claude, wave 137; decision 89):** `platform_captions.tiktok_caption` - the hook (the description's first sentence, when it fits 100 characters) first, then the title and the rest, then three hashtags (two of the run's tags that name the topic, one for the sport or game from `domain_hashtag`), then the disclosure: run 219 reads "#MoicanoVsNolan #RenatoMoicano #UFC". Found: the caption test (#1197) had never kept its arm - the "scheduled" write replaced the mark that carried it, 0 of 73 posts - so it is replayed from the seed where the post's opening matches: TikTok hook-first 157 views a post (14) against 116 (14), Instagram 105 (13) against 110 (14). TikTok is hook-first always; Instagram keeps the test, now recorded. Off YouTube, "Subscribe for" reads "Follow for" and `#shorts` is dropped. · lane: views
@@ -2380,21 +2380,21 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1778. **A TikTok-specific opener test - median watch there is about 3 seconds** *(B08.7, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1779. **Weekly per-platform rows: views, average watch, followers** *(B08.8, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1780. **A TikTok winner reposted a week later with a new hook** *(B08.9, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1781. **Pinterest video pins for evergreen gaming (tier lists) through Buffer** *(B08.10, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1781. **Pinterest video pins for evergreen gaming (tier lists) through Buffer** *(B08.10, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [ ] 1782. **Long-form shared only in subreddits whose rules allow creators' own posts - never Shorts** *(B08.11, filed 2026-10-27)* `[S]` · lane: hours
-- [ ] 1783. **Duet and stitch allowed on every TikTok post** *(B08.12, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1784. **Hashtag sets per domain in config, measured** *(B08.13, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1783. **Duet and stitch allowed on every TikTok post** *(B08.12, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
+- [-] 1784. **Hashtag sets per domain in config, measured** *(B08.13, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [ ] 1785. **The TikTok and Instagram bios link the YouTube channel and its long-form** *(B08.14, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1786. **The Week in Review's deep dives crossposted as 60-90 s cuts** *(B08.15, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1787. **Which domains travel on which platform, monthly** *(B08.16, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1788. **A crosspost delay test: TikTok and Instagram 2 hours after YouTube against at once** *(B08.17, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1788. **A crosspost delay test: TikTok and Instagram 2 hours after YouTube against at once** *(B08.17, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [ ] 1789. **Cross-platform views on the scoreboard - reach, not YPP** *(B08.18, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1790. **Each Reel shared to the Instagram story** *(B08.19, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1790. **Each Reel shared to the Instagram story** *(B08.19, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [x] 1791. **A cover frame chosen per platform** *(B08.20, filed 2026-10-27)* `[S]` **Done (2026-10-31, Claude, wave 137):** Buffer's `thumbnailOffset` is the run's own cover frame: the fast cut reports where its cover sits (`cover_at`), the render records `cover_ms` (after any intro), and the crosspost sends it. Before, every video sent 3150 ms - the intro's length plus a second, with the intro off since decision 79: on run 219 that frame is 32 bits of 64 from the cover, while the cover's own moment (1.3 s) is 13. A run with no cover sends 1 s past the intro it recorded. Facebook's Reel takes no offset through Buffer. · lane: views
 - [ ] 1792. **Crosspost copy cleaned of YouTube-only words ('Shorts', 'subscribe')** *(B08.21, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1793. **A platform rests after four weeks under 50 views a post (median)** *(B08.22, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1794. **Instagram hashtags capped at five** *(B08.23, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1795. **The Instagram first comment links the long video** *(B08.24, filed 2026-10-27)* `[S]` · lane: hours
+- [-] 1794. **Instagram hashtags capped at five** *(B08.23, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
+- [-] 1795. **The Instagram first comment links the long video** *(B08.24, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: hours
 - [ ] 1796. **The lane's number: views a week across TikTok, Instagram and Facebook, against ~4,400 in total so far** *(B08.25, filed 2026-10-27)* `[S]` · lane: views
 
 ### B09 Cost per 1,000 organic views
@@ -2418,11 +2418,11 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1813. **A paid signal runs only when the free ones are thin** *(B09.17, filed 2026-10-27)* `[S]` · lane: cost
 - [ ] 1814. **The voice by format's return: the best voice where it pays, the cheapest where it does not** *(B09.18, filed 2026-10-27)* `[S]` · lane: cost
 - [ ] 1815. **An LLM cache for repeated prompts (angle judge, title)** *(B09.19, filed 2026-10-27)* `[S]` · lane: cost
-- [ ] 1816. **Overnight drafts' LLM calls batched where a provider discounts batches** *(B09.20, filed 2026-10-27)* `[S]` · lane: cost
-- [ ] 1817. **A pass that changed nothing in 20 runs is switched off (the passes ledger)** *(B09.21, filed 2026-10-27)* `[S]` · lane: cost
-- [ ] 1818. **Long-form thumbnails rendered once, after the title is final** *(B09.22, filed 2026-10-27)* `[S]` · lane: cost
-- [ ] 1819. **Cost per published long-form minute** *(B09.23, filed 2026-10-27)* `[S]` · lane: cost
-- [ ] 1820. **The project's cost per organic subscriber** *(B09.24, filed 2026-10-27)* `[S]` · lane: cost
+- [-] 1816. **Overnight drafts' LLM calls batched where a provider discounts batches** *(B09.20, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: cost
+- [-] 1817. **A pass that changed nothing in 20 runs is switched off (the passes ledger)** *(B09.21, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: cost
+- [-] 1818. **Long-form thumbnails rendered once, after the title is final** *(B09.22, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: cost
+- [-] 1819. **Cost per published long-form minute** *(B09.23, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: cost
+- [-] 1820. **The project's cost per organic subscriber** *(B09.24, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: cost
 - [ ] 1821. **The lane's number: dollars per 1,000 organic views a month (about $36.74 of runs so far over ~5,000 organic views)** *(B09.25, filed 2026-10-27)* `[S]` · lane: cost
 
 ### B10 The scoreboard and the gate
@@ -2434,23 +2434,23 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1826. **next-five takes items by lane share - views and hours first while both bars are far** *(B10.5, filed 2026-10-27)* `[S]` · lane: views
 - [x] 1827. **Every experiment has an arm, a metric and a stop date; the weekly report lists the open ones and their verdicts** *(B10.6, filed 2026-10-27)* `[S]` **Done (2026-10-30, Claude, wave 135):** `start_experiment(days=14)` carries a stop date; `experiment_lines` in the weekly report - an older experiment stops 14 days from its start (live: hook_rewrite 11-06, preview_shape 11-08). · lane: views
 - [ ] 1828. **A per-video bridge card at 7 days: organic views, stayed share, subscribers, hours, cost** *(B10.7, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1829. **A bridge section on the Story page: the four numbers and their trends** *(B10.8, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1829. **A bridge section on the Story page: the four numbers and their trends** *(B10.8, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
 - [ ] 1830. **Paid and organic split everywhere (scoreboard, growth) from the ledger's campaign windows** *(B10.9, filed 2026-10-27)* `[S]` · lane: subscribers
-- [ ] 1831. **One bridge index: progress to the nearer bar, weekly** *(B10.10, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1831. **One bridge index: progress to the nearer bar, weekly** *(B10.10, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
 - [x] 1832. **A toast when a Short passes 1,000 organic views in 24 hours - a winner to follow up** *(B10.11, filed 2026-10-27)* `[S]` **Done (2026-10-30, Claude, wave 135):** `scorecard.toast_breakouts` in the metrics sync: one toast a day per Short past 1,000 organic views within 24 hours (`win_notify.toast_daily`). · lane: views
-- [ ] 1833. **A toast when organic views a day fall below the 4-week low** *(B10.12, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1834. **A monthly bridge review in the planning log: lanes, numbers, what to drop** *(B10.13, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1835. **Open items by lane on the Story page's backlog chart** *(B10.14, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1833. **A toast when organic views a day fall below the 4-week low** *(B10.12, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
+- [-] 1834. **A monthly bridge review in the planning log: lanes, numbers, what to drop** *(B10.13, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
+- [-] 1835. **Open items by lane on the Story page's backlog chart** *(B10.14, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
 - [x] 1836. **Each bridge wave names the number it moved 14 days later (a wave scorecard)** *(B10.15, filed 2026-10-27)* `[M]` **Done (2026-10-30, Claude, wave 135):** `config/waves.json` (waves 132a-135) and `scorecard_lines` in the weekly report, 14 days after against 14 before on organic views a day; the first reads on 11-11. · lane: views
 - [ ] 1837. **The 2027 thresholds checked against YouTube's own help page when it publishes; third-party until then** *(B10.16, filed 2026-10-27)* `[S]` · lane: money
-- [ ] 1838. **Engaged-view ratio (engaged / views) per Short** *(B10.17, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1839. **Returning viewers of long-form (Analytics)** *(B10.18, filed 2026-10-27)* `[S]` · lane: hours
-- [ ] 1840. **A weekly CSV of the bridge numbers** *(B10.19, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1841. **The prediction ledger aims at organic views at 7 days, the bridge's unit** *(B10.20, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1842. **The bridge numbers at the top of the Back-Home page** *(B10.21, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1843. **A control: one idea the topic gate held back is drafted each week to test the gate** *(B10.22, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1844. **Cohort curves: organic views at day 1, 3, 7 and 28 per Short, to find late risers** *(B10.23, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1845. **The 100k-views scoreboard goal re-based on the bridge numbers** *(B10.24, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1838. **Engaged-view ratio (engaged / views) per Short** *(B10.17, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
+- [-] 1839. **Returning viewers of long-form (Analytics)** *(B10.18, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: hours
+- [-] 1840. **A weekly CSV of the bridge numbers** *(B10.19, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
+- [-] 1841. **The prediction ledger aims at organic views at 7 days, the bridge's unit** *(B10.20, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
+- [-] 1842. **The bridge numbers at the top of the Back-Home page** *(B10.21, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
+- [-] 1843. **A control: one idea the topic gate held back is drafted each week to test the gate** *(B10.22, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
+- [-] 1844. **Cohort curves: organic views at day 1, 3, 7 and 28 per Short, to find late risers** *(B10.23, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
+- [-] 1845. **The 100k-views scoreboard goal re-based on the bridge numbers** *(B10.24, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
 - [ ] 1846. **The lane's number: the share of shipped items that moved a bridge number within 14 days** *(B10.25, filed 2026-10-27)* `[S]` · lane: views
 
 ### B11 The GTA 6 launch window (launch 2026-11-19)
@@ -2505,8 +2505,8 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1891. **Award races (MVP odds movement) weekly - no betting promotion** *(B12.20, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1892. **A numbered card's main event 'how they match up' long-form, 6-8 minutes** *(B12.21, filed 2026-10-27)* `[M]` · lane: hours
 - [ ] 1893. **Calendar drafts made 24-48 hours ahead and rendered in time** *(B12.22, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1894. **Odds movement as a story for marquee games (no betting promotion)** *(B12.23, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1895. **Views per Short by league, monthly, so the calendar keeps the leagues that earn** *(B12.24, filed 2026-10-27)* `[S]` · lane: views
+- [-] 1894. **Odds movement as a story for marquee games (no betting promotion)** *(B12.23, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
+- [-] 1895. **Views per Short by league, monthly, so the calendar keeps the leagues that earn** *(B12.24, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 2, among the lowest open)* · lane: views
 - [ ] 1896. **The calendar's number: organic views of calendar-planned Shorts against reactive ones** *(B12.25, filed 2026-10-27)* `[S]` · lane: views
 
 ### Found 2026-10-28
@@ -2547,3 +2547,10 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1930. **A failed YouTube read in the crosspost round said nothing** *(2026-10-31, wave 138: `_held_by_youtube` swallows the failure into debug; the 10-30 21:07 pass sent run 199 without a line saying YouTube was unread)* `[S]` · lane: defect
 - [ ] 1931. **Instagram's right-hand buttons and the Reels caption overlay measured** *(2026-10-31, wave 138: the side margin was set from TikTok's column; Reels draws its own)* `[S]` · lane: views
 - [ ] 1932. **Frame covers are swept with the backgrounds after 3 days** *(2026-10-31, wave 138: `prune_backgrounds` deletes data/tmp/hybrid_backgrounds files at `_KEEP_TMP_DAYS` = 3, and the cover lives there - the booth then falls back and `ops thumbnail-check` loses ours)* `[S]` · lane: views
+- [ ] 1933. **S03 measured: a retired render records why - wrong, or only past its game** *(2026-11-01, wave 139: S03's check, "0 videos pulled before public", cannot be read - `features.retired_at` mixes the two)* `[S]` · lane: defect
+- [ ] 1934. **S09 measured: the privacy sync keeps how many records it corrected a day** *(2026-11-01, wave 139: S09's check, "0 records corrected for 2 weeks", has no count to read)* `[S]` · lane: defect
+- [ ] 1935. **S15 given a pass mark** *(2026-11-01, wave 139: its check reads the menu's mix against the views it earned and names no line to pass)* `[S]` · lane: views
+- [ ] 1936. **9 of 48 public videos in 28 days scored as a neutral recap (authenticity 49-52)** *(2026-11-01, wave 139, S06's first reading: runs 131, 132, 156, 158, 161, 164, 165, 187, 220 went public with a "review" verdict - is the line letting recaps through, or is the scorer wrong about them?)* `[S]` · lane: views
+- [ ] 1937. **S10 re-read on 11-08: 0 crossposts taken for another video's post** *(2026-11-01, wave 139: 8 in the week to 11-01, fixed; `ops shortfalls` names any that recur)* `[S]` · lane: views
+- [x] 1938. **The 22 shortfalls measure themselves** *(2026-11-01, the operator: "how can we chip away on the long long list of 'Where it falls short'")* `[M]` **Done (2026-11-01, Claude, wave 139; decision 91):** `core/success/shortfalls.py` - each section's check run and its number printed by `ops shortfalls` (it printed only the checks): 7 met, 2 built, 2 waiting, 2 yours, 6 not yet, 3 no measure; the nine passing closed in hands_off_plan.md with their number, and the command says if a closed one stops passing; S07's check rewritten to "every night" (decision 69), overnight keeping its last 14 nights; S22's sweep parked the 47 lowest-scored open bridge ideas (bridge_scores.md) - open 342 -> 295, a test holds it at or under 300. · lane: views
+- [x] 1939. **8 crossposts in a week never went: a sibling's own Buffer post taken as a hand post** *(2026-11-01, S10's first reading)* `[S]` **Done (2026-11-01, Claude, wave 139):** `_hand_post` matched any Buffer post most of whose opening words a run shares, so run 203's own TikTok post was "posted by hand" for runs 204 and 205 (UFC 333), run 205's Instagram post for 199 and 206, 207's for 208 (Kane), 216's for countdown day 19 (220). A post the store records for another run is never a hand post now; `ops crosspost unclaim [--apply]` clears the false records of videos public within 3 days - the operator: send the recent ones, skip the stale countdown. · lane: views

@@ -20,7 +20,7 @@ import re
 import subprocess
 import sys
 import threading
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from core import win_shell
@@ -500,16 +500,41 @@ def overnight_record_path() -> str:
     )
 
 
+KEEP_NIGHTS = 14
+
+
+def recorded_nights() -> list[date]:
+    """The dates overnight started on, oldest first - the record's `nights`, and its last
+    `started` for a record written before they were kept. [] when there is no record."""
+    try:
+        with open(overnight_record_path(), encoding="utf-8") as handle:
+            data = json.load(handle) or {}
+    except (OSError, ValueError):
+        return []
+    raw = [*(data.get("nights") or []), str(data.get("started") or "")[:10]]
+    out: set[date] = set()
+    for value in raw:
+        try:
+            out.add(date.fromisoformat(str(value)[:10]))
+        except ValueError:
+            continue
+    return sorted(out)
+
+
 def record_overnight(
     channel_id: str, *, started: datetime, finished: datetime | None = None, drafts: Any = None
 ) -> None:
     """#1223: what `ops overnight` did - written at its start and again at its end, so a run that
-    finished after the task's crash is known. Never raises."""
+    finished after the task's crash is known. Never raises. Wave 139 (S07): `nights` keeps the
+    last `KEEP_NIGHTS` dates a run started, so "did it run every night" can be read."""
+    nights = {day.isoformat() for day in recorded_nights()}
+    nights.add(started.date().isoformat())
     payload = {
         "channel": channel_id,
         "started": started.isoformat(timespec="seconds"),
         "finished": finished.isoformat(timespec="seconds") if finished else "",
         "drafts": drafts,
+        "nights": sorted(nights)[-KEEP_NIGHTS:],
     }
     try:
         path = overnight_record_path()

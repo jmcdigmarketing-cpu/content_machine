@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -485,30 +485,12 @@ def claim_hold_lines(
     runs: list[Any], *, now: datetime | None = None, days: int = 7, limit: int = 5
 ) -> list[str]:
     """#1381: the share of the week's checked drafts an unsupported claim held, and up to
-    `limit` of them (run and its first claim)."""
-    from core.claim_types import blocking_unsupported
+    `limit` of them (run and its first claim). The count is `shortfalls.claim_hold_share`, which
+    S08 reads too (wave 139)."""
+    from core.success.shortfalls import claim_hold_share
 
-    cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=days)
-    checked = 0
-    held: list[tuple[int, str]] = []
-    for run in runs:
-        made = getattr(run, "created_at", None)
-        if not isinstance(made, datetime):
-            continue
-        if (made if made.tzinfo else made.replace(tzinfo=timezone.utc)) < cutoff:
-            continue
-        try:
-            features = json.loads(getattr(run, "features_json", "") or "{}") or {}
-        except (TypeError, ValueError):
-            continue
-        verification = features.get("claim_verification") if isinstance(features, dict) else None
-        if not isinstance(verification, dict):
-            continue
-        checked += 1
-        claims = blocking_unsupported(verification)
-        if claims:
-            past = " (rendered past it)" if features.get("grounding_override") else ""
-            held.append((int(run.id), f"{claims[0]}{past}"))
+    found = claim_hold_share(runs, now=now, days=days)
+    checked, held = found["checked"], found["held"]
     if not checked:
         return []
     lines = [

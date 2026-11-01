@@ -50,7 +50,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `corrections-open` | Open correction notes on published videos, one line each (#1175) |
 | `cost-panel` | Cost Control Tower panel (#158; requires pip install -e ".[app]") |
 | `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
-| `crosspost` | TikTok + Instagram through Buffer: the round, or [pack \| channels \| send \| status \| cancel \| selftest \| buffer-check \| public-url ADDRESS \| list \| done] (#968, #1188, #1214, #1298) |
+| `crosspost` | TikTok + Instagram through Buffer: the round, or [pack \| channels \| send \| status \| cancel \| selftest \| buffer-check \| public-url ADDRESS \| list \| done \| unclaim] (#968, #1188, #1214, #1298, wave 139) |
 | `crosspost-send` | Send each video made public on YouTube to TikTok and Instagram through Buffer (#1190) |
 | `daily-brief` | The day's numbers: scoreboard, fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
@@ -165,7 +165,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `shelf` | Finished videos that are not public, each with its command (#1131) |
 | `shell` | Localhost FastAPI operator shell (GET only; no TTS/Apify/publish) |
 | `shortcut` | Start Menu + Desktop shortcuts that open the Content OS app (#982) |
-| `shortfalls` | Each of the plan's 22 shortfalls with its open items and done-when (#1517) |
+| `shortfalls` | Each of the plan's 22 shortfalls, its check run: met, waiting, yours or not yet (#1517, wave 139) |
 | `signal-audit` | Which signals feed the script, and which return frozen payloads (#575 #588) |
 | `signal-canary` | Probe every signal at $0 — a dead source found before a real run needs it |
 | `signal-diff` | What each signal returned differently between two runs: <A> --run-id B (#586) |

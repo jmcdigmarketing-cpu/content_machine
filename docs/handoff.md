@@ -53,26 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-31 · **HEAD at write:** `82b78c3` (wave 137; this wave's commit follows) ·
+**Written:** 2026-11-01 · **HEAD at write:** `9181fa0` (wave 138; this wave's commit follows) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 138, the next five (decision 90).** Defects first: run 199's TikTok post went out 31 hours
-before YouTube publishes it - the round held it three passes, then the 10-30 21:07 CDT pass's
-YouTube read failed and "a failure holds nothing" (fixed: a record slot still ahead holds a run;
-the failed read itself is still silent, #1930); the booth showed another run's thumbnail (the
-newest file in thumbnails/, never a frame cover) and the ledger called frame covers "pillow"
-(fixed). Shipped: `send_due`'s slot hold, `run_thumbnail` + `cover_strip_html`, 130 px caption
-sides (`SIDE_PX`; hook card keeps 920), `explore_hour` (1 in 8, noon/3/6/8 PM), the
-`black-friday-deals` long row (Nov 23) with up to three `deals_only` links. Six older pins moved
-with the narrower text (named in the planning log).
+**Wave 139, the shortfalls measure themselves (decision 91).** Defects first: S10's first reading
+found 8 crossposts in a week never sent - `_hand_post` took a sibling's own Buffer post (same story)
+for a "hand post" (runs 199, 204, 205, 206, 208, 220); fixed, and `ops crosspost unclaim --apply`
+clears the recent false ones (the operator: send the recent, skip the stale countdown). S06: 9 public
+videos scored as neutral recaps (#1936). Shipped: `core/success/shortfalls.py` + `ops shortfalls`
+(each check run, its number printed: 7 met, 2 built, 2 waiting, 2 yours, 6 not yet, 3 no measure);
+the nine closed in hands_off_plan.md; S07 rewritten; overnight keeps 14 nights; S22's sweep parked
+47 lowest-scored bridge ideas (open 342 -> 295) and a test holds the 300 ceiling.
 
-**Open:** #1927-#1932 (hour test 12-01, the Black Friday draft, Cyber Monday, the silent YouTube
-read, Instagram's buttons, covers swept after 3 days). **Next five:** #1930, #1932, #1929, #1752,
-#1919.
+**Open:** #1933-#1937. **Next:** one shortfall a wave - S02 (subscribers from videos) first - with
+#1936, #1930, #1932, #1933.
 
-**Operator:** look at the next render's first second on a phone (#1922); connect a Facebook Page in
-Buffer; paste the link page into the bios; publish the Google app (lapses Nov 6); the Associates tag
-(the Black Friday video's links need it).
+**Operator:** publish the Google app (lapses Nov 7); turn on the Reporting API (S11); the hook card
+on a phone (#1922); Facebook in Buffer; the bio link; the Associates tag.
 
 ## Slot — Cursor
 

@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-31 (Claude Code): wave 136, money and reach
+
+Facebook Reels through Buffer, only Shorts public after a Page is connected (decision 88; none yet);
+a late crosspost sent on the worker's next pass (8 TikTok, 9 Instagram queued late this week); the
+link page live on R2; income beside spend (net -$25.65); TikTok against Creator Rewards; a Short loses
+an affiliate line at publish.
+
 ## Previous — 2026-10-30 (Claude Code): wave 135, catch-up and the next 15
 
 Caught up with the cloud (decision 85). The countdown a day ahead and uploaded for its own noon

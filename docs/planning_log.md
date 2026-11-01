@@ -10552,3 +10552,57 @@ Audit: mypy 92 == baseline; ruff and format clean. Suite: 7068 forward and 7068 
 
 `roadmap-index`: open 337, done 1731, parked 96, numbered open 335 (highest #1932).
 
+## 2026-11-01 — wave 139: the shortfalls measure themselves (Claude Code)
+
+**Prompt:** "how can we chip away on the long long list of "Where it falls short"" - answered with a
+measured read and a plan - then "yes, do wave 139".
+
+Measured first: `ops shortfalls` printed each section's "done when" and never ran it, so the Story's
+22 lines were the 10-18 snapshot with "Shipped" notes; nothing closed one. A quick read found S12
+(TikTok watch 3.86 s) and S21 (the hook score out of the grade) already met, S13 two weeks into four,
+S22 over its ceiling (337 open).
+
+Shipped (built in a scratchpad worktree):
+1. `core/success/shortfalls.py` - a check per shortfall reading its own number from the stores that
+   already hold it (the scorecard's long minutes, growth's subscribers, verdicts, the week's claim
+   holds, the crosspost store, platform metrics, the publish log, crash logs, the grade weights,
+   roadmap counts), with six statuses; a reader that fails reads NO MEASURE, never raises.
+   `ops shortfalls` prints status and number; `sections()` reads a plan's `**Closed:**` line and the
+   command flags a closed shortfall that stops passing.
+2. The plan: the nine passing closed with their number (S04, S08, S12, S16, S17, S18, S19, S20, S21);
+   S07's check rewritten to "every night" (decision 69); `record_overnight` keeps the last 14 nights.
+3. `weekly_report.claim_hold_lines` reads `shortfalls.claim_hold_share`, the same count S08 reads.
+4. The S10 defect (below): `_hand_post(taken=)`, `_taken_post_ids`, `false_hand_posts`,
+   `ops crosspost unclaim [--apply]`.
+5. S22's sweep: the 47 lowest-scored open bridge ideas parked by `bridge_scores.md`'s scores (27 at
+   1, 3 at 1.5, 17 at 2 by lowest effect then largest effort), #1752 kept; open 342 -> 295. A test
+   holds the backlog at or under 300.
+
+Found on the way:
+- `publishing/crosspost.py` `_hand_post` (S10's first reading, "8 crossposts made by hand" when the
+  operator posts nothing by hand): any Buffer post most of whose opening words a run shared was its
+  "hand post" - the round's own post for run 203 stood in for runs 204 and 205, 205's for 199 and 206,
+  207's for 208, 216's for countdown day 19 (220); read back from Buffer, each id is the sibling's own
+  post. 8 Shorts in the week never reached TikTok or Instagram, and nothing said so (#1939, fixed).
+- S06: 9 of 48 public videos in 28 days went out with a "review" (neutral recap) authenticity
+  verdict, scores 49-52 (#1936).
+- S03, S09 and S15 cannot be read: retirements do not say why (#1933), the privacy sync keeps no count
+  (#1934), S15 names no pass mark (#1935).
+- A Bash heredoc ate a backslash again in a patch script; rewritten with the Write tool.
+
+Not done: S02 and S01 (the next waves' shortfall slot); the Story's "Where it falls short" panel is
+rewritten from the command's output in this wave's artifact update, not generated.
+
+Tests: `tests/test_wave139.py`, 24 - all 24 fail on `9181fa0` (a clean HEAD worktree, the editable
+finder stripped). Corpus +2 (505), both failing on HEAD. No older test changed.
+
+Audit: mypy 92 == baseline (the new reader's int() on an object was the 93rd, fixed); ruff and format clean.
+Suite: 7092 forward and 7092 reversed, OK (6 skipped); corpus 505 of 505; data/ and output/ untouched.
+Three older tests moved, each named: the command reference regenerated (the crosspost and shortfalls
+help), and the field audit's reader of `claim_verification` is now `core/success/shortfalls.py` (the
+weekly report reads it there). Every new function has a production caller (`readings` in `ops
+shortfalls`, `claim_hold_share` in the weekly report, `recorded_nights` in `record_overnight` and S07,
+`false_hand_posts` in `unclaim` and S10, `_taken_post_ids` in `send_due`).
+
+`roadmap-index`: open 295, done 1733, parked 143, numbered open 293 (highest open #1937).
+

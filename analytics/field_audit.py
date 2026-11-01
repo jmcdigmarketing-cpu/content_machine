@@ -31,7 +31,7 @@ FIELDS: tuple[tuple[str, str, str, str], ...] = (
     ("features", "title_structure", "analytics/weekly_report.py", "the weekly winners"),
     ("features", "cost", "core/channel_health.py", "cost health"),
     ("rendered", "technical_qc.video_duration", "core/channel_health.py", "the length band"),
-    ("features", "claim_verification", "analytics/weekly_report.py", "the weekly claim holds"),
+    ("features", "claim_verification", "core/success/shortfalls.py", "the weekly claim holds, S08"),
     ("features", "entity_research", "video/week_compile.py", "the compilation's title"),
     ("quality", "hook_score", "core/channel_health.py", "engagement's hook read"),
 )  # fmt: skip

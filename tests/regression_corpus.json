@@ -8472,6 +8472,59 @@
         "equals": ""
       },
       "why": "the strip compares frame covers only"
+    },
+    {
+      "id": "a-siblings-own-post-is-taken",
+      "item": 1939,
+      "source": "wave 139: run 203's own TikTok post was recorded as the hand post of runs 204 and 205",
+      "call": "publishing.crosspost:_taken_post_ids",
+      "args": [
+        {
+          "203": {
+            "tiktok": {
+              "state": "sent",
+              "post_id": "P203"
+            }
+          },
+          "204": {
+            "tiktok": {
+              "state": "manual",
+              "post_id": "P203"
+            }
+          }
+        },
+        204
+      ],
+      "expect": {
+        "includes_all": [
+          "P203"
+        ]
+      },
+      "why": "a Buffer post the round made for one run is never another run's"
+    },
+    {
+      "id": "a-taken-post-is-not-a-hand-post",
+      "item": 1939,
+      "source": "wave 139: 8 Shorts in a week were never crossposted - each matched a sibling's post",
+      "call": "publishing.crosspost:_hand_post",
+      "args": [
+        [
+          {
+            "id": "P203",
+            "text": "UFC 333 Volkanovski decline report cracks",
+            "sentAt": ""
+          }
+        ],
+        "UFC 333 Volkanovski decline report cracks and more",
+        null,
+        [
+          "P203"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the same story's own post must not stop this video's post"
     }
   ]
 }

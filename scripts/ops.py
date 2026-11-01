@@ -2970,12 +2970,13 @@ def cmd_grounding_corpus(_args: argparse.Namespace) -> int:
 
 
 @_register(
-    "shortfalls", "Each of the plan's 22 shortfalls with its open items and done-when (#1517)"
+    "shortfalls",
+    "Each of the plan's 22 shortfalls, its check run: met, waiting, yours or not yet (#1517, wave 139)",
 )
-def cmd_shortfalls(_args: argparse.Namespace) -> int:
+def cmd_shortfalls(args: argparse.Namespace) -> int:
     from core.roadmap_index import shortfall_lines
 
-    for line in shortfall_lines():
+    for line in shortfall_lines(getattr(args, "channel", None)):
         print(line)
     return 0
 
@@ -3757,7 +3758,8 @@ for _batch_name, (_batch_help, _steps, _stop) in BATCHES.items():
 @_register(
     "crosspost",
     "TikTok + Instagram through Buffer: the round, or [pack | channels | send | status | cancel | "
-    "selftest | buffer-check | public-url ADDRESS | list | done] (#968, #1188, #1214, #1298)",
+    "selftest | buffer-check | public-url ADDRESS | list | done | unclaim] (#968, #1188, #1214, "
+    "#1298, wave 139)",
 )
 def cmd_crosspost(args: argparse.Namespace) -> int:
     """`ops crosspost` runs the Buffer round when Buffer is set up (#1298), else - and with
@@ -3781,6 +3783,9 @@ def cmd_crosspost(args: argparse.Namespace) -> int:
         "public-url",
     ):
         return _crosspost_api(action, channel, args, apply=apply)
+    if action == "unclaim":  # wave 139: a sibling's own post taken as a hand post
+        print("\n".join(crosspost.unclaim(channel, apply=apply)))
+        return 0
     if action == "list":
         print("\n".join(crosspost.waiting_lines(channel)))
         api = crosspost.status_lines(channel)

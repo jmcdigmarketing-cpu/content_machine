@@ -1,9 +1,12 @@
 {
-  "_note": "Affiliate links (#1748, #1747; decision 82's money lane): one link a video, on long-form only - a Short's description links are not clickable. Rows are matched like config/playlists.json (core.playlists._matches, whole words, first row wins). An Amazon url gains tag=AFFILIATE_AMAZON_TAG; with no tag (before your Associates sign-up) no Amazon link is added at all, and whenever a link is added the FTC line is too. TapIn's GTA 6 row is an Amazon search link, not a product id nobody checked - swap in the product page once you have one. #1760 (decision 90): a deals video - its title or topic naming Black Friday, Cyber Monday or deals - carries up to three links, matched in its title, topic and script, with one FTC line; rows marked deals_only are for a deals video alone.",
+  "_note": "Affiliate links (#1748, #1747; decision 82's money lane): one link a video, on long-form only - a Short's description links are not clickable. Rows are matched like config/playlists.json (core.playlists._matches, whole words, first row wins). An Amazon url gains tag=AFFILIATE_AMAZON_TAG; with no tag (before your Associates sign-up) no Amazon link is added at all, and whenever a link is added the FTC line is too. TapIn's GTA 6 row is an Amazon search link, not a product id nobody checked - swap in the product page once you have one. #1749 (decision 95): a row's `links` sets how many links a matching long video takes - GTA 6's two editions, Standard and Ultimate ($79.99 and $99.99 at launch), as Amazon search links. #1764: a sportsbook, pick'em or casino row is refused wherever links are built. #1760 (decision 90): a deals video - its title or topic naming Black Friday, Cyber Monday or deals - carries up to three links, matched in its title, topic and script, with one FTC line; rows marked deals_only are for a deals video alone.",
   "tapin": [
+    {"keys": ["gta 6", "gta vi", "grand theft auto vi", "grand theft auto 6"], "links": 2,
+     "url": "https://www.amazon.com/s?k=Grand+Theft+Auto+VI+Standard+Edition",
+     "label": "GTA 6 Standard Edition on Amazon"},
     {"keys": ["gta 6", "gta vi", "grand theft auto vi", "grand theft auto 6"],
-     "url": "https://www.amazon.com/s?k=Grand+Theft+Auto+VI",
-     "label": "GTA 6 on Amazon"},
+     "url": "https://www.amazon.com/s?k=Grand+Theft+Auto+VI+Ultimate+Edition",
+     "label": "GTA 6 Ultimate Edition on Amazon"},
     {"keys": ["ps5", "playstation 5"], "deals_only": true,
      "url": "https://www.amazon.com/s?k=PlayStation+5+console",
      "label": "PS5 on Amazon"},

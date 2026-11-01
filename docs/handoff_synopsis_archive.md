@@ -7,6 +7,14 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-01 (Claude Code): wave 140, the next five (S02)
+
+A countdown, a launch moment and a long video end on their true reason to follow (#1699). A
+draft that still reads as a recap gets one rewrite before review, and review shows what recaps
+earned (decision 92); read with today's detector, 4 of S06's 9 recaps are. A crosspost round that
+cannot read YouTube says so; frame covers are kept past the 3-day sweep; a retired render records
+why, so S03 is measured.
+
 ## Previous — 2026-11-01 (Claude Code): wave 139, the shortfalls measured
 
 `ops shortfalls` runs each of the 22 checks (decision 91): 7 met and 2 built closed in the plan

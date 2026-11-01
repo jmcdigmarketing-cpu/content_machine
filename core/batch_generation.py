@@ -609,11 +609,15 @@ def generate_draft(
         except Exception as exc:
             logger.debug("recap rewrite skipped: %s", exc)
     try:
-        from core.authenticity import evaluate_authenticity
+        from core.authenticity import evaluate_authenticity, series_key
 
         fields = authenticity_fields(
             evaluate_authenticity(
-                result.script, channel_id, fact_count=fact_count, exclude_run_id=result.run_id
+                result.script,
+                channel_id,
+                fact_count=fact_count,
+                exclude_run_id=result.run_id,
+                series=series_key(str((best_bet or {}).get("title_stem") or "")),  # #1958
             )
         )
         out.authenticity_verdict = fields["authenticity_verdict"]

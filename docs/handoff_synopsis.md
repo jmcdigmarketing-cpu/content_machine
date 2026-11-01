@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-01: wave 142, the next five
+# Handoff synopsis — 2026-11-01: wave 143, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-01 (Claude Code): wave 142, the next five (S05)
+## Last wave — 2026-11-01 (Claude Code): wave 143, the next five (S06)
+
+The take detector learned six shapes the scripts' calls are written in; S06 reads 0 of 48 (decision
+95). A countdown day is compared with its own series on wording, not subject. GTA long videos link
+both editions; a long description is a 150-250 word summary led by its title; no gambling link,
+ever. #1730 parked (no API). Correction: run 222 waited on "no take", not its grade.
+
+## Previous — 2026-11-01 (Claude Code): wave 142, the next five (S05)
 
 The grade gates nothing (decision 94): your verdicts tracked the views and the grade did not (15 of
 40 in their views' third, chance 33%); S05 reads it against the audience. NFL nicknames read NFL and
@@ -24,14 +31,6 @@ two Weeks in Review drew 4 views and 0: `ops ypp` and S01 now say where long vie
 S15's mark - the menu within 15 points of the views - with three gaming ideas of five (decision
 93); chapter Shorts count for their parent's domain; Cyber Monday is a long deals video on Nov 28;
 S09 counts corrections; S10 skips what you left.
-
-## Previous — 2026-11-01 (Claude Code): wave 140, the next five (S02)
-
-A countdown, a launch moment and a long video end on their true reason to follow (#1699). A
-draft that still reads as a recap gets one rewrite before review, and review shows what recaps
-earned (decision 92); read with today's detector, 4 of S06's 9 recaps are. A crosspost round that
-cannot read YouTube says so; frame covers are kept past the 3-day sweep; a retired render records
-why, so S03 is measured.
 
 ---
 
@@ -97,7 +96,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S06 (one shortfall a wave), #1730, #1749, #1741, #1764; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S02 (one shortfall a wave), #1729, #1726, #1960, #1733; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

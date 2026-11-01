@@ -133,13 +133,17 @@ is written as what it means, ending on a call, and its pre-game picks leave the 
 #1363); `ops signal-audit` shows what ran per topic domain (#1370). Wave 140 (#1936,
 decision 92): read with today's detector, 4 of 48 public in 28 days are recaps (9 by the stored
 verdicts); a draft still reading as one gets one rewrite before review, which shows the cost.
+Wave 143 (#1957, decision 95): each of the 4 made a call the detector did not know; it learned six
+shapes, read by hand on the 17 stored recaps.
 
 **How.** Read the finished script's tense before render, and give previews more than one shape.
 
 **Who:** Code. **Done when:** `py -m scripts.ops overnight-last` - 0 recap-tense previews over 4
 weeks.
 
-**Ideas:** #1361-#1370 in [backlog.md](backlog.md) under "S06".
+**Closed:** 2026-11-01 - 0 of 48 videos public in 28 days read as a neutral recap (goal: 0) (`py -m scripts.ops shortfalls`, wave 143; it says so if this stops passing).
+
+**Ideas:** #1361-#1370 in [backlog.md](backlog.md) under "S06"; #1957.
 
 ### S07 Overnight runs when the PC wakes, not at 5:00 AM
 

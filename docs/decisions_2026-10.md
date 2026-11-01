@@ -633,3 +633,24 @@ GTA 6's map), held by its grade alone, can render on its own; every render from 
 captions 66 px higher; the bios take three addresses (`ops links`) and Amazon four IDs (yours); S15
 reads gaming 67% of the views (59% before the corrections); the formerly-held drafts are read on
 11-15 (#1953).
+
+## 95. The take detector learns the scripts' own shapes; series days on wording; both GTA editions; no gambling link (2026-11-01)
+**Decision:** the take detector reads six more shapes a call is written in ("here's the trap",
+"nobody's saying", "the real question is", "people are sleeping on", "watch the first/next",
+"bigger doesn't mean"). A series' days (a countdown) are compared with each other on wording
+alone - whole text and opening - not on subject, and with every other video as before. A GTA long
+video links both editions, Standard and Ultimate, as Amazon search links; a deals video names one
+edition per product. A long video's description is a 150-250 word summary led by its title. No
+sportsbook, pick'em or casino link is used anywhere - not as an affiliate row, not in a
+description - whatever GAMBLING_SAFE says; odds talk and picks videos stay. #1730 is parked.
+**Why:** S06 counted 4 of 48 public videos as recaps; each made a call the detector missed, and 7
+of the 17 stored recaps read as takes with the six shapes, each read by hand. Run 221, the "18
+days" countdown, was held as too like run 216 at 0.64 meaning overlap with 8% of its wording alike;
+the series runs to Nov 18. Rockstar announced two editions ($79.99, $99.99). YouTube's Data API has
+no field for a Short's related video. Asked, the operator took "Teach it the phrasings", "Judge
+series days on wording", "Standard and Ultimate" and "Links and promos only" (all recommended).
+**Correction (decision 94):** run 222 did not become free to render when the grade stopped
+gating - overnight's unattended render never read the grade; it held run 222 for "no take found",
+which this decision releases. **Consequence:** S06 is met; run 222 and the countdown's days can
+render overnight, unlisted for review; fewer drafts take the premium recap rewrite; the GTA long
+videos carry two links; the countdown is read on 11-08 (#1959).

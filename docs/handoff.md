@@ -53,23 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-01 · **HEAD at write:** `f63ccee` (wave 141; this wave's commit follows) ·
+**Written:** 2026-11-01 · **HEAD at write:** `8d9bbd5` (wave 142; this wave's commit follows) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 142, the next five with S05 (decision 94).** Defect first: `video_grade.below_gate` let a
-missing letter pass a floor (`"" in "ABCDF"`) - an older test caught it before commit; fixed, corpus
-case. The grade gates nothing unless `GRADE_GATE` is set (`gate_letter`, both gates); S05 reads it
-against the audience (15 of 40 in their views' third) and is BUILT. NFL nicknames read nfl
-(`_nfl_by_nickname`); `ops domains --apply` corrected 10 stored subjects on the operator's word
-(done from the scratchpad with this wave's code - re-running it lists none). Captions end 450 px up
-(`CAPTION_BOTTOM_PX`). `AFFILIATE_AMAZON_TAGS` per place; overnight builds a link page per bio;
-the sync keeps `ext_url_detail`; `ops links` prints the addresses and the pages' views.
+**Wave 143, the next five with S06 (decision 95).** Defects first: wave 142 said run 222 could
+render once the grade stopped gating - overnight never read the grade; it held 222 for "no take",
+released now. My patch wrote two `\b` as backspaces in `odds_language.py`; the control-character
+test caught it. S06: six stance shapes in `_STANCE_PATTERNS` - S06 met (0 of 48). #1958: a series
+day compares with its siblings on wording (`series_key`, `evaluate_authenticity(series=)`,
+`series_variation_passes` in `authenticity_now`); `evaluate_authenticity` still reads
+`_recent_scripts` for a plain script (old tests patch it). GTA long videos link two editions (row
+`links`); a long description is a 150-250 word summary led by its title; `is_gambling_link` refuses
+rows and strips lines, always. #1730 parked (no API).
 
-**Open:** #1953-#1956. **Next:** S06 with #1730, #1749, #1741, #1764.
+**Open:** #1953-#1956, #1959, #1960. **Next:** S02 with #1729, #1726, #1960, #1733.
 
-**Operator:** publish the Google app (lapses Nov 7); paste the three bio addresses (`ops links`);
-make four tracking IDs in Associates Central; Facebook in Buffer; #1922 and #1956 on a phone;
-#1954 (refile runs 120 and 126 under Gaming) on your word.
+**Operator:** publish the Google app (lapses Nov 7); paste the three bio pages; four tracking IDs;
+Facebook in Buffer; #1922 and #1956 on a phone; #1954 on your word.
 
 ## Slot — Cursor
 

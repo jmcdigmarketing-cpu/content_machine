@@ -298,8 +298,9 @@ class BlackFridayTests(unittest.TestCase):
             xbox = affiliate_lines("tapin", "Xbox Game Pass in November", "Xbox Game Pass",
                                    long_form=True, script=self.SCRIPT)  # fmt: skip
         first = next(line for line in gta if "amazon.com" in line)
-        self.assertEqual(first.split(":")[0], "GTA 6 on Amazon")
-        self.assertEqual(sum(1 for line in gta if "amazon.com" in line), 1)
+        # decision 95 (#1749): a GTA long video links both editions - and still no console row
+        self.assertEqual(first.split(":")[0], "GTA 6 Standard Edition on Amazon")
+        self.assertEqual(sum(1 for line in gta if "amazon.com" in line), 2)
         self.assertEqual(xbox, [])  # a console row is for a deals video only
 
     def test_no_tag_no_links(self):

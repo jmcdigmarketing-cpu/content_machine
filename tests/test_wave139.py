@@ -345,9 +345,10 @@ class PlanTests(unittest.TestCase):
         from core.roadmap_index import sections
 
         closed = {s["key"] for s in sections() if s["closed"]}
-        # measured 2026-11-01: 7 met, 2 built (S04, S18); wave 142 built S05 (decision 94)
+        # measured 2026-11-01: 7 met, 2 built (S04, S18); wave 142 built S05 (decision 94); wave
+        # 143 met S06 (decision 95)
         self.assertEqual(
-            closed, {"S04", "S05", "S08", "S12", "S16", "S17", "S18", "S19", "S20", "S21"}
+            closed, {"S04", "S05", "S06", "S08", "S12", "S16", "S17", "S18", "S19", "S20", "S21"}
         )
 
     def test_the_backlog_stays_under_its_ceiling(self):

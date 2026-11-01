@@ -10759,3 +10759,60 @@ Audit: mypy 92 == baseline; ruff and format clean. Suite: 7149 forward and rever
 in `ops links`; `_fetch_source_detail` in `fetch_video_metrics`. Fields traced: `ext_url_detail`
 from the sync to `clicks`; `domains.effective`/`was` from `apply` to `growth._domain`,
 `run_domain` and the category fix; `GRADE_GATE` from the env to both gates and S05.
+
+## 2026-11-01 — wave 143: the next five, S06 (Claude Code)
+
+**Prompt:** "next 5".
+
+Measured first (read-only): S06's 4 public recaps (runs 131, 132, 187, 220) and the waiting run 222
+each made a call - "Here's the trap", "here's what nobody's saying", "That's the part people are
+sleeping on", "Here's where it bites", "the real question is density". Over the 127 stored scripts,
+17 read as recaps; six candidate shapes turned 7 of them (115, 131, 132, 140, 187, 220, 222) into
+takes, each read by hand. The waiting drafts: run 221 (the "18 days" countdown) held as too like
+run 216 - meaning 0.64 against 0.45, wording 0.08; run 223 a second preview of a fight run 219
+drafted. YouTube's videos resource has no related-video field (#1730). Rockstar's editions:
+Standard $79.99, Ultimate $99.99.
+
+**Asked (four):** S06 - "Teach it the phrasings"; #1730's place - "Judge series days on wording";
+#1749 - "Standard and Ultimate"; #1764 - "Links and promos only".
+
+Shipped (built in a scratchpad worktree, decision 95):
+1. S06 / #1957 six shapes in `authenticity._STANCE_PATTERNS`.
+2. #1958 `authenticity.series_key`, `_recent_runs`, `evaluate_authenticity(series=)`,
+   `_variation_check(siblings=)`, `series_variation_passes`; generation passes the stem;
+   `batch_review.authenticity_now` reads a held countdown again.
+3. #1749 two edition rows in config/affiliates.json; a row's `links`; one edition a product in a
+   deals video.
+4. #1741 the long prompt's 150-250 word description; a long description's first line its title.
+5. #1764 `odds_language.is_gambling_link`, `strip_gambling_links`; `affiliate_rows` refuses.
+#1730 parked.
+
+Found on the way:
+- Correction to wave 142: overnight's unattended render (`batch_review.unattended_block_reason`)
+  never read the grade; run 222 waited on "no take found", not its C. Decision 94 said it could
+  render on its own; it can now, by #1957.
+- core/odds_language.py: my patch script wrote two `\b` as backspaces (a Python string, not raw);
+  `test_no_source_file_holds_a_control_character` caught it before commit.
+- `evaluate_authenticity` must keep reading `_recent_scripts` for a plain script - three older
+  tests patch it (style recurrence, the templated block); only a series day reads `_recent_runs`.
+- The menu drafted Moicano vs Nolan twice (runs 219, 223) - #1960.
+- core/authenticity.py `series_key`: my first version replaced every number, so "GTA 6" read
+  "GTA {n}" and a GTA 5 countdown would have been the same series; the new corpus case caught
+  it. Only the count before "day(s)" goes, and "1 day" reads as "{n} days".
+
+Not done: a cheap-model take judge (offered, not taken); the related video (#1730, no API).
+
+Tests: `tests/test_wave143.py`, 16 - 14 fail on `8d9bbd5` (a clean HEAD worktree, the editable
+finder stripped: 7 failures, 7 errors); the other 2 pin a real recap staying one and another long
+video keeping one link. Older tests changed for the decision: wave 138's GTA long video now carries
+two links; one corpus case's deals list carries the Standard Edition. Corpus +2 (the take, the
+series key), each failing on HEAD.
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite: 7165 forward and reversed, OK
+(6 skipped); corpus 513 of 513; data/ and output/ untouched by the suite. Production callers:
+the shapes in `has_insight` (the gate, the recap rewrite, `authenticity_now`, S06); `series_key`
+in generation and `_run_series`; `series_variation_passes` in `authenticity_now`; `is_gambling_link`
+in `affiliate_rows` and `strip_gambling_links`, which `apply_description_extras` calls; the row's
+`links` in `affiliate_lines`; `description_rule` in `_build_prompts`. Fields traced:
+`best_bet.title_stem` from the menu's pick to the run's features to `_run_series`; `series` from
+the draft's meta to the re-read.

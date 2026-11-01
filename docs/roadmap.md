@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-01 (Claude, wave 143 - the next five, S06).** All four public "recaps" made a call
+the take detector did not know ("Here's the trap", "the real question is density"); it
+learned six shapes and S06 reads 0 of 48 (decision 95). A countdown day was held for sharing
+GTA 6's words with yesterday's - series days now compare on wording. GTA long videos link both
+editions; a long description is a 150-250 word summary led by its title; no gambling link, ever.
+#1730 is parked: YouTube's API cannot set a Short's related video. Next, with **S02** (4
+subscribers from 91 videos): **#1729** deep-dive Shorts end on the full video, **#1726** keyword
+chapter titles on long videos, **#1960** the same fight drafted twice, **#1733** each long
+video's drop-off minute.
 **2026-11-01 (Claude, wave 142 - the next five, S05).** Your verdicts tracked the views (0.65);
 the grade did not - 15 of 40 measured videos in their views' third, chance 33% - so it gates
 nothing now (decision 94; GRADE_GATE brings a floor back) and S05 reads it against the audience.
@@ -96,14 +105,6 @@ covers outlive the 3-day sweep; a retired render records why, so S03 is measured
 Next, with **S01** (0.0 long-form hours this week - **#1315** the written Week in Review first):
 **#1929** the Cyber Monday deals Short (Nov 30), **#1942** S10 counting the countdown you chose to
 skip, **#1934** S09 measured, **#1935** S15's pass mark.
-**2026-11-01 (Claude, wave 139 - the shortfalls measure themselves).** `ops shortfalls` runs each of
-the 22 checks (decision 91): 7 met and 2 built are closed in the plan with their number; 2 wait on
-time (S07, S13), 2 are yours (S11 the Reporting API, S14 the Google app), 3 have no measure yet.
-Its first run found 8 crossposts that never went - a sibling's own Buffer post taken as a hand
-post (fixed; the recent ones re-sent). The backlog is under its 300 ceiling: 47 lowest-scored
-bridge ideas parked, a test holds it. Next, with one shortfall each wave: **S02** subscribers from
-videos (4 of 162) - its ten ideas first; **#1936** the 9 recaps that went public; **#1930** a failed
-YouTube read said nothing; **#1932** covers swept after 3 days; **#1933** S03 measured.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

@@ -8430,13 +8430,13 @@
       },
       "expect": {
         "equals": [
-          "GTA 6 on Amazon: https://www.amazon.com/s?k=Grand+Theft+Auto+VI&tag=tapin-20",
+          "GTA 6 Standard Edition on Amazon: https://www.amazon.com/s?k=Grand+Theft+Auto+VI+Standard+Edition&tag=tapin-20",
           "PS5 on Amazon: https://www.amazon.com/s?k=PlayStation+5+console&tag=tapin-20",
           "Xbox Series X on Amazon: https://www.amazon.com/s?k=Xbox+Series+X&tag=tapin-20",
           "Some links may be affiliate links. We may earn a commission at no extra cost to you."
         ]
       },
-      "why": "a deals video names several products; the FTC line appears once"
+      "why": "a deals video names several products, one edition each (decision 95); the FTC line appears once"
     },
     {
       "id": "a-console-link-is-for-a-deals-video-only",
@@ -8622,6 +8622,32 @@
         "equals": true
       },
       "why": "with a floor set, no grade is never a pass"
+    },
+    {
+      "id": "heres-the-trap-is-a-take",
+      "item": 1957,
+      "source": "live 2026-11-01: all 4 public 'recaps' in S06 made a call the detector missed - run 132's 'Here's the trap'",
+      "call": "core.authenticity:has_insight",
+      "args": [
+        "Gaethje beat Topuria at UFC Freedom 250. Here's the trap: a grudge fight is the loudest, easiest path back for Topuria."
+      ],
+      "expect": {
+        "equals": true
+      },
+      "why": "a call made in the script's own words is a take"
+    },
+    {
+      "id": "a-countdown-day-is-one-series",
+      "item": 1958,
+      "source": "live 2026-11-01: run 221 ('18 days') held as too like run 216 ('20 days') for sharing GTA 6's words",
+      "call": "core.authenticity:series_key",
+      "args": [
+        "GTA 6: 18 days to launch"
+      ],
+      "expect": {
+        "equals": "GTA 6: {n} days to launch"
+      },
+      "why": "the day count is not the series - its days are compared on wording, not subject"
     }
   ]
 }

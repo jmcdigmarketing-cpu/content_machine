@@ -18,6 +18,7 @@ pipeline treat a "block" verdict as a hard stop the operator must override.
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import re
@@ -179,6 +180,20 @@ _STANCE_PATTERNS = (
     re.compile(r"\bthat'?s the (?:stat|number|sign|tell|detail) that\b"),
     re.compile(r"\bthere for the taking\b"),
     re.compile(r"\bwatch (?:the|his|her|their)\b[^!?]{0,80}?\bwhether\b"),  # "vs." inside
+    # S06 (wave 143, decision 95): all four public "recaps" of 11-01 made a call in words none of
+    # the above knew - "Here's the trap: a grudge fight is the loudest path back" (run 132),
+    # "here's what nobody's saying" (131), "That's the part people are sleeping on" (187),
+    # "Here's where it bites" (220), "the real question is density" and "bigger doesn't mean
+    # better" (222), "Watch the next game" (140). 7 of the 17 stored recaps read as takes with
+    # these, each read by hand; the other 10 stay recaps.
+    re.compile(
+        r"\bhere'?s (?:the trap|the catch|the risk|the problem|where it (?:bites|breaks|turns|hurts))\b"
+    ),
+    re.compile(r"\bnobody'?s? (?:is )?(?:saying|talking about|asking)\b"),
+    re.compile(r"\bthe real question (?:is|isn'?t)\b"),
+    re.compile(r"\b(?:people|fans|everyone|most) (?:are|is) sleeping on\b"),
+    re.compile(r"\bwatch (?:the|this|that) (?:first|next|opening|table|standings|tape)\b"),
+    re.compile(r"\b(?:bigger|more|faster|louder|newer) (?:doesn'?t|does not) mean\b"),
 )
 
 # Deliberately absent: "hot take". `title_generator` bans "my hot take" as slop
@@ -428,8 +443,25 @@ def scripts_this_week(channel_id: str, *, now: datetime | None = None) -> list[s
     return scripts_within(rows, now=moment, days=7)
 
 
-def _recent_scripts(channel_id: str, *, exclude_run_id: int | None) -> list[str]:
-    """Recent uploads' script text (script_preview), newest first."""
+def series_key(stem: str) -> str:
+    """#1958: a series day's series - its title stem with the day count taken out, so "GTA 6: 18
+    days to launch" and "GTA 6: 20 days to launch" are one series; "" without a stem. Only the
+    count before "day(s)": the 6 of "GTA 6" is the subject's (a GTA 5 countdown is another)."""
+    return re.sub(r"\b\d+\s*days?\b", "{n} days", " ".join(str(stem or "").split()), flags=re.I)
+
+
+def _run_series(run: Any) -> str:
+    try:
+        features = json.loads(getattr(run, "features_json", None) or "{}")
+    except (TypeError, ValueError):
+        return ""
+    best_bet = features.get("best_bet") if isinstance(features, dict) else None
+    stem = best_bet.get("title_stem") if isinstance(best_bet, dict) else ""
+    return series_key(str(stem or ""))
+
+
+def _recent_runs(channel_id: str, *, exclude_run_id: int | None) -> list[tuple[str, str]]:
+    """Recent uploads' (script text, series key), newest first."""
     try:
         from storage.repositories.content_runs import get_content_run_repository
 
@@ -438,21 +470,33 @@ def _recent_scripts(channel_id: str, *, exclude_run_id: int | None) -> list[str]
         logger.debug("authenticity: could not load recent runs: %s", exc)
         return []
 
-    scripts: list[str] = []
+    found: list[tuple[str, str]] = []
     for run in runs[: _RECENT_RUNS + 1]:
         if exclude_run_id is not None and run.id == exclude_run_id:
             continue
         text = (run.script_preview or "").strip()
         if text:
-            scripts.append(text)
-        if len(scripts) >= _RECENT_RUNS:
+            found.append((text, _run_series(run)))
+        if len(found) >= _RECENT_RUNS:
             break
-    return scripts
+    return found
+
+
+def _recent_scripts(channel_id: str, *, exclude_run_id: int | None) -> list[str]:
+    """Recent uploads' script text (script_preview), newest first."""
+    return [text for text, _series in _recent_runs(channel_id, exclude_run_id=exclude_run_id)]
 
 
 def _variation_check(
-    script: str, recent: list[str], recurrence: dict[str, Any] | None = None
+    script: str,
+    recent: list[str],
+    recurrence: dict[str, Any] | None = None,
+    *,
+    siblings: set[int] | frozenset[int] = frozenset(),
 ) -> AuthenticityCheck:
+    """`siblings` (#1958, decision 95): indexes into `recent` of the same series' other days - a
+    countdown's days share their subject by design (run 221 was held for sharing GTA 6's words
+    with run 216 at 0.64, its wording 8% alike), so they are compared on wording alone."""
     if not recent:
         return AuthenticityCheck(
             "variation",
@@ -472,8 +516,9 @@ def _variation_check(
 
     max_sem = 0.0
     if _semantic_enabled():
-        for other in recent:
-            max_sem = max(max_sem, _content_cosine(script, other))
+        for index, other in enumerate(recent):
+            if index not in siblings:
+                max_sem = max(max_sem, _content_cosine(script, other))
 
     peak = max(max_full, max_open, max_sem)
     points = round(40.0 * (1.0 - peak), 1)
@@ -628,19 +673,26 @@ def evaluate_authenticity(
     fact_count: int = 0,
     exclude_run_id: int | None = None,
     recent: list[str] | None = None,
+    series: str = "",
 ) -> AuthenticityReport:
     """Score a script against the three policy-aligned checks.
 
     `recent` supplies the comparison scripts directly (#630 selftest); None loads the
-    channel's recent uploads from the store, as a real run does.
+    channel's recent uploads from the store, as a real run does. `series` (#1958): the script is
+    a day of that series (`series_key`), so its siblings are compared on wording alone.
     """
     channel_id = resolve_channel_id(channel_id)
-    if recent is None:
+    siblings: set[int] = set()
+    if recent is None and series:
+        found = _recent_runs(channel_id, exclude_run_id=exclude_run_id)
+        recent = [text for text, _key in found]
+        siblings = {i for i, (_text, key) in enumerate(found) if key == series}
+    elif recent is None:
         recent = _recent_scripts(channel_id, exclude_run_id=exclude_run_id)
 
     recurrence = style_recurrence(script, recent)
     checks = [
-        _variation_check(script, recent, recurrence),
+        _variation_check(script, recent, recurrence, siblings=siblings),
         _insight_check(script),
         _substance_check(script, fact_count),
     ]
@@ -666,6 +718,26 @@ def evaluate_authenticity(
         gate_score=gate_score,
         recurrence=recurrence,
     )
+
+
+def series_variation_passes(script: str, channel_id: str, run_id: int | None) -> bool:
+    """#1958: does a held series day pass the variation check against its own series - read again
+    at render time, so a countdown held before the series rule renders once it passes."""
+    if not run_id:
+        return False
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        series = _run_series(get_content_run_repository().get(int(run_id)))
+    except Exception as exc:
+        logger.debug("series re-read skipped for run %s: %s", run_id, exc)
+        return False
+    if not series:
+        return False
+    found = _recent_runs(resolve_channel_id(channel_id), exclude_run_id=int(run_id))
+    recent = [text for text, _key in found]
+    siblings = {i for i, (_text, key) in enumerate(found) if key == series}
+    return _variation_check(script, recent, siblings=siblings).passed
 
 
 def gate_mode() -> str:

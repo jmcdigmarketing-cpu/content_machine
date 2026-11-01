@@ -1102,6 +1102,15 @@ def authenticity_now(draft: PendingDraft) -> tuple[str, str]:
                 return "ok", ""
         except Exception as exc:
             logger.debug("take re-read skipped for run %s: %s", draft.run_id, exc)
+    if verdict != "ok" and failed == ["variation"] and meta.get("series") == "countdown":
+        try:  # #1958 (decision 95): a countdown day against its own series, on wording alone
+            from core import authenticity
+
+            channel = str(meta.get("channel_id") or "")
+            if authenticity.series_variation_passes(draft.script, channel, draft.run_id):
+                return "ok", ""
+        except Exception as exc:
+            logger.debug("series re-read skipped for run %s: %s", draft.run_id, exc)
     return verdict, authenticity_reasons(meta)
 
 

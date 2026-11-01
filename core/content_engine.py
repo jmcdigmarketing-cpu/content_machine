@@ -672,6 +672,15 @@ You must:
     long_close = (
         "closing take" if resolved_intent == ANGLE_TAKE else "a closing line that answers the idea"
     )
+    # #1741 (decision 95): a long video is found by search, and its description is what search
+    # reads - a summary of what it covers, not a Short's two lines. A Short's prompt is unchanged.
+    description_rule = (
+        "Generate the SEO description as a 150-250 words summary: what the video covers, section "
+        "by section, in plain words, naming the subject the way people search for it (no hashtags "
+        "in the body, call-to-action last line)."
+        if str(length_choice) == "4"
+        else "Generate a concise SEO description (hook first line, call-to-action last line)."
+    )
     user_prompt = f"""
 TODAY: {today}
 
@@ -698,7 +707,7 @@ INSTRUCTIONS:
 - If Long format: structure as hook → context → analysis → implications → {long_close}.
 {user_take}
 - Do NOT write the YouTube title — title is generated in a separate pass after facts + script.
-- Generate a concise SEO description (hook first line, call-to-action last line).
+- {description_rule}
 - Generate 8-15 YouTube tags (no fabricated names).
 
 Return JSON only:

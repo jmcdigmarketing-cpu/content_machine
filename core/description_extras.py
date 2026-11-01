@@ -113,7 +113,19 @@ def affiliate_rows(channel_id: str) -> list[dict[str, Any]]:
         logger.debug("affiliates.json unread: %s", exc)
         return []
     rows = data.get(channel_id) if isinstance(data, dict) else None
-    return [r for r in rows or [] if isinstance(r, dict) and r.get("url") and r.get("keys")]
+    from core.odds_language import is_gambling_link
+
+    kept: list[dict[str, Any]] = []
+    for row in rows or []:
+        if not (isinstance(row, dict) and row.get("url") and row.get("keys")):
+            continue
+        if is_gambling_link(str(row["url"]), str(row.get("label") or "")):
+            logger.warning(
+                "affiliates.json: %s refused - no gambling link, ever (#1764)", row["url"]
+            )
+            continue
+        kept.append(row)
+    return kept
 
 
 TAG_PLACES = ("long", "tiktok", "instagram", "facebook")
@@ -169,16 +181,24 @@ def affiliate_lines(
     text = text.lower()
     tag = amazon_tag("long")
     links: list[str] = []
+    limit = DEALS_LINKS if deals else 1
+    products: set[tuple[str, ...]] = set()
     for row in affiliate_rows(channel_id):
         if row.get("deals_only") and not deals:
             continue
-        if not _matches(text, [str(k) for k in row.get("keys") or []]):
+        keys = tuple(str(k) for k in row.get("keys") or [])
+        if not _matches(text, list(keys)):
             continue
+        if deals and keys in products:
+            continue  # #1749: a deals video names products - one edition each
+        products.add(keys)
         url = _tagged(str(row["url"]), tag)
         if not url:
             continue
+        if not links and not deals:  # #1749: the first match sets how many (GTA 6's two editions)
+            limit = max(1, int(row.get("links") or 1))
         links.append(f"{str(row.get('label') or 'Link').strip()}: {url}")
-        if len(links) >= (DEALS_LINKS if deals else 1):
+        if len(links) >= limit:
             break
     if not links:
         return []
@@ -384,12 +404,17 @@ def apply_description_extras(
     """
     body = (description or "").rstrip()
     try:
-        from core.odds_language import strip_betting_ctas
+        from core.odds_language import strip_betting_ctas, strip_gambling_links
 
         body, _n = strip_betting_ctas(body)
+        body, _n = strip_gambling_links(body)  # #1764: always
     except Exception as exc:
         logger.debug("description betting-cta strip skipped: %s", exc)
     body = ensure_seo_first_line(body, title).rstrip()
+    headline = (title or "").strip()
+    if str(length_choice) == "4" and headline and body.splitlines()[:1] != [headline]:
+        # #1741: a long video's first line is its title - the search phrase (#1856) - always
+        body = f"{headline}\n\n{body}" if body else headline
     additions: list[str] = []  # the single-line notes
     sources_block = ""
     chapters_block = ""

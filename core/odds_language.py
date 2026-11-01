@@ -36,6 +36,46 @@ _BETTING_CTA = re.compile(
 )
 
 
+# #1764 (decision 95): sportsbooks, pick'em apps and crypto casinos - never an affiliate row,
+# never a link in a description, whatever GAMBLING_SAFE says. Matched on the link's host (a
+# sportsbook subdomain of a shop - sportsbook.fanatics.com - is one; fanatics.com's jerseys are not).
+GAMBLING_HOSTS = (
+    "draftkings.com", "fanduel.com", "betmgm.com", "caesars.com/sportsbook", "sportsbook.caesars.com",
+    "bet365.com", "pointsbet.com", "betrivers.com", "hardrock.bet", "espnbet.com", "thescore.bet",
+    "sportsbook.fanatics.com", "prizepicks.com", "underdogfantasy.com", "stake.com", "stake.us",
+    "rollbit.com", "bovada.lv", "betonline.ag", "mybookie.ag", "betway.com", "williamhill.com",
+    "paddypower.com", "unibet.com", "888sport.com", "betfair.com", "sportsbet.com.au",
+    "parlayplay.io", "dabble.com", "betr.app", "chalkboard.io",
+)  # fmt: skip
+_GAMBLING_WORDS = re.compile(r"\b(?:sportsbook|casino|parlay|betting|bet now|odds boost)\b", re.I)
+_LINK = re.compile(r"https?://\S+", re.I)
+
+
+def is_gambling_link(url: str, label: str = "") -> bool:
+    """A sportsbook, pick'em or casino link, or a label that sells betting."""
+    if _GAMBLING_WORDS.search(str(label or "")):
+        return True
+    host, _sep, path = re.sub(r"^https?://", "", str(url or "").strip().lower()).partition("/")
+    host = host.split(":")[0].removeprefix("www.")
+    for entry in GAMBLING_HOSTS:
+        domain, _slash, prefix = entry.partition("/")
+        if (host == domain or host.endswith(f".{domain}")) and path.startswith(prefix):
+            return True
+    return False
+
+
+def strip_gambling_links(text: str) -> tuple[str, int]:
+    """Drop every line carrying a gambling link (#1764) - always, not behind GAMBLING_SAFE."""
+    kept: list[str] = []
+    removed = 0
+    for line in (text or "").splitlines():
+        if any(is_gambling_link(url) for url in _LINK.findall(line)):
+            removed += 1
+            continue
+        kept.append(line)
+    return "\n".join(kept), removed
+
+
 def _flag(name: str, default: bool) -> bool:
     raw = os.getenv(name)
     if raw is None:

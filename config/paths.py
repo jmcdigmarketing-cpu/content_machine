@@ -25,6 +25,8 @@ CLIP_INDEX_FILE = os.path.join(DATA_DIR, "clip_index.json")
 # Wave 135 (look_and_feel.md L3/L4): each clip's use times; L2: the covers already used.
 CLIP_USES_FILE = os.path.join(DATA_DIR, "clip_uses.json")
 COVERS_FILE = os.path.join(DATA_DIR, "covers.json")
+# #1934 (S09): how many records each day's privacy sync corrected.
+PRIVACY_SYNC_FILE = os.path.join(DATA_DIR, "privacy_sync.json")
 SEASONAL_CALENDAR_FILE = os.path.join(ROOT_DIR, "config", "seasonal_calendar.json")
 # #946: athlete / fighter names per sport, checked after every keyword list.
 DOMAIN_NAMES_FILE = os.path.join(ROOT_DIR, "config", "domain_names.json")

@@ -19,8 +19,9 @@ stays in the run's features as `title_uploaded`.
 from __future__ import annotations
 
 import json
+import os
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -122,6 +123,51 @@ def _service(channel_id: str) -> Any:
     return get_youtube_service(channel_id)
 
 
+_KEEP_DAYS = 60
+
+
+def _count_file() -> str:
+    from config import paths
+
+    return paths.PRIVACY_SYNC_FILE
+
+
+def _counts() -> dict[str, int]:
+    try:
+        with open(_count_file(), encoding="utf-8") as handle:
+            days = (json.load(handle) or {}).get("days") or {}
+    except (OSError, ValueError, AttributeError):
+        return {}
+    return {str(k): int(v) for k, v in days.items() if isinstance(v, int)}
+
+
+def record_corrections(count: int, *, day: date | None = None) -> None:
+    """#1934 (S09): a sync that wrote to the record adds what it corrected to its day - a day with
+    0 is a day the record matched YouTube. Fail-open; the last `_KEEP_DAYS` days are kept."""
+    try:
+        days = _counts()
+        key = (day or date.today()).isoformat()
+        days[key] = days.get(key, 0) + max(0, int(count))
+        target = _count_file()
+        os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+        tmp = f"{target}.tmp"
+        with open(tmp, "w", encoding="utf-8") as handle:
+            json.dump({"days": dict(sorted(days.items())[-_KEEP_DAYS:])}, handle)
+        os.replace(tmp, target)
+    except Exception as exc:
+        logger.debug("privacy sync count not kept: %s", exc)
+
+
+def corrections(*, days: int = 14, today: date | None = None) -> dict[str, Any]:
+    """{corrected, since, days}: records corrected over the last `days` days of syncs, the first
+    day on record and how many of them synced - S09's "0 records corrected for 2 weeks"."""
+    end = today or date.today()
+    start = end - timedelta(days=days - 1)
+    kept = {k: v for k, v in _counts().items() if start.isoformat() <= k <= end.isoformat()}
+    first = min(_counts(), default="")
+    return {"corrected": sum(kept.values()), "since": first, "days": len(kept)}
+
+
 def sync_privacy(channel_id: str, *, service: Any = None, apply: bool = True) -> dict[str, Any]:
     """Bring `privacy_status` level with YouTube, and a run's status with its video (#1126).
 
@@ -199,6 +245,8 @@ def sync_privacy(channel_id: str, *, service: Any = None, apply: bool = True) ->
     ]
     report["runs_published"] = _publish_runs(public_runs, apply=apply)
     report["edited"] = _read_back_edits(rows, status, apply=apply)
+    if apply:  # #1934: what this sync corrected - a Studio edit taken in is not drift
+        record_corrections(len(report["changed"]) + len(report["rescheduled"]))
     return report
 
 

@@ -87,25 +87,34 @@ def weeks_to(target: float, have: float, per_week: float) -> str:
     return "reached" if weeks <= 0 else f"about {weeks:,.0f} weeks"
 
 
-def long_minutes(channel_id: str) -> list[float]:
-    """Each long video's organic minutes a week, from its synced window (`estimated_minutes_watched`
-    over `period_start`-`period_end`, less the paid share). Long = a compilation or a long draft."""
+def _long_rows(channel_id: str) -> list[tuple[Any, dict[str, Any]]]:
+    """(publish row, its metrics) for each long video - a compilation or a long draft."""
     from storage.repositories.content_runs import get_content_run_repository
     from storage.repositories.publish_log import get_publish_log_repository
 
     repo = get_content_run_repository()
-    out: list[float] = []
+    out: list[tuple[Any, dict[str, Any]]] = []
     for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
         try:
             metrics = json.loads(getattr(row, "metrics_json", "") or "{}") or {}
-            minutes = metrics.get("estimated_minutes_watched")
             run_id = getattr(row, "content_run_id", None)
             run = repo.get(int(run_id)) if run_id else None
             features = json.loads(getattr(run, "features_json", "") or "{}") if run else {}
         except Exception as exc:
-            logger.debug("long minutes unread: %s", exc)
+            logger.debug("long video unread: %s", exc)
             continue
-        if minutes is None or not (features.get("compilation") or features.get("long_form")):
+        if features.get("compilation") or features.get("long_form"):
+            out.append((row, metrics))
+    return out
+
+
+def long_minutes(channel_id: str) -> list[float]:
+    """Each long video's organic minutes a week, from its synced window (`estimated_minutes_watched`
+    over `period_start`-`period_end`, less the paid share). Long = a compilation or a long draft."""
+    out: list[float] = []
+    for _row, metrics in _long_rows(channel_id):
+        minutes = metrics.get("estimated_minutes_watched")
+        if minutes is None:
             continue
         views, paid = float(metrics.get("views") or 0), float(metrics.get("paid_views") or 0)
         organic = float(minutes) * (1 - paid / views) if views > 0 else float(minutes)
@@ -116,6 +125,64 @@ def long_minutes(channel_id: str) -> list[float]:
             span = 28
         out.append(organic * 7 / max(span, 1))
     return out
+
+
+SOURCE_NAMES = {  # YouTube Analytics `insightTrafficSourceType`, in words
+    "YT_SEARCH": "search",
+    "RELATED_VIDEO": "suggested",
+    "YT_OTHER_PAGE": "browse",
+    "SHORTS": "Shorts feed",
+    "SHORTS_CONTENT_LINKS": "a Short's link",
+    "YT_CHANNEL": "channel page",
+    "SUBSCRIBER": "subscriptions",
+    "PLAYLIST": "playlists",
+    "YT_PLAYLIST_PAGE": "playlists",
+    "END_SCREEN": "end screens",
+    "ANNOTATION": "cards",
+    "NOTIFICATION": "notifications",
+    "EXT_URL": "outside YouTube",
+    "NO_LINK_OTHER": "direct",
+    "NO_LINK_EMBEDDED": "embeds",
+    "HASHTAGS": "hashtags",
+}
+
+
+def long_sources_line(channel_id: str) -> str:
+    """#1944 (S01): where the long videos' organic views came from - each video's synced 28-day
+    `views_by_source`, paid sources out, with the minutes where the sync read them; the long
+    videos nobody has watched are named. "" when the channel has no long video.
+
+    The two Weeks in Review drew 4 views and 0, so how a long video is written matters less
+    than whether anyone reaches it: search, suggested, a Short's link, the channel page."""
+    from analytics.youtube_metrics import PAID_SOURCES
+
+    rows = _long_rows(channel_id)
+    if not rows:
+        return ""
+    views: dict[str, int] = {}
+    minutes: float | None = None
+    unseen: list[str] = []
+    for row, metrics in rows:
+        organic = {s: int(v) for s, v in (metrics.get("views_by_source") or {}).items()
+                   if s not in PAID_SOURCES and int(v or 0) > 0}  # fmt: skip
+        if not organic:
+            unseen.append(f"run {getattr(row, 'content_run_id', '?')}")
+            continue
+        for source, count in organic.items():
+            name = SOURCE_NAMES.get(source, source.lower().replace("_", " "))
+            views[name] = views.get(name, 0) + count
+        if metrics.get("minutes_by_source"):  # read from the next sync on (#1944)
+            minutes = (minutes or 0.0) + sum(
+                float(m) for s, m in metrics["minutes_by_source"].items() if s not in PAID_SOURCES
+            )
+    total = sum(views.values())
+    parts = ", ".join(f"{name} {n}" for name, n in sorted(views.items(), key=lambda kv: -kv[1]))
+    head = f"Long views by source ({len(rows)} long videos, 28-day windows): "
+    watched = f", {minutes:.1f} minutes watched" if minutes is not None else ""
+    body = (f"{parts} - {total} organic views{watched}" if total
+            else f"no views yet ({', '.join(unseen)})")  # fmt: skip
+    tail = f"; no views yet: {', '.join(unseen)}" if unseen and total else ""
+    return head + body + tail
 
 
 def hours_lines(minutes: list[float], *, have: float | None, bars: tuple[int, int]) -> list[str]:

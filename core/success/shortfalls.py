@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -42,6 +42,8 @@ VIDEO_SUBS = 10  # S02: subscribers from videos in 28 days
 WEEKLY_UPLOADS = 7  # S13, for 4 weeks
 HOOK_RULE_N = 10  # S16: videos after the first-line rule
 BACKLOG_CEILING = 300  # S22, decision 68
+SYNC_DAYS = 14  # S09: "0 records corrected for 2 weeks"
+MIX_GAP = 15  # S15, decision 93: no domain's menu share over 15 points from its view share
 
 
 @dataclass(frozen=True)
@@ -97,15 +99,21 @@ def _json(text: Any) -> dict[str, Any]:
 
 
 def _s01(channel_id: str, now: datetime) -> Reading:
-    from core.success.scorecard import hours_week, long_minutes
+    from core.success.scorecard import hours_week, long_minutes, long_sources_line
 
     minutes = long_minutes(channel_id)
     if not minutes:
         return Reading(NO_MEASURE, "no long video has a synced window yet")
     week = hours_week(minutes)
     status = MET if week > HOURS_FLOOR else NOT_YET
-    return Reading(status, f"long-form hours this week {week:.1f} from {len(minutes)} long "
-                           f"video(s) (goal: above {HOURS_FLOOR})")  # fmt: skip
+    text = (f"long-form hours this week {week:.1f} from {len(minutes)} long video(s) (goal: "
+            f"above {HOURS_FLOOR})")  # fmt: skip
+    try:  # #1944: where those views came from
+        sources = long_sources_line(channel_id)
+    except Exception as exc:
+        logger.debug("long sources unread: %s", exc)
+        sources = ""
+    return Reading(status, text + (f"; {sources[0].lower()}{sources[1:]}" if sources else ""))
 
 
 def _s02(channel_id: str, now: datetime) -> Reading:
@@ -246,7 +254,25 @@ def _s08(channel_id: str, now: datetime) -> Reading:
 
 
 def _s09(channel_id: str, now: datetime) -> Reading:
-    return Reading(NO_MEASURE, "the privacy sync corrects records but keeps no count (#1934)")
+    """Records the privacy sync corrected in `SYNC_DAYS` days (#1934 keeps the count a day)."""
+    from analytics.privacy_sync import corrections
+
+    got = corrections(days=SYNC_DAYS, today=now.date())
+    fixed = int(got.get("corrected") or 0)
+    text = (f"{fixed} record{'s' if fixed != 1 else ''} corrected by the privacy sync in "
+            f"{SYNC_DAYS} days (goal: 0)")  # fmt: skip
+    if fixed:
+        return Reading(NOT_YET, text)
+    since = str(got.get("since") or "")
+    try:
+        first: date | None = date.fromisoformat(since)
+    except ValueError:
+        first = None
+    if first is None:
+        return Reading(WAITING, text + "; the count starts at the next sync")
+    if (now.date() - first).days < SYNC_DAYS - 1:
+        return Reading(WAITING, text + f"; the record starts {since}")
+    return Reading(MET, text)
 
 
 def _s10(channel_id: str, now: datetime) -> Reading:
@@ -259,8 +285,10 @@ def _s10(channel_id: str, now: datetime) -> Reading:
         when = crosspost._stamp(str(state.get("at") or ""))
         return bool(when and now - when <= timedelta(days=7))
 
-    missed = [x for x in crosspost.false_hand_posts(channel_id) if recent(x)]
-    taken = {(x["run_id"], x["service"]) for x in missed}
+    false = [x for x in crosspost.false_hand_posts(channel_id) if recent(x)]
+    left = [x for x in false if x.get("left")]  # #1942: left on the operator's word
+    missed = [x for x in false if not x.get("left")]
+    taken = {(x["run_id"], x["service"]) for x in false}
     posts = crosspost._load(channel_id).get("posts") or {}
     by_hand = [
         f"run {run_id} {service}"
@@ -276,7 +304,9 @@ def _s10(channel_id: str, now: datetime) -> Reading:
                                 f"{len(by_hand)} made by hand (goal: 0)")  # fmt: skip
     status = MET if not by_hand else NOT_YET
     names = f" ({', '.join(by_hand[:3])})" if by_hand else ""
-    return Reading(status, f"{len(by_hand)} crossposts made by hand in 7 days{names} (goal: 0)")
+    kept = f"; {len(left)} left on your word" if left else ""
+    return Reading(status, f"{len(by_hand)} crossposts made by hand in 7 days{names} (goal: 0)"
+                           + kept)  # fmt: skip
 
 
 def _s11(channel_id: str, now: datetime) -> Reading:
@@ -287,6 +317,11 @@ def _s11(channel_id: str, now: datetime) -> Reading:
             measured += 1
     if measured:
         return Reading(MET, f"click-through stored for {measured} videos")
+    from analytics.reach_report import status
+
+    running, line = status(channel_id)  # #1946: the API on and the job made - YouTube's turn
+    if running:
+        return Reading(WAITING, f"no click-through stored yet - {line.split(': ', 1)[-1]}")
     return Reading(YOURS, "no click-through stored - turn on the YouTube Reporting API "
                           "(py -m scripts.ops doctor prints the link)")  # fmt: skip
 
@@ -335,9 +370,42 @@ def _s14(channel_id: str, now: datetime) -> Reading:
                           "(py -m scripts.ops check-youtube prints the page)")  # fmt: skip
 
 
+def _domain_views(channel_id: str, now: datetime) -> dict[str, int]:
+    """Organic views by domain of the videos published in the last 28 days - growth's rows and
+    its domain reader, the figures the gaming floor reads."""
+    from analytics.growth import _kind, _rows
+
+    out: dict[str, int] = {}
+    for row in _rows(channel_id):
+        published = _aware(row.get("published"))
+        if published is None or now - published > timedelta(days=28):
+            continue
+        domain, _format = _kind(row.get("run_id"))
+        if domain:
+            views = max(0, int(row.get("views") or 0) - int(row.get("paid") or 0))
+            out[domain] = out.get(domain, 0) + views
+    return out
+
+
 def _s15(channel_id: str, now: datetime) -> Reading:
-    return Reading(NO_MEASURE, "the check reads the menu's mix against its views but names no "
-                               "pass mark (#1935)")  # fmt: skip
+    """#1935 (decision 93): the last 30 menus against what each domain earned - met when no
+    domain's share of the menu is more than `MIX_GAP` points from its share of the organic views
+    of the videos published in 28 days. Named: the domain furthest off."""
+    from core.predictions.ledger import menu_mix
+
+    offered, _taken, _menus = menu_mix(channel_id)
+    views = _domain_views(channel_id, now)
+    shown, earned = sum(offered.values()), sum(views.values())
+    if not shown or not earned:
+        return Reading(NO_MEASURE, "no menu, or no organic views in 28 days, to compare")
+    share = {d: (100 * offered.get(d, 0) / shown, 100 * views.get(d, 0) / earned)
+             for d in set(offered) | set(views)}  # fmt: skip
+    worst = max(share, key=lambda d: (abs(share[d][0] - share[d][1]), d))
+    menu, earn = share[worst]
+    gap = abs(menu - earn)
+    return Reading(MET if gap <= MIX_GAP else NOT_YET,
+                   f"the menu offers {worst} {menu:.0f}% against {earn:.0f}% of organic views in "
+                   f"28 days - {gap:.0f} points off (goal: within {MIX_GAP})")  # fmt: skip
 
 
 def _s16(channel_id: str, now: datetime) -> Reading:

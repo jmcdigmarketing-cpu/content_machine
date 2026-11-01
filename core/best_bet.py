@@ -1632,8 +1632,9 @@ def get_best_bets(
         if cont and normalize_seed_topic(cont.topic).lower() not in seen:
             options.append(cont)
 
-    # #1447 (decision 79): at least two gaming ideas while gaming leads the channel's organic
-    # views - on 10-25 one idea in five was gaming and gaming brought 53% of them.
+    # #1447 (decision 79; three since decision 93): `GAMING_FLOOR` gaming ideas while gaming leads
+    # the organic views - on 10-25 one idea in five was gaming and gaming brought 53% of them; on
+    # 11-01 the menu offered gaming 24% while it brought 67%.
     try:
         if n >= GAMING_FLOOR and _gaming_leads(channel_id):
             # Fresh headlines first; with one gaming franchise in the news (10-25: two Call of
@@ -1646,7 +1647,7 @@ def get_best_bets(
     return options[:n]  # #1244: a thin day shows fewer ideas, never more games
 
 
-GAMING_FLOOR = 2
+GAMING_FLOOR = 3  # decision 93 (was 2, decision 79): three of five while gaming leads
 
 
 def _gaming_leads(channel_id: str) -> bool:

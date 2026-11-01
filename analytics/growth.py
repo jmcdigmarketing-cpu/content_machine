@@ -385,14 +385,22 @@ def report(channel_id: str) -> dict[str, Any]:
 _LONG_SECONDS = 180.0
 
 
+def _domain(features: dict[str, Any]) -> str:
+    stored = features.get("domains")
+    return str(stored.get("effective") if isinstance(stored, dict) and stored.get("effective")
+               else features.get("domain") or "")  # fmt: skip
+
+
 def _kind(run_id: Any) -> tuple[str, str]:
     """(domain, "Shorts" or "long") of a run, from its stored features; ("", "") without one."""
     features = _features(run_id)
     if not features:
         return "", ""
-    stored = features.get("domains")
-    domain = str(stored.get("effective") if isinstance(stored, dict) and stored.get("effective")
-                 else features.get("domain") or "")  # fmt: skip
+    domain = _domain(features)
+    if not domain and features.get("parent_run_id"):
+        # #1945: a chapter Short stores no domain - its parent's is its own. Without this, 1,775
+        # organic gaming views in 28 days (runs 190, 191, 200, 201) counted for no domain.
+        domain = _domain(_features(features["parent_run_id"]))
     try:
         seconds = float((features.get("technical_qc") or {}).get("video_duration") or 0)
     except (TypeError, ValueError):

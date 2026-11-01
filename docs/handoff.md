@@ -53,22 +53,22 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-01 · **HEAD at write:** `251837f` (wave 139; this wave's commit follows) ·
+**Written:** 2026-11-01 · **HEAD at write:** `4c72cda` (wave 140; this wave's commit follows) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 140, the next five with S02 (decision 92).** A countdown, a launch moment and a long video
-end on their true reason to follow (`follow_brief`, in the creative brief). A draft that still reads
-as a recap gets one more insight pass after every other pass (`recap_rewrite`; `RECAP_REWRITE`, off
-in the suite - a model call) and review prints what recaps earned (`recap_cost_line`). S06 reads the
-saved scripts with today's detector: 4 of 48, not 9. A failed YouTube read in the crosspost round is
-None and says so; `keep_cover` copies the frame cover into output/<channel>/thumbnails;
-`retire_renders(why=)` and `ops retire-renders --why wrong` - S03 counts them (waiting to 11-29).
-Runs 204 and 205's TikTok posts were cleared and are scheduled for Sun 11 PM EST.
+**Wave 141, the next five with S01 (decision 93).** The operator set `AFFILIATE_AMAZON_TAG` and
+turned on the Reporting API (the reach job exists; S11 now WAITING on YouTube's first file). S01:
+the sync keeps `minutes_by_source` for a video off the Shorts feed and `long_sources_line` says
+where long views come from (`ops ypp`, S01) - #1315 waits. S15: the menu within 15 points of 28
+days' organic views (`ledger.menu_mix`, `_domain_views`); `GAMING_FLOOR` 3. Found and fixed: a
+chapter Short counted for no domain (`growth._kind` follows `parent_run_id`) - gaming 41% -> 59%.
+Cyber Monday long video row (Nov 28); S09 counts each applied sync's corrections
+(data/privacy_sync.json); `unclaim --apply` marks what it leaves - run after the merge for run 220.
 
-**Open:** #1940-#1943. **Next:** S01 (#1315 first) with #1929, #1942, #1934, #1935.
+**Open:** #1947-#1950. **Next:** S05 with #1919, #1752, #1947, #1931.
 
-**Operator:** publish the Google app (lapses Nov 7); turn on the Reporting API (S11); the hook card
-on a phone (#1922); Facebook in Buffer; the bio link; the Associates tag.
+**Operator:** publish the Google app (lapses Nov 7); the hook card on a phone (#1922); Facebook in
+Buffer; the bio link.
 
 ## Slot — Cursor
 

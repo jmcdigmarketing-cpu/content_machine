@@ -46,7 +46,9 @@ aimed at with money outside YouTube started now.
 
 **Now.** 69 of 1,000 subscribers; 1,936 organic Shorts views in 90 days (272 a week against the
 777,778 the Shorts path needs); 10 of 4,000 long-form hours (0.2 a week against 77). As of
-2026-10-18, YouTube's own numbers, ads excluded.
+2026-10-18, YouTube's own numbers, ads excluded. Wave 141 (#1944, decision 93): the two Weeks in
+Review drew 4 views and 0 - `ops ypp` and S01 now say where long views come from, by traffic
+source; the written Week in Review (#1315) waits for a long video with an audience.
 
 **How.** At this size the Shorts path is not reachable by volume, so long-form hours come first:
 the weekly $0 compilation (#138) makes its first video on Monday 10-19. Per-video reach (S02, S12,
@@ -165,7 +167,8 @@ claims, with a replay sample confirming the holds.
 
 ### S09 The record drifted from YouTube
 
-**Now.** Fixed: every sync asks YouTube for each video's privacy and corrects the record (#1128).
+**Now.** Fixed: every sync asks YouTube for each video's privacy and corrects the record (#1128). Wave 141 (#1934): each applied
+sync keeps how many it corrected that day, and S09 reads 14 days of it.
 
 **How.** Read more fields back, and count the corrections until there are none.
 
@@ -193,8 +196,8 @@ slot it will never use (#1558).
 
 ### S11 Clicks are unmeasured
 
-**Now.** The YouTube Reporting API is still off in the sign-in's Google project; `ops doctor`'s
-only failing reach check prints the link.
+**Now.** The operator turned the YouTube Reporting API on 2026-11-01 and the sync made the
+report job; S11 waits on YouTube's first daily file (#1946, #1950).
 
 **How.** You turn it on; then #1058 feeds impressions and click-through into title and thumbnail
 learning.
@@ -257,7 +260,9 @@ needed for 30 days.
 
 **Now.** Fixed: decision 66 - five ideas and five previews, ranked by how many outlets carry the
 story (#1300). 10-25 (decision 79): while gaming leads organic views - 53% of them - at least two
-ideas of five are gaming (#1447); `ops predictions` shows the menu's mix (#1446).
+ideas of five are gaming (#1447); `ops predictions` shows the menu's mix (#1446). Wave 141 (#1935, decision
+93): met when no domain's menu share is over 15 points from its share of 28 days' organic
+views - gaming 24% against 59%, so three ideas of five are now gaming while gaming leads.
 
 **How.** Weight domains by what holds viewers on this channel (the best 7-day video is a gaming
 one, Cyclops at 968).

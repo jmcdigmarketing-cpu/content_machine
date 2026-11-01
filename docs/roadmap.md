@@ -67,6 +67,16 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-01 (Claude, wave 141 - the next five, S01).** You set the Associates tag and turned on
+the Reporting API (the report job runs; S11 now waits on YouTube's first file). S01: the two
+Weeks in Review drew 4 views and 0, so the slot measured where long views come from - by
+traffic source, with minutes - before writing a better one (#1315 waits). The menu offered
+gaming 24% while gaming earned 59% of organic views: S15 passes within 15 points, and three
+ideas of five are gaming (decision 93). Chapter Shorts now count for their parent's domain;
+Cyber Monday is a long deals video drafted Nov 28; S09 counts corrections; S10 skips what you
+left. Next, with **S05** (your verdicts against the audience, 54%): **#1919** the link page's
+clicks, **#1752** Amazon tracking IDs per platform, **#1947** two gaming videos stored as
+another domain, **#1931** Instagram's side buttons.
 **2026-11-01 (Claude, wave 140 - the next five, S02).** A countdown, a launch moment and a long
 video now end on their true reason to follow - tomorrow's day, the GTA 6 countdown, the Monday Week
 in Review (S02 reads 4 subscribers from 91 videos; re-read 11-29). A draft that still reads as a
@@ -93,18 +103,6 @@ is drafted Nov 23 with up to three links (decision 90). Next: **#1930** a failed
 the round said nothing, **#1932** frame covers swept after 3 days, **#1929** a Cyber Monday deals
 Short, **#1752** Amazon tracking IDs per platform, **#1919** the link page's clicks. Yours:
 **#1922** the hook card's size on a phone.
-**2026-10-31 (Claude, wave 137 - one frame for every app).** Every video's text moved inside the
-apps' safe zone (decision 89): run 219's hook card ran off both edges over the AI line and its
-captions sat under TikTok's and YouTube's buttons - captions now end at 80% of the height, the AI
-line starts at 12%, the hook card is wrapped under it. TikTok's caption opens on the hook with three
-hashtags; the caption test had kept no arm in 73 posts - replayed, TikTok's hook-first read 157 views
-a post against 116. A platform's hour needs 4 posts of its own, in local time (Instagram back to 10
-PM, TikTok 11 PM). Buffer gets each run's own cover frame (it got 3.15 s for every video). The FTC
-line is added under any affiliate link at publish; off YouTube, "Follow for" and no #shorts. Next:
-**#1917** run 199's publish time eight hours ahead (the open defect), **#1760** the Black Friday
-deals long video (Nov 27 - it needs your Associates tag), **#1920** platform hours explored,
-**#1921** TikTok's right-hand buttons, **#1916** the cover in `ops booth`. Yours: **#1922** the hook
-card's size on a phone. The bridge's next brief is still to write.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

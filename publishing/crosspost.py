@@ -927,7 +927,8 @@ def false_hand_posts(channel_id: str) -> list[dict[str, Any]]:
             other = owner.get(str(state.get("post_id") or ""))
             if other and other != str(rid):
                 out.append({"run_id": int(rid), "service": service, "owner": int(other),
-                            "at": str(state.get("at") or "")})  # fmt: skip
+                            "at": str(state.get("at") or ""),
+                            "left": str(state.get("left") or "")})  # fmt: skip
     return sorted(out, key=lambda x: (x["run_id"], x["service"]))
 
 
@@ -938,7 +939,10 @@ def unclaim(channel_id: str, *, apply: bool = False, now: datetime | None = None
     """`ops crosspost unclaim`: clear each false hand-post record (`false_hand_posts`) of a video
     public within the late window, so the next round sends it - the operator, 2026-11-01: "send
     the recent ones, skip stale countdown". A countdown Short is left: its day's number has
-    passed. Older ones are left too. Nothing changes without `apply`."""
+    passed. Older ones are left too. Nothing changes without `apply`.
+
+    #1942: one left is marked so (`left`, why), and S10 stops counting it as a post that never
+    went - run 220's two countdown posts read NOT YET for a week after the operator left them."""
     moment = now or datetime.now(timezone.utc)
     public = _public_times(channel_id)
     data = _load(channel_id)
@@ -950,11 +954,17 @@ def unclaim(channel_id: str, *, apply: bool = False, now: datetime | None = None
         label = f"run {rid} {_LABEL.get(service, service)}"
         title = str((posts.get(str(rid)) or {}).get("title") or "")
         when = public.get(rid)
+        why = ""
         if _COUNTDOWN_RE.search(title):
-            lines.append(f"  {label}: left - a countdown Short whose day has passed")
-            continue
-        if when is not None and moment - when > _LATE_LOOKBACK:
-            lines.append(f"  {label}: left - public over {_LATE_LOOKBACK.days} days ago")
+            why = "a countdown Short whose day has passed"
+        elif when is not None and moment - when > _LATE_LOOKBACK:
+            why = f"public over {_LATE_LOOKBACK.days} days ago"
+        if why:
+            lines.append(f"  {label}: left - {why}")
+            state = posts[str(rid)][service]
+            if apply and state.get("left") != why:
+                state["left"] = why
+                changed = True
             continue
         lines.append(f"  {label}: was taken for run {item['owner']}'s own post - "
                      + ("cleared; the next round sends it" if apply else "would be cleared"))  # fmt: skip

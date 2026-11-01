@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
 
@@ -561,8 +562,21 @@ def summary_line(channel_id: str) -> str | None:
 def menu_mix_line(channel_id: str, *, last: int = 30) -> str:
     """#1446: what the idea menu offered, by domain, over the last `last` runs taken from it, and
     which domains were taken - `features["best_bet"]` (#909) holds both."""
-    from collections import Counter
+    offered, taken, menus = menu_mix(channel_id, last=last)
+    if not menus:
+        return ""
 
+    def counts(counter: Counter[str]) -> str:
+        return ", ".join(
+            f"{d} {n}" for d, n in sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))
+        )
+
+    return f"Menu, last {menus}: offered {counts(offered)}; taken {counts(taken) or 'none'}"
+
+
+def menu_mix(channel_id: str, *, last: int = 30) -> tuple[Counter[str], Counter[str], int]:
+    """(offered by domain, taken by domain, menus read) over the last `last` menus - the line
+    above and S15 (#1935) read the same counts."""
     from storage.repositories.content_runs import get_content_run_repository
 
     offered: Counter[str] = Counter()
@@ -589,12 +603,4 @@ def menu_mix_line(channel_id: str, *, last: int = 30) -> str:
         rank = pick.get("picked")
         if isinstance(rank, int) and 1 <= rank <= len(options):
             taken[str(options[rank - 1].get("domain") or "?")] += 1
-    if not menus:
-        return ""
-
-    def counts(counter: Counter[str]) -> str:
-        return ", ".join(
-            f"{d} {n}" for d, n in sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))
-        )
-
-    return f"Menu, last {menus}: offered {counts(offered)}; taken {counts(taken) or 'none'}"
+    return offered, taken, menus

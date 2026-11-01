@@ -294,6 +294,7 @@ _SUITE_STORE_PATCHES = (
     patch.object(_paths, "CLIP_INDEX_FILE", _suite_store("clip_index.json")),
     patch.object(_paths, "CLIP_USES_FILE", _suite_store("clip_uses.json")),  # wave 135
     patch.object(_paths, "COVERS_FILE", _suite_store("covers.json")),  # wave 135
+    patch.object(_paths, "PRIVACY_SYNC_FILE", _suite_store("privacy_sync.json")),  # #1934
     # CI run 34781351080: a test listed the operator's real data/traces, found run 72
     # and passed locally; the runner had no traces and failed. Reads count too.
     patch.object(_paths, "TRACES_DIR", _suite_store("traces")),

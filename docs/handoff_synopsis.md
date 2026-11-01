@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-01: wave 140, the next five
+# Handoff synopsis — 2026-11-01: wave 141, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-01 (Claude Code): wave 140, the next five (S02)
+## Last wave — 2026-11-01 (Claude Code): wave 141, the next five (S01)
+
+The Associates tag is set and the Reporting API is on (S11 waits on YouTube's first file). The
+two Weeks in Review drew 4 views and 0: `ops ypp` and S01 now say where long views come from.
+S15's mark - the menu within 15 points of the views - with three gaming ideas of five (decision
+93); chapter Shorts count for their parent's domain; Cyber Monday is a long deals video on Nov 28;
+S09 counts corrections; S10 skips what you left.
+
+## Previous — 2026-11-01 (Claude Code): wave 140, the next five (S02)
 
 A countdown, a launch moment and a long video end on their true reason to follow (#1699). A
 draft that still reads as a recap gets one rewrite before review, and review shows what recaps
@@ -24,14 +32,6 @@ why, so S03 is measured.
 with their number; S07's check is now "every night". Its first run found 8 crossposts never sent
 - a sibling's own Buffer post taken as a hand post (fixed; `crosspost unclaim`). The backlog is
 under 300: 47 lowest-scored bridge ideas parked, a test holds the ceiling.
-
-## Previous — 2026-10-31 (Claude Code): wave 138, the next five
-
-Run 199's TikTok post went out 31 hours before YouTube publishes it - a pass whose YouTube read
-failed sent it; a record slot still ahead now holds a run (#1917). The booth shows the run's own
-cover and the cover strip (#1916). Captions keep 130 px clear of TikTok's side buttons; one
-crosspost in eight tries another hour; the Black Friday deals long video on Nov 23 with up to
-three links (decision 90).
 
 ---
 
@@ -97,7 +97,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S01 (one shortfall a wave; #1315 first), #1929, #1942, #1934, #1935; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S05 (one shortfall a wave), #1919, #1752, #1947, #1931; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

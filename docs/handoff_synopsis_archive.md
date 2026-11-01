@@ -7,6 +7,14 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-31 (Claude Code): wave 138, the next five
+
+Run 199's TikTok post went out 31 hours before YouTube publishes it - a pass whose YouTube read
+failed sent it; a record slot still ahead now holds a run (#1917). The booth shows the run's own
+cover and the cover strip (#1916). Captions keep 130 px clear of TikTok's side buttons; one
+crosspost in eight tries another hour; the Black Friday deals long video on Nov 23 with up to
+three links (decision 90).
+
 ## Previous — 2026-10-31 (Claude Code): wave 137, one frame for every app
 
 One safe zone for every app's buttons (decision 89): captions end at 80%, the AI line at 12%,

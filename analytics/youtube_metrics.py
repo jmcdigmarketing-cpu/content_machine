@@ -657,9 +657,15 @@ def fetch_video_metrics(
         paid_total = sum(int(v) for _day, v in paid_daily)
         result["paid_views"] = paid_total
         result["views_by_source"] = by_source
-        if paid_total > 0:  # #957: an unboosted video's two rates are the same
+        # #957: a boosted video's organic rate (an unboosted one's two rates are the same); #1944
+        # (S01): a video off the Shorts feed - a long one - keeps its minutes by source, where
+        # its long-form hours come from.
+        off_feed = not by_source.get("SHORTS")
+        if paid_total > 0 or off_feed:
             watch = _fetch_watch_by_source(youtube_video_id, service, start_date, end_date)
-            organic = organic_engaged_rate(avg_pct, watch) if watch else None
+            if watch and off_feed:
+                result["minutes_by_source"] = {s: round(m, 1) for s, (_v, m) in watch.items()}
+            organic = organic_engaged_rate(avg_pct, watch) if watch and paid_total > 0 else None
             if organic is not None:
                 result["organic_engaged_rate"] = organic
     return result

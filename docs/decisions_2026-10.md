@@ -590,3 +590,20 @@ stored verdicts; by today's detector there are 3 measured recaps against 30 (56 
 few to say. S02: 4 subscribers from 91 videos. **Consequence:** a recap draft costs up to two
 more premium calls; review shows the cost line until recaps reach 5; the follow line is read on
 11-29 (#1940) and the rewrite at 10 drafts (#1941).
+
+## 93. Long views measured before long videos rewritten; the menu follows the views; Cyber Monday long (2026-11-01)
+**Decision:** S01's slot measures where a long video's views come from - each long video's
+organic views by traffic source, with minutes, in `ops ypp` and S01 - and the written Week in
+Review (#1315) waits until a long video finds an audience. S15 is met when no domain's share of
+the last 30 menus is more than 15 points from its share of the organic views of the videos
+published in 28 days; three of five ideas are gaming while gaming leads the views (decision
+79 set two). Cyber Monday gets a long deals video drafted Sat Nov 28, like Black Friday's. A
+chapter Short counts for its parent's domain. **Why:** the two compilations drew 4 views (2
+minutes watched) and 0 in their first days; the last 30 menus offered UFC 34% and gaming 24%
+while gaming earned 59% of organic views (308 a video over 11, UFC 47 over 16) - the question
+said 67%, read with the best bet's own domain and the topic; the system's reader said 41%
+until chapter Shorts counted, and 59% after. A Short's links cannot be clicked. Asked, the
+operator took "Measure where long views come from", "Mark it, and 3 gaming ideas of 5" and
+"A long deals video, drafted Sat Nov 28" (all three recommended). **Consequence:** about one
+more gaming idea a night while gaming leads; a long video costs one more Analytics query a
+sync; S15 re-read 11-15 (#1949), S01 on 11-13 (#1948).

@@ -394,6 +394,15 @@ def inspect_ypp(
             line = compilation_line(cid)
             if line:
                 report.path.append(line)
+            try:  # #1944 (S01): where the long views came from
+                from core.success.scorecard import long_sources_line
+
+                line = long_sources_line(cid)
+            except Exception as exc:
+                logger.debug("long sources skipped: %s", exc)
+                line = ""
+            if line:
+                report.path.append(line)
             report.monthly = monthly_card(numbers)
     else:
         report.checks.append(_estimated_threshold(cid, metrics_rows))

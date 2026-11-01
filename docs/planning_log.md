@@ -10655,3 +10655,51 @@ review, `keep_cover` in `run_media_only`, `retire_renders(why=)` in overnight an
 retire-renders`, `_saved_script` in S06). Fields traced: `title_stem`, `draft_kind` and the offered
 `source` reach `follow_brief` from `best_bet.py`; `retired_why` from `retire_renders` to S03;
 `recap_rewrite` into the draft meta and the review line.
+
+## 2026-11-01 — wave 141: the next five, S01 (Claude Code)
+
+**Prompt:** "uploaded. next 5" - after "amazon associates and reporting api were done i thought?".
+Read first: `AFFILIATE_AMAZON_TAG` was set at 13:20 (13 characters, ends -20) and a reach sync made
+the report job (`31c2329a`); a tagged GTA 6 link and three deals links read back. Neither was done
+before: Google answered "disabled" for project 581798456680 at 09:08.
+
+Measured first: the two Weeks in Review drew 4 views (3 channel page, 1 search; 2 minutes, 8% of
+11.7 minutes) and 0. The last 30 menus offered UFC 45, gaming 32, NBA 26, NFL 17, soccer 11.
+
+**Asked (three):** S01's slot - "Measure where long views come from"; S15's mark - "Mark it, and 3
+gaming ideas of 5"; Cyber Monday - "A long deals video, drafted Sat Nov 28". The S15 question said
+gaming earned 67% of 28 days' organic views, read with the best bet's domain and the topic; the
+system's own reader said 41% because chapter Shorts store no domain (#1945, fixed); it reads 59%.
+
+Shipped (built in a scratchpad worktree, decision 93):
+1. #1944 (S01) `fetch_video_metrics` keeps `minutes_by_source` for a video off the Shorts feed;
+   `scorecard.long_sources_line` (and `_long_rows`, shared with `long_minutes`) in `ops ypp` and S01.
+2. #1935 (S15) `ledger.menu_mix`, `shortfalls._domain_views`, the 15-point mark; `GAMING_FLOOR` 3.
+3. #1929 `cyber-monday-deals` in config/series.json.
+4. #1942 `unclaim --apply` marks what it leaves; S10 counts those apart.
+5. #1934 (S09) `privacy_sync.record_corrections` / `corrections`; data/privacy_sync.json.
+
+Found on the way:
+- analytics/growth.py `_kind`: a chapter Short (`parent_run_id`, no domain) counted for no domain -
+  1,775 gaming views in 28 days missing from S15, the conversion line and the gaming floor's lead
+  (#1945, fixed: the parent's domain).
+- core/success/shortfalls.py `_s11` said "turn on the Reporting API" after it was on (#1946, fixed:
+  the job's status reads WAITING).
+- Runs 120 and 126 are stored as nba and popculture though both are gaming (#1947, open).
+- `long_sources_line` printed "0.0 minutes read" before any minutes were stored; it now shows
+  minutes only once the sync has read them.
+
+Not done: #1315 (waits on a long video with an audience); no corpus case - none of this wave's
+defects is a pure call (each reads the store or the database).
+
+Tests: `tests/test_wave141.py`, 18 - 17 fail on `4c72cda` (a clean HEAD worktree, the editable
+finder stripped: 7 failures, 10 errors); the 18th pins `is_deals` reading Cyber Monday, which the row
+relies on. No older test changed.
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite: 7131 forward and reversed, OK
+(6 skipped); corpus 508 of 508; data/ and output/ untouched. Production callers:
+`long_sources_line` in `ops ypp` and S01, `_long_rows` in both readers, `record_corrections` in
+`sync_privacy`, `corrections` in S09, `menu_mix` in the menu line and S15, `_domain_views` in S15,
+`_domain` in `_kind`. Fields traced: `minutes_by_source` stored beside `views_by_source` and read by
+the sources line; `left` from `unclaim` to S10; the day counts from the applied sync (the metrics
+sync and the worker) to S09.

@@ -651,11 +651,13 @@ def _public_runs(channel_id: str) -> list[tuple[int, str]]:
     return sorted(out.items())
 
 
-def _held_by_youtube(channel_id: str, videos: dict[int, str]) -> dict[int, str]:
+def _held_by_youtube(channel_id: str, videos: dict[int, str]) -> dict[int, str] | None:
     """#1519: {run_id: YouTube's slot} for each video YouTube still holds private for a later
     publish. Run 154 was moved on YouTube to 10-21 while its record kept 10-19, so the round sent
     its TikTok and Instagram posts for a day before YouTube published it. One status read (1
-    unit) per round, only for videos about to be sent; any failure holds nothing (as before)."""
+    unit) per round, only for videos about to be sent; any failure holds nothing (as before).
+    #1930: a failed read is None, not {} - the round says so (run 199 went 31 hours early on a
+    pass whose read failed, and nothing said YouTube was unread)."""
     if not videos:
         return {}
     try:
@@ -669,12 +671,12 @@ def _held_by_youtube(channel_id: str, videos: dict[int, str]) -> dict[int, str]:
             privacy_sync.fetch_status(service, sorted(set(videos.values()))) if service else None
         )
     except Exception as exc:
-        logger.debug("crosspost: YouTube status unread: %s", exc)
-        return {}
-    held = privacy_sync.held_slots(status or {})
-    return {
-        run: str((status or {})[vid]["publish_at"]) for run, vid in videos.items() if vid in held
-    }
+        logger.info("crosspost: YouTube status unread: %s", exc)
+        return None
+    if status is None:
+        return None
+    held = privacy_sync.held_slots(status)
+    return {run: str(status[vid]["publish_at"]) for run, vid in videos.items() if vid in held}
 
 
 def _needs_hosting(entry: dict[str, Any]) -> bool:
@@ -1045,7 +1047,13 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
         for run, video in public
         if run not in baseline and run not in ahead and _todo(run) and video
     }
-    held = _held_by_youtube(channel_id, due_now) if apply else {}
+    read = _held_by_youtube(channel_id, due_now) if apply else {}
+    if read is None:  # #1930
+        lines.append(
+            "  ! YouTube could not be read (the sign-in?) - a video whose slot is still ahead "
+            "waits (#1917); the rest go as their record says"
+        )
+    held = read or {}
     for run_id, _video in public:
         if run_id in baseline:
             continue

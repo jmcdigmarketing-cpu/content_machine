@@ -10606,3 +10606,52 @@ shortfalls`, `claim_hold_share` in the weekly report, `recorded_nights` in `reco
 
 `roadmap-index`: open 295, done 1733, parked 143, numbered open 293 (highest open #1937).
 
+## 2026-11-01 — wave 140: the next five, S02 (Claude Code)
+
+**Prompt:** "yes send 204 and 205, then next 5 on the roadmap". Runs 204 and 205 (UFC 333): their
+false hand-post records cleared (`ops crosspost unclaim --apply`); the 08:37 worker pass scheduled
+both TikTok posts for Sun 11:00 PM EST.
+
+Measured first: S02 reads 4 subscribers from 91 videos; only a preview with a call ended on a
+reason to follow (#1322). S06's 9 recaps, read again with today's detector: 4 are (131, 132, 187,
+220). Their script passes: on 132 and 220 the insight pass had a take and a later pass (contrast
+frames, read-aloud, stock phrases) cut it; on 187 the pass was refused twice.
+
+**Asked:** hold recaps, rewrite them, or show the cost - "Rewrite once, then show the cost". The
+question's numbers were stale: median 53 organic views for 20 recaps against 74 for 43 with a take
+came from the verdicts stored at generation. By today's detector it is 3 measured recaps against 30
+(56 against 63) - too few to say, which is what the review line now prints.
+
+Shipped (built in a scratchpad worktree, decision 92):
+1. #1699 `batch_generation.follow_brief` - the format's true reason to follow, the script's last
+   line, in the creative brief: a countdown's tomorrow ("Tomorrow: 17 days to go"), a launch
+   moment's countdown while it runs, the long video's Monday Week in Review; none for a trending
+   Short (#1943).
+2. #1936 `recap_rewrite` after every pass, before the verdict (`RECAP_REWRITE`; off in the suite -
+   a model call); `batch_review.recap_cost_line` on the review of a recap; S06 reads saved scripts
+   with today's detector.
+3. #1930 `_held_by_youtube` None on a failed read; the round says so.
+4. #1932 `cover_frames.keep_cover` - the frame cover copied into output/<channel>/thumbnails; the
+   strip skips the copy's own original.
+5. #1933 `retire_renders(why=)`, `ops retire-renders --why`; S03 measured (WAITING to 11-29).
+
+Found on the way:
+- The first full run: 18 older tests failed and 1 errored - the rewrite is a model call, and every
+  test that fakes the pipeline with a take-less script reached the network guard (#921). The suite
+  turns it off like the other default-on model passes (`tests/__init__.py`); `.env.example` names it.
+  test_wave130's fake `retire_renders` took no `why`.
+- My S06 docstring said 4 of the 9 had a take; 5 have one. Fixed before commit.
+- mypy +5: a reused variable name (`found`) in `send_due` and an un-narrowed `picked`; fixed, 92.
+- S10 still counts run 220, the countdown left on purpose (#1942).
+
+Tests: `tests/test_wave140.py`, 21 - the first 20 fail on `251837f` (a clean HEAD worktree: 8
+failures, 12 errors); the 21st, the switch, was added after the first full run. Corpus +3 (508),
+each failing on HEAD. One older test changed (test_wave130's fake takes `why`).
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite: 7113 forward and 7113 reversed, OK
+(6 skipped); corpus 508 of 508; data/ and output/ untouched. Every new function has a
+production caller (`follow_brief` and `recap_rewrite` in `generate_draft`, `recap_cost_line` in the
+review, `keep_cover` in `run_media_only`, `retire_renders(why=)` in overnight and `ops
+retire-renders`, `_saved_script` in S06). Fields traced: `title_stem`, `draft_kind` and the offered
+`source` reach `follow_brief` from `best_bet.py`; `retired_why` from `retire_renders` to S03;
+`recap_rewrite` into the draft meta and the review line.

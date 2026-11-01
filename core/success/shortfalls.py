@@ -118,9 +118,36 @@ def _s02(channel_id: str, now: datetime) -> Reading:
                            f"(goal: {VIDEO_SUBS})")  # fmt: skip
 
 
+RETIRE_WHY_SINCE = datetime(2026, 11, 1, tzinfo=timezone.utc)  # #1933: why is kept from here
+
+
 def _s03(channel_id: str, now: datetime) -> Reading:
-    return Reading(NO_MEASURE, "a retired render does not record whether it was wrong or only "
-                               "past its game (#1933)")  # fmt: skip
+    """Renders retired as wrong in 28 days (`ops retire-renders --why wrong`, #1933)."""
+    from collections import Counter
+
+    from storage.repositories.content_runs import get_content_run_repository
+
+    why: Counter[str] = Counter()
+    for run in get_content_run_repository().list_for_channel(channel_id) or []:
+        features = _json(getattr(run, "features_json", ""))
+        stamp, reason = features.get("retired_at"), features.get("retired_why")
+        if not stamp or not reason:
+            continue
+        try:
+            when = _aware(datetime.fromisoformat(str(stamp)))
+        except ValueError:
+            continue
+        if when is not None and now - when <= timedelta(days=28):
+            why[str(reason)] += 1
+    wrong = why["wrong"]
+    others = ", ".join(f"{n} {reason}" for reason, n in why.most_common() if reason != "wrong")
+    text = (f"{wrong} render{'s' if wrong != 1 else ''} retired as wrong in 28 days (goal: 0)"
+            + (f"; retired otherwise: {others}" if others else ""))  # fmt: skip
+    if wrong:
+        return Reading(NOT_YET, text)
+    if now - RETIRE_WHY_SINCE < timedelta(days=28):
+        return Reading(WAITING, text + f"; the record starts {RETIRE_WHY_SINCE:%Y-%m-%d}")
+    return Reading(MET, text)
 
 
 def _s04(channel_id: str, now: datetime) -> Reading:
@@ -140,11 +167,26 @@ def _s05(channel_id: str, now: datetime) -> Reading:
     return Reading(MET if share >= VERDICT_AGREE else NOT_YET, text)
 
 
+def _saved_script(run_id: Any) -> str | None:
+    from core.run_trace import full_script
+
+    return full_script(int(run_id)) if run_id else None
+
+
 def _s06(channel_id: str, now: datetime) -> Reading:
+    """#1936: each public video's saved script read with today's detector - the stored verdict
+    is from the day it was written: 5 of the first reading's 9 have a take by today's."""
+    from core.authenticity import has_insight
+
     recaps = 0
     rows = _within(_public_rows(channel_id), now, 28)
     for row in rows:
-        quality = _json(getattr(_run(getattr(row, "content_run_id", None)), "quality_json", ""))
+        run_id = getattr(row, "content_run_id", None)
+        script = _saved_script(run_id)
+        if script:
+            recaps += 0 if has_insight(script) else 1
+            continue
+        quality = _json(getattr(_run(run_id), "quality_json", ""))
         if str(quality.get("authenticity_verdict") or "").lower() in ("review", "block"):
             recaps += 1
     status = MET if recaps == 0 else NOT_YET

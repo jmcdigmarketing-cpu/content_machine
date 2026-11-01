@@ -153,6 +153,29 @@ def finish(cover: Cover, dest_stem: str) -> str:
     return final
 
 
+def keep_cover(path: str, channel_id: str | None, run_id: Any) -> str:
+    """#1932: a copy of the frame cover in output/<channel>/thumbnails/, named for its run, so it
+    outlives the 3-day sweep of data/tmp/hybrid_backgrounds (`fast_cut.prune_backgrounds`) - the
+    booth and `ops thumbnail-check` lost it there. The name keeps `SUFFIX`, which the "frames"
+    upload mode reads. "" when the cover cannot be copied."""
+    import shutil
+
+    if not path or not os.path.isfile(path):
+        return ""
+    try:
+        from core.output_paths import ensure_channel_output_dirs
+
+        folder = ensure_channel_output_dirs(channel_id)["thumbnails"]
+        os.makedirs(folder, exist_ok=True)
+        stem = os.path.basename(path)[: -len(SUFFIX)] if path.endswith(SUFFIX) else "cover"
+        dest = os.path.join(folder, f"run{run_id}-{stem}{SUFFIX}")
+        shutil.copyfile(path, dest)
+        return dest
+    except Exception as exc:
+        logger.debug("cover not kept: %s", exc)
+        return ""
+
+
 def cover_ms(cover_at: float, intro_seconds: float = 0.0) -> int:
     """#1791: the cover frame's moment in the finished video, in ms - the cut's own `cover_at`
     after any intro prepended in front of it."""
@@ -168,7 +191,10 @@ def strip_lines(new_path: str, *, last: int = 10) -> list[str]:
             mine = dhash(image)
     except OSError:
         return [f"Cover: {new_path} (unreadable)"]
-    rows = [r for r in used_covers() if r.get("path") != new_path][-last:]
+    name = os.path.basename(new_path)  # #1932: a kept copy ("run219-<name>") is the same cover
+    rows = [r for r in used_covers()
+            if r.get("path") != new_path
+            and not name.endswith(os.path.basename(str(r.get("path") or "")) or "\0")][-last:]  # fmt: skip
     lines = [f"Cover: {new_path}"]
     for row in reversed(rows):
         bits = bin(mine ^ int(str(row["hash"]), 16)).count("1")

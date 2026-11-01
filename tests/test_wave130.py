@@ -379,7 +379,7 @@ class RetireDeadTests(unittest.TestCase):
                 stale_renders, "started_event", side_effect=lambda run, ch, **k: events[run.id]
             ),
             patch.object(
-                stale_renders, "retire_renders", side_effect=lambda runs: [r.id for r in runs]
+                stale_renders, "retire_renders", side_effect=lambda runs, **_: [r.id for r in runs]
             ) as retire,
         ):
             got = stale_renders.retire_dead_renders("tapin", now=NOW)

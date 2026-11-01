@@ -88,6 +88,9 @@ os.environ["TITLE_SUGGEST"] = "off"
 # #1034: the read-aloud pass makes one cheap call when a sentence is hard to say; a test
 # that wants it turns it on, so no other test's scripted replies shift.
 os.environ["READ_ALOUD_REWRITE"] = "false"
+# #1936: a draft that reads as a recap gets one more insight pass (a model call); the tests
+# of it call `recap_rewrite` directly.
+os.environ["RECAP_REWRITE"] = "false"
 # #1095: a hope or plan run with no supporting fact makes one stance search; never in tests.
 os.environ["STANCE_RESEARCH"] = "false"
 # #899: event research reads Wikipedia / Google News on a recency miss - never in tests.

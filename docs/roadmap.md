@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-01 (Claude, wave 140 - the next five, S02).** A countdown, a launch moment and a long
+video now end on their true reason to follow - tomorrow's day, the GTA 6 countdown, the Monday Week
+in Review (S02 reads 4 subscribers from 91 videos; re-read 11-29). A draft that still reads as a
+recap gets one rewrite before review, and review shows what recaps earned (decision 92) - by
+today's detector 4 of S06's 9 "recaps" are one. A round that cannot read YouTube says so; frame
+covers outlive the 3-day sweep; a retired render records why, so S03 is measured (from 11-29).
+Next, with **S01** (0.0 long-form hours this week - **#1315** the written Week in Review first):
+**#1929** the Cyber Monday deals Short (Nov 30), **#1942** S10 counting the countdown you chose to
+skip, **#1934** S09 measured, **#1935** S15's pass mark.
 **2026-11-01 (Claude, wave 139 - the shortfalls measure themselves).** `ops shortfalls` runs each of
 the 22 checks (decision 91): 7 met and 2 built are closed in the plan with their number; 2 wait on
 time (S07, S13), 2 are yours (S11 the Reporting API, S14 the Google app), 3 have no measure yet.
@@ -96,16 +105,6 @@ line is added under any affiliate link at publish; off YouTube, "Follow for" and
 deals long video (Nov 27 - it needs your Associates tag), **#1920** platform hours explored,
 **#1921** TikTok's right-hand buttons, **#1916** the cover in `ops booth`. Yours: **#1922** the hook
 card's size on a phone. The bridge's next brief is still to write.
-**2026-10-31 (Claude, wave 136 - money and reach).** Facebook Reels through Buffer, only Shorts
-made public after you connect a Page (decision 88) - Buffer has none yet; a Short public over an
-hour with no crosspost is sent on the worker's next pass (8 TikTok and 9 Instagram this week were
-queued 3-49 hours late); the link page is live on R2 for the bios; income beside spend (net -$25.65);
-TikTok's line against Creator Rewards (3,970 of 100,000; 0 of 30 posts over a minute); a Short's
-description loses an affiliate line at publish (#1758's guard). Next: wave 136's 7-8 - **#1775**
-TikTok's first frame in its safe zone, **#1776** TikTok captions, **#1791** the cover frame sent to
-Buffer, **#1774** each platform's own hour (the brief's "YouTube slot + 1 h" before ten posts meets
-decision 64's 10 PM - a question) - and **#1751** the FTC line checked at publish. Wave 136 was the
-bridge's last brief; the next one is to write.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

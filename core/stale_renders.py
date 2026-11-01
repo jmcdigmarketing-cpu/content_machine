@@ -504,13 +504,15 @@ def shelf_short(counts: dict[str, int]) -> str:
     return f"{total} finished, not public" if total else ""
 
 
-def retire_renders(runs: list[Any]) -> list[int]:
-    """Mark each run retired. Returns the ids marked. Never deletes a file."""
+def retire_renders(runs: list[Any], *, why: str = "by hand") -> list[int]:
+    """Mark each run retired. Returns the ids marked. Never deletes a file. #1933 (wave 139's
+    S03 could not be read): `why` is kept beside the date - "past its game", "stale", "wrong"
+    (pulled because it was wrong: S03 counts these) or "by hand"."""
     stamp = datetime.now().isoformat(timespec="seconds")
     marked: list[int] = []
     for run in runs:
         try:
-            merge_features(int(run.id), {"retired_at": stamp})
+            merge_features(int(run.id), {"retired_at": stamp, "retired_why": why})
             marked.append(int(run.id))
         except Exception as exc:
             logger.warning("retire skipped for run %s: %s", getattr(run, "id", "?"), exc)
@@ -533,4 +535,4 @@ def retire_dead_renders(
         event = started_event(run, channel_id)
         if event is not None and moment - event >= timedelta(hours=after_hours):
             dead.append(run)
-    return retire_renders(dead) if dead else []
+    return retire_renders(dead, why="past its game") if dead else []

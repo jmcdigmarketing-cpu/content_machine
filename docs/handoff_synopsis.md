@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-01: wave 139, the shortfalls measured
+# Handoff synopsis — 2026-11-01: wave 140, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-01 (Claude Code): wave 139, the shortfalls measured
+## Last wave — 2026-11-01 (Claude Code): wave 140, the next five (S02)
+
+A countdown, a launch moment and a long video end on their true reason to follow (#1699). A
+draft that still reads as a recap gets one rewrite before review, and review shows what recaps
+earned (decision 92); read with today's detector, 4 of S06's 9 recaps are. A crosspost round that
+cannot read YouTube says so; frame covers are kept past the 3-day sweep; a retired render records
+why, so S03 is measured.
+
+## Previous — 2026-11-01 (Claude Code): wave 139, the shortfalls measured
 
 `ops shortfalls` runs each of the 22 checks (decision 91): 7 met and 2 built closed in the plan
 with their number; S07's check is now "every night". Its first run found 8 crossposts never sent
@@ -24,14 +32,6 @@ failed sent it; a record slot still ahead now holds a run (#1917). The booth sho
 cover and the cover strip (#1916). Captions keep 130 px clear of TikTok's side buttons; one
 crosspost in eight tries another hour; the Black Friday deals long video on Nov 23 with up to
 three links (decision 90).
-
-## Previous — 2026-10-31 (Claude Code): wave 137, one frame for every app
-
-One safe zone for every app's buttons (decision 89): captions end at 80%, the AI line at 12%,
-the hook card wrapped under it (run 219's ran off both edges). TikTok's caption hook-first with
-three hashtags; the caption test kept no arm in 73 posts - replayed, hook-first 157 vs 116 on
-TikTok. An hour needs 4 posts of its own, in local time. Buffer gets each run's own cover frame
-(it got 3.15 s). The FTC line at publish; off YouTube "Follow for", no #shorts.
 
 ---
 
@@ -97,7 +97,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S02 (one shortfall a wave), #1936, #1930, #1932, #1933; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S01 (one shortfall a wave; #1315 first), #1929, #1942, #1934, #1935; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

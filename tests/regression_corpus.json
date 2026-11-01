@@ -8525,6 +8525,62 @@
         "falsy": true
       },
       "why": "the same story's own post must not stop this video's post"
+    },
+    {
+      "id": "a-failed-youtube-read-is-none",
+      "item": 1930,
+      "source": "wave 140: the 10-30 21:07 pass sent run 199 31 hours early and said nothing of YouTube",
+      "call": "publishing.crosspost:_held_by_youtube",
+      "args": [
+        "tapin",
+        {
+          "113": "yt113"
+        }
+      ],
+      "patch_raise": [
+        "youtube.oauth.live_youtube_forbidden"
+      ],
+      "expect": {
+        "equals": null
+      },
+      "why": "a read that failed is not a read that found nothing held - the round must say so"
+    },
+    {
+      "id": "a-missing-cover-is-not-kept",
+      "item": 1932,
+      "source": "wave 140: frame covers were swept from data/tmp after 3 days",
+      "call": "assets.cover_frames:keep_cover",
+      "args": [
+        "Z:/no/such/fastcut_abc_frame_cover.jpg",
+        "tapin",
+        219
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "the render falls back to the cover it has, never to a path that is not there"
+    },
+    {
+      "id": "the-last-countdown-day-says-tomorrow",
+      "item": 1699,
+      "source": "wave 140: the countdown's follow line names tomorrow's day",
+      "call": "core.batch_generation:follow_brief",
+      "args": [
+        {
+          "offered": [
+            {
+              "source": "countdown"
+            }
+          ],
+          "picked": 1,
+          "title_stem": "GTA 6: 1 day to launch"
+        }
+      ],
+      "expect": {
+        "contains": "out tomorrow",
+        "not_contains": "0 days"
+      },
+      "why": "the day before launch is never 'Tomorrow: 0 days to go'"
     }
   ]
 }

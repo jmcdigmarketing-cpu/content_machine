@@ -66,7 +66,8 @@ bridge's B05 lane.
 
 **Now.** +64 subscribers in 28 days, 2 of them from the 53 videos (one each from the Vanguard meta
 and the GTA VI box videos). YouTube counts 4,543 paid Shorts views in 90 days; no campaign is
-entered, so `ops promotions` cannot split them.
+entered, so `ops promotions` cannot split them. Wave 140 (#1699): a countdown, a launch moment and
+a long video end on their true reason to follow; `ops shortfalls` reads 4 from 91 videos.
 
 **How.** Give a viewer a reason to follow that is true - every call is graded after the game - and
 measure subscribers per video and per format so the reason can be tested. Enter the October ad so
@@ -81,7 +82,8 @@ subscribers from videos in 28 days.
 
 **Now.** Fixed: a game draft renders before its game or waits, a flagged title waits, a night
 stops at 3 finished videos, and a preview now carries a call and a matchup card. None pulled
-since.
+since. Wave 140 (#1933): a retirement records why, and S03 counts the renders retired as
+wrong (the record starts 2026-11-01).
 
 **How.** Keep the gates, and check the finished video as well as the script - both Oct 13 failures
 were visible in the render (a called result, a garbled last line).
@@ -121,7 +123,9 @@ beside the grade so "clean" is tested against "good".
 **Now.** Fixed: a scheduled game is drafted as a preview with a call (#1169, #1301), and music and
 filings signals no longer run for a football game. Wave 128 (decision 76): a game ESPN calls final
 is written as what it means, ending on a call, and its pre-game picks leave the facts (#1362
-#1363); `ops signal-audit` shows what ran per topic domain (#1370).
+#1363); `ops signal-audit` shows what ran per topic domain (#1370). Wave 140 (#1936,
+decision 92): read with today's detector, 4 of 48 public in 28 days are recaps (9 by the stored
+verdicts); a draft still reading as one gets one rewrite before review, which shows the cost.
 
 **How.** Read the finished script's tense before render, and give previews more than one shape.
 

@@ -53,20 +53,19 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-01 · **HEAD at write:** `9181fa0` (wave 138; this wave's commit follows) ·
+**Written:** 2026-11-01 · **HEAD at write:** `251837f` (wave 139; this wave's commit follows) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 139, the shortfalls measure themselves (decision 91).** Defects first: S10's first reading
-found 8 crossposts in a week never sent - `_hand_post` took a sibling's own Buffer post (same story)
-for a "hand post" (runs 199, 204, 205, 206, 208, 220); fixed, and `ops crosspost unclaim --apply`
-clears the recent false ones (the operator: send the recent, skip the stale countdown). S06: 9 public
-videos scored as neutral recaps (#1936). Shipped: `core/success/shortfalls.py` + `ops shortfalls`
-(each check run, its number printed: 7 met, 2 built, 2 waiting, 2 yours, 6 not yet, 3 no measure);
-the nine closed in hands_off_plan.md; S07 rewritten; overnight keeps 14 nights; S22's sweep parked
-47 lowest-scored bridge ideas (open 342 -> 295) and a test holds the 300 ceiling.
+**Wave 140, the next five with S02 (decision 92).** A countdown, a launch moment and a long video
+end on their true reason to follow (`follow_brief`, in the creative brief). A draft that still reads
+as a recap gets one more insight pass after every other pass (`recap_rewrite`; `RECAP_REWRITE`, off
+in the suite - a model call) and review prints what recaps earned (`recap_cost_line`). S06 reads the
+saved scripts with today's detector: 4 of 48, not 9. A failed YouTube read in the crosspost round is
+None and says so; `keep_cover` copies the frame cover into output/<channel>/thumbnails;
+`retire_renders(why=)` and `ops retire-renders --why wrong` - S03 counts them (waiting to 11-29).
+Runs 204 and 205's TikTok posts were cleared and are scheduled for Sun 11 PM EST.
 
-**Open:** #1933-#1937. **Next:** one shortfall a wave - S02 (subscribers from videos) first - with
-#1936, #1930, #1932, #1933.
+**Open:** #1940-#1943. **Next:** S01 (#1315 first) with #1929, #1942, #1934, #1935.
 
 **Operator:** publish the Google app (lapses Nov 7); turn on the Reporting API (S11); the hook card
 on a phone (#1922); Facebook in Buffer; the bio link; the Associates tag.

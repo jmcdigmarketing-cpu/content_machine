@@ -1748,8 +1748,12 @@ def run_media_only(
     if render_preset == "publish" and frame_cover and os.path.isfile(frame_cover):
         # Decision 85 (L1, L7): the cover is a frame of the video's own footage, with no words -
         # no image model is asked. A stock or plain background has no frame and keeps the old path.
-        thumb_path, thumb_provider = frame_cover, "frame"
-        progress.note(f"Cover: a frame of the video's own footage - {frame_cover}")
+        from assets.cover_frames import keep_cover
+
+        # #1932: kept beside the run's thumbnails - data/tmp is swept after 3 days
+        thumb_path = keep_cover(frame_cover, channel_id, content_run_id) or frame_cover
+        thumb_provider = "frame"
+        progress.note(f"Cover: a frame of the video's own footage - {thumb_path}")
         cover_at = float(getattr(background, "cover_at", 0.0) or 0.0)
         if content_run_id and cover_at > 0:
             try:  # #1791: Buffer sends TikTok and Instagram this moment as their cover

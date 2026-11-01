@@ -1838,7 +1838,8 @@ def cmd_retire_renders(args: argparse.Namespace) -> int:
         if not stale:
             print(f"Retire renders: run {run_id} is not an unuploaded render on {args.channel}")
             return 1
-        marked = retire_renders(stale) if getattr(args, "apply", False) else []
+        why = str(getattr(args, "why", "") or "by hand").strip().lower()  # #1933
+        marked = retire_renders(stale, why=why) if getattr(args, "apply", False) else []
         if marked:
             print(f"Retired run {run_id}. The file stays on disk.")
         else:
@@ -1857,7 +1858,7 @@ def cmd_retire_renders(args: argparse.Namespace) -> int:
     if not getattr(args, "apply", False):
         print("Dry run. Add --apply to retire them (files stay on disk).")
         return 0
-    marked = retire_renders(stale)
+    marked = retire_renders(stale, why="stale")
     print(f"Retired {len(marked)}. Still queueable by id: py -m scripts.requeue_upload --run-id N")
     return 0
 
@@ -4315,6 +4316,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--name", default="", help="policy-site: the name the pages show (#956)")
     parser.add_argument("--amount", type=float, default=None, help="spend add: dollars (#980)")
     parser.add_argument("--what", default="", help="spend add: what the payment was for")
+    parser.add_argument(
+        "--why",
+        default="",
+        help="retire-renders --run-id N: why - wrong (pulled because it was wrong, S03), or "
+        "stale; default by hand (#1933)",
+    )
     parser.add_argument(
         "--monthly", action="store_true", help="spend add: a subscription billed every month"
     )

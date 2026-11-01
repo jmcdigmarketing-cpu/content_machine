@@ -16,6 +16,7 @@ A draft whose claims fail the #345 bar needs `force` typed, which records the sa
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
@@ -404,6 +405,12 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
         + (f" ({reasons})" if reasons else "")
         + f" - {len(draft.script.split())} words"
     )
+    if verdict != "ok" and "original_insight" in (meta.get("authenticity_failed") or []):
+        rewrite = meta.get("recap_rewrite") or {}
+        tried = " - one rewrite did not find a take" if rewrite.get("tried") else ""
+        cost = recap_cost_line(str(meta.get("channel_id") or "tapin"))  # #1936
+        if cost:
+            print_fn(f"    ! a recap{tried}; {cost}")
     voice = _projected_voice(draft)
     if voice is not None:
         print_fn(f"    voice: ~${voice:.2f}")
@@ -1023,6 +1030,54 @@ _CHECK_WORDS = {
     "substance": "too few facts",
     "variation": "too like a recent video",
 }
+
+
+_RECAP_MIN = 5  # recaps needed before their views are a measurement, not an anecdote
+
+
+def _recap_rows(channel_id: str) -> list[tuple[bool, int]]:
+    """(has a take by today's detector, organic views) for each public video with a saved
+    script and its views read."""
+    from core.authenticity import has_insight
+    from core.run_trace import full_script
+    from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+
+    out: list[tuple[bool, int]] = []
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        if is_seeded(row) or str(row.privacy_status or "") != "public" or not row.content_run_id:
+            continue
+        script = full_script(int(row.content_run_id))
+        metrics = json.loads(row.metrics_json or "{}") or {}
+        if not script or metrics.get("views") is None:
+            continue
+        organic = max(0, int(metrics["views"]) - int(metrics.get("paid_views") or 0))
+        out.append((has_insight(script), organic))
+    return out
+
+
+@functools.lru_cache(maxsize=4)
+def recap_cost_line(channel_id: str) -> str:
+    """#1936 (decision 92): what recaps earned here, for the review of a draft that still reads as
+    one after its rewrite - median organic views of the public videos today's detector calls a
+    recap against those with a take, or that there are too few to say."""
+    import statistics
+
+    try:
+        rows = _recap_rows(channel_id)
+    except Exception as exc:
+        logger.debug("recap cost unread: %s", exc)
+        return ""
+    recaps = [views for take, views in rows if not take]
+    takes = [views for take, views in rows if take]
+    if not takes:
+        return ""
+    if len(recaps) < _RECAP_MIN:
+        return (f"recaps here: {len(recaps)} recaps among {len(rows)} public videos - too few to "
+                f"say what a recap costs (median {statistics.median(takes):.0f} organic views "
+                "with a take)")  # fmt: skip
+    return (f"recaps here: median {statistics.median(recaps):.0f} organic views over "
+            f"{len(recaps)} videos, {statistics.median(takes):.0f} with a take "
+            f"({len(takes)} videos)")  # fmt: skip
 
 
 def authenticity_reasons(meta: dict[str, Any]) -> str:

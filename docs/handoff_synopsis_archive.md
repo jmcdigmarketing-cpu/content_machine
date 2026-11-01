@@ -7,6 +7,14 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-31 (Claude Code): wave 137, one frame for every app
+
+One safe zone for every app's buttons (decision 89): captions end at 80%, the AI line at 12%,
+the hook card wrapped under it (run 219's ran off both edges). TikTok's caption hook-first with
+three hashtags; the caption test kept no arm in 73 posts - replayed, hook-first 157 vs 116 on
+TikTok. An hour needs 4 posts of its own, in local time. Buffer gets each run's own cover frame
+(it got 3.15 s). The FTC line at publish; off YouTube "Follow for", no #shorts.
+
 ## Previous — 2026-10-31 (Claude Code): wave 136, money and reach
 
 Facebook Reels through Buffer, only Shorts public after a Page is connected (decision 88; none yet);

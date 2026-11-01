@@ -29,7 +29,7 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -528,6 +528,8 @@ def generate_draft(
                     preview,
                     shape_arm[2] if shape_arm else "",
                     experiment[2] if experiment else "",
+                    # #1699 (S02): the format's true reason to follow, in its last line
+                    "" if preview else follow_brief(best_bet, channel_id=channel_id),
                 )
                 if part
             ),
@@ -594,6 +596,18 @@ def generate_draft(
             )
         except Exception as exc:
             logger.debug("_fact_line_count skipped: %s", exc)
+    recap: dict[str, Any] = {}
+    if not own_idea and _recap_rewrite_enabled():  # #1936 (decision 92): one rewrite first
+        try:
+            result.script, recap = recap_rewrite(
+                result.script, packed, best_topic, intent=machine_intent
+            )
+            if recap.get("kept") and result.run_id:
+                from core.run_trace import write_full_script
+
+                write_full_script(result.run_id, result.script)
+        except Exception as exc:
+            logger.debug("recap rewrite skipped: %s", exc)
     try:
         from core.authenticity import evaluate_authenticity
 
@@ -648,6 +662,7 @@ def generate_draft(
         "hook_options": hook_options(result.script, result.features.get("script_passes")),
         "authenticity_verdict": out.authenticity_verdict,
         "authenticity_failed": list(out.authenticity_failed),
+        "recap_rewrite": recap or None,  # #1936
         "script_clean": result.features.get("script_clean"),  # #1143
         # #1150: run 139's title was flagged and overnight rendered it - the flag stopped here.
         "title_warnings": list(result.features.get("title_warnings") or []),
@@ -745,6 +760,79 @@ def draft_event_at(event_at: str, best_bet: dict | None) -> str:
     """#1847: a draft's deadline - its game's start, else a countdown's day end. The checks built
     for a kickoff then render it first, slot it before it, hold it after and retire it."""
     return event_at or str((best_bet or {}).get("deadline") or "")
+
+
+def _recap_rewrite_enabled() -> bool:
+    return os.getenv("RECAP_REWRITE", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def recap_rewrite(
+    script: str, facts: list[str] | None, topic: str, *, intent: str = ""
+) -> tuple[str, dict[str, Any]]:
+    """#1936 (decision 92, the operator: "rewrite once, then show the cost"): a draft today's
+    detector reads as a recap gets one more insight pass before it reaches review. (script,
+    {tried, kept, ...the pass's record}); ({} and the script as it was) when it has a take."""
+    from core.authenticity import has_insight
+
+    if not (script or "").strip() or has_insight(script):
+        return script, {}
+    from core.content_engine import insight_pass
+
+    new, record = insight_pass(script, "\n".join(facts or []), topic, intent=intent)
+    kept = bool(new) and new != script and has_insight(new)
+    return (new if kept else script), {"tried": True, "kept": kept, **record}
+
+
+_DAYS_RE = re.compile(r"\b(\d+) days? to launch\b", re.I)
+
+
+def follow_brief(
+    best_bet: dict | None, *, channel_id: str = "tapin", today: date | None = None
+) -> str:
+    """#1699 (S02, B05.3): the true reason to follow a format has, as the script's last line - "",
+    for a format without one. A preview with a call has its own (#1322, `preview_brief`); 4 of the
+    channel's 162 subscribers in 28 days came from its videos.
+
+    - a countdown: there is one every day until launch, and tomorrow's number;
+    - a launch moment: the subject's countdown, while it runs;
+    - a long video: the Week in Review every Monday (`week_compile`)."""
+    bet = best_bet or {}
+    offered = bet.get("offered") or []
+    raw = bet.get("picked")
+    picked = raw if isinstance(raw, int) else 1
+    chosen = offered[picked - 1] if isinstance(offered, list) and 0 < picked <= len(offered) else {}
+    source = str((chosen or {}).get("source") or "")
+    lead = " End on why to follow, in your own words, once:"
+    if bet.get("title_stem") or source == "countdown":
+        found = _DAYS_RE.search(str(bet.get("title_stem") or ""))
+        left = int(found.group(1)) - 1 if found else None
+        example = (
+            f"Tomorrow: {left} days to go - follow so you don't miss a day."
+            if left and left > 0
+            else "It's out tomorrow - follow for launch day."
+        )
+        return f'{lead} there is one of these every day until launch - for example "{example}"'
+    if bet.get("draft_kind") == "long" or source == "long":
+        return (
+            " End on why to subscribe, in your own words, once: the Week in Review comes out "
+            'every Monday - for example "Subscribe - the Week in Review lands every Monday."'
+        )
+    if source == "moment":
+        from core.series.countdown import series_rows
+
+        day = today or date.today()
+        for row in series_rows(channel_id):
+            if row.get("kind") != "countdown":
+                continue
+            try:
+                until = date.fromisoformat(str(row.get("until") or "")[:10])
+            except ValueError:
+                continue
+            if day < until:
+                subject = str(row.get("subject") or "the launch")
+                return (f"{lead} there is a {subject} countdown Short every day until launch - for "
+                        f'example "Follow - the {subject} countdown is here every day until launch."')  # fmt: skip
+    return ""
 
 
 def draft_brief(topic: str, best_bet: dict | None) -> str:

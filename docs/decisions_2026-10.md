@@ -573,3 +573,20 @@ wave 139". The Story's list was the 10-18 snapshot with notes added; half of it 
 **Consequence:** the Story's panel shows the open ones with today's number; 47 bridge ideas are
 parked and can be reopened by changing `[-]` back to `[ ]`.
 
+## 92. A recap draft rewritten once, then its cost shown; a true reason to follow per format (2026-11-01)
+**Decision:** a draft whose script still reads as a neutral recap after every pass gets one more
+insight pass from its facts before its verdict (`recap_rewrite`, `RECAP_REWRITE` on by default),
+kept only when the rewrite has a take and recorded either way; one still a recap goes to review as
+before, with a line saying what recaps earned here - median organic views against videos with a
+take, or "too few to say" under 5. S06 reads each public video's saved script with today's
+detector, not the verdict stored when it was written. A countdown, a launch moment (while its
+countdown runs) and a long video end on the true reason to follow that format has; other Shorts
+get no line. A retirement records why; S03 counts the renders retired as wrong. **Why:** S06's
+first reading counted 9 recaps public in 28 days; read again, 4 are - and on 2 of them the
+pipeline's insight pass had added a take that a later pass cut. Asked whether to hold recaps,
+rewrite them or only show the cost, the operator took "Rewrite once, then show the cost" - the
+question cited median 53 organic views for 20 recaps against 74 for 43 with a take, from the
+stored verdicts; by today's detector there are 3 measured recaps against 30 (56 against 63), too
+few to say. S02: 4 subscribers from 91 videos. **Consequence:** a recap draft costs up to two
+more premium calls; review shows the cost line until recaps reach 5; the follow line is read on
+11-29 (#1940) and the rewrite at 10 drafts (#1941).

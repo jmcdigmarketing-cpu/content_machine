@@ -302,6 +302,15 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("unconfirmed claims line skipped: %s", exc)
 
     try:
+        from core.ypp_readiness import subscriber_pace_line
+
+        line = subscriber_pace_line(channel_id)  # #1716: days to 1,000 at the 28-day pace
+        if line:
+            lines.append(line)
+    except Exception as exc:
+        logger.debug("subscriber pace skipped: %s", exc)
+
+    try:
         from analytics.promotions import status_line
 
         line = status_line(channel_id)  # #959: the last finished ad campaign's call

@@ -37,6 +37,7 @@ def links_html(
     shorts: list[dict[str, str]],
     affiliates: list[dict[str, str]],
     ftc: str,
+    subscribe: str = "",
 ) -> str:
     """The page, escaped throughout; an empty section is left out."""
 
@@ -45,6 +46,8 @@ def links_html(
                 f"{html.escape(row['title'])}</a>")  # fmt: skip
 
     parts = [f"<h1>{html.escape(name)}</h1>"]
+    if subscribe:  # #1707: the first thing a bio's visitor can do
+        parts.append(link({"title": "Subscribe on YouTube", "url": subscribe}))
     if long_video:
         parts += ["<h2>The latest long video</h2>", link(long_video)]
     if shorts:
@@ -111,7 +114,13 @@ def collect(channel_id: str, *, now: datetime | None = None, page: str = "") -> 
             longs.append((when, item))
         elif moment - when <= timedelta(days=7):
             week.append((_organic(metrics), item))
-    from core.description_extras import _tagged, affiliate_rows, amazon_tag, ftc_affiliate_line
+    from core.description_extras import (
+        _tagged,
+        affiliate_rows,
+        amazon_tag,
+        ftc_affiliate_line,
+        subscribe_url,
+    )
 
     tag = amazon_tag(page)
     affiliates = []
@@ -124,6 +133,7 @@ def collect(channel_id: str, *, now: datetime | None = None, page: str = "") -> 
         "shorts": [item for _n, item in sorted(week, key=lambda p: -p[0])[:_TOP_SHORTS]],
         "affiliates": affiliates,
         "ftc": ftc_affiliate_line(channel_id, affiliate=True) if affiliates else "",
+        "subscribe": subscribe_url(channel_id),
     }
 
 

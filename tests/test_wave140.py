@@ -60,7 +60,9 @@ class FollowReasonTests(unittest.TestCase):
     def test_anything_else_gets_no_line(self):
         from core.batch_generation import follow_brief
 
-        self.assertEqual(follow_brief(_bet("trending")), "")
+        # Decision 96 (#1943): a trending Short now ends on the Monday Week in Review when no
+        # long video or series names its subject; an idea of your own still gets none.
+        self.assertIn("every Monday", follow_brief(_bet("trending")))
         self.assertEqual(follow_brief(None), "")
 
     def test_the_draft_carries_it(self):

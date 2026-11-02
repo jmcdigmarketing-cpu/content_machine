@@ -46,8 +46,11 @@ def _run_title(run_id: int | None) -> str:
     )
 
 
-def plan_recategorize(channel_id: str, *, repo=None) -> list[Recategorize]:
-    """The category each uploaded video should have, from its run (no network)."""
+def plan_recategorize(
+    channel_id: str, *, repo=None, run_ids: set[int] | None = None
+) -> list[Recategorize]:
+    """The category each uploaded video should have, from its run (no network). `run_ids`
+    (#1954): only those runs' videos - the operator's word covered runs 120 and 126."""
     from apis.topic_scorer import KNOWN_DOMAINS, infer_topic_domain
     from core.youtube_meta import category_id_for_domain
 
@@ -63,6 +66,8 @@ def plan_recategorize(channel_id: str, *, repo=None) -> list[Recategorize]:
             continue
         seen.add(vid)
         run_id = getattr(row, "content_run_id", None)
+        if run_ids is not None and run_id not in run_ids:
+            continue
         # The run's #866 answer first; for older runs the title read by today's rules,
         # because their stored `domain` predates soccer (run 98 stored gaming).
         domain = resolved_run_domain(run_id)
@@ -135,11 +140,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--channel", default="tapin")
     parser.add_argument("--apply", action="store_true", help="send the updates (default: dry run)")
+    parser.add_argument("--run-id", type=int, action="append", dest="run_ids",
+                        help="only this run's video (repeatable; #1954)")  # fmt: skip
     args = parser.parse_args(argv)
     from config.channels import resolve_channel_id
 
     channel_id = resolve_channel_id(args.channel)
-    plan = plan_recategorize(channel_id)
+    plan = plan_recategorize(channel_id, run_ids=set(args.run_ids) if args.run_ids else None)
     print(f"Recategorize - {channel_id}: {len(plan)} uploaded video(s) with a known domain")
     for item in plan:
         sports = " (was Gaming if uploaded before wave 37)" if item.domain == "soccer" else ""

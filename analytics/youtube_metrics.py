@@ -444,18 +444,29 @@ def _subscriber_change(service: Any, start_date: str, end_date: str) -> int | No
     return int(net)
 
 
+_CHANNEL_IDS: dict[str, str] = {}  # #1707: the YouTube channel id `channels.list` answered
+
+
+def youtube_channel_id(channel_id: str) -> str:
+    """The YouTube channel id this process read for `channel_id` (#1707), or ""."""
+    return _CHANNEL_IDS.get(channel_id, "")
+
+
 def _subscriber_count(channel_id: str) -> int | None:
-    """The channel's subscribers from `channels.list` statistics (1 unit), or None."""
+    """The channel's subscribers from `channels.list` statistics (1 unit), or None. #1707: the
+    same call also gives the channel's id, which the subscribe link needs."""
     service = get_youtube_service(channel_id)
     if not service:
         return None
     try:
         resp = (
             service.channels()
-            .list(part="statistics", mine=True, fields="items(statistics/subscriberCount)")
+            .list(part="statistics", mine=True, fields="items(id,statistics/subscriberCount)")
             .execute()
         )
         items = resp.get("items") or []
+        if items and items[0].get("id"):
+            _CHANNEL_IDS[channel_id] = str(items[0]["id"])
         count = (items[0].get("statistics") or {}).get("subscriberCount") if items else None
         return int(count) if count is not None else None
     except Exception as exc:
@@ -507,6 +518,8 @@ def fetch_ypp_numbers(
         )
         out["long_hours_365d"] = round(organic / 60.0, 1)
     out["subscribers"] = _subscriber_count(cid)
+    if youtube_channel_id(cid):  # #1707: kept with the numbers for the subscribe link
+        out["youtube_channel_id"] = youtube_channel_id(cid)
     # #1144: the last four weeks, so `ops ypp` can say how far each bar is at this pace.
     pace_start = (end - timedelta(days=PACE_DAYS)).isoformat()
     recent = _by_source_and_type(service, pace_start, end.isoformat(), "views")

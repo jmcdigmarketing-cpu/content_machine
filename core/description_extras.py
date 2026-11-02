@@ -128,6 +128,25 @@ def affiliate_rows(channel_id: str) -> list[dict[str, Any]]:
     return kept
 
 
+def subscribe_url(channel_id: str) -> str:
+    """#1707 (decision 96): the channel's subscribe address, the confirm box open
+    (`?sub_confirmation=1`) - "" until the metrics sync has stored the channel's id."""
+    try:
+        from core.ypp_readiness import load_ypp_numbers
+
+        youtube_id = str((load_ypp_numbers(channel_id) or {}).get("youtube_channel_id") or "")
+    except Exception as exc:
+        logger.debug("channel id unread: %s", exc)
+        return ""
+    return f"https://www.youtube.com/channel/{youtube_id}?sub_confirmation=1" if youtube_id else ""
+
+
+def subscribe_line(channel_id: str) -> str:
+    """#1707: "Subscribe: <the subscribe address>" for a long video's description, or ""."""
+    url = subscribe_url(channel_id)
+    return f"Subscribe: {url}" if url else ""
+
+
 TAG_PLACES = ("long", "tiktok", "instagram", "facebook")
 
 
@@ -443,6 +462,11 @@ def apply_description_extras(
         if line not in body and line not in additions:
             additions.append(line)
 
+    if str(length_choice) == "4":  # #1707: a long video's viewer can subscribe in one click
+        subscribe = subscribe_line(channel_id)
+        if subscribe and subscribe not in body and subscribe not in additions:
+            additions.append(subscribe)
+
     if _flag("DESCRIPTION_SOURCES", True):
         urls = list(source_urls or [])
         if not urls:
@@ -458,8 +482,14 @@ def apply_description_extras(
 
     try:
         from core.chapters import chapter_block
+        from core.series.long_form import chapter_keywords
 
-        chapters = chapter_block(script, duration=duration_s, length_choice=length_choice)
+        chapters = chapter_block(
+            script,
+            duration=duration_s,
+            length_choice=length_choice,
+            keywords=chapter_keywords(channel_id, topic) if topic else None,  # #1726
+        )
         if chapters and "0:00" not in body:
             chapters_block = chapters
     except Exception as exc:

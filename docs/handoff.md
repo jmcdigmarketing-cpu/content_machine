@@ -53,23 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-01 · **HEAD at write:** `8d9bbd5` (wave 142; this wave's commit follows) ·
+**Written:** 2026-11-01 · **HEAD at write:** `41ba596` (wave 143; this wave's commit follows) ·
 **Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
 
-**Wave 143, the next five with S06 (decision 95).** Defects first: wave 142 said run 222 could
-render once the grade stopped gating - overnight never read the grade; it held 222 for "no take",
-released now. My patch wrote two `\b` as backspaces in `odds_language.py`; the control-character
-test caught it. S06: six stance shapes in `_STANCE_PATTERNS` - S06 met (0 of 48). #1958: a series
-day compares with its siblings on wording (`series_key`, `evaluate_authenticity(series=)`,
-`series_variation_passes` in `authenticity_now`); `evaluate_authenticity` still reads
-`_recent_scripts` for a plain script (old tests patch it). GTA long videos link two editions (row
-`links`); a long description is a 150-250 word summary led by its title; `is_gambling_link` refuses
-rows and strips lines, always. #1730 parked (no API).
+**Wave 144, the next 15 with S02 (decision 96).** Defects first: the leak-title rule is wrong on
+1 of 3 stored titles it flags (run 138, #1961); four sports videos sit under Gaming (#1962). Done
+live on the operator's word: runs 120 and 126 refiled as Gaming (101 units, read back 20).
+`follow_brief`'s fall-through gives every non-preview Short a line (long video / countdown / Monday
+Week in Review); the sync keeps the channel id (`youtube_channel_id`) for `subscribe_line`; long
+videos get `payoff_rule`, `long_tags`, `chapter_keywords`, `long_drop_off_lines`; series rows for
+Nov 9 (editions), Nov 9-11 (trade deadline), Dec 11 (Game Awards); `drop_drafted_matchups` in the
+menu; `leak_as_fact` at the title check; `recategorize --run-id`. The suite turns SERIES_DATED off -
+calendar tests switch it on themselves.
 
-**Open:** #1953-#1956, #1959, #1960. **Next:** S02 with #1729, #1726, #1960, #1733.
+**Open:** #1953-#1956, #1959, #1961, #1962. **Next:** S15 with #1866, #1779, #1713, #1961.
 
 **Operator:** publish the Google app (lapses Nov 7); paste the three bio pages; four tracking IDs;
-Facebook in Buffer; #1922 and #1956 on a phone; #1954 on your word.
+Facebook in Buffer; #1922 and #1956 on a phone; #1962 on your word.
 
 ## Slot — Cursor
 

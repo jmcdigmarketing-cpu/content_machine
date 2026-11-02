@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-01 (Claude, wave 144 - the next 15, S02).** Trending Shorts end on a true reason to
+follow - the subject's public long video, its countdown, or the Monday Week in Review - and long
+descriptions and the bio pages carry a subscribe link (decision 96). Long videos: payoff in the
+first 40 words, search-term tags and chapter titles, a drop-off line. The calendar: the GTA 6
+editions long video Nov 9, the trade-deadline fast lane Nov 9-11, The Game Awards Dec 11. The
+same fight is never drafted twice; a leak is never titled as fact; runs 120 and 126 refiled as
+Gaming. Next, with **S15** (the menu 43 points off the views): **#1866** the week-one special
+Week in Review, **#1779** weekly per-platform rows, **#1713** unsubscribes a week, **#1961** the
+leak rule's subject-only warning.
 **2026-11-01 (Claude, wave 143 - the next five, S06).** All four public "recaps" made a call
 the take detector did not know ("Here's the trap", "the real question is density"); it
 learned six shapes and S06 reads 0 of 48 (decision 95). A countdown day was held for sharing
@@ -96,15 +105,6 @@ Cyber Monday is a long deals video drafted Nov 28; S09 counts corrections; S10 s
 left. Next, with **S05** (your verdicts against the audience, 54%): **#1919** the link page's
 clicks, **#1752** Amazon tracking IDs per platform, **#1947** two gaming videos stored as
 another domain, **#1931** Instagram's side buttons.
-**2026-11-01 (Claude, wave 140 - the next five, S02).** A countdown, a launch moment and a long
-video now end on their true reason to follow - tomorrow's day, the GTA 6 countdown, the Monday Week
-in Review (S02 reads 4 subscribers from 91 videos; re-read 11-29). A draft that still reads as a
-recap gets one rewrite before review, and review shows what recaps earned (decision 92) - by
-today's detector 4 of S06's 9 "recaps" are one. A round that cannot read YouTube says so; frame
-covers outlive the 3-day sweep; a retired render records why, so S03 is measured (from 11-29).
-Next, with **S01** (0.0 long-form hours this week - **#1315** the written Week in Review first):
-**#1929** the Cyber Monday deals Short (Nov 30), **#1942** S10 counting the countdown you chose to
-skip, **#1934** S09 measured, **#1935** S15's pass mark.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

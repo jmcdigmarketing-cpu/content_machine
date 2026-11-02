@@ -117,8 +117,12 @@ def chapter_block(
     duration: float | None = None,
     length_choice: str | None = None,
     word_timings: list[dict[str, Any]] | None = None,
+    keywords: list[tuple[str, str]] | None = None,
 ) -> str:
     """Beat labels spread across the script. Empty for Shorts / missing input.
+
+    `keywords` (#1726, decision 96): (search term, title) pairs - a chapter whose section names a
+    term is titled by it ("GTA 6 Release Date"), each title once; the rest keep their sentence.
 
     Run 77 labelled the *first eight sentences*, so with word timings every chapter sat in
     the first 17 seconds (0:00-0:17) and YouTube dropped them. Chapter points now sit at
@@ -148,7 +152,7 @@ def chapter_block(
         return times[word] if word < len(times) else span * word / total_words
 
     n = max(1, min(_MAX_CHAPTERS, len(sentences), int(span // YOUTUBE_MIN_CHAPTER_SECONDS)))
-    points: list[tuple[float, str]] = [(0.0, _label(sentences[0]))]
+    starts_at = [0]
     last = 0
     for i in range(1, n):
         target = total_words * i / n
@@ -157,7 +161,20 @@ def chapter_block(
             break
         j = min(later, key=lambda k: (abs(word_at[k] - target), k))
         last = j
-        points.append((_seconds_at(word_at[j]), _label(sentences[j])))
+        starts_at.append(j)
+    labels = [_label(sentences[j]) for j in starts_at]
+    used: set[str] = set()
+    for k, j in enumerate(starts_at):
+        end = starts_at[k + 1] if k + 1 < len(starts_at) else len(sentences)
+        section = " ".join(sentences[j:end]).lower()
+        for term, title in keywords or []:
+            if title not in used and re.search(rf"\b{re.escape(term)}\b", section):
+                labels[k] = title
+                used.add(title)
+                break
+    points = [
+        (0.0 if k == 0 else _seconds_at(word_at[j]), labels[k]) for k, j in enumerate(starts_at)
+    ]
     return youtube_chapter_lines(points)
 
 
@@ -228,13 +245,20 @@ def refine_run_chapters(run_id: int | None, script: str, audio_path: str) -> str
         else:
             if str(features.get("length_preset") or "") != "4":
                 return None
+            from core.series.long_form import chapter_keywords
+
+            keywords = chapter_keywords(  # #1726: the same titles the estimate used
+                str(record.channel_id or ""), str(getattr(record, "input_topic", "") or "")
+            )
 
             from core.script_length import count_spoken_words, spoken_words_per_second
 
             estimated_duration = count_spoken_words(script) / max(
                 spoken_words_per_second(record.channel_id), 0.1
             )
-            old = chapter_block(script, duration=estimated_duration, length_choice="4")
+            old = chapter_block(
+                script, duration=estimated_duration, length_choice="4", keywords=keywords
+            )
             last_end = max(
                 (
                     float(end)
@@ -250,6 +274,7 @@ def refine_run_chapters(run_id: int | None, script: str, audio_path: str) -> str
                 duration=last_end,
                 length_choice="4",
                 word_timings=words,
+                keywords=keywords,
             )
             description = _replace_chapter_lines(record.description or "", old, verified)
         features["chapters_timing_source"] = "word_timing"

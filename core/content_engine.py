@@ -681,6 +681,13 @@ You must:
         if str(length_choice) == "4"
         else "Generate a concise SEO description (hook first line, call-to-action last line)."
     )
+    # #1734 (decision 96): a long video loses half its viewers early; it says up front what they
+    # will know by the end. A Short's prompt is unchanged.
+    payoff_rule = (
+        "\n- Within the first 40 words, promise what the viewer will know by the end - then deliver it."
+        if str(length_choice) == "4"
+        else ""
+    )
     user_prompt = f"""
 TODAY: {today}
 
@@ -704,7 +711,7 @@ INSTRUCTIONS:
 - Script length: REQUIRED {min_words}-{max_words} words (~{preset.duration_hint()} when spoken).
 - Open with a punchy hook sentence under 12 words (no "Today/Let's/In this video").
 - Mark one word in the hook with asterisks for emphasis, and use an ellipsis where the listener should wait.
-- If Long format: structure as hook → context → analysis → implications → {long_close}.
+- If Long format: structure as hook → context → analysis → implications → {long_close}.{payoff_rule}
 {user_take}
 - Do NOT write the YouTube title — title is generated in a separate pass after facts + script.
 - {description_rule}
@@ -2775,6 +2782,14 @@ def generate_content_package(
         return len(lint) <= len(title_warnings) and fits.get("status") != "failed"
 
     title, title_suggest = apply_suggest(title, seed_topic or topic, accept=_title_still_holds)
+    # #1858 (decision 96): a claim the script gives as a leak is never the title's fact - the
+    # warning holds an unattended render ("its title says something the facts do not").
+    from core.youtube_meta import leak_as_fact
+
+    leaked = leak_as_fact(title, script)
+    if leaked:
+        logger.warning("Title check: %s", leaked)
+        title_warnings = [*title_warnings, leaked]
     _tsc_warnings = title_script_check.get("warnings")
     title_script_warnings = list(_tsc_warnings) if isinstance(_tsc_warnings, list) else []
     if title_script_warnings:

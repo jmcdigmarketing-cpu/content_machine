@@ -319,6 +319,29 @@ def week_drop_off_lines(channel_id: str, *, days: int = 7, limit: int = 8) -> li
     return out[:limit]
 
 
+def long_drop_off_lines(channel_id: str) -> list[str]:
+    """#1733 (decision 96): each long video and where it lost half its viewers, any age - or "no
+    retention yet" with its views: YouTube shows a curve only once enough people watch (run 172
+    had 0 rows at 4 views)."""
+    from core.success.scorecard import _long_rows
+    from storage.repositories.content_runs import get_content_run_repository
+
+    repo = get_content_run_repository()
+    out: list[str] = []
+    for row, metrics in _long_rows(channel_id):
+        run_id = getattr(row, "content_run_id", None)
+        run = repo.get(int(run_id)) if run_id else None
+        title = str(getattr(run, "title", "") or getattr(row, "youtube_video_id", "") or "")[:45]
+        curve = _parse_curve(metrics.get("retention_curve"))
+        position = drop_off_position(curve) if curve else None
+        if position is None:
+            views = int(float(metrics.get("views") or 0))
+            out.append(f"run {run_id} {title}: no retention yet ({views:,} views)")
+            continue
+        out.append(f"run {run_id} {title}: {drop_off_text(position, _render_seconds(run))}")
+    return out
+
+
 def _render_seconds(run) -> float | None:
     """The render's length: ffprobe on its file, else the length technical QC measured."""
     try:

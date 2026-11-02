@@ -8648,6 +8648,48 @@
         "equals": "GTA 6: {n} days to launch"
       },
       "why": "the day count is not the series - its days are compared on wording, not subject"
+    },
+    {
+      "id": "the-same-fight-in-other-words",
+      "item": 1960,
+      "source": "live 2026-11-01: runs 219 and 223 drafted Moicano vs Nolan a day apart from two headlines",
+      "call": "core.best_bet:same_matchup",
+      "args": [
+        "UFC Vegas 123 Results: Moicano vs. Nolan",
+        ["Main Card Results | UFC Fight Night: Moicano vs Nolan"]
+      ],
+      "expect": {
+        "equals": "Main Card Results | UFC Fight Night: Moicano vs Nolan"
+      },
+      "why": "a matchup is its two sides, not its headline's words"
+    },
+    {
+      "id": "the-same-game-in-other-words",
+      "item": 1960,
+      "source": "the sibling shape: a game named by its teams, in either order",
+      "call": "core.best_bet:same_matchup",
+      "args": [
+        "Bills vs Chiefs preview",
+        ["Kansas City Chiefs at Buffalo Bills"]
+      ],
+      "expect": {
+        "equals": "Kansas City Chiefs at Buffalo Bills"
+      },
+      "why": "two teams named are one game whatever the order or the word between them"
+    },
+    {
+      "id": "a-rumour-is-not-the-titles-fact",
+      "item": 1858,
+      "source": "replay 2026-11-01: run 162's title stated what its script called a rumour",
+      "call": "core.youtube_meta:leak_as_fact",
+      "args": [
+        "Detroit Pistons bench outplays Boston Celtics reserves in key stretch",
+        "The rumor is Detroit's bench flipped momentum in a key stretch - unconfirmed, but the Pistons bench outplays the Celtics reserves."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a claim the script hedges is hedged in the title too"
     }
   ]
 }

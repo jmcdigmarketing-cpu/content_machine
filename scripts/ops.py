@@ -3399,6 +3399,8 @@ def cmd_unschedule(args: argparse.Namespace) -> int:
 )
 def cmd_recategorize(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]
+    if getattr(args, "run_id", None):  # #1954: one run's video
+        extra += ["--run-id", str(args.run_id)]
     if getattr(args, "apply", False):
         extra.append("--apply")
     return _run_module("publishing.recategorize", *extra)

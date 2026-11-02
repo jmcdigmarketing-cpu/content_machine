@@ -242,6 +242,36 @@ def lint_title_grounding(
     ]
 
 
+_LEAK_MARKERS = re.compile(
+    r"\b(?:leak(?:s|ed|ers?)?|rumou?rs?|rumou?red|reportedly|insiders?|unconfirmed|allegedly)\b",
+    re.I,
+)
+_TITLE_HEDGE = re.compile(
+    r"\b(?:leak(?:s|ed)?|rumou?rs?|rumou?red|reports?|reported|reportedly|insiders?|unconfirmed|"
+    r"claims?|allegedly)\b|\?",
+    re.I,
+)
+LEAK_SHARED = 3  # content words a title shares with a leak-marked sentence to carry its claim
+
+
+def leak_as_fact(title: str, script: str) -> str:
+    """#1858 (decision 96): a title that states, as fact, a claim the script gives as a leak or a
+    rumour - "" when the title says leak / report / rumour or asks, or shares under `LEAK_SHARED`
+    content words with every leak-marked sentence (it names the subject, not the claim)."""
+    if not (title or "").strip() or not (script or "").strip() or _TITLE_HEDGE.search(title):
+        return ""
+    from apis.topic_tokens import content_tokens, split_sentences
+
+    words = set(content_tokens(title))
+    for sentence in split_sentences(script):
+        if (
+            _LEAK_MARKERS.search(sentence)
+            and len(words & set(content_tokens(sentence))) >= LEAK_SHARED
+        ):
+            return f"title states a leak as fact: '{sentence.strip()[:120]}'"
+    return ""
+
+
 _TITLE_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
 
 

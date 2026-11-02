@@ -69,7 +69,9 @@ bridge's B05 lane.
 **Now.** +64 subscribers in 28 days, 2 of them from the 53 videos (one each from the Vanguard meta
 and the GTA VI box videos). YouTube counts 4,543 paid Shorts views in 90 days; no campaign is
 entered, so `ops promotions` cannot split them. Wave 140 (#1699): a countdown, a launch moment and
-a long video end on their true reason to follow; `ops shortfalls` reads 4 from 91 videos.
+a long video end on their true reason to follow; `ops shortfalls` reads 4 from 91 videos. Wave
+144 (decision 96): a trending Short ends on its subject's long video, countdown or the Monday Week in
+Review (#1943, #1729), and long descriptions and the bio pages carry a subscribe link (#1707).
 
 **How.** Give a viewer a reason to follow that is true - every call is graded after the game - and
 measure subscribers per video and per format so the reason can be tested. Enter the October ad so

@@ -1,5 +1,5 @@
 {
-  "_note": "Series (#1847, the bridge's B11; decision 84): dated videos, read by core/series/. `countdown` - one idea a day from `from` to the day before `until` in the channel's timezone, the topic `title` with {n} the days left, facts the day's headlines naming one of `names` (else the date alone), each Short placed in `playlist` in day order (#1855); SERIES_COUNTDOWN=false stops it. `moment` - a Short drafted on its `on` date as an extra draft; `needs` words must be in that week's subject headlines or it is skipped with the reason; `on: null` waits for a date (set it when Rockstar states it); `publish_at` (ISO UTC) is when it goes public, null = the next free slot (#1870). `long` - a 10-12 minute 16:9 video drafted on its `on` date, rendered only after your review (#1850); its title carries the first YouTube suggestion for subject + one of its `search_terms` (#1856). `slots` - extra public hours for a video naming the subject inside `from`-`to`, and a story on 5+ outlets naming it is drafted first then (#1868, #1867). `style` - the colours a long video's card uses (#1869). SERIES_DATED=false stops the moments and long videos.",
+  "_note": "Series (#1847, the bridge's B11; decision 84): dated videos, read by core/series/. `countdown` - one idea a day from `from` to the day before `until` in the channel's timezone, the topic `title` with {n} the days left, facts the day's headlines naming one of `names` (else the date alone), each Short placed in `playlist` in day order (#1855); SERIES_COUNTDOWN=false stops it. `moment` - a Short drafted on its `on` date as an extra draft; `needs` words must be in that week's subject headlines or it is skipped with the reason; `on: null` waits for a date (set it when Rockstar states it); `publish_at` (ISO UTC) is when it goes public, null = the next free slot (#1870). `long` - a 10-12 minute 16:9 video drafted on its `on` date, rendered only after your review (#1850); its title carries the first YouTube suggestion for subject + one of its `search_terms` (#1856). `slots` - extra public hours for a video naming the subject inside `from`-`to`, and a story on 5+ outlets naming it is drafted first then (#1868, #1867). `style` - the colours a long video's card uses (#1869). SERIES_DATED=false stops the moments and long videos. Decision 96: the GTA 6 editions long video (Nov 9, both edition links, #1852); the NFL trade deadline's fast lane Nov 9-11 (#1876, the deadline is Tue Nov 10, 4 PM ET); The Game Awards' winners the morning after the Dec 10 show, and its nominees once the date is announced - set `on` then (#1878).",
   "tapin": [
     {
       "id": "gta6-countdown",
@@ -18,6 +18,8 @@
      "topic": "GTA 6's map, characters and story explained", "on": "2026-11-12", "search_terms": ["map", "story", "characters"]},
     {"id": "gta6-first-things", "kind": "long", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
      "topic": "GTA 6: ten things to do first", "on": "2026-11-20", "search_terms": ["tips", "things to do", "guide"]},
+    {"id": "gta6-editions", "kind": "long", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
+     "topic": "GTA 6 editions and price - which to buy", "on": "2026-11-09", "search_terms": ["editions", "price", "ultimate edition"]},
     {"id": "black-friday-deals", "kind": "long", "subject": "Black Friday", "names": ["Black Friday"], "domain": "gaming", "topic": "Black Friday 2026 gaming deals worth buying", "on": "2026-11-23", "search_terms": ["deals", "best deals", "ps5 deals"]},
     {"id": "cyber-monday-deals", "kind": "long", "subject": "Cyber Monday", "names": ["Cyber Monday"], "domain": "gaming", "topic": "Cyber Monday 2026 gaming deals worth buying", "on": "2026-11-28", "search_terms": ["cyber monday deals", "deals", "ps5 deals"]},
     {"id": "gta6-online", "kind": "moment", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"], "domain": "gaming",
@@ -40,6 +42,12 @@
      "topic": "GTA 6's sales record", "on": null},
     {"id": "gta6-launch-slots", "kind": "slots", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"],
      "from": "2026-11-16", "to": "2026-11-22", "extra_hours": [18]},
+    {"id": "nfl-trade-deadline", "kind": "slots", "subject": "NFL trade deadline", "names": ["NFL trade deadline", "trade deadline", "traded to"],
+     "from": "2026-11-09", "to": "2026-11-11", "domain": "nfl"},
+    {"id": "game-awards-winners", "kind": "moment", "subject": "The Game Awards", "names": ["The Game Awards", "Game Awards"], "domain": "gaming",
+     "topic": "The Game Awards 2026 winners: Game of the Year and the night's biggest reveals", "on": "2026-12-11", "needs": ["Game of the Year", "winners"]},
+    {"id": "game-awards-nominations", "kind": "moment", "subject": "The Game Awards", "names": ["The Game Awards", "Game Awards"], "domain": "gaming",
+     "topic": "The Game Awards 2026 nominees: the Game of the Year shortlist", "on": null},
     {"id": "gta6-style", "kind": "style", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"],
      "palette": ["#F25CA2", "#FF9F1C", "#2EC4B6"]}
   ]

@@ -1292,6 +1292,10 @@ def run_pipeline(
     result.timings["word_count"] = count_spoken_words(result.script)
     result.description = content.get("description", "")
     result.tags = list(content.get("tags") or [])
+    if (best_bet or {}).get("draft_kind") == "long":  # #1742: tags for search
+        from core.series.long_form import long_tags
+
+        result.tags = long_tags(channel_id, topic, result.tags)
     result.brief_version = content.get("brief_version") or research_brief.version
     result.prompt_version = content.get("prompt_version") or ""
 

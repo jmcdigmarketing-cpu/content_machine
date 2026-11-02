@@ -614,6 +614,15 @@ def _format_body(report: dict[str, Any]) -> str:
             lines.extend(f"    {line}" for line in drops)
     except Exception as exc:
         logger.debug("drop-off lines skipped: %s", exc)
+    try:  # #1733 (decision 96): each long video's drop-off, any age
+        from core.retention import long_drop_off_lines
+
+        longs = long_drop_off_lines(report["channel_id"])
+        if longs:
+            lines.append("  Where each long video lost half its viewers:")
+            lines.extend(f"    {line}" for line in longs)
+    except Exception as exc:
+        logger.debug("long drop-off lines skipped: %s", exc)
     try:  # #1381 (wave 120): how often an unsupported claim held a draft
         from storage.repositories.content_runs import get_content_run_repository
 

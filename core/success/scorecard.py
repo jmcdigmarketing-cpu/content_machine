@@ -108,6 +108,48 @@ def _long_rows(channel_id: str) -> list[tuple[Any, dict[str, Any]]]:
     return out
 
 
+WINDOW = ("GTA 6", date(2026, 10, 28), date(2026, 11, 30))  # #1871: B11's window
+
+
+def window_line(channel_id: str, *, now: datetime | None = None) -> str:
+    """#1871 (decision 96): the window's number - organic views (and long-form hours) of the videos
+    published inside it that name its subject, against every other subject. "" before it opens."""
+    from analytics.growth import _rows
+    from apis.topic_tokens import names_any
+    from core.series.countdown import series_rows
+
+    subject, start, end = WINDOW
+    today = (now or datetime.now(timezone.utc)).date()
+    if today < start:
+        return ""
+    names = next((list(r.get("names") or []) for r in series_rows(channel_id)
+                  if r.get("subject") == subject and r.get("names")), [subject])  # fmt: skip
+    sums = {True: [0, 0], False: [0, 0]}
+    for row in _rows(channel_id):
+        published = row.get("published")
+        if published is None or not start <= published.date() <= end:
+            continue
+        side = sums[names_any(str(row.get("title") or ""), names)]
+        side[0] += max(0, int(row.get("views") or 0) - int(row.get("paid") or 0))
+        side[1] += 1
+    hours = {True: 0.0, False: 0.0}
+    for row, metrics in _long_rows(channel_id):
+        published = getattr(row, "published_at", None)
+        if not isinstance(published, datetime) or not start <= published.date() <= end:
+            continue
+        title = str(getattr(row, "title", "") or "")
+        hours[names_any(title, names)] += float(metrics.get("estimated_minutes_watched") or 0) / 60
+
+    def _part(views: int, videos: int) -> str:
+        per = f" ({views // videos:,} a video)" if videos else ""
+        return f"{views:,} organic views from {videos} video{'s' if videos != 1 else ''}{per}"
+
+    (mine_v, mine_n), (other_v, other_n) = sums[True], sums[False]
+    return (f"{subject} window ({start:%b} {start.day} - {end:%b} {end.day}): {subject} "
+            f"{_part(mine_v, mine_n)}, everything else {other_v:,} from {other_n}; long-form hours "
+            f"{subject} {hours[True]:.1f}, everything else {hours[False]:.1f}")  # fmt: skip
+
+
 def long_minutes(channel_id: str) -> list[float]:
     """Each long video's organic minutes a week, from its synced window (`estimated_minutes_watched`
     over `period_start`-`period_end`, less the paid share). Long = a compilation or a long draft."""

@@ -94,6 +94,69 @@ def long_title(channel_id: str, topic: str, title: str) -> tuple[str, list[str] 
     return search_title(subject, suggestions, title, terms=terms or None), suggestions
 
 
+def _long_row(channel_id: str, topic: str) -> dict[str, Any] | None:
+    return next((r for r in series_rows(channel_id)
+                 if r.get("kind") == "long" and r.get("topic") == topic), None)  # fmt: skip
+
+
+_TAG_CHARS = 450  # YouTube allows 500 characters of tags in all; leave room for its separators
+
+
+def long_tags(channel_id: str, topic: str, tags: list[str]) -> list[str]:
+    """#1742 (decision 96): a long draft's tags with its row's search terms, each with the subject
+    ("GTA 6 price"), and the subject itself - deduped, within YouTube's tag length. Any other
+    draft's tags unchanged."""
+    row = _long_row(channel_id, topic)
+    subject = str((row or {}).get("subject") or "").strip()
+    if not subject:
+        return list(tags)
+    terms = [str(t).strip() for t in (row or {}).get("search_terms") or [] if str(t).strip()]
+    out: list[str] = []
+    seen: set[str] = set()
+    for tag in [*tags, subject, *(f"{subject} {term}" for term in terms)]:
+        key = str(tag).strip().lower()
+        if not key or key in seen or sum(len(t) + 1 for t in out) + len(key) > _TAG_CHARS:
+            continue
+        seen.add(key)
+        out.append(str(tag).strip())
+    return out
+
+
+def public_long_subject(channel_id: str, topic: str) -> str:
+    """#1729 (decision 96): the subject of a public long video `topic` names - a series long
+    row's subject whose draft is public - or "". A Short cannot link it (#1730); it can say it."""
+    from apis.topic_tokens import names_any
+    from storage.repositories.content_runs import get_content_run_repository
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    rows = [r for r in series_rows(channel_id) if r.get("kind") == "long" and r.get("topic")]
+    named = [r for r in rows if names_any(topic or "", [str(n) for n in r.get("names") or []])]
+    if not named:
+        return ""
+    runs = get_content_run_repository()
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        if str(getattr(row, "privacy_status", "") or "").lower() != "public":
+            continue
+        run_id = getattr(row, "content_run_id", None)
+        run = runs.get(int(run_id)) if run_id else None
+        drafted_from = str(getattr(run, "input_topic", "") or "")
+        for series in named:
+            if drafted_from == series.get("topic"):
+                return str(series.get("subject") or "")
+    return ""
+
+
+def chapter_keywords(channel_id: str, topic: str) -> list[tuple[str, str]]:
+    """#1726 (decision 96): (search term, chapter title) for a long draft's row - "release date",
+    "GTA 6 Release Date" - so a chapter that covers what people search is titled by it."""
+    row = _long_row(channel_id, topic)
+    subject = str((row or {}).get("subject") or "").strip()
+    if not subject:
+        return []
+    terms = [str(t).strip() for t in (row or {}).get("search_terms") or [] if str(t).strip()]
+    return [(term.lower(), f"{subject} {term.title()}") for term in terms]
+
+
 def three_words(title: str) -> str:
     """At most three of the title's first phrase's words (#1731)."""
     from assets.thumbnail_compose import headline_words

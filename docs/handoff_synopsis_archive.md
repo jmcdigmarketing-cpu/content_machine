@@ -7,6 +7,14 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-01 (Claude Code): wave 141, the next five (S01)
+
+The Associates tag is set and the Reporting API is on (S11 waits on YouTube's first file). The
+two Weeks in Review drew 4 views and 0: `ops ypp` and S01 now say where long views come from.
+S15's mark - the menu within 15 points of the views - with three gaming ideas of five (decision
+93); chapter Shorts count for their parent's domain; Cyber Monday is a long deals video on Nov 28;
+S09 counts corrections; S10 skips what you left.
+
 ## Previous — 2026-11-01 (Claude Code): wave 140, the next five (S02)
 
 A countdown, a launch moment and a long video end on their true reason to follow (#1699). A

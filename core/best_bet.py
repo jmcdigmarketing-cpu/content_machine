@@ -1196,6 +1196,50 @@ def _covered_teams(topics: list[str]) -> set[str]:
     return out
 
 
+_MATCHUP_RE = re.compile(r"([A-Za-z][\w'.-]*)\s+(?:vs\.?|v\.?|at|@)\s+([A-Za-z][\w'.-]*)", re.I)
+
+
+def matchup(topic: str) -> frozenset[str]:
+    """#1960: a fight's or a game's two sides - the word each side of "vs" / "at" ("Moicano",
+    "Nolan"), or two teams named - else an empty set."""
+    from apis.nba_teams import team_names_in as nba_teams
+    from apis.nfl_entities import team_names_in as nfl_teams
+
+    text = topic or ""
+    teams = {str(t).lower() for t in [*nfl_teams(text), *nba_teams(text)]}
+    if len(teams) >= 2:
+        return frozenset(teams)
+    found = _MATCHUP_RE.search(text)
+    if not found:
+        return frozenset()
+    return frozenset(side.strip(".").lower() for side in found.groups())
+
+
+def same_matchup(topic: str, drafted: list[str]) -> str:
+    """#1960 (decision 96): the drafted topic with the same two sides as `topic`, or "". Runs 219
+    ("Main Card Results | UFC Fight Night: Moicano vs Nolan") and 223 ("UFC Vegas 123 Results:
+    Moicano vs. Nolan") were one fight drafted twice, a day apart."""
+    sides = matchup(topic)
+    if len(sides) < 2:
+        return ""
+    return next((old for old in drafted if matchup(old) == sides), "")
+
+
+def drop_drafted_matchups(
+    ideas: list[BestBetResult], drafted: list[str], *, notes: list[str] | None = None
+) -> list[BestBetResult]:
+    """#1960: the menu without a fight or game already drafted under other words."""
+    kept: list[BestBetResult] = []
+    for bet in ideas:
+        old = same_matchup(bet.topic, drafted)
+        if old and old != bet.topic:
+            if notes is not None:
+                notes.append(f'"{bet.topic}" left out - the same matchup was drafted as "{old}"')
+            continue
+        kept.append(bet)
+    return kept
+
+
 def marquee_note(topic: str, detail: dict[str, Any], covered: set[str] | list[str]) -> str:
     """Why this game is worth a video ("NBC", "NFL London Games", "Chargers, a team you made
     videos about"), or "" - then it is not offered."""
@@ -1842,6 +1886,12 @@ def get_idea_menu(
         idea_list = [*dated_ideas(channel_id, now=now, notes=notes), *idea_list]
     except Exception as exc:
         logger.debug("dated ideas skipped: %s", exc)
+    try:  # #1960: a fight or a game already drafted under other words leaves the menu
+        drafted = list(recent_input_topics(channel_id, limit=30))
+        idea_list = drop_drafted_matchups(idea_list, drafted, notes=notes)
+    except Exception as exc:
+        logger.debug("matchup check skipped: %s", exc)
+        drafted = []
     want = best_bet_preview_count() if previews is None else previews
     if want <= 0:
         return idea_list, []
@@ -1870,7 +1920,7 @@ def get_idea_menu(
             preview_list = with_calls(preview_list, made)
     except Exception as exc:
         logger.debug("preview calls skipped: %s", exc)
-    return idea_list, preview_list
+    return idea_list, drop_drafted_matchups(preview_list, drafted, notes=notes)
 
 
 def _series_idea(channel_id: str) -> BestBetResult | None:

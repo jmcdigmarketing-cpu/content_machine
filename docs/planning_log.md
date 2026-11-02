@@ -10816,3 +10816,57 @@ in `affiliate_rows` and `strip_gambling_links`, which `apply_description_extras`
 `links` in `affiliate_lines`; `description_rule` in `_build_prompts`. Fields traced:
 `best_bet.title_stem` from the menu's pick to the run's features to `_run_series`; `series` from
 the draft's meta to the re-read.
+
+## 2026-11-01 — wave 144: the next 15, S02 (Claude Code)
+
+**Prompt:** "next 15" (planned in plan mode, approved).
+
+Measured first (read-only): only countdowns, launch moments, long videos and previews ended on a
+reason to follow; a Short cannot link a long video (the videos resource has no field, #1730).
+`ops ypp` already printed the subscriber pace (#1716 mostly built). Long run 172 had no retention
+rows at 4 views. Runs 219 and 223: one fight from two headlines a day apart; the menu's `recent`
+set matched whole strings. `recategorize` had no run filter - applied as it stood, it would have
+refiled more than the two videos. Dates: the NFL trade deadline Tue Nov 10; The Game Awards Dec 10.
+
+**Asked (four):** "Its subject's long video or series"; "Mon Nov 9"; "Both"; "Yes, refile both".
+
+Shipped (built in a scratchpad worktree, decision 96):
+1. #1943 + #1729 `follow_brief`'s fall-through; `long_form.public_long_subject`.
+2. #1707 `youtube_metrics.youtube_channel_id` (the `channels.list` call asks `id`), kept in the YPP
+   numbers; `description_extras.subscribe_url` / `subscribe_line`; the link pages' first row.
+3. #1716 `ypp_readiness.subscriber_pace_line` in `core/status.py`.
+4. #1726 `chapter_block(keywords=)`, `long_form.chapter_keywords`, passed by the description and
+   `refine_run_chapters`.
+5. #1733 `retention.long_drop_off_lines` in the weekly report.
+6. #1734 the long prompt's `payoff_rule`.
+7. #1742 `long_form.long_tags` in the pipeline.
+8. #1852, #1876, #1878 config/series.json rows.
+9. #1871 `scorecard.window_line` in `ops ypp`.
+10. #1960 `best_bet.matchup` / `same_matchup` / `drop_drafted_matchups` in `get_idea_menu`.
+11. #1858 `youtube_meta.leak_as_fact` at the title check.
+12. #1954 `recategorize --run-id`; refiled live (the filtered plan, dry run first): 2 updated, 101
+    units, read back 20 and 20.
+
+Found on the way:
+- The suite switches `SERIES_DATED` off; the calendar tests switch it on for themselves.
+- Wave 140's test pinned "a trending Short gets no line" - changed for the decision.
+- The leak rule replayed on 127 stored titles: 3 flagged, one wrongly (run 138, #1961).
+- Read live: runs 37, 63, 65 and 155 sit under Gaming though sports (#1962, your word).
+
+Not done: the leak rule's subject-only case (#1961); the four videos' category (#1962).
+
+Tests: `tests/test_wave144.py`, 25 - 24 fail on `41ba596` (re-run on a clean HEAD checkout, the
+editable finder stripped: 6 failures, 18 errors); the 25th pins that an idea of your own gets no
+follow line. Older tests changed for the decision: wave 140's trending follow line. Corpus +3 (the
+fight, its team-name sibling, the rumour title), each failing on HEAD.
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite: 7190 forward and reversed, OK
+(6 skipped); corpus 516 of 516; data/ and output/ untouched by the suite. Production callers:
+`follow_brief` (generation), `public_long_subject` (follow_brief), `subscribe_line` (the description
+extras), `subscribe_url` (the link pages), `youtube_channel_id` (`fetch_ypp_numbers`),
+`subscriber_pace_line` (status), `chapter_keywords` (the description, `refine_run_chapters`),
+`long_drop_off_lines` (the weekly report), `long_tags` (the pipeline), `window_line` (ypp),
+`drop_drafted_matchups` (the menu), `leak_as_fact` (the title check), `run_ids` (recategorize's
+main). Fields traced: `youtube_channel_id` from `channels.list` to the YPP store to the subscribe
+line; the series rows from config to `dated_ideas` / `launch_names`; `best_bet.offered` from the
+menu to `follow_brief`.

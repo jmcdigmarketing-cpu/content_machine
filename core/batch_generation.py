@@ -821,22 +821,39 @@ def follow_brief(
             " End on why to subscribe, in your own words, once: the Week in Review comes out "
             'every Monday - for example "Subscribe - the Week in Review lands every Monday."'
         )
-    if source == "moment":
-        from core.series.countdown import series_rows
+    if not bet:
+        return ""  # an idea of your own: it says what it means to
+    topic = str((chosen or {}).get("topic") or "")
+    from apis.topic_tokens import names_any
+    from core.series.countdown import series_rows
 
-        day = today or date.today()
-        for row in series_rows(channel_id):
-            if row.get("kind") != "countdown":
-                continue
-            try:
-                until = date.fromisoformat(str(row.get("until") or "")[:10])
-            except ValueError:
-                continue
-            if day < until:
-                subject = str(row.get("subject") or "the launch")
-                return (f"{lead} there is a {subject} countdown Short every day until launch - for "
-                        f'example "Follow - the {subject} countdown is here every day until launch."')  # fmt: skip
-    return ""
+    if source != "moment":  # #1729 (decision 96): the full video on the subject, when public
+        from core.series import long_form
+
+        subject = long_form.public_long_subject(channel_id, topic)
+        if subject:
+            return (f"{lead} the full {subject} video is up - for example \"The full {subject} "
+                    f'breakdown is on the channel."')  # fmt: skip
+    day = today or date.today()
+    for row in series_rows(channel_id):
+        if row.get("kind") != "countdown":
+            continue
+        try:
+            until = date.fromisoformat(str(row.get("until") or "")[:10])
+        except ValueError:
+            continue
+        names = [str(n) for n in row.get("names") or [row.get("subject")] if n]
+        if day < until and (source == "moment" or names_any(topic, names)):
+            subject = str(row.get("subject") or "the launch")
+            return (f"{lead} there is a {subject} countdown Short every day until launch - for "
+                    f'example "Follow - the {subject} countdown is here every day until launch."')  # fmt: skip
+    if source == "moment":
+        return ""
+    # #1943 (S02): a trending Short's true reason - the Week in Review, every Monday.
+    return (
+        f"{lead} every Monday the week's Shorts come out as one video - for example "
+        '"Follow - the week\'s best lands every Monday."'
+    )
 
 
 def draft_brief(topic: str, best_bet: dict | None) -> str:

@@ -321,6 +321,22 @@ def path_lines(numbers: dict[str, Any], *, from_videos: dict[str, Any] | None = 
     return lines
 
 
+def subscriber_pace_line(channel_id: str) -> str:
+    """#1716: the subscriber bar's pace for `ops status` - the line `ops ypp` prints, with the
+    videos' own pace beside it when ads bought the total; "" before the sync has stored numbers."""
+    from config.channels import resolve_channel_id
+
+    cid = resolve_channel_id(channel_id)
+    numbers = load_ypp_numbers(cid)
+    if not numbers:
+        return ""
+    lines = path_lines(numbers, from_videos=_video_subscribers(cid))
+    head = next((line for line in lines if line.startswith("Subscribers:")), "")
+    bought = next((line for line in lines if line.lstrip().startswith("But the")), "")
+    alone = bought.split("on the videos alone ", 1)[-1].split(". Enter", 1)[0] if bought else ""
+    return head + (f" On the videos alone {alone}." if alone else "")
+
+
 def _video_subscribers(channel_id: str) -> dict[str, Any] | None:
     """What the synced videos brought, from `ops growth`'s own count (#1146)."""
     try:
@@ -400,6 +416,15 @@ def inspect_ypp(
                 line = long_sources_line(cid)
             except Exception as exc:
                 logger.debug("long sources skipped: %s", exc)
+                line = ""
+            if line:
+                report.path.append(line)
+            try:  # #1871: the GTA window's number
+                from core.success.scorecard import window_line
+
+                line = window_line(cid)
+            except Exception as exc:
+                logger.debug("window line skipped: %s", exc)
                 line = ""
             if line:
                 report.path.append(line)

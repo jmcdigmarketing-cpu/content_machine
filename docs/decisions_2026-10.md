@@ -654,3 +654,22 @@ gating - overnight's unattended render never read the grade; it held run 222 for
 which this decision releases. **Consequence:** S06 is met; run 222 and the countdown's days can
 render overnight, unlisted for review; fewer drafts take the premium recap rewrite; the GTA long
 videos carry two links; the countdown is read on 11-08 (#1959).
+
+## 96. A true reason to follow on every Short; a subscribe link; long videos for search; the calendar (2026-11-01)
+**Decision:** a trending or news Short ends on a true reason to follow: the full video when a public
+long video names its subject, else the subject's running countdown, else the Week in Review every
+Monday (an idea of your own still gets none). A long video's description and the bio link pages
+carry a subscribe link with the confirm box open, once the sync has the channel's id. A long video
+promises its payoff in the first 40 words, carries its search terms as tags and as chapter titles,
+and the weekly report says where it lost half its viewers. The GTA 6 editions long video is drafted
+Mon Nov 9; a trade-deadline story on 5+ outlets jumps the queue Nov 9-11 (an exception to decision
+81); The Game Awards' winners Short is drafted Dec 11 and its nominees when dated. A fight or game
+already drafted under other words leaves the menu; a title never states as fact what its script
+calls a leak or rumour. Runs 120 and 126 are refiled as Gaming. **Why:** S02 reads 4 subscribers
+from 91 videos while trending Shorts - most of them - ended on nothing; a Short cannot link a long
+video (#1730). Runs 219 and 223 were one fight from two headlines. The NFL trade deadline is Tue
+Nov 10, 4 PM ET; The Game Awards are Thu Dec 10. Asked, the operator took "Its subject's long video
+or series", "Mon Nov 9", "Both" and "Yes, refile both" (all recommended). **Consequence:** every
+non-preview Short carries a follow line; a long description gains a subscribe line from the next
+sync; 3 of 127 stored titles would have been held for a leak (one wrongly, #1961); runs 120 and 126
+are category 20 (101 units); four sports videos remain under Gaming (#1962).

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-01: wave 143, the next five
+# Handoff synopsis — 2026-11-01: wave 144, the next 15
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-01 (Claude Code): wave 143, the next five (S06)
+## Last wave — 2026-11-01 (Claude Code): wave 144, the next 15 (S02)
+
+Every non-preview Short ends on a true reason to follow; long descriptions and the bio pages carry a
+subscribe link (decision 96). Long videos: payoff early, search-term tags and chapters, a drop-off
+line. The GTA 6 editions video Nov 9, the trade-deadline fast lane, The Game Awards. The same fight
+never twice; a leak never titled as fact; runs 120 and 126 refiled as Gaming.
+
+## Previous — 2026-11-01 (Claude Code): wave 143, the next five (S06)
 
 The take detector learned six shapes the scripts' calls are written in; S06 reads 0 of 48 (decision
 95). A countdown day is compared with its own series on wording, not subject. GTA long videos link
@@ -23,14 +30,6 @@ The grade gates nothing (decision 94): your verdicts tracked the views and the g
 40 in their views' third, chance 33%); S05 reads it against the audience. NFL nicknames read NFL and
 10 stored subjects were corrected (S15: gaming 67%). Amazon links carry a tracking ID per place - a
 link page per bio - and the sync keeps which outside site sent a view. Captions end 450 px up.
-
-## Previous — 2026-11-01 (Claude Code): wave 141, the next five (S01)
-
-The Associates tag is set and the Reporting API is on (S11 waits on YouTube's first file). The
-two Weeks in Review drew 4 views and 0: `ops ypp` and S01 now say where long views come from.
-S15's mark - the menu within 15 points of the views - with three gaming ideas of five (decision
-93); chapter Shorts count for their parent's domain; Cyber Monday is a long deals video on Nov 28;
-S09 counts corrections; S10 skips what you left.
 
 ---
 
@@ -96,7 +95,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S02 (one shortfall a wave), #1729, #1726, #1960, #1733; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
+**Next:** the bridge ([bridge_plan.md](bridge_plan.md), decision 82) - all five briefs shipped by 10-31 (waves 132-137) and archived; the next five come from the backlog by lane (roadmap.md): S15 (one shortfall a wave), #1866, #1779, #1713, #1961; the next brief is to write. The GTA 6 window runs from config/series.json (launch 11-19). **Ads:** November gets one $20 test (decision 74, 10-24) - enter it with `ops spend add --kind ads`. **Parked / excluded:** Benable bot · Edge TTS as default (§28). #1255 and #1247 are open and not next.
 
 ---
 

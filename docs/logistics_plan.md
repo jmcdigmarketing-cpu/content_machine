@@ -1,6 +1,6 @@
 # TapIn — the logistics plan
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-30
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 How the work actually runs: the money, the operator's week, the footage library, publishing, and
 the machine. Why the channel exists is [tapin_philosophy.md](tapin_philosophy.md), and the rules it

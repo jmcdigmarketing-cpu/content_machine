@@ -1,6 +1,6 @@
 # TapIn — the principles
 
-> **Class:** charter · **Status:** living · **Reviewed:** 2026-10-30
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-11-03
 
 The rules TapIn holds when they cost views, money or speed. [tapin_philosophy.md](tapin_philosophy.md)
 says what the channel is for. This page says what it will and will not do to get there. Each

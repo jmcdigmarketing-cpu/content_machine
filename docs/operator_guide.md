@@ -1,6 +1,6 @@
 # Operator guide — how a video gets made
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-31
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-03
 
 One pass through the machine, in the order it happens. Each step names the one command and
 links the doc that goes deeper. Run everything from `C:\dev\content_machine`; the PowerShell

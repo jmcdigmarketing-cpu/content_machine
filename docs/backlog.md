@@ -1,6 +1,6 @@
 # Backlog — the full inventory
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-18
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 > Every open item, plus the shipped ones that carry evidence worth keeping. Read
 > [roadmap.md](roadmap.md) for what to do now and [desktop_app.md](desktop_app.md)

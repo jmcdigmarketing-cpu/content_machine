@@ -1,6 +1,6 @@
 # Master plan
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-18
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 The canonical forward plan. Supersedes `content_intelligence_roadmap.md`,
 `groundwork_q3_2026.md` and `scope_feature_store_and_research_v2.md` as *the* answer to
@@ -8,7 +8,9 @@ The canonical forward plan. Supersedes `content_intelligence_roadmap.md`,
 this doc says which horizon an item belongs to and why. Evidence:
 [audit_2026-09.md](audit_2026-09.md).
 
-**Since 2026-10-18 the working plan is [hands_off_plan.md](hands_off_plan.md)** - the Content
+**Since 2026-10-27 the stage is the bridge** ([bridge_plan.md](bridge_plan.md), decision 82);
+the latest evidence is [audit_2026-11-02.md](audit_2026-11-02.md). **Since 2026-10-18 the
+working plan is [hands_off_plan.md](hands_off_plan.md)** - the Content
 OS Story's 22 shortfalls, each with where it stands, how it is addressed, who acts and the
 command for done. This doc keeps the horizons (M0-M5), why they are in this order, and what is
 parked.

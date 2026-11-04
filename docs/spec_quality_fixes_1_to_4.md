@@ -1,6 +1,10 @@
 # Implementation Spec — Quality Fixes §1–§4
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-25
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-11-03 · **Superseded by:** [backlog.md](backlog.md)
+
+*Archived 2026-11-03: the specs were built in other shapes by later waves (see
+[content_quality_plan.md](content_quality_plan.md)'s note); the remainder is tracked in
+[backlog.md](backlog.md). Paths below are as planned, not as built.*
 
 **Status: spec / planning-only (no code in this pass).** Code-ready specs for
 **§1–§4** of [content_quality_plan.md](content_quality_plan.md): exact prompt text,

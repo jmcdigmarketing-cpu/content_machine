@@ -1,6 +1,6 @@
 # Domain expansion playbook
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-03
 
 How new verticals (finance, anime, pop culture, music, gaming depth, sports breadth) slot into Content Machine **without sprawl**. One domain at a time; each source follows the same recipe as gaming/UFC/NBA.
 

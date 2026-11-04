@@ -1,6 +1,6 @@
 # TapIn — horizons to 2027 and after
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-30
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 Where TapIn goes after the bridge: the horizons, the signposts that say whether it is on course,
 the branches when it is not, and the conditions that should make the operator stop and ask. Until

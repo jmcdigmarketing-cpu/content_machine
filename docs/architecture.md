@@ -1,6 +1,6 @@
 # Content OS — Architecture
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-30
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 ## Folder structure
 
@@ -109,6 +109,9 @@ The repo serves two products:
 | `core/engagement_predictor.py` | Data-gated predicted engaged-rate (baseline + hook/authenticity slopes) |
 | `core/grade_calibration.py` | Grade ↔ realized-engagement calibration + thumbnail-score join (`ops calibration`) |
 | `core/prompt_evals.py` | Golden-topic prompt eval harness (`config/prompt_evals.json`, `ops prompt-eval`) |
+| `core/series/` | The dated calendar (`config/series.json`): the GTA 6 countdown (`countdown`), moments, long videos and the week special (`dated`), and the 16:9 long videos' scripts, titles and covers (`long_form`) |
+| `core/success/` | What the channel is measured by: the 22 shortfalls (`shortfalls`), the bridge's YPP numbers (`bridge`), the wave scorecard, verdicts, winners |
+| `core/money/` | Spend and income beside each other (`ledger`) |
 | `core/facts/store.py` | **Pillar 3** structured facts — `FactRecord`, provenance tiers, freshness/expiry from vault frontmatter |
 | `core/grounding_tiers.py` | **Pillar 3** tiered grounding corpus (operator/link/web/signal/brief/context) + high-stakes tier warnings |
 | `core/claim_verifier.py` | **Pillar 3** claim-level LLM verifier (extract tier) + `GROUNDING_GATE` |

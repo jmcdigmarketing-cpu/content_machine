@@ -1,6 +1,6 @@
 # Obsidian vault
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-29
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 The one place that says how Content Machine uses an Obsidian vault: where it reads facts
 from, what it writes back, and which files are safe to edit by hand. Everything here is a

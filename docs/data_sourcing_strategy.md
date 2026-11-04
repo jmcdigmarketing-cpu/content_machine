@@ -1,6 +1,6 @@
 # Data-Sourcing Strategy & Plan — 2026-06-25
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-25
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 **Planning + documentation only.** Prompted by the "Virgin API Consumer vs Chad
 Third-Party Scraper" meme, this doc (a) makes the project's sourcing *policy*

@@ -1,6 +1,9 @@
 # Cursor brief — media first, then the app (October 2026)
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-10
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-11-03 · **Superseded by:** [handoff.md](handoff.md)
+
+*Archived 2026-11-03: October is over and Cursor's last commit was its wave 103; its open
+items are in [backlog.md](backlog.md), and who holds the queue is in [handoff.md](handoff.md).*
 
 The operator, 2026-10-08: *"draft up a very large run for cursor to work on"*. Asked how to
 split it, they chose **both, media first**. The media phase answers what they said about the

@@ -1,6 +1,6 @@
 # Credit, Quota & Spend Efficiency
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 How the system avoids burning paid credits/quota, what's shipped, and the
 **prioritized backlog** of optimizations. Companion to the cost model in

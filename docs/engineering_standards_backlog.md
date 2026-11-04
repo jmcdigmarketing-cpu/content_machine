@@ -1,6 +1,6 @@
 # Engineering Standards Backlog — 2026-06-25
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 Senior-level **standardization / hygiene** work that raises the codebase's
 engineering baseline. **Planning only — no code in this pass.**

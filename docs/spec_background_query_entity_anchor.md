@@ -1,6 +1,10 @@
 # Implementation Spec — Entity-Anchored Background Queries
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-25
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-11-03 · **Superseded by:** [backlog.md](backlog.md)
+
+*Archived 2026-11-03: entity-anchored footage shipped another way - footage from the topic's
+own folder, owned before stock (#1105-#1107, #955); the remainder is tracked in
+[backlog.md](backlog.md). Paths below are as planned, not as built.*
 
 **Status: spec / planning-only (no code in this pass).** Implements **§5** of
 [content_quality_plan.md](content_quality_plan.md) to a code-ready level: exact

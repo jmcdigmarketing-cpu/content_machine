@@ -8,7 +8,7 @@ Python CLI for short-form video: discover signals → score topics → LLM scrip
 
 Every doc, by class and status: [docs/README.md](docs/README.md). What happens next:
 [docs/master_plan.md](docs/master_plan.md) (horizons) and [docs/roadmap.md](docs/roadmap.md)
-(the next five). Where the system honestly stands: [docs/audit_2026-09-26.md](docs/audit_2026-09-26.md);
+(the next five). Where the system honestly stands: [docs/audit_2026-11-02.md](docs/audit_2026-11-02.md);
 measured ideas for script generation, idea grading and resource use:
 [docs/engine_upgrades.md](docs/engine_upgrades.md). Session state:
 [docs/handoff.md](docs/handoff.md) (the mailbox) and [docs/handoff_synopsis.md](docs/handoff_synopsis.md).

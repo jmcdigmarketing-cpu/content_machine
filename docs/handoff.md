@@ -53,8 +53,9 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-03 · **HEAD at write:** `ed0bf38` (wave 144; this wave's commit follows, then a
-docs-sweep commit) · **Tree:** clean of mine after the commit; leave `.agents/` and `.codex/`.
+**Written:** 2026-11-03 · **HEAD at write:** `a1fc7cb` (wave 145, CI green; the docs-sweep commit
+follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`. Both pages updated
+(Story v65; Back-Home List v68, pruned to 14 items, ticks kept).
 
 **Wave 145, the next 15 with S15, and the grand audit ([audit_2026-11-02.md](audit_2026-11-02.md)).**
 Defects first, found live: the Nov 3 countdown was held for its own day count, on a "since launch"

@@ -37,8 +37,8 @@ full inventory is [docs/backlog.md](docs/backlog.md), the Windows application pr
 [docs/roadmap_archive.md](docs/roadmap_archive.md). Counts come from
 `py -m scripts.ops roadmap-index`, never by hand. The forward horizons those items roll
 up into: [docs/master_plan.md](docs/master_plan.md). Where the system honestly stands:
-[docs/audit_2026-09-26.md](docs/audit_2026-09-26.md) (before→after of the
-09-20 findings) and [docs/assessment.md](docs/assessment.md). Why the generated ideas/scripts come out the
+[docs/audit_2026-11-02.md](docs/audit_2026-11-02.md) (the grand audit of 11-02; the one
+before is [docs/audit_2026-10-17.md](docs/audit_2026-10-17.md)) and [docs/assessment.md](docs/assessment.md). Why the generated ideas/scripts come out the
 way they do — the six framing layers and the selection tie:
 [docs/idea_quality_diagnosis.md](docs/idea_quality_diagnosis.md); where the project can
 realistically go next: [docs/strategy_next_level.md](docs/strategy_next_level.md); what to build
@@ -95,7 +95,9 @@ py -m scripts.ops test --order reverse         # same suite, reversed — CI-blo
 `catalog`, `consistency`), `core/vault/` (`index`, `ingest`, `relevance`, `dossiers`,
 `writeback`, `evals`, `retier`) and `core/facts/` (`store`, `selection`, `grounding`,
 `intake`, `enrichment`, `conflicts`, `expiry`, `recency`, `confidence`, `room`, `trust`),
-`core/predictions/` (`ledger`, `features`) and `core/runs/` (`replay`) exist. A new module goes in the sub-package for its subject;
+`core/predictions/` (`ledger`, `features`, `calls`, `holdouts`), `core/runs/` (`replay`,
+`recheck`, `signal_audit`, ...), `core/series/` (`countdown`, `dated`, `long_form`),
+`core/success/` (`shortfalls`, `bridge`, `scorecard`, ...) and `core/money/` (`ledger`) exist. A new module goes in the sub-package for its subject;
 a new flat `core/*.py` needs a reason, and `tests/test_core_layout.py` holds the flat count
 to a ceiling that may fall, never rise. A moved module leaves a one-wave alias at its old
 name (`sys.modules[__name__] = ...`); new code imports the new path. A new sub-package is

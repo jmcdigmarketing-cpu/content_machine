@@ -1,6 +1,6 @@
 # The bridge — the race to monetization, or big views for little money
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-31
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 The operator, 2026-10-27: *"start preparing for the next big phase of the project. next 100= ideas
 and lets make the bridge to success starting now, with all changes being in race to monetization or
@@ -20,6 +20,11 @@ its lane. The four answers behind it are [decision 82](decisions_2026-10.md).
 | Long-form hours, 12 months | 10.2 | 4,000 today, **8,000 from 2027-02-01** | 11 today, 22 after |
 | Money outside YouTube | $0 | - | - |
 | Organic views a day | ~250 (W43: 1,389 a week, +33%) | | |
+
+**Re-read 2026-11-02 (the grand audit, [audit_2026-11-02.md](audit_2026-11-02.md)):** 189
+subscribers, 6 of them from the videos; 8,221 organic Shorts views in 90 days (7,043 in 28,
+~252 a day) and 44,114 paid - the campaigns' views landed after they ended; 10.7 long-form
+hours; $0 outside YouTube.
 
 **What does not count.** Google's Promote help page: *"Watch hours & subscribers gained through ad
 campaigns do not count towards YPP eligibility thresholds"*, and promotions do not change a video's

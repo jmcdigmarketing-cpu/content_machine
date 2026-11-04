@@ -1,12 +1,17 @@
 # Content OS — Project Brief
 
-> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-11-03
 
 ## Project purpose
 
 Content OS (also referred to as **Content Machine** in code and CLI) is an automated content operating system for short-form vertical video production in sports and gaming niches. It discovers market signals, scores topic variants, generates scripts with a **free-first LLM router**, synthesizes voice audio, renders subtitled MP4s with stock or local backgrounds, publishes to YouTube, and closes a learning loop from real engagement.
 
 The system is designed to evolve from a single-operator CLI into a shared infrastructure that supports multiple brands/channels, asset libraries, analytics, feedback loops, and queued publish workflows. North star: [vision.md](vision.md) — operate media businesses, not just make videos.
+
+**Status (2026-11-03).** A private, single-operator tool; one working channel (TapIn, gaming and
+sports), MoneyWise parked since 2026-10-11. Since 2026-10-27 every change names the number it
+moves on the way to the Partner Program ([bridge_plan.md](bridge_plan.md), decision 82). Where
+it stands, measured: [audit_2026-11-02.md](audit_2026-11-02.md).
 
 ## Current capabilities
 

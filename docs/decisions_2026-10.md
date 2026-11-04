@@ -1,9 +1,10 @@
 # Decisions, continued (2026-10 onward)
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-10-13
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 [decisions.md](decisions.md) reached its size ceiling at decision 39 (docs_standard.md §7).
-Decisions 40 onward are here, numbered on. Same rules: code says *what*, this says *why*.
+Decisions 40-96 are here, numbered on; 97 onward continue in
+[decisions_2026-11.md](decisions_2026-11.md). Same rules: code says *what*, this says *why*.
 Keep entries short.
 
 ---

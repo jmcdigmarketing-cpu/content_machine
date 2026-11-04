@@ -1,6 +1,6 @@
 # Content OS — Debugging & Operations
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-18
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-03
 
 Operator-focused guide for diagnosing failures, validating config, and recovering from common errors. For architecture context see [architecture.md](architecture.md); for phase status see [roadmap.md](roadmap.md).
 
@@ -300,7 +300,7 @@ render gate (interactive asks to override; headless needs `--force`).
 **Common causes from live runs:**
 
 1. **Obsidian vault strategy notes** — bullets like “Fraud narratives outperform…” are engagement heuristics, not event facts. Notes tagged `strategy` / `playbook` or bullets matching strategy markers are **excluded** from vault fact suggestions (`core/obsidian_facts.py`). Since Pillar 4, those same notes **do** feed the bounded `CHANNEL PLAYBOOK` prompt block (clearly labeled NOT facts). At the prompt, type `n` to skip vault suggestions when unsure.
-2. **Key facts** — all facts save to `vault/<channel>/_operator_facts/` (full set, never capped); the LLM gets a **char budget** (default 12000, `OPERATOR_KEY_FACT_CHAR_BUDGET`). Since run 74 the budget is spent by **ranking** rather than by insertion order (`core/fact_selection.py`): operator-typed facts are pinned, article scaffolding is penalised, and recency is weighted heaviest. Facts are **split at sentence boundaries**, never sliced mid-sentence. Pasting a multi-paragraph article straight at the `Fact N` prompt now works — blank lines are paragraph breaks while the paste is still arriving — and **`paste`** + Enter is still there for very large blocks. UI shows collected vs packed, plus what was held back and why.
+2. **Key facts** — all facts save to `vault/<channel>/_operator_facts/` (full set, never capped); the LLM gets a **char budget** (default 12000, `OPERATOR_KEY_FACT_CHAR_BUDGET`). Since run 74 the budget is spent by **ranking** rather than by insertion order (`core/facts/selection.py`): operator-typed facts are pinned, article scaffolding is penalised, and recency is weighted heaviest. Facts are **split at sentence boundaries**, never sliced mid-sentence. Pasting a multi-paragraph article straight at the `Fact N` prompt now works — blank lines are paragraph breaks while the paste is still arriving — and **`paste`** + Enter is still there for very large blocks. UI shows collected vs packed, plus what was held back and why.
 3. **Discovery angles ≠ YouTube title** — discovery picks editorial angles; the publishable title is generated **after** key facts + script (`core/title_generator.py`). Ignore slop-looking angle lines — the final title uses your facts.
 4. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Use **`paste`** mode with article text; do not rely on ESPN URLs. Yahoo/MSN article links can also pull sidebar "Related:" items — `link_facts` now scopes to `<article>` and drops nav noise; if a link still looks polluted, **`paste`** the paragraph block instead. Live-run 71: an MSN GTA-6-leaker URL returned **headline only**; the operator later pasted the body at **Proceed?** / the PowerShell prompt instead of the key-facts `paste` mode — see **Live-run 71** below.
 5. **Apify 403** — session disables social signals; summary shows the real `apify_status()` reason (not always “out of credits”). Set `SIGNAL_BACKEND=auto` for yt-dlp YouTube when Apify is dead.
@@ -437,7 +437,7 @@ compiled from various previews…"* — while six wanted stars, the Slim Jim
 carjacking minigame, the 80-hour playthrough and the November 19 date sat in the
 tail that never fit. Raising the ceiling would have packed more furniture.
 
-`core/fact_selection.py` ranks the pool instead: operator-typed facts pinned,
+`core/facts/selection.py` ranks the pool instead: operator-typed facts pinned,
 scaffolding penalised (not blacklisted — a furniture-shaped line carrying a hard
 number still competes), and the rest scored on recency (weighted heaviest),
 novelty, specificity, and relevance. Every exclusion carries a reason and prints.

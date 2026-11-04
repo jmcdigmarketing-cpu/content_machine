@@ -1,6 +1,6 @@
 # Decisions (ADR-lite)
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-27
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 Why the load-bearing choices are the way they are. Code says *what*; this says
 *why* — so a future change (or a future Claude session) doesn't "fix" something

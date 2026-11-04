@@ -1,6 +1,6 @@
 # Initiative — one video, three feeds (cross-platform learning)
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-14
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 The operator, 2026-10-14, after TikTok and Instagram posting shipped (wave 89): *"create a big
 initiative for cursor to lead"*. Offered four, they chose this one. **Cursor leads it**; it is

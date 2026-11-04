@@ -1,6 +1,11 @@
 # Content Quality & Variety Plan — 2026-06-25
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-25
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-11-03 · **Superseded by:** [hands_off_plan.md](hands_off_plan.md)
+
+*Archived 2026-11-03: the five issues were worked by later waves - recency (the claim verifier,
+the title check, date arithmetic), the voice (more than one voice, #883), B-roll (owned
+footage first, every clip in rotation - wave 135), polish (the music bed #411, karaoke
+captions); what is still open is in [backlog.md](backlog.md).*
 
 **Scope: documentation & planning only — no code in this pass.** Five issues
 observed on live runs, each traced to a real call site, each planned *within the

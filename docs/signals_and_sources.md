@@ -1,6 +1,6 @@
 # Signals, zeros, and how to expand sources
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 ## What "(zero)" means in the CLI
 

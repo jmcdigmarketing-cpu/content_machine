@@ -1,6 +1,6 @@
 # Documentation standard
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 How docs in this repo are named, classified, headed, and retired. Enforced by
 [`tests/test_docs_standard.py`](../tests/test_docs_standard.py), because AGENTS.md is

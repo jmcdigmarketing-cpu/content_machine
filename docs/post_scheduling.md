@@ -1,6 +1,6 @@
 # Post scheduling & upload queue
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-10-18
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 ## Overview
 

@@ -1,8 +1,13 @@
 # Content Machine — Positioning & Product Split
 
-> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-11-03
 
 This repo is intentionally split into two layers. The **intelligence layer** is the portfolio artifact, freelance deliverable, and future micro-SaaS surface. The **production tail** remains for TapIn-style YouTube automation.
+
+**Status (2026-11-03).** The intelligence layer is no longer a product: the SaaS, freelance and
+second-seat surfaces were retired on the private, single-operator constraint
+([roadmap.md](roadmap.md), "Still not happening"). The split below stays as how the code is
+layered; the work is TapIn reaching the Partner Program - [bridge_plan.md](bridge_plan.md).
 
 ## Architecture split
 

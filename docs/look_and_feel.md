@@ -1,6 +1,6 @@
 # TapIn — the look and feel
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-30
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 What a TapIn video looks and sounds like, why it looked the way it did on 2026-10-30, and the
 build list that gets it there. It starts from the operator's words:

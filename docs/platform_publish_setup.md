@@ -1,6 +1,6 @@
 # Platform publishing setup
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-14
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-03
 
 ## Current scope (this phase)
 
@@ -58,7 +58,10 @@ site serves all of them - separate sites are not needed.
    - Meta: App settings -> Basic -> Privacy Policy URL, and User data deletion -> the
      data-deletion page as the instructions URL.
    - Google: OAuth consent screen -> App home page and Privacy policy link.
-4. When the app starts reading or sending something new, rebuild and re-upload; the pages
+4. **Check them live** (#1440): put the base address in `.env` as `POLICY_SITE_URL`, then
+   `py -m scripts.ops check-youtube` fetches all four and names any that does not answer with
+   its own page - do it before publishing the Google app.
+5. When the app starts reading or sending something new, rebuild and re-upload; the pages
    carry their effective date. The privacy page says what reaches an AI provider (viewers'
    comment questions, the channel's own titles and view counts - `core/signal_facts`,
    `core/success/winners.winners_block`); keep it true when that changes.

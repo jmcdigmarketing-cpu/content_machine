@@ -10959,3 +10959,19 @@ the reach merge to `cover_swap_candidates`; `subs_lost_7d` from the flow to `ops
 Grand audit: [audit_2026-11-02.md](audit_2026-11-02.md).
 
 Counts (`ops roadmap-index`): 269 open (was 279), 1,596 done, highest #1981.
+
+**The docs sweep (2026-11-03, its own commit):** all 49 living docs read against the code. Checked
+mechanically: every `ops` command they name is registered (0 stale - the new guard), every code
+path they name exists (missing only `config/secrets/*` - gitignored - and the proposals in
+`engineering_standards_backlog.md`). Wrong, and fixed: `agent_collaboration` (Cursor "out for
+October", a retired fact path); `debugging` (two retired fact paths); `architecture`
+(`apis/reddit_api.py` never existed; `core/series/`, `core/success/`, `core/money/` were missing);
+`llm_provider_strategy` and `free_mode` (the cheap free model); `platform_publish_setup` (no live
+check of the policy pages - POLICY_SITE_URL now); `positioning` (the SaaS layer, retired);
+`project_brief`, `vision`, `master_plan` (no word of the bridge or the latest audit);
+`decisions_2026-10` (now continues in `decisions_2026-11`); `bridge_plan` (the 10-27 numbers
+re-read); `tooling_landscape` (a link to a retired alias); `CLAUDE.md` and `README.md` (the
+09-26 audit as current, three sub-packages missing). Archived with successors:
+`cursor_brief_2026-10` (October over), `content_quality_plan`, `spec_quality_fixes_1_to_4`,
+`spec_background_query_entity_anchor` (worked by later waves in other shapes). 45 living cards
+re-dated. `decisions.md` sits at its 800-line ceiling; a path note there was dropped.

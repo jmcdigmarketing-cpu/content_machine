@@ -1,6 +1,6 @@
 # Data sources — stats, blogs, APIs
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-10-18
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 Content Machine pulls research from **API signals** (variant scoring), **reference scrapers** (stats lines), **RSS/blog feeds** (headlines), and the **research brief** (LLM synthesis after variant pick).
 

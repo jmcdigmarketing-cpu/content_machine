@@ -1,6 +1,6 @@
 # Apify data layer — highest-value content & data
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 The Content Machine uses Apify to pull data that no free API exposes well:
 real-time social signal, competitor performance, and breaking news.

@@ -1,6 +1,6 @@
 # Analyst intelligence layer
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 Decision-useful outputs beyond "what's hot right now."
 

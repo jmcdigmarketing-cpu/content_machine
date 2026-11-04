@@ -1,6 +1,6 @@
 # Using Claude Code on this repo
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-03
 
 Practical notes on Claude Code features/modes, specific to how this project is
 built (cost-sensitive signal layer, Windows/PowerShell dev env, existing CI

@@ -1,6 +1,6 @@
 # Free ($0) mode
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-18
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-03
 
 `py main.py` asks you to pick a **cost mode** before a render:
 
@@ -72,7 +72,7 @@ model. If Ollama isn't running, it falls back to OpenRouter `:free` (rate-limite
 key is set, else it blocks (the LLM is required for discovery and the script).
 
 > **Cloud fallback (not truly free):** OpenRouter `:free` needs no install but throttles.
-> `OPENROUTER_API_KEY=sk-or-...` — pins `meta-llama/llama-3.3-70b-instruct:free`
+> `OPENROUTER_API_KEY=sk-or-...` — pins the cheap tier's `:free` default (`nvidia/nemotron-3.5-lightning:free` since 2026-11-02)
 > (override per tier with `OPENROUTER_MODEL_CHEAP/EXTRACT/PREMIUM`).
 
 ### 2. Local voice — Piper (required for $0 voiceover)

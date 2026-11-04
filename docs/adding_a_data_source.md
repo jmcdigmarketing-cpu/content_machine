@@ -1,6 +1,6 @@
 # Adding a data source
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-03
 
 Content Machine extends through a fixed recipe — the `signal_contract` abstraction is the whole point.
 

@@ -1,6 +1,6 @@
 # TapIn — the philosophy
 
-> **Class:** charter · **Status:** living · **Reviewed:** 2026-10-30
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-11-03
 
 Why the channel exists, who it is for, and what "good" means here. The engine's own charter is
 [vision.md](vision.md). This page is about **TapIn**, the channel the engine makes. Its rules,

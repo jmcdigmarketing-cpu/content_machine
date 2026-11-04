@@ -1,6 +1,6 @@
 # Content OS — Windows PowerShell startup commands
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-18
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-03
 
 The order a video is made in, one command per step: [operator_guide.md](operator_guide.md).
 

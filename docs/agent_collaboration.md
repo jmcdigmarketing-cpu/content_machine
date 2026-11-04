@@ -1,9 +1,9 @@
 # Agent collaboration — Cursor and Claude Code on this repo
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-10-18
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
-*2026-10-18: Cursor is out of usage for October 2026; Claude holds both queues - see
-[handoff.md](handoff.md).*
+*2026-11-03: Cursor's last commit was its wave 103 (Oct 17, re-audited and committed by Claude
+with wave 104); Claude has held both queues since - see [handoff.md](handoff.md).*
 
 > **Read this before starting a project here.** It is short on purpose. It says what
 > each agent is reliably good at, what each one reliably gets wrong, and who decides
@@ -98,7 +98,7 @@ case, and the case the tests cover. It also runs on every channel, unconditional
 
 Worst on MoneyWise, which is made of ranges and percentages.
 
-**The repo already contained the answer.** `core/fact_grounding.py` solves the identical
+**The repo already contained the answer.** `core/facts/grounding.py` (then `core/fact_grounding.py`) solves the identical
 ambiguity, with a comment saying so — *"Fighter records only … Bare `10-9` / `29-28`
 round scores must not fire"* — by requiring a verb cue (`is|now|went|record of`). The
 new module dropped that guard.

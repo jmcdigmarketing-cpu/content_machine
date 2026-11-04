@@ -1,13 +1,15 @@
 # LLM provider strategy — what's reachable today, and what each model adds
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
 
 > **Harvested 2026-08-17 from PR #26 (`claude/kimi-k3-evaluation`), which was closed
 > unmerged.** Kept for the model comparison and the sourced Kimi K3 open-weights analysis,
 > which nothing else in the repo records. **Read the routing advice as of 2026-07, not as
 > current:** it anchors the cheap tier on `meta-llama/llama-3.3-70b-instruct:free`, which
-> live run 66 found **retired and 404ing daily** — it was hardcoded, so `.env` could not
-> override it (see [decisions.md](decisions.md) §21 and [roadmap.md](roadmap.md)). Current
+> live run 66 found **retired and 404ing daily**; its successor `poolside/laguna-s-2.1:free`
+> was retired too, and since 2026-11-02 (wave 145) the default is
+> `nvidia/nemotron-3.5-lightning:free`, chosen by live test - and an empty answer fails over
+> (see [decisions.md](decisions.md) §21 and [roadmap.md](roadmap.md)). Current
 > chain and defaults: [providers_runbook.md](providers_runbook.md), `core/llm_router.py`.
 
 *Analysis only (2026-07). Which LLMs can actually serve this project **given that

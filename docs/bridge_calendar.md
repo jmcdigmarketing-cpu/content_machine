@@ -1,6 +1,6 @@
 # The bridge's calendar — 2026-10-28 to 2027-02-01
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-31
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 Week by week until the reported bar change on 2027-02-01: which wave, which dated moments it plans
 for, and the numbers each week is judged on. The plan and its 300 ideas are

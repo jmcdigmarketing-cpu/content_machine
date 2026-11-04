@@ -1,6 +1,6 @@
 # Content Machine — Vision & 12-Month Architecture
 
-> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-29
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-11-03
 
 **North star: stop building features, start building an intelligence system that operates media businesses.**
 Content generation is one subsystem. The durable asset is the proprietary
@@ -17,6 +17,10 @@ Item-level tracking lives in [roadmap.md](roadmap.md) and [backlog.md](backlog.m
 the forward horizons in [master_plan.md](master_plan.md) (the earlier
 [content_intelligence_roadmap.md](content_intelligence_roadmap.md) is archived). This is
 the north star they ladder up to.
+
+**Status (2026-11-03).** Unchanged as the north star; since 2026-10-27 it is worked through the
+bridge to the Partner Program ([bridge_plan.md](bridge_plan.md)) and measured in
+[audit_2026-11-02.md](audit_2026-11-02.md).
 
 **Status (2026-09-26).** Written 2026-06 from code reading. Since then: every system §4
 called *missing* exists in a v1 — experimentation harness (`core/experiments.py`,

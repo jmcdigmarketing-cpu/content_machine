@@ -1,6 +1,6 @@
 # The hands-off plan
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-01
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-11-03
 
 The forward plan from 2026-10-18; it supersedes [optimization_plan_2026-10.md](optimization_plan_2026-10.md)
 ("the next 100"), whose open rows the [backlog audit](backlog_audit_2026-10-18.md) merged,

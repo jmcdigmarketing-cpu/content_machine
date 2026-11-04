@@ -111,6 +111,7 @@ API_UNITS = {
     "commentThreads.insert": 50,
     "playlists.insert": 50,
     "playlistItems.insert": 50,
+    "playlistItems.update": 50,  # #1987: a playlist's order
     "videos.list": 1,
     "channels.list": 1,
     "playlistItems.list": 1,

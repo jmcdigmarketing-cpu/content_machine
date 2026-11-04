@@ -524,7 +524,7 @@ You must:
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
 {must_close}
 - Title and description must be SEO-friendly without misleading clickbait.
-- Target {min_words}-{max_words} words (~{preset.target_words}) — but hit it with SUBSTANCE, never filler. If you run out of real facts and real takes before the minimum, STOP. A tight shorter script beats a padded one.
+- Target {min_words}-{max_words} words (~{(min_words + max_words) // 2}) — but hit it with SUBSTANCE, never filler. If you run out of real facts and real takes before the minimum, STOP. A tight shorter script beats a padded one.
 """
 
     seed_block = ""

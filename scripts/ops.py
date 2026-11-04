@@ -2117,6 +2117,10 @@ def cmd_playlists(args: argparse.Namespace) -> int:
         name = row["name"]
         parent = f" (+ {row['parent']})" if row.get("parent") else ""
         print(f"  {name}{parent}: {ids.get(name) or 'not created'}")
+    from core.playlists import order_line
+
+    if order_line(channel):  # #1987
+        print(order_line(channel))
     if not getattr(args, "apply", False):
         print("Add --apply to create the missing ones (50 quota units each).")
         return 0

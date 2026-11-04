@@ -716,6 +716,7 @@ def drain_due(cap: int = PASS_CAP) -> int:
     _schedule_chapter_shorts()  # #1571
     _post_call_comments()  # #1327
     _finish_playlists()  # #1584
+    _order_playlists()  # #1987
     return done
 
 
@@ -734,6 +735,28 @@ def _finish_playlists() -> int:
         return made
     except Exception as exc:
         logger.debug("playlists not finished: %s", exc)
+        return 0
+
+
+def _order_playlists() -> int:
+    """#1987 (wave 148): once a day, the playlists' older videos moved toward newest first within
+    `order_budget()` - two uploads' units always left. Needs the manage scope. Fail-open."""
+    try:
+        from config.channels import active_channel_ids
+        from core.playlists import SCOPE_YOUTUBE_MANAGE, order_budget, reorder_playlists
+        from youtube.oauth import get_youtube_service, token_has_scope
+
+        moved = 0
+        for channel in active_channel_ids():
+            budget = order_budget()
+            if budget < 50 or not token_has_scope(channel, SCOPE_YOUTUBE_MANAGE):
+                continue
+            for line in reorder_playlists(channel, get_youtube_service(channel), budget=budget):
+                print(f"Playlist order ({channel}): {line}")
+                moved += 1
+        return moved
+    except Exception as exc:
+        logger.debug("playlist order skipped: %s", exc)
         return 0
 
 

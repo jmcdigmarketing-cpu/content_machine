@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-04: wave 147, the next five (S01)
+# Handoff synopsis — 2026-11-04: wave 148, the next five (S01)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-04 (Claude Code): wave 147, the next five (S01)
+## Last wave — 2026-11-04 (Claude Code): wave 148, the next five (S01)
+
+The 4,112 paid views on no record are on five December 2025 uploads promoted in September -
+`ops growth` says so. A video with no views is recorded synced with 0 (run 202). Long drafts
+are 8-12 minutes, capped by their facts; long videos are read 30 s in. The playlists' older
+videos move into binge order daily, and a series playlist keeps its countdown on top (#1989).
+
+## Previous — 2026-11-04 (Claude Code): wave 147, the next five (S01)
 
 Long-form hours: the night after a numbered UFC card, a long recap drafted from ESPN's results
 (UFC 334, Nov 14); the hours lane's number in `ops ypp` (0.05 qualified hours this week against
@@ -25,15 +32,6 @@ on the 1st (the first Dec 1); a Short past 1,000 organic views in its first 5 da
 video on its topic, drafted for review. A countdown's opener is read against its countdown, not
 its long title (run 231). The sync asks a promoted video's paid views to date (run 170: 37,270 of
 37,602) - the paid total counts them, organic views by domain do not change.
-
-## Previous — 2026-11-02/03 (Claude Code): wave 145, the next 15 (S15) and the grand audit
-
-Found live and fixed: the Nov 3 countdown held for its own day count, written "since launch", led by
-a fan's death, and no night would redraft it; day 15 went public a day early. Never a death story
-(decision 97). Directions are not your idea; S15 counts a menu once and the night carries the gaming
-share (decision 98). Unsubscribes a week, per-platform weeks, the policy site read live, breakout
-follow-ups, UFC 334 and Thanksgiving rows, the week-one special, a second cover under 2% CTR, the
-16:9 cut laid out for 16:9. Four sports videos refiled. Audit: [audit_2026-11-02.md](audit_2026-11-02.md).
 
 ---
 

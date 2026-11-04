@@ -15,6 +15,7 @@ from googleapiclient.errors import HttpError
 
 from apis.topic_scorer import infer_domain
 from config.channels import resolve_channel_id
+from config.paths import DATA_DIR
 from core.logging import get_logger
 from core.run_recorder import record_publish_outcome
 from storage.repositories.publish_log import get_publish_log_repository
@@ -736,14 +737,127 @@ def store_lifetime_paid(
     return asked
 
 
+OUTSIDE_PAID_DAYS = 7  # #1986: asked again a week later while the gap stays
+OUTSIDE_PAID_GAP = 100  # paid views YouTube counts beyond the record before it asks
+OUTSIDE_PAID_TEMPLATE = os.path.join(DATA_DIR, "paid_outside_{channel}.json")
+
+
+def _outside_path(channel_id: str) -> str:
+    return OUTSIDE_PAID_TEMPLATE.format(channel=channel_id)
+
+
+def load_paid_outside(channel_id: str) -> dict[str, Any]:
+    """#1986: the last ask - {as_of, videos: [{video_id, title, published_at, paid}], total,
+    asked} - or {}."""
+    try:
+        with open(_outside_path(channel_id), encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _recorded_paid_total(channel_id: str) -> tuple[int, set[str]]:
+    """(every paid view the publish log holds, the video ids it holds)."""
+    total, ids = 0, set()
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        video = str(getattr(row, "youtube_video_id", "") or "")
+        if not video:
+            continue
+        ids.add(video)
+        try:
+            metrics = json.loads(getattr(row, "metrics_json", None) or "{}")
+        except (TypeError, ValueError):
+            continue
+        total += recorded_paid(metrics) if isinstance(metrics, dict) else 0
+    return total, ids
+
+
+def paid_outside_due(channel_id: str, numbers: dict[str, Any], *, today: date) -> bool:
+    """#1986: YouTube's 90-day paid Shorts views run `OUTSIDE_PAID_GAP` past the record, and the
+    last ask is a week old (or none)."""
+    recorded, _ids = _recorded_paid_total(channel_id)
+    if int(numbers.get("shorts_paid_90d") or 0) - recorded < OUTSIDE_PAID_GAP:
+        return False
+    try:
+        asked = date.fromisoformat(str(load_paid_outside(channel_id).get("as_of") or "")[:10])
+    except ValueError:
+        return True
+    return (today - asked).days >= OUTSIDE_PAID_DAYS
+
+
+def fetch_paid_outside(
+    channel_id: str,
+    *,
+    today: date,
+    uploads: list[dict[str, str]] | None = None,
+    fetch: Callable[..., list[list[Any]] | None] | None = None,
+) -> dict[str, Any] | None:
+    """#1986 (wave 148): each channel upload the publish log does not hold, asked for its paid
+    views in 90 days. On 11-04 YouTube counted 44,114 and the record 40,002: the other 4,112 were
+    on five December 2025 videos, promoted on 09-26 and 10-25 - uploads from before Content OS,
+    which the log holds only as seeded rows without their ids. None when the uploads are unread."""
+    if uploads is None:
+        service = get_youtube_service(resolve_channel_id(channel_id))
+        if not service:
+            return None
+        from youtube.channel_uploads import uploads_playlist_items
+
+        try:
+            uploads = uploads_playlist_items(service, max_results=50, pages=10)
+        except Exception as exc:
+            logger.debug("uploads unread for the paid check: %s", exc)
+            return None
+    ask = fetch or fetch_daily_paid_views
+    _recorded, logged = _recorded_paid_total(channel_id)
+    start = (today - timedelta(days=90)).isoformat()
+    videos: list[dict[str, Any]] = []
+    asked = 0
+    for upload in uploads:
+        video = str(upload.get("video_id") or "")
+        if not video or video in logged:
+            continue
+        daily = ask(video, channel_id=channel_id, start=start, end=today.isoformat())
+        asked += 1
+        paid = sum(_count(item[1]) for item in daily or [] if len(item) > 1)
+        if paid:
+            videos.append({"video_id": video, "title": str(upload.get("title") or ""),
+                           "published_at": str(upload.get("published_at") or ""),
+                           "paid": paid})  # fmt: skip
+    videos.sort(key=lambda v: -int(v["paid"]))
+    return {"as_of": today.isoformat(), "videos": videos, "asked": asked,
+            "total": sum(int(v["paid"]) for v in videos)}  # fmt: skip
+
+
+def sync_paid_outside(
+    channel_id: str, numbers: dict[str, Any], *, today: date | None = None
+) -> str:
+    """#1986: the weekly ask, from the metrics sync - its line, or "" when not due or unread."""
+    day = today or date.today()
+    if not paid_outside_due(channel_id, numbers, today=day):
+        return ""
+    got = fetch_paid_outside(channel_id, today=day)
+    if got is None:
+        return ""
+    path = _outside_path(channel_id)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(got, handle, indent=2)
+    return (f"  Paid views outside the publish log: {got['total']:,} on {len(got['videos'])} of "
+            f"{got['asked']} unlogged uploads (ops growth)")  # fmt: skip
+
+
 def fetch_video_metrics(
     youtube_video_id: str,
     *,
     channel_id: str | None = None,
+    empty_window: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """
     Query YouTube Analytics API for a single video (last 28 days).
     Requires yt-analytics.readonly on the channel OAuth token.
+    ``empty_window`` (#1985): filled with the window's dates when the query worked and returned
+    no rows - the video had no views in it - so the caller can tell that from a failed query.
     """
     if not _analytics_enabled():
         return None
@@ -783,6 +897,8 @@ def fetch_video_metrics(
     rows = response.get("rows") or []
     if not rows:
         logger.debug("No analytics rows yet for video %s", youtube_video_id)
+        if empty_window is not None:
+            empty_window.update(period_start=start_date, period_end=end_date)
         return None
 
     parsed = _parse_report_row(rows[0], headers)
@@ -918,6 +1034,42 @@ def _existing_publish_row(
         return None
 
 
+ANALYTICS_LAG_DAYS = 3  # #1985: before this, "no rows" may be a report still catching up
+
+
+def _record_empty_window(
+    channel_id: str, content_run_id: int, publish_log_id: int | None, window: dict[str, Any]
+) -> bool:
+    """#1985 (wave 148): an Analytics window with no rows is a window with no views - stored as
+    synced with 0 views once the video is `ANALYTICS_LAG_DAYS` old. Run 202 (the Oct 19-26 Week in
+    Review, 0 views ever) read as never synced. Not first-day judged, not learned from: only the
+    counts and the window. True when written."""
+    repo = get_publish_log_repository()
+    row = _existing_publish_row(
+        repo, log_id=publish_log_id, channel_id=channel_id, content_run_id=content_run_id
+    )
+    published = getattr(row, "published_at", None) if row is not None else None
+    if not isinstance(published, datetime):
+        return False
+    published = published if published.tzinfo else published.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) - published < timedelta(days=ANALYTICS_LAG_DAYS):
+        return False
+    try:
+        existing = json.loads(row.metrics_json or "{}")
+    except (TypeError, ValueError):
+        existing = {}
+    if not isinstance(existing, dict):
+        existing = {}
+    zero = dict.fromkeys(
+        ("views", "likes", "comments", "shares", "subscribers_gained", "estimated_minutes_watched"),
+        0,
+    )
+    repo.update(row.id, {"metrics_json": json.dumps(
+        {**existing, **zero, **window, "window_empty": True}
+    )})  # fmt: skip
+    return True
+
+
 def refresh_publish_metrics(
     *,
     content_run_id: int,
@@ -932,8 +1084,11 @@ def refresh_publish_metrics(
     Returns True when metrics were applied.
     """
     channel_id = resolve_channel_id(channel_id)
-    metrics = fetch_video_metrics(youtube_video_id, channel_id=channel_id)
+    empty: dict[str, Any] = {}
+    metrics = fetch_video_metrics(youtube_video_id, channel_id=channel_id, empty_window=empty)
     if not metrics:
+        if empty:
+            _record_empty_window(channel_id, content_run_id, publish_log_id, empty)
         return False
 
     # #954: what the learning memory keeps is organic - a boosted video is not a winner.
@@ -961,6 +1116,7 @@ def refresh_publish_metrics(
         published_at = row.published_at
     had_first_day = "24h" in (existing.get("snapshots") or {})
     metrics = merge_metric_snapshots(existing, metrics, published_at=published_at)
+    metrics.pop("window_empty", None)  # #1985: this window has views
     if log_id and not had_first_day:  # #49: judged when this sync captures the 24h snapshot
         from analytics import first_day
 

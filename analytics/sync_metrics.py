@@ -305,6 +305,12 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
         print(f"  Breakout check skipped: {exc}")
     if numbers:
         save_ypp_numbers(channel_id, numbers)
+        try:  # #1986: paid views on uploads the log does not hold, weekly while the gap stays
+            outside = youtube_metrics.sync_paid_outside(channel_id, numbers)
+            if outside:
+                print(outside)
+        except Exception as exc:
+            logger.debug("outside paid check skipped: %s", exc)
         subs = numbers.get("subscribers")
         print(
             f"  YPP numbers (ads excluded): {subs if subs is not None else '?'} subscribers, "

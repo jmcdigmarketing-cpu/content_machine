@@ -727,7 +727,10 @@ def generate_draft(
     length_choice = "4" if long_form else _length_choice(channel_id, best_topic)
     long_kwargs: dict[str, Any] = {}
     if long_form:
+        from core.series.long_form import long_word_range
+
         long_kwargs["chapter_angles"] = [str(v) for v, *_ in discovery.evaluated][:5]
+        long_kwargs["word_range"] = long_word_range(topic, len(key_facts or []))  # #1732
     with hook_arm_env(hook_arm):  # #1502
         result = run_pipeline(
             topic,
@@ -750,6 +753,7 @@ def generate_draft(
                     experiment[2] if experiment else "",
                     # #1699 (S02): the format's true reason to follow, in its last line
                     "" if preview else follow_brief(best_bet, channel_id=channel_id),
+                    _long_opener(channel_id) if long_form else "",  # #1745
                 )
                 if part
             ),
@@ -1010,6 +1014,17 @@ def recap_rewrite(
 
 
 _DAYS_RE = re.compile(r"\b(\d+) days? to launch\b", re.I)
+
+
+def _long_opener(channel_id: str) -> str:
+    """#1745: the opener the measured long videos taught, or "" (never raises)."""
+    try:
+        from analytics.hook_learning import long_opener_guidance
+
+        return long_opener_guidance(channel_id)
+    except Exception as exc:
+        logger.debug("long opener guidance skipped: %s", exc)
+        return ""
 
 
 def follow_brief(

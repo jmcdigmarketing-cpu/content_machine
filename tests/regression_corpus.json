@@ -8953,6 +8953,80 @@
         "equals": "GTA 6"
       },
       "why": "the tag is checked against the topic's words; the letters and the number are two"
+    },
+    {
+      "id": "the-paid-line-names-the-uploads-outside-the-log",
+      "item": 1986,
+      "source": "measured 2026-11-04: YouTube counted 44,114 paid Shorts views, the record 40,002 - the other 4,112 were on five December 2025 uploads the publish log holds only as seeded rows",
+      "call": "analytics.growth:paid_line",
+      "args": [
+        {
+          "paid_share": 0.75,
+          "paid": {
+            "views": 40002,
+            "videos": 3,
+            "of": 97,
+            "channel_90d": 44114,
+            "outside": {
+              "total": 4112,
+              "videos": 5,
+              "as_of": "2026-11-04",
+              "oldest": "2025-12"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "contains": "4,112 on 5 uploads the publish log does not hold"
+      },
+      "why": "the gap between YouTube's count and the record is said with where it is"
+    },
+    {
+      "id": "a-series-playlist-keeps-its-block-on-top",
+      "item": 1989,
+      "source": "wave 148's review of #1736: a GTA video put at the top of the GTA playlist would have split the countdown, whose next day goes in at the block's length",
+      "call": "core.playlists:desired_order",
+      "args": [
+        [
+          {
+            "id": "i1",
+            "video_id": "a",
+            "published_at": "2026-10-20T16:00:00Z",
+            "position": 0
+          },
+          {
+            "id": "i2",
+            "video_id": "c19",
+            "published_at": "2026-10-31T16:00:00Z",
+            "position": 1
+          },
+          {
+            "id": "i3",
+            "video_id": "c20",
+            "published_at": "2026-10-30T16:00:00Z",
+            "position": 2
+          },
+          {
+            "id": "i4",
+            "video_id": "b",
+            "published_at": "2026-10-29T16:00:00Z",
+            "position": 3
+          }
+        ],
+        [
+          "c20",
+          "c19"
+        ]
+      ],
+      "expect": {
+        "equals": [
+          "i3",
+          "i2",
+          "i4",
+          "i1"
+        ]
+      },
+      "why": "the countdown in day order first, then the rest newest first"
     }
   ]
 }

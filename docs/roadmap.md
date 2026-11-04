@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-04 (Claude, wave 148 - the next five, S01).** The 4,112 paid views on no record were
+on five December 2025 uploads promoted in September; `ops growth` now says so. A video with no
+views is recorded synced with 0 (run 202, a Week in Review). Long drafts are 8-12 minutes (a
+recap 6-10), capped by their facts; long videos are read 30 s in and teach the opener once five
+are measured. The playlists' older videos move into binge order a little each day, and a
+series playlist keeps its countdown on top (#1989, caught before it bit). Next, before W4's
+freeze (Nov 16): **#1990** the Weeks in Review's 0% click-through, **#1727** a weekly long-form
+premiere slot, **#1981** the NVENC fallback, **#1979** four unreached modules, **#1724** one long
+explainer per marquee franchise; **#1849** once the embargo date is known.
 **2026-11-04 (Claude, wave 147 - the next five, S01).** The night after UFC 334 (Nov 14) a long
 recap is drafted from ESPN's results, every bout, for your review. The hours lane has its
 number in `ops ypp`: YouTube counts 0.05 qualified long-form hours this week, against 10 a week
@@ -85,17 +94,6 @@ embargo date, so #1743 and #1740 took its place. Next, with **S01** before W4's 
 **#1722** the UFC 334 recap within 12 hours (Nov 14), **#1746** long-form hours a week as the
 lane's number, **#1736** playlists ordered for binge-watching, **#1982** the compilation title's
 "GTA", **#1983** an older video's frozen views.
-**2026-11-03 (Claude, wave 145 - the next 15, S15, and the grand audit).** Tonight's run found the
-Nov 3 countdown held for its own day count, on a "since launch" angle, led by a fan's death, and
-lost for good; all fixed, the day redrafted (run 231) and approved past the second read. The next
-evening day 15 went public a day early - a dated draft no longer goes out before its day. Never a
-death story (decision 97); directions are not your idea; S15 counts a menu once and the night
-carries the gaming share (decision 98). Also: unsubscribes a week, per-platform weeks, the policy
-site read live, breakout follow-ups, UFC 334 and Thanksgiving, the week-one special Nov 23, a second
-cover under 2% CTR, the 16:9 cut laid out for 16:9. The audit: [audit_2026-11-02.md](audit_2026-11-02.md).
-Next, with **S01** (long-form hours - the GTA 6 long videos from Nov 6): **#1976** the 16:9 cut's end
-card, **#1978** the second read on a countdown, **#1977** a promoted video's paid views, **#1849**
-the review-score Short once the embargo date is known. W4 (Nov 16-22) is launch week: defects only.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

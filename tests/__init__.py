@@ -114,6 +114,8 @@ os.environ["WEEK_COMPILE"] = "false"
 os.environ["MONTH_COMPILE"] = "false"
 # Wave 147 (#1722): the UFC recap reads ESPN's board the night after a numbered card.
 os.environ["UFC_RECAP"] = "false"
+# Wave 148 (#1987): the worker's playlist reorder spends YouTube units.
+os.environ["PLAYLIST_ORDER_UNITS"] = "0"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).
 os.environ["SERIES_COUNTDOWN"] = "false"
 # Wave 133 (decision 84): the GTA 6 moments and long videos read the feeds on their dates.
@@ -207,6 +209,7 @@ import config.paths as _paths
 from analytics import mailbag as _mailbag
 from analytics import reach_report as _reach_report
 from analytics import sync_metrics as _sync_metrics
+from analytics import youtube_metrics as _youtube_metrics
 from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
 from config import seo as _seo
@@ -364,6 +367,10 @@ _SUITE_STORE_PATCHES = (
     patch.object(_angle_intent, "PICKS_FILE", Path(_suite_store("angle_picks.json"))),
     patch.object(_playlists, "store_path_for", lambda cid: _suite_store(f"playlists_{cid}.json")),
     patch.object(_ypp_readiness, "YPP_TEMPLATE", _suite_store("ypp_{channel}.json")),
+    # #1986: the paid views on uploads the publish log does not hold
+    patch.object(
+        _youtube_metrics, "OUTSIDE_PAID_TEMPLATE", _suite_store("paid_outside_{channel}.json")
+    ),
     patch.object(_policy_canary, "SNAPSHOT_FILE", _suite_store("policy_canary.json")),
     patch.object(_topic_trajectory, "_TRAJECTORY_FILE", _suite_store("topic_trajectory.json")),
     patch.object(_seo, "HINTS_DIR", _SUITE_DATA_TMP),

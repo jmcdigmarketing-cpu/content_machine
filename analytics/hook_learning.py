@@ -273,11 +273,99 @@ def hook_table_lines(channel_id: str) -> list[str]:
         f"watch time on {table['tiktok_measured']}"
     )
     out.append(f"  {rule_effect_text(rule_effect(rows))}")
+    out.extend(long_opener_lines(channel_id))  # #1745
     out.append(
         "  The hook score is out of the grade and overnight's order (decision 70); "
         "`ops growth` prints its r."
     )
     return out
+
+
+# #1745 (B06.24, wave 148): a long video's opening is judged 30 s in - a Short's at 3 s.
+LONG_AT = 30.0
+
+
+def long_learn_min() -> int:
+    """`LONG_HOOK_LEARN_MIN` (default 5): scripted long videos measured before openers teach."""
+    try:
+        return max(3, int(os.getenv("LONG_HOOK_LEARN_MIN", "5")))
+    except ValueError:
+        return 5
+
+
+def long_rows(channel_id: str) -> list[dict[str, Any]]:
+    """#1745: each long video with a retention curve - {run_id, title, kind, hook, traits, held}:
+    `held`, YouTube's share still watching `LONG_AT` seconds in (a replayed opening, over 100%, is
+    left out). A compilation opens on a Short, so it has no opener of its own: measured, never
+    learned from. On 11-04 no long video had a curve - the three Weeks in Review drew 4 views."""
+    from core.hook_score import extract_hook
+    from core.retention import _parse_curve, _render_seconds, share_at
+    from core.runs.script_report import script_of
+    from storage.repositories.publish_log import is_seeded
+
+    runs = _run_repo()
+    out: list[dict[str, Any]] = []
+    for row in _publish_repo().list_uploaded_for_channel(channel_id) or []:
+        if not getattr(row, "youtube_video_id", "") or is_seeded(row):
+            continue
+        try:
+            metrics = json.loads(getattr(row, "metrics_json", None) or "{}")
+            run = runs.get(int(getattr(row, "content_run_id", 0) or 0))
+            features = json.loads(getattr(run, "features_json", "") or "{}") if run else {}
+        except (TypeError, ValueError):
+            continue
+        curve = _parse_curve((metrics or {}).get("retention_curve"))
+        kind = ("compilation" if features.get("compilation")
+                else "long" if features.get("long_form") else "")  # fmt: skip
+        if not curve or not kind or run is None:
+            continue
+        held = share_at(curve, _render_seconds(run), at=LONG_AT)
+        if held is None or held > 1.0:
+            continue
+        hook = extract_hook(script_of(run)) if kind == "long" else ""
+        out.append({"run_id": int(run.id), "title": str(getattr(run, "title", "") or ""),
+                    "kind": kind, "hook": hook, "traits": traits_of(hook) if hook else set(),
+                    "held": float(held)})  # fmt: skip
+    return out
+
+
+def long_opener_lines(channel_id: str) -> list[str]:
+    """#1745: `ops hooks`' long-video section - each measured video's 30-second share, then, once
+    `long_learn_min()` scripted ones are measured, each trait with and without."""
+    rows = long_rows(channel_id)
+    scripted = [r for r in rows if r["kind"] == "long"]
+    out = [f"Long videos, the first {LONG_AT:.0f} s: {len(rows)} measured, {len(scripted)} scripted "
+           f"(their openers teach from {long_learn_min()})."]  # fmt: skip
+    for r in sorted(rows, key=lambda r: -r["held"])[:6]:
+        opens = f'; opens "{r["hook"][:60]}"' if r["hook"] else ""
+        out.append(f"  {r['held']:.0%} still watching at {LONG_AT:.0f} s - {r['title'][:60]} "
+                   f"({r['kind']}{opens})")  # fmt: skip
+    if len(scripted) >= long_learn_min():
+        for trait in sorted({t for r in scripted for t in r["traits"]}):
+            out.append(f"  {trait:20} {_pair(_side(scripted, 'held', trait))}")
+    return out
+
+
+def long_opener_guidance(channel_id: str) -> str:
+    """#1745: the long draft's opener direction, "" until `long_learn_min()` scripted long videos
+    are measured and a trait held `_GAP` more viewers at 30 s with both sides measured."""
+    scripted = [r for r in long_rows(channel_id) if r["kind"] == "long"]
+    if len(scripted) < long_learn_min():
+        return ""
+    best: tuple[float, str, dict[str, Any]] | None = None
+    for trait in {t for r in scripted for t in r["traits"]} - set(_RULE_BANS):
+        side = _side(scripted, "held", trait)
+        if side["with"] is None or side["without"] is None:
+            continue
+        gap = float(side["with"]) - float(side["without"])
+        if gap >= _GAP and (best is None or gap > best[0]):
+            best = (gap, trait, side)
+    if best is None:
+        return ""
+    _gap, trait, side = best
+    return (f"LONG OPENER (#1745, from {len(scripted)} long videos): open with {trait} - long "
+            f"videos that did kept {side['with']:.0%} watching at {LONG_AT:.0f} s, against "
+            f"{side['without']:.0%} without.")  # fmt: skip
 
 
 # #1311 (wave 112): from 2026-10-18 the first sentence must carry the stake and the call.

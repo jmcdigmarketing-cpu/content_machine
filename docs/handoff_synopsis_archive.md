@@ -7,6 +7,15 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-02/03 (Claude Code): wave 145, the next 15 (S15) and the grand audit
+
+Found live and fixed: the Nov 3 countdown held for its own day count, written "since launch", led by
+a fan's death, and no night would redraft it; day 15 went public a day early. Never a death story
+(decision 97). Directions are not your idea; S15 counts a menu once and the night carries the gaming
+share (decision 98). Unsubscribes a week, per-platform weeks, the policy site read live, breakout
+follow-ups, UFC 334 and Thanksgiving rows, the week-one special, a second cover under 2% CTR, the
+16:9 cut laid out for 16:9. Four sports videos refiled. Audit: [audit_2026-11-02.md](audit_2026-11-02.md).
+
 ## Previous — 2026-11-01 (Claude Code): wave 144, the next 15 (S02)
 
 Every non-preview Short ends on a true reason to follow; long descriptions and the bio pages carry a

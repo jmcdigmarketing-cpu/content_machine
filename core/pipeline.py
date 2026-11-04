@@ -1073,6 +1073,7 @@ def run_pipeline(
     own_topic: str = "",
     intent_read: Any = None,
     directions: str = "",
+    word_range: tuple[int, int] | None = None,
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -1188,6 +1189,9 @@ def run_pipeline(
         length_choice = capped
     preset = get_length_preset(length_choice)
     wr = _word_range(length_choice)
+    if word_range and capped == length_choice:  # #1732: a long draft's own range, under the cap
+        wr = (int(word_range[0]), int(word_range[1]))
+        print(f"  Long length: {wr[0]:,}-{wr[1]:,} words (#1732)")
     today = datetime.now().strftime("%Y-%m-%d")
 
     # #848: read the web-search result pages for the chosen angle before the brief

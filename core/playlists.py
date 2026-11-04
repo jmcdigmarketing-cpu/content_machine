@@ -20,6 +20,11 @@ a healed or re-tried upload never adds the same video twice. Never raises into a
 the playlist page and its autoplay start - except the countdown, which plays in day order. A long
 video (over three minutes) also joins the `long_form` row's playlist ("Full Videos"), so a long
 video's autoplay goes on to the next long one, not to a Short.
+
+#1989 (wave 148): a playlist that carries a series (the GTA countdown) keeps the series on top in
+day order - every other new video goes in just after it, not above it. #1987: the videos added
+before #1736 are moved into that order a little each day (`reorder_playlists`, from the worker,
+`PLAYLIST_ORDER_UNITS` a day - each move is 50 units).
 """
 
 from __future__ import annotations
@@ -110,6 +115,159 @@ def missing_line(channel_id: str) -> str:
         f"py -m scripts.ops playlists --apply --channel {channel_id} "
         f"({len(missing) * 50} quota units)"
     )
+
+
+def order_units() -> int:
+    """#1987: `PLAYLIST_ORDER_UNITS` (default 1000 - twenty moves a day); 0 turns it off."""
+    try:
+        return max(0, int(os.getenv("PLAYLIST_ORDER_UNITS", "") or 1000))
+    except ValueError:
+        return 1000
+
+
+ORDER_KEEP_UPLOADS = 2  # #1987: the day's units always leave two uploads
+
+
+def order_budget() -> int:
+    """#1987: the units a reorder may spend now - `order_units()`, less what two uploads need."""
+    try:
+        from apis.youtube_quota import UNITS_VIDEO_INSERT, get_usage_summary
+
+        left = int(get_usage_summary().get("remaining") or 0)
+    except Exception as exc:
+        logger.debug("quota unread for the playlist order: %s", exc)
+        return 0
+    return max(0, min(order_units(), left - ORDER_KEEP_UPLOADS * UNITS_VIDEO_INSERT))
+
+
+def desired_order(items: list[dict[str, Any]], series: list[str]) -> list[str]:
+    """#1987: the playlist's item ids in binge order - its series videos first in day order, then
+    the rest newest first by the video's publish time (ties keep their place)."""
+    rank = {video: i for i, video in enumerate(series)}
+    block = sorted((i for i in items if i["video_id"] in rank), key=lambda i: rank[i["video_id"]])
+    rest = sorted(
+        (i for i in items if i["video_id"] not in rank),
+        key=lambda i: (str(i.get("published_at") or ""), -int(i.get("position") or 0)),
+        reverse=True,
+    )
+    return [str(i["id"]) for i in [*block, *rest]]
+
+
+def order_moves(current: list[str], desired: list[str]) -> list[tuple[str, int]]:
+    """#1987: the (item id, position) moves, top first, that turn `current` into `desired` -
+    each takes the item that belongs at a position to it. A reversed list of n takes n - 1."""
+    now = list(current)
+    moves: list[tuple[str, int]] = []
+    for position, item in enumerate(desired):
+        if position < len(now) and now[position] == item:
+            continue
+        if item in now:
+            now.remove(item)
+        now.insert(position, item)
+        moves.append((item, position))
+    return moves
+
+
+def _playlist_items(service, playlist_id: str) -> list[dict[str, Any]]:
+    """The playlist's items by position: {id, video_id, published_at, position}. 1 unit a page."""
+    out: list[dict[str, Any]] = []
+    token = None
+    for _page in range(10):
+        record_call("playlistItems.list")
+        page = (
+            service.playlistItems()
+            .list(
+                part="snippet,contentDetails",
+                playlistId=playlist_id,
+                maxResults=50,
+                pageToken=token,
+            )
+            .execute()
+        )
+        for item in page.get("items") or []:
+            details = item.get("contentDetails") or {}
+            out.append({
+                "id": str(item.get("id") or ""),
+                "video_id": str(details.get("videoId") or ""),
+                "published_at": str(details.get("videoPublishedAt") or ""),
+                "position": int((item.get("snippet") or {}).get("position") or 0),
+            })  # fmt: skip
+        token = page.get("nextPageToken")
+        if not token:
+            break
+    return sorted((i for i in out if i["id"] and i["video_id"]), key=lambda i: i["position"])
+
+
+def reorder_playlists(
+    channel_id: str,
+    service,
+    *,
+    budget: int,
+    store_path: str | None = None,
+    today: str | None = None,
+) -> list[str]:
+    """#1987 (B06.15, wave 148): move each playlist's items toward `desired_order`, the series
+    playlists first, then the biggest, within `budget` units - once a day. Records how many moves
+    each playlist still needs. Returns what was done, for the worker's log. Never raises."""
+    from datetime import date
+
+    lines: list[str] = []
+    try:
+        if budget < 50 or not service:
+            return []
+        path = store_path or store_path_for(channel_id)
+        data = _load(path)
+        day = today or date.today().isoformat()
+        if (data.get("order") or {}).get("day") == day:
+            return []
+        ids: dict[str, str] = dict(data.get("ids") or {})
+        series: dict[str, list[str]] = dict(data.get("series") or {})
+        sizes: dict[str, int] = {}
+        for names in (data.get("added") or {}).values():
+            for name in names or []:
+                sizes[name] = sizes.get(name, 0) + 1
+        names = sorted(ids, key=lambda n: (not series.get(n), -sizes.get(n, 0), n))
+        spent, moved, left = 0, 0, {}
+        for name in names:
+            items = _playlist_items(service, ids[name])
+            spent += 1 + len(items) // 50
+            moves = order_moves(
+                [i["id"] for i in items], desired_order(items, series.get(name) or [])
+            )
+            by_id = {i["id"]: i for i in items}
+            done = 0
+            for item_id, position in moves:
+                if spent + 50 > budget:
+                    break
+                record_call("playlistItems.update")
+                service.playlistItems().update(part="snippet", body={"id": item_id, "snippet": {
+                    "playlistId": ids[name], "position": position,
+                    "resourceId": {"kind": "youtube#video", "videoId": by_id[item_id]["video_id"]},
+                }}).execute()  # fmt: skip
+                spent += 50
+                done += 1
+            moved += done
+            left[name] = len(moves) - done
+            if done:
+                lines.append(f"{name}: {done} moved, {left[name]} to go")
+        data["order"] = {"day": day, "moved": moved, "left": left}
+        _save(path, data)
+    except Exception as exc:
+        logger.warning("playlist order stopped for %s: %s", channel_id, exc)
+    return lines
+
+
+def order_line(channel_id: str) -> str:
+    """#1987: what the playlists' order still needs, from the last day's run - "" before one."""
+    order = _load(store_path_for(channel_id)).get("order") or {}
+    left = {k: int(v) for k, v in (order.get("left") or {}).items() if int(v or 0) > 0}
+    if not order:
+        return ""
+    if not left:
+        return f"Playlist order (#1987): every playlist newest first (checked {order.get('day')})."
+    parts = ", ".join(f"{name} {n}" for name, n in sorted(left.items(), key=lambda kv: -kv[1]))
+    return (f"Playlist order (#1987): {sum(left.values())} moves to go - {parts} "
+            f"({order.get('moved', 0)} moved on {order.get('day')}).")  # fmt: skip
 
 
 def store_path_for(channel_id: str) -> str:
@@ -274,8 +432,9 @@ def add_to_playlists(
             "playlistId": playlist_id,
             "resourceId": {"kind": "youtube#video", "videoId": video_id},
         }
-        # #1855: the countdown in day order; #1736: everything else newest first
-        snippet["position"] = len(series.get(name) or []) if name == in_order else 0
+        # #1855: the countdown in day order; #1736: everything else newest first - #1989: just
+        # after a series block, which a video at the top would split (a playlist with no series: 0)
+        snippet["position"] = len(series.get(name) or [])
         try:
             record_call("playlistItems.insert")  # wave 113: it booked nothing
             try:

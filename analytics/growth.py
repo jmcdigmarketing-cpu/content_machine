@@ -364,6 +364,7 @@ def report(channel_id: str) -> dict[str, Any]:
         "videos": sum(1 for r in rows if r.get("paid_to_date", r["paid"]) > 0),
         "of": len(rows),
         "channel_90d": _channel_paid(channel_id),
+        "outside": _outside_paid(channel_id),  # #1986
     }
     brought = sorted((r for r in rows if r["subs"] > 0), key=lambda r: -r["subs"])
     out["subscribers"] = {  # #1146
@@ -508,6 +509,23 @@ def _channel_paid(channel_id: str) -> int | None:
     return int(value) if isinstance(value, (int, float)) else None
 
 
+def _outside_paid(channel_id: str) -> dict[str, Any]:
+    """#1986: {total, videos, as_of, oldest} of the paid views on uploads the log does not hold."""
+    try:
+        from analytics.youtube_metrics import load_paid_outside
+
+        got = load_paid_outside(channel_id)
+    except Exception as exc:
+        logger.debug("outside paid unread: %s", exc)
+        return {}
+    videos = [v for v in got.get("videos") or [] if isinstance(v, dict)]
+    if not got.get("as_of"):
+        return {}
+    oldest = min((str(v.get("published_at") or "")[:7] for v in videos), default="")
+    return {"total": int(got.get("total") or 0), "videos": len(videos),
+            "as_of": str(got["as_of"]), "oldest": oldest}  # fmt: skip
+
+
 def paid_line(rep: dict[str, Any]) -> str:
     """#1156: what was paid for, in one number that agrees with `ops ypp`.
 
@@ -534,6 +552,11 @@ def paid_line(rep: dict[str, Any]) -> str:
             f". YouTube counts {channel:,} paid Shorts views in 90 days - {beyond:,} "
             "of them are not in these videos' synced days"
         )
+        outside = paid.get("outside") or {}
+        if int(outside.get("total") or 0):  # #1986: where they are
+            since = f", from {outside['oldest']}" if outside.get("oldest") else ""
+            line += (f": {int(outside['total']):,} on {int(outside.get('videos') or 0)} uploads "
+                     f"the publish log does not hold{since} (asked {outside.get('as_of')})")  # fmt: skip
     return line
 
 

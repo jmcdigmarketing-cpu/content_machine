@@ -12,8 +12,11 @@ from typing import Any
 from apis.youtube_quota import record_call
 
 
-def uploads_playlist_items(service: Any, *, max_results: int = 50) -> list[dict[str, str]]:
+def uploads_playlist_items(
+    service: Any, *, max_results: int = 50, pages: int = 1
+) -> list[dict[str, str]]:
     """[{video_id, title, published_at}] newest first; [] when the channel has none.
+    ``pages`` (#1986): how many pages of `max_results` to read - 1 unit each.
 
     Errors propagate: the callers decide whether a failed read matters.
     """
@@ -23,12 +26,26 @@ def uploads_playlist_items(service: Any, *, max_results: int = 50) -> list[dict[
     if not items:
         return []
     uploads_id = items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
-    record_call("playlistItems.list")  # wave 113: it booked nothing
-    playlist = (
-        service.playlistItems()
-        .list(playlistId=uploads_id, part="snippet,contentDetails", maxResults=max_results)
-        .execute()
-    )
+    out: list[dict[str, str]] = []
+    token = None
+    for _page in range(max(1, pages)):
+        record_call("playlistItems.list")  # wave 113: it booked nothing
+        query: dict[str, Any] = {
+            "playlistId": uploads_id,
+            "part": "snippet,contentDetails",
+            "maxResults": max_results,
+        }
+        if token:
+            query["pageToken"] = token
+        playlist = service.playlistItems().list(**query).execute()
+        out.extend(_page_items(playlist))
+        token = playlist.get("nextPageToken") if isinstance(playlist, dict) else None
+        if not token:
+            break
+    return out
+
+
+def _page_items(playlist: dict[str, Any]) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
     for item in playlist.get("items") or []:
         snippet = item.get("snippet") or {}

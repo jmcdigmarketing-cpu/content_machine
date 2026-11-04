@@ -11088,3 +11088,59 @@ traced: `long_hours_7d` from `fetch_ypp_numbers` (0.05 live) to `save_ypp_number
 Next five: #1985, #1986, #1987, #1732, #1745; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 264 open (was 265), 1,606 done, highest #1988.
+
+## 2026-11-04 — wave 148: the next five, S01 (Claude Code)
+
+**Prompt:** "Start wave 148"
+
+Verified first: HEAD `1b80042` (wave 147, CI green), nothing since; overnight idle until 05:00. The
+five: #1985, #1986, #1987, #1732, #1745 - each open with a lane, none parked. Measured read-only:
+run 202 (the Oct 19-26 Week in Review) has 0 views ever and 139 impressions at 0% - Analytics returns
+no rows for it, so the record never stored a window (#1985). YouTube's 90-day paid Shorts views by
+day against the three promoted videos' (93, 170, 196) differ on eight days - 3,040 on 09-26, 427 on
+10-25 - and none of the 33 logged videos from that span carry them; paging all 146 uploads, the
+4,112 are on five December 2025 uploads the log holds only as seeded rows (#1986). The playlists
+hold 39 items, 22 moves from binge order (#1987; the backlog guessed ~95). No long video has a
+retention curve (#1745). Found in review: #1736's top-of-playlist insert would split the GTA
+countdown block - filed and fixed as #1989 before any GTA video was added.
+
+Shipped (worktree `wave148`):
+1. #1989 `add_to_playlists`: position = the playlist's series block length (0 with none).
+2. #1985 `fetch_video_metrics(empty_window=)`, `_record_empty_window` (3+ days old), the flag
+   cleared by a window with views.
+3. #1986 `uploads_playlist_items(pages=)`, `fetch_paid_outside` / `paid_outside_due` /
+   `sync_paid_outside` (weekly, from the sync), `growth._outside_paid` in `paid_line`.
+4. #1732 `long_form.long_format` / `long_word_range`, `run_pipeline(word_range=)`; the prompt's
+   "~N words" is the range's middle (the presets' own target - unchanged for them).
+5. #1745 `hook_learning.long_rows` / `long_opener_lines` (in `ops hooks`) /
+   `long_opener_guidance` (a long draft's direction once 5 scripted are measured).
+6. #1987 `playlists.desired_order` / `order_moves` / `reorder_playlists` / `order_budget` /
+   `order_line`, the worker's `_order_playlists`, `playlistItems.update` booked at 50 units.
+
+Findings:
+- `analytics/youtube_metrics.py` `fetch_video_metrics` returned None both for a failed query and a
+  window with no views; #1983's rotation would have re-asked every old video with none each sync.
+- The 09-26 campaign ($10) promoted pre-Content OS uploads, not run 93 - its screenshot named none.
+- A test reading the new outside-paid store tripped #1305's guard (the suite redirects stores);
+  it is a template the suite redirects now.
+- The Weeks in Review get impressions and no clicks (#1990).
+
+Deliberately not done: renaming or importing the five December uploads into the log (they are
+reported, not adopted); a live reorder (the worker's first run makes it - read back under #1991);
+a long video's opener learned (none measured yet).
+
+Tests: `tests/test_wave148.py`, 21 - all 21 fail on `1b80042` (a clean HEAD checkout, the editable
+finder stripped). Corpus +2 (533 -> 535), each failing on HEAD.
+
+Audit: mypy 92 == baseline (two errors this wave added were fixed); ruff and format clean. Suite
+7,333 forward and reversed, OK (6 skipped); the startup-budget timing test failed once in a loaded
+forward run and passes alone; corpus 535 of 535; `data/` untouched. Production callers: every new
+function is reached from the sync, the worker, the publisher, the night's drafts, `ops hooks`,
+`ops growth` or `ops playlists`. Fields traced: `window_empty` from `_record_empty_window` to its
+clearing merge; `paid_outside_{channel}.json` from `sync_paid_outside` to `paid_line`;
+`word_range` from `generate_draft` to `generate_content_package`; `order.left` from
+`reorder_playlists` to `ops playlists`.
+
+Next five: #1990, #1727, #1981, #1979, #1724; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 261 open (was 264), 1,612 done, highest #1991.

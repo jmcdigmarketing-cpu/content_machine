@@ -53,22 +53,21 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-04 · **HEAD at write:** `613854e` (wave 146, CI green; this wave's commit
+**Written:** 2026-11-04 · **HEAD at write:** `1b80042` (wave 147, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 147, the next five with S01.** Defects first: 67 of 97 live videos' synced views had frozen
-at their youth - each sync now refreshes the 8 newest stale ones (#1983); a compilation title and
-a hashtag dropped GTA 6's number (#1982). Caught before the commit: the first #1982 build dropped
-the "#GTA6" tag entirely, and the first #1983 build refreshed June's videos first - both fixed.
-Found and filed: run 202 (public 10-28) never synced (#1985); 4,112 of YouTube's paid Shorts views
-on no record (#1986); the old playlist items keep their order (#1987). Built: the UFC recap the
-night after a numbered card, from ESPN's results (#1722 - UFC 334 Nov 14, replayed on UFC 333);
-the hours lane's number in `ops ypp` (#1746 - 0.05 hours this week, live); playlists newest first
-and a "Full Videos" playlist the worker creates (#1736). #1984: the paid check ran - 40,002 of
-44,114 on record.
+**Wave 148, the next five with S01.** Defects first: wave 147's top-of-playlist insert would have
+split the GTA countdown block - fixed before any GTA video was added (#1989); a video with no views
+read as never synced (#1985 - run 202, now stored with 0). Found: the 4,112 paid views on no record
+are on five December 2025 uploads promoted on 09-26 and 10-25 (#1986) - `ops growth` names them now,
+asked weekly. Built: long drafts 8-12 minutes (a recap 6-10), capped at 130 words a fact (#1732);
+long videos read 30 s in, the opener learned from 5 (#1745 - none measured yet); the playlists'
+older videos moved into binge order, 1,000 units a day, two uploads always left (#1987 - 22 moves).
+Filed: the Weeks in Review get impressions and no clicks (#1990).
 
-**Open:** #1979, #1981, #1984-#1988; dated reads #1953, #1955, #1956, #1959, #1988. **Next:** S01 with
-#1985, #1986, #1987, #1732, #1745 before W4's freeze (Nov 16); #1849 once the embargo date is known.
+**Open:** #1979, #1981, #1984, #1988, #1990, #1991; dated reads #1953, #1955, #1956, #1959, #1988,
+#1991. **Next:** #1990, #1727, #1981, #1979, #1724 before W4's freeze (Nov 16); #1849 once the
+embargo date is known.
 
 **Operator:** publish the Google app before Sat Nov 7 (set POLICY_SITE_URL first - `ops check-youtube`
 reads the four pages); paste the bio pages; tracking IDs; Facebook in Buffer; #1922/#1956 on a phone.

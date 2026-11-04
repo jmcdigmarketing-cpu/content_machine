@@ -24,6 +24,31 @@ logger = get_logger("core.series.long_form")
 _TITLE_LIMIT = 100
 WIDE_SUFFIX = "_16x9"  # video/render_profiles' landscape suffix
 
+# #1732 (B06.11, wave 148): minutes by long format - 8-12 where the material holds, a card's recap
+# 6-10 - and never padded: a verified line carries about 130 words of script (the fact, then the
+# read on it), so the facts a draft is written from cap its words. The Extended preset asked
+# 1,000-2,000 words (5-10 minutes) of every long draft, whatever it had to say.
+LONG_MINUTES = {"long": (8.0, 12.0), "recap": (6.0, 10.0)}
+WORDS_PER_FACT = 130
+_FLOOR_WORDS = 600  # three minutes - under it a long video is not one
+
+
+def long_format(topic: str) -> str:
+    """ "recap" for a card's recap (`core/series/recap`), else "long"."""
+    return "recap" if " recap: " in f" {(topic or '').lower()} " else "long"
+
+
+def long_word_range(topic: str, facts: int) -> tuple[int, int]:
+    """#1732: (min, max) words for a long draft of this format from `facts` verified lines -
+    the format's minutes at the spoken rate, the top capped by what the facts can carry and the
+    bottom kept under it, so a thin draft is written shorter, never stretched."""
+    from core.script_length import WORDS_PER_SECOND
+
+    low_min, high_min = LONG_MINUTES[long_format(topic)]
+    low, high = round(low_min * 60 * WORDS_PER_SECOND), round(high_min * 60 * WORDS_PER_SECOND)
+    top = min(high, max(_FLOOR_WORDS, facts * WORDS_PER_FACT)) if facts > 0 else high
+    return min(low, round(top * 0.75)), top
+
 
 def search_title(
     subject: str,

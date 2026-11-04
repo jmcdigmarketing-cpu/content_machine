@@ -53,24 +53,22 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-03 · **HEAD at write:** `a1fc7cb` (wave 145, CI green; the docs-sweep commit
-follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`. Both pages updated
-(Story v65; Back-Home List v68, pruned to 14 items, ticks kept).
+**Written:** 2026-11-03 · **HEAD at write:** `00d546e` (wave 145's docs sweep, CI green; this wave's
+commit follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 145, the next 15 with S15, and the grand audit ([audit_2026-11-02.md](audit_2026-11-02.md)).**
-Defects first, found live: the Nov 3 countdown was held for its own day count, on a "since launch"
-angle, led by a fan's death, and no night would redraft it (#1963-#1966); the follow line was graded
-as your idea (#1967); day 15 went public at 9:13 PM ET Nov 3, a day early - left public (#1980,
-fixed). Decision 97: never a death story (title, first line, description). Decision 98: the night
-carries the gaming share, a menu is counted once, a deleted video is recorded `gone`. Done live on
-your word: day 16 redrafted (run 231), approved past the second read, public 8:38 PM ET Nov 3; four
-sports videos refiled as Sports (201 units, read back). The cheap free model was retired - replaced
-by live test, and an empty LLM answer now fails over. The 16:9 cut is laid out for 16:9 (checked on
-run 203's render).
+**Wave 146, the next five with S01.** Defects first: the second read held run 231's countdown opener
+against its long title (#1978 - an opener naming GTA 6 or Nov 19 is now on its story); run 170's
+37,270 paid views were never recorded, because a video is synced only while young (#1977 - the sync
+asks paid views to date and the paid total counts them). Caught in the audit before the commit: the
+first #1977 build would have read run 170's organic views as 0 in the menu's domain order. Found and
+filed: an older video's synced views freeze (#1983); a compilation title says "GTA" for an
+unresearched GTA 6 Short (#1982). Built: the 16:9 cut's end card (#1976, rendered on a test clip);
+last month's best Shorts on the 1st (#1743, Dec 1 first; October's dry run 6:34); a long video on a
+Short past 1,000 organic views in 5 days (#1740, drafted for your review).
 
-**Open:** #1976-#1979, #1981; dated reads #1953, #1955, #1956, #1959. **Next:** S01 with #1976, #1978,
-#1977, #1849. **Overnight** ran 11-03 19:14 on `main` with the countdown fixes copied in before the
-commit (the session was interrupted).
+**Open:** #1979, #1981-#1984; dated reads #1953, #1955, #1956, #1959, #1984. **Next:** S01 with #1722
+(UFC 334, Nov 14), #1746, #1736, #1982, #1983; #1849 once the embargo date is known. **Overnight**
+05:00 runs this wave (merged before it); its sync makes the first paid checks.
 
 **Operator:** publish the Google app before Sat Nov 7 (set POLICY_SITE_URL first - `ops check-youtube`
 reads the four pages); paste the bio pages; tracking IDs; Facebook in Buffer; #1922/#1956 on a phone.

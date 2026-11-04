@@ -26,7 +26,7 @@ import json
 import os
 import re
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
@@ -194,7 +194,8 @@ def collect_topics(
             from core.series.dated import dated_ideas
 
             alone = _unique([countdown_idea(channel_id), countdown_idea(channel_id, ahead=1),
-                             *dated_ideas(channel_id, notes=notes)])  # fmt: skip
+                             *dated_ideas(channel_id, notes=notes),
+                             *long_breakout_ideas(channel_id)])  # fmt: skip
             if picks is not None:
                 for bet in alone:
                     picks[bet.topic] = pick_record([bet], 1, by="batch")
@@ -205,7 +206,8 @@ def collect_topics(
         # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
         from core.series.countdown import countdown_idea
 
-        extra = _unique([*extra, countdown_idea(channel_id, ahead=1)])
+        extra = _unique([*extra, countdown_idea(channel_id, ahead=1),
+                         *long_breakout_ideas(channel_id)])  # #1740  # fmt: skip
         names = marquee_names(channel_id)
         kept: list[Any] = []
         for bet in ideas:
@@ -395,6 +397,89 @@ def breakouts(channel_id: str, *, now: datetime | None = None) -> list[tuple[str
         if title:
             found.append((int(verdict.get("views") or 0), title, published))
     return [(title, when) for _views, title, when in sorted(found, key=lambda f: -f[0])]
+
+
+LONG_BREAKOUT_VIEWS = 1000  # #1740 (B06.19): organic views
+LONG_BREAKOUT_DAYS = 5
+
+
+def long_breakouts(channel_id: str, *, now: datetime | None = None) -> list[dict[str, Any]]:
+    """#1740 (B06.19, wave 146): each Short published in the last `LONG_BREAKOUT_DAYS` days with
+    `LONG_BREAKOUT_VIEWS` organic views (#1977: a promoted Short's ads are not interest) -
+    {title, published, views, names, domain}, most views first. Not a compilation or long video."""
+    from analytics.youtube_metrics import organic_lifetime
+    from core.ypp_readiness import _organic_views
+    from storage.repositories.content_runs import get_content_run_repository
+    from storage.repositories.publish_log import get_publish_log_repository, is_seeded, video_title
+
+    moment = now or datetime.now(timezone.utc)
+    runs = get_content_run_repository()
+    found: list[dict[str, Any]] = []
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        published = getattr(row, "published_at", None)
+        if not isinstance(published, datetime) or is_seeded(row) or not row.content_run_id:
+            continue
+        published = published if published.tzinfo else published.replace(tzinfo=timezone.utc)
+        if not timedelta(0) <= moment - published <= timedelta(days=LONG_BREAKOUT_DAYS):
+            continue
+        try:
+            metrics = json.loads(getattr(row, "metrics_json", None) or "{}") or {}
+        except (TypeError, ValueError):
+            continue
+        known = organic_lifetime(metrics)
+        views = known if known is not None else int(_organic_views(metrics))
+        if views < LONG_BREAKOUT_VIEWS:
+            continue
+        run = runs.get(int(row.content_run_id))
+        try:
+            features = json.loads(getattr(run, "features_json", "") or "{}") or {}
+        except (TypeError, ValueError):
+            features = {}
+        if features.get("compilation") or features.get("long_form"):
+            continue
+        title = video_title(row, fallback="").strip()
+        if title:
+            found.append({"title": title, "published": published, "views": views,
+                          "names": list((features.get("entity_research") or {}).get("names") or []),
+                          "domain": str(getattr(run, "domain", "") or "gaming")})  # fmt: skip
+    return sorted(found, key=lambda f: -int(f["views"]))
+
+
+def long_breakout_ideas(
+    channel_id: str,
+    *,
+    now: datetime | None = None,
+    headlines: Callable[[str, dict[str, Any], datetime], list[dict[str, Any]]] | None = None,
+) -> list[Any]:
+    """#1740: one long video a night (source "long", after your review - decision 84) on the
+    biggest `long_breakouts` Short not drafted yet, written from the week's headlines naming its
+    subject. A Short past 1,000 views is a topic people look for; never raises."""
+    try:
+        from core.best_bet import BestBetResult
+        from core.series.countdown import feed_headlines, headline_facts
+
+        moment = now or datetime.now(timezone.utc)
+        for item in long_breakouts(channel_id, now=moment):
+            topic = f'The full story behind "{item["title"]}"'
+            if series_drafted(channel_id, topic):
+                continue
+            names = [str(n) for n in item["names"] if str(n).strip()]
+            facts: list[str] = []
+            if names:
+                lines = (headlines or feed_headlines)(
+                    channel_id, {"domain": item["domain"]}, moment
+                )
+                facts = headline_facts(names, lines, now=moment, hours=24 * 7, limit=12)
+            days = max(1, (moment - item["published"]).days)
+            return [BestBetResult(
+                topic=topic, domain=item["domain"], avg_engaged_rate=0.0, source="long",
+                supporting_runs=0, facts=facts, draft_kind="long",
+                rationale=f"breakout · {item['views']:,} organic views in {days} day(s) - a long "
+                "video, after your review",
+            )]  # fmt: skip
+    except Exception as exc:
+        logger.debug("long breakout idea skipped: %s", exc)
+    return []
 
 
 def _followed_up(channel_id: str, title: str) -> bool:

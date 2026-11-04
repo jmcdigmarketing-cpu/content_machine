@@ -23,7 +23,7 @@ import re
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -1146,10 +1146,62 @@ _SECOND_READ = (
 )
 
 
-def second_read(title: str, script: str, *, call: Callable[[str, str], Any] | None = None) -> str:
+_MONTH_DAY = (
+    r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|"
+    r"sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})\b"
+)
+
+
+def countdown_opener_on_subject(topic: str, script: str, *, names: list[str] | None = None,
+                                launch: str = "") -> bool:  # fmt: skip
+    """#1978 (wave 146): a countdown's first sentence that names its subject or its launch day is
+    on its story - a countdown is written from that subject's headlines. Run 231 opened "Your boss
+    already knows why you want Nov. 19 off." and the second read held it against its long title."""
+    from apis.topic_tokens import names_any, split_sentences
+
+    first = (split_sentences(script or "") or [""])[0]
+    subject = (topic or "").split(":", 1)[0].strip()
+    if names_any(first, [n for n in (names or [subject]) if n]):
+        return True
+    if launch:
+        try:
+            day = date.fromisoformat(launch[:10])
+        except ValueError:
+            return False
+        for match in re.finditer(_MONTH_DAY, first, flags=re.I):
+            month = match.group(0)[:3].lower()
+            if month == f"{day:%b}".lower() and int(match.group(1)) == day.day:
+                return True
+    return False
+
+
+def _countdown_row(topic: str, channel_id: str = "tapin") -> dict[str, Any]:
+    """The countdown row whose title matches this topic (`config/series.json`), or {}."""
+    try:
+        from core.series.countdown import series_rows
+
+        for row in series_rows(channel_id):
+            template = str(row.get("title") or "")
+            if row.get("kind") == "countdown" and "{n}" in template:
+                stem = template.split("{n}", 1)[0]
+                if (topic or "").startswith(stem):
+                    return row
+    except Exception as exc:
+        logger.debug("countdown row unread: %s", exc)
+    return {}
+
+
+def second_read(
+    title: str,
+    script: str,
+    *,
+    call: Callable[[str, str], Any] | None = None,
+    context: str = "",
+) -> str:
     """#1341 (wave 119): a cheap second read of an unattended render's title and first sentence -
     "" when it reads fine, can't be read, or in the suite; else why (a "no" holds the render
-    for a person, and the next eligible draft takes its place). One cheap-tier call a draft."""
+    for a person, and the next eligible draft takes its place). One cheap-tier call a draft.
+    ``context`` (#1978): what kind of video it is, read with the title."""
     from apis.topic_tokens import split_sentences
 
     first = (split_sentences(script or "") or [""])[0]
@@ -1163,13 +1215,35 @@ def second_read(title: str, script: str, *, call: Callable[[str, str], Any] | No
             return complete_json(user, system=system, tier="cheap", temperature=0.0, max_tokens=120)
 
     try:
-        payload = call(_SECOND_READ, f"TITLE: {title}\nFIRST SENTENCE: {first}")
+        user = f"TITLE: {title}\nFIRST SENTENCE: {first}"
+        if context:
+            user += f"\nCONTEXT: {context}"
+        payload = call(_SECOND_READ, user)
     except Exception as exc:
         logger.debug("second read skipped: %s", exc)
         return ""
     if isinstance(payload, dict) and payload.get("ok") is False:
         return str(payload.get("why") or "the title and first sentence disagree")[:120]
     return ""
+
+
+def _second_read_for(draft: PendingDraft) -> str:
+    """#1978: a countdown whose opener names its subject or its launch day needs no second read;
+    any other countdown is read knowing it is one. Everything else as #1341."""
+    if not _is_countdown(draft):
+        return second_read(draft.title, draft.script)
+    topic = str(draft.meta.get("topic") or draft.title)
+    row = _countdown_row(topic, str(draft.meta.get("channel_id") or "tapin"))
+    names = [str(n) for n in row.get("names") or [] if str(n).strip()]
+    if countdown_opener_on_subject(topic, draft.script, names=names or None,
+                                   launch=str(row.get("until") or "")):  # fmt: skip
+        return ""
+    subject = str(row.get("subject") or topic.split(":", 1)[0]).strip()
+    return second_read(
+        draft.title, draft.script,
+        context=f"A daily countdown to {subject}'s launch; its first sentence may open on any "
+        f"{subject} story of the day.",
+    )  # fmt: skip
 
 
 def typed_lines(idea: str, script: str) -> list[str]:
@@ -1513,7 +1587,7 @@ def render_unattended(
         if paused:
             out["paused"] = paused
             break
-        doubt = second_read(draft.title, draft.script)  # #1341: the next draft takes its place
+        doubt = _second_read_for(draft)  # #1341: the next draft takes its place
         if doubt:
             out["waiting"].append((draft.run_id, f"second read: {doubt}"))
             _note_hold(draft, f"second read: {doubt}")

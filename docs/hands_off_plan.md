@@ -48,7 +48,9 @@ aimed at with money outside YouTube started now.
 777,778 the Shorts path needs); 10 of 4,000 long-form hours (0.2 a week against 77). As of
 2026-10-18, YouTube's own numbers, ads excluded. Wave 141 (#1944, decision 93): the two Weeks in
 Review drew 4 views and 0 - `ops ypp` and S01 now say where long views come from, by traffic
-source; the written Week in Review (#1315) waits for a long video with an audience.
+source; the written Week in Review (#1315) waits for a long video with an audience. Wave 146:
+the month's best Shorts on the 1st (#1743), a long video on any Short past 1,000 organic views in
+5 days (#1740), the end card on the 16:9 cut (#1976).
 
 **How.** At this size the Shorts path is not reachable by volume, so long-form hours come first:
 the weekly $0 compilation (#138) makes its first video on Monday 10-19. Per-video reach (S02, S12,

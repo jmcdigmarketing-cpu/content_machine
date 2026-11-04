@@ -76,6 +76,7 @@ def _daily_paid(metrics: dict[str, Any]) -> int:
 
 def _rows(channel_id: str) -> list[dict[str, Any]]:
     from analytics.packaging import packaging_figures
+    from analytics.youtube_metrics import recorded_paid
     from core.success.target import views_7d
     from storage.repositories.publish_log import is_seeded, video_title
 
@@ -108,7 +109,8 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
             "stayed": figures.get("stayed"),
             "feed": figures.get("feed"),
             "views": views,
-            "paid": paid,
+            "paid": paid,  # the synced window's: organic views are `views` less it
+            "paid_to_date": max(paid, recorded_paid(metrics)),  # #1977: every paid view on record
             "all_views": max(views, lifetime, paid),
             "subs": subs,
             "run_id": getattr(row, "content_run_id", None),
@@ -355,11 +357,11 @@ def report(channel_id: str) -> dict[str, Any]:
     recent = [r for r in rows if r["published"] and r["published"] >= cutoff]
     out["per_week"] = round(len(recent) / (_WINDOW_DAYS / 7), 2)
     total = sum(r["all_views"] for r in rows)
-    paid_views = sum(r["paid"] for r in rows)
+    paid_views = sum(r.get("paid_to_date", r["paid"]) for r in rows)  # #1977
     out["paid_share"] = round(paid_views / total, 4) if total else 0.0
     out["paid"] = {  # #1156
         "views": paid_views,
-        "videos": sum(1 for r in rows if r["paid"] > 0),
+        "videos": sum(1 for r in rows if r.get("paid_to_date", r["paid"]) > 0),
         "of": len(rows),
         "channel_90d": _channel_paid(channel_id),
     }

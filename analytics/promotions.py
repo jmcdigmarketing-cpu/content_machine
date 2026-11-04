@@ -354,7 +354,7 @@ def candidates(channel_id: str, *, today: date | None = None) -> dict[str, Any]:
     eligible = [
         r
         for r in measured
-        if not r.get("paid")
+        if not (r.get("paid") or r.get("paid_to_date"))  # #1977: paid after its window too
         and str(r.get("video_id") or "") not in promoted
         and float(r["views7"]) >= median
         and r.get("stayed") is not None

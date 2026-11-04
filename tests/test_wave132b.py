@@ -563,7 +563,8 @@ class WeekInReviewTests(unittest.TestCase):
 
         from video import week_compile
 
-        self.assertIn(".words.json", inspect.getsource(week_compile.week_shorts))
+        # wave 146 (#1743): the week and the month share `_public_shorts`
+        self.assertIn(".words.json", inspect.getsource(week_compile._public_shorts))
 
 
 if __name__ == "__main__":

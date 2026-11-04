@@ -176,6 +176,7 @@ def run_overnight(
         _score_calls()
         _call_week(result)
         _week_compile(result)
+        _month_compile(result)
 
 
 def _crosspost(result: OvernightResult) -> None:
@@ -216,6 +217,27 @@ def _week_compile(result: Any, now: datetime | None = None) -> None:
         )
     except Exception as exc:
         logger.warning("overnight week compilation skipped: %s", exc)
+
+
+def _month_compile(result: Any, now: datetime | None = None) -> None:
+    """#1743 (B06.22, wave 146): on the 1st in the channel's zone, last month's ten best Shorts
+    become one long video, queued for a slot (`MONTH_COMPILE`, on by default)."""
+    if os.getenv("MONTH_COMPILE", "true").strip().lower() in ("0", "false", "no", "off"):
+        return
+    moment = now or datetime.now(timezone.utc)
+    try:
+        from core.spaced_queue import _channel_tz
+
+        if moment.astimezone(_channel_tz(result.channel_id)).day != 1:
+            return
+        from core.nightly_task import beat_step
+        from video.week_compile import compile_month
+
+        beat_step("the monthly compilation")
+        lines = compile_month(result.channel_id, apply=True, queue=True, now=moment)
+        result.week_line = "\n".join([*filter(None, [result.week_line]), *lines])
+    except Exception as exc:
+        logger.warning("overnight month compilation skipped: %s", exc)
 
 
 def _call_week(result: Any) -> None:

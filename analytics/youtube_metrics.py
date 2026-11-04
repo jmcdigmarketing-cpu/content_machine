@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from collections.abc import Callable
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -617,6 +618,108 @@ def store_lifetime_views(rows: list[Any], counts: dict[str, int]) -> int:
         repo.update(row.id, {"metrics_json": json.dumps(metrics)})
         updated += 1
     return updated
+
+
+# #1977 (wave 146): run 170 was promoted for $14.55 and drew 37,602 views; its record held 325
+# from its first days and 0 paid, because a video is synced only while young. YouTube counted
+# 44,114 paid Shorts views in 90 days; the record held 1,874.
+PAID_RECHECK_VIEWS = 100  # views a video's record does not explain
+PAID_RECHECK_DAYS = 7
+PAID_CHECKS_PER_SYNC = 40
+
+
+def _count(value: Any) -> int:
+    try:
+        return max(0, int(float(value or 0)))
+    except (TypeError, ValueError):
+        return 0
+
+
+def recorded_paid(metrics: dict[str, Any]) -> int:
+    """#1977: the most paid views any record of a video holds - the synced window's count, its
+    daily rows (#1156), or the count to date asked from its publish day."""
+    daily = 0
+    for item in metrics.get("daily_paid_views") or []:
+        try:
+            daily += _count(item[1])
+        except (TypeError, IndexError, KeyError):
+            continue
+    return max(_count(metrics.get("paid_views")), _count(metrics.get("lifetime_paid_views")), daily)
+
+
+def organic_lifetime(metrics: dict[str, Any]) -> int | None:
+    """#1977: a video's lifetime views less every paid view on record; None before its lifetime
+    views are known (#940), or while views its record cannot explain wait for their first paid
+    check - run 170's 37,602 would have read as organic."""
+    if metrics.get("lifetime_views") in (None, ""):
+        return None
+    if "lifetime_paid_at" not in metrics and unexplained_views(metrics) >= PAID_RECHECK_VIEWS:
+        return None
+    return max(0, _count(metrics.get("lifetime_views")) - recorded_paid(metrics))
+
+
+def unexplained_views(metrics: dict[str, Any]) -> int:
+    """Lifetime views beyond what the record holds - the synced views or the paid ones."""
+    lifetime = _count(metrics.get("lifetime_views"))
+    return max(0, lifetime - max(_count(metrics.get("views")), recorded_paid(metrics)))
+
+
+def paid_check_due(metrics: dict[str, Any], *, now: datetime) -> bool:
+    """#1977: ask a video's paid views to date when `PAID_RECHECK_VIEWS` of its lifetime views
+    are unexplained - first time, or again once it has grown that much and a week has passed."""
+    if unexplained_views(metrics) < PAID_RECHECK_VIEWS and "lifetime_paid_at" not in metrics:
+        return False
+    if "lifetime_paid_at" not in metrics:
+        return True
+    grown = _count(metrics.get("lifetime_views")) - _count(metrics.get("lifetime_paid_checked"))
+    try:
+        asked = datetime.fromisoformat(str(metrics.get("lifetime_paid_at")))
+    except ValueError:
+        return True
+    asked = asked if asked.tzinfo else asked.replace(tzinfo=timezone.utc)
+    return grown >= PAID_RECHECK_VIEWS and now - asked >= timedelta(days=PAID_RECHECK_DAYS)
+
+
+def store_lifetime_paid(
+    rows: list[Any],
+    counts: dict[str, int],
+    *,
+    channel_id: str | None = None,
+    now: datetime | None = None,
+    fetch: Callable[..., list[list[Any]] | None] | None = None,
+) -> int:
+    """#1977: each due video's paid views from its publish day to today, written as
+    `lifetime_paid_views`; the videos asked. `counts` are the lifetime views just fetched."""
+    moment = now or datetime.now(timezone.utc)
+    ask = fetch or fetch_daily_paid_views
+    due: list[tuple[int, Any, dict[str, Any]]] = []
+    for row in rows:
+        video = str(getattr(row, "youtube_video_id", "") or "")
+        try:
+            metrics = json.loads(getattr(row, "metrics_json", None) or "{}")
+        except (TypeError, ValueError):
+            metrics = {}
+        if not video or not isinstance(metrics, dict):
+            continue
+        if video in counts:
+            metrics["lifetime_views"] = counts[video]
+        if paid_check_due(metrics, now=moment):
+            due.append((unexplained_views(metrics), row, metrics))
+    repo = get_publish_log_repository()
+    asked = 0
+    for _gap, row, metrics in sorted(due, key=lambda d: -d[0])[:PAID_CHECKS_PER_SYNC]:
+        published = getattr(row, "published_at", None) or getattr(row, "created_at", None)
+        start = str(published)[:10] if published else f"{moment - timedelta(days=90):%Y-%m-%d}"
+        daily = ask(str(row.youtube_video_id), channel_id=channel_id, start=start,
+                    end=f"{moment:%Y-%m-%d}")  # fmt: skip
+        if daily is None:
+            continue
+        metrics["lifetime_paid_views"] = sum(_count(item[1]) for item in daily if len(item) > 1)
+        metrics["lifetime_paid_at"] = moment.isoformat()
+        metrics["lifetime_paid_checked"] = _count(metrics.get("lifetime_views"))
+        repo.update(row.id, {"metrics_json": json.dumps(metrics)})
+        asked += 1
+    return asked
 
 
 def fetch_video_metrics(

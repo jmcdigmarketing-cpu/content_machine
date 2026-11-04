@@ -2,6 +2,7 @@ import math
 import os
 import subprocess
 from collections.abc import Callable
+from typing import Any
 
 from assets.manager import footage_label, get_background_asset
 from core.logging import get_logger
@@ -938,6 +939,20 @@ def render_vertical_video(
     return output_path, asset, intro_landed
 
 
+def _end_card_on_cut(path: str, profile: Any, channel_id: str | None) -> None:
+    """#1976 (wave 146): an extra cut ends on the channel's end card like the vertical one -
+    run 203's 16:9 cut ended on its last caption. Fail-open: the cut stands without it."""
+    try:
+        from video.channel_outro import append_channel_outro, resolve_end_card
+
+        if resolve_end_card(channel_id):
+            append_channel_outro(
+                path, channel_id=channel_id, width=profile.width, height=profile.height
+            )
+    except Exception as exc:
+        logger.warning("End card on the %s cut skipped (cut kept): %s", profile.name, exc)
+
+
 def _render_extra_formats(
     *,
     background_path: str,
@@ -1001,6 +1016,7 @@ def _render_extra_formats(
             if proc.returncode == 0 and os.path.isfile(alt_output):
                 written.append(alt_output)
                 logger.info("Extra-format render saved: %s", alt_output)
+                _end_card_on_cut(alt_output, profile, channel_id)
             else:
                 logger.warning(
                     "Extra-format render %s failed (kept primary): %s",

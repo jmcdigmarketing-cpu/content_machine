@@ -10975,3 +10975,63 @@ re-read); `tooling_landscape` (a link to a retired alias); `CLAUDE.md` and `READ
 `cursor_brief_2026-10` (October over), `content_quality_plan`, `spec_quality_fixes_1_to_4`,
 `spec_background_query_entity_anchor` (worked by later waves in other shapes). 45 living cards
 re-dated. `decisions.md` sits at its 800-line ceiling; a path note there was dropped.
+
+## 2026-11-03 — wave 146: the next five, S01 (Claude Code)
+
+**Prompt:** "Start next wave"
+
+Verified first: the roadmap named #1976, #1978, #1977 and #1849 with S01. #1849 is built and waits
+on the embargo date (`on: null` in `config/series.json`), so it is not next; #1743 and #1740 (S01's
+lane, B06.22 and B06.19) took its place and the fifth slot. Measured read-only: 5 of 96 live videos
+hold 100+ lifetime views their record does not explain - run 170 alone 37,277 (YouTube Analytics
+returns 37,270 paid for it, organic 332); run 231's opener was held by the second read (#1978); run
+203's 16:9 cut ended on its last caption (#1976).
+
+Shipped (worktree `wave146`):
+1. #1978 `batch_review.countdown_opener_on_subject`, `_countdown_row`, `_second_read_for`;
+   `second_read(context=)`.
+2. #1976 `channel_outro.build_outro_concat_command` / `append_channel_outro(width=, height=)`;
+   `render_video._end_card_on_cut` after each extra cut.
+3. #1977 `youtube_metrics.recorded_paid`, `organic_lifetime`, `unexplained_views`,
+   `paid_check_due`, `store_lifetime_paid` (from `sync_metrics.sync_channel`); growth rows carry
+   `paid_to_date` for the paid total and the promotion candidates.
+4. #1743 `week_compile.last_month`, `plan_month`, `compile_month`, `_public_shorts`; overnight
+   `_month_compile` on the 1st (`MONTH_COMPILE`); `ops week-compile --month`.
+5. #1740 `batch_generation.long_breakouts`, `long_breakout_ideas`, in `collect_topics` beside the
+   countdown, even with drafts waiting.
+
+Findings:
+- `analytics/growth.py:422,442` (`conversion`, `organic_views_by_domain`),
+  `core/success/scorecard.py:133` and `core/success/shortfalls.py:392` subtract a row's paid from
+  its synced views. The first build put the paid views to date in `paid`, which would have read run
+  170's organic views as 0 instead of 325 in the menu's domain order; caught in the audit - `paid`
+  stays the window's, `paid_to_date` is new.
+- `analytics/sync_metrics.py:165-177` `_to_sync` takes the young videos and the newest 3, so an
+  older video's `views` freezes (run 170: 325 of 37,602) - #1983.
+- `video/week_compile.py` `subject_name`: a title without researched names falls back to
+  `title_phrases`' two words and drops the number (run 191 -> "GTA") - #1982.
+- The dry run of October's Best of: ten whole Shorts ran 11:53 and ranked run 170 first on its ads;
+  now the openings of #10-#4 and the top 3 whole, 6:34, and an unasked promoted Short counts its
+  synced organic views.
+
+Deliberately not done: #1849 (no embargo date); a live month render (Dec 1 is the first - dry run
+on the live store only); a real long render with the card (the GTA long video on Nov 6 is the
+first; a 2 s 1920x1080 clip with the card was rendered, probed and looked at); the paid check's
+first write (tonight's sync) - all three read back under #1984.
+
+Tests: `tests/test_wave146.py`, 33 - 32 fail on `00d546e` (a clean HEAD checkout, the editable
+finder stripped); the 33rd pins the vertical end card unchanged. Corpus +4 (526 -> 530), each
+failing on HEAD. Older test changed on purpose: `test_wave132b` reads `_public_shorts`' source (the
+week and the month share it). `docs/ops_commands.md` regenerated (`--month`).
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite 7,288 forward and reversed, OK (6
+skipped); corpus 530 of 530; `data/` untouched. Production callers: every new function is reached
+from overnight, the sync, the render, the unattended review or an `ops` command. Fields traced:
+`lifetime_paid_views` from `store_lifetime_paid` to `recorded_paid` -> `paid_to_date` -> the
+report's paid total, and to `organic_lifetime` -> the month's ranking and the breakout trigger;
+`kind="month"` -> `compilation.month` -> `week_done(kind="month")`.
+
+Next five: #1722 (the UFC 334 recap, Nov 14), #1746, #1736, #1982, #1983; #1849 once the embargo
+date is known.
+
+Counts (`ops roadmap-index`): 265 open (was 267), 1,601 done, highest #1984.

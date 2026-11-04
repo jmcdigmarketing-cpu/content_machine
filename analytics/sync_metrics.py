@@ -238,6 +238,10 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
     if counts:
         stored = youtube_metrics.store_lifetime_views(live, counts)
         print(f"  Lifetime views: {stored} video(s)")
+        # #1977: a video's paid views to date, once its record cannot explain its views.
+        asked = youtube_metrics.store_lifetime_paid(live, counts, channel_id=channel_id)
+        if asked:
+            print(f"  Paid views to date: {asked} video(s) asked")
     # #1128: each video's privacy as YouTube has it now - a scheduled upload turns public at
     # its slot and a held one is made public in Studio, and the record never asked again.
     from analytics import privacy_sync

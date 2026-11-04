@@ -8845,6 +8845,73 @@
         "falsy": true
       },
       "why": "the sibling: a countdown's stem shares the subject with any leak line"
+    },
+    {
+      "id": "a-countdown-opener-naming-its-launch-day-is-on-its-story",
+      "item": 1978,
+      "source": "live 2026-11-02: run 231 opened 'Your boss already knows why you want Nov. 19 off.' and the second read held it as unrelated to its long title",
+      "call": "core.batch_review:countdown_opener_on_subject",
+      "args": [
+        "GTA 6: 16 days to launch - GTA 6 Launch: What to Expect",
+        "Your boss already knows why you want Nov. 19 off. Rockstar's launch is sixteen days out."
+      ],
+      "kwargs": {
+        "launch": "2026-11-19"
+      },
+      "expect": {
+        "truthy": true
+      },
+      "why": "a countdown is written from its subject's headlines; naming the launch day is on topic"
+    },
+    {
+      "id": "a-countdown-opener-on-another-story-is-not",
+      "item": 1978,
+      "source": "the rule's other edge: an opener on an unrelated story still gets the second read",
+      "call": "core.batch_review:countdown_opener_on_subject",
+      "args": [
+        "GTA 6: 16 days to launch - GTA 6 Launch: What to Expect",
+        "The Knicks lost again tonight. Here's the box score."
+      ],
+      "kwargs": {
+        "launch": "2026-11-19"
+      },
+      "expect": {
+        "falsy": true
+      },
+      "why": "neither the subject nor its launch day: read by the model, knowing it is a countdown"
+    },
+    {
+      "id": "a-promoted-shorts-ad-views-are-not-organic-before-the-paid-check",
+      "item": 1977,
+      "source": "audit 2026-11-02: run 170, promoted for $14.55, held 37,602 lifetime views, 325 synced and 0 recorded paid",
+      "call": "analytics.youtube_metrics:organic_lifetime",
+      "args": [
+        {
+          "views": 325,
+          "paid_views": 0,
+          "lifetime_views": 37602
+        }
+      ],
+      "expect": {
+        "equals": null
+      },
+      "why": "views the record cannot explain wait for the paid check before they count as organic"
+    },
+    {
+      "id": "the-month-compilation-does-not-rank-a-promoted-short-on-its-ads",
+      "item": 1977,
+      "source": "the sibling, found in wave 146's dry run: October's Best of ranked run 170 #1 on 37,602 views",
+      "call": "video.week_compile:_organic_views",
+      "args": [
+        "{\"views\": 325, \"paid_views\": 0, \"lifetime_views\": 37602}"
+      ],
+      "kwargs": {
+        "lifetime": true
+      },
+      "expect": {
+        "equals": 325
+      },
+      "why": "the month ranks by organic views to date; an unasked promoted Short falls back to its synced organic views"
     }
   ]
 }

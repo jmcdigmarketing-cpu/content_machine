@@ -1265,14 +1265,15 @@ def cmd_voice_facts(args: argparse.Namespace) -> int:
 @_register(
     "week-compile",
     "The week's public Shorts as one 16:9 video, a chapter each, $0 (#138; dry run; --apply "
-    "renders; --apply --schedule also queues it for a slot)",
+    "renders; --apply --schedule also queues it for a slot; --month: last month's ten best, #1743)",
 )
 def cmd_week_compile(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
-    from video.week_compile import compile_week
+    from video.week_compile import compile_month, compile_week
 
     channel = resolve_channel_id(getattr(args, "channel", None))
-    for line in compile_week(
+    make = compile_month if getattr(args, "month", False) else compile_week
+    for line in make(
         channel,
         apply=bool(getattr(args, "apply", False)),
         queue=bool(getattr(args, "schedule", False)),
@@ -4221,6 +4222,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="shelf: give each rendered, never-uploaded video a public slot (two a day)",
     )
     parser.add_argument("--runs", default="", help="shelf --schedule: only these run ids (159,154)")
+    parser.add_argument(
+        "--month", action="store_true", help="week-compile: last month's ten best Shorts (#1743)"
+    )
     parser.add_argument(
         "--list",
         dest="list_open",

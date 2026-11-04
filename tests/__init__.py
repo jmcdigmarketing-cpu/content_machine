@@ -110,6 +110,8 @@ os.environ["PREVIEW_CALLS"] = "false"
 os.environ["HOLDOUT_EVERY"] = "0"
 # Wave 111 (#138): overnight's Monday compilation runs ffmpeg and queues an upload.
 os.environ["WEEK_COMPILE"] = "false"
+# Wave 146 (#1743): and its month-end one on the 1st.
+os.environ["MONTH_COMPILE"] = "false"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).
 os.environ["SERIES_COUNTDOWN"] = "false"
 # Wave 133 (decision 84): the GTA 6 moments and long videos read the feeds on their dates.

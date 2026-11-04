@@ -80,8 +80,15 @@ def _font_file() -> str | None:
 
 
 def build_outro_concat_command(
-    *, body_path: str, output_path: str, card: dict[str, Any]
+    *,
+    body_path: str,
+    output_path: str,
+    card: dict[str, Any],
+    width: int = TARGET_W,
+    height: int = TARGET_H,
 ) -> list[str]:
+    """``width``/``height`` (#1976): the cut's own frame - a 16:9 card centres its copy, since
+    the vertical apps' chrome bands are not on a landscape player."""
     duration = float(card["duration"])
     text = _drawtext_escape(str(card["text"]))
     bg = str(card["bg"]).replace("#", "0x")
@@ -92,15 +99,20 @@ def build_outro_concat_command(
         escaped_font = font_path.replace("\\", "/").replace(":", r"\:").replace("'", r"\'")
         font_opt = f"fontfile='{escaped_font}':"
     scale = (
-        f"scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
-        f"crop={TARGET_W}:{TARGET_H},setsar=1,fps=30"
+        f"scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height},setsar=1,fps=30"
+    )
+    text_y = (
+        "(h-text_h)/2"
+        if width > height
+        else f"h*{_SAFE_TOP:.2f}+(h*{1.0 - _SAFE_TOP - _SAFE_BOTTOM:.2f}-text_h)/2"
     )
     graph = (
         f"[0:v]{scale},setpts=PTS-STARTPTS[v0];"
         f"[0:a]aformat=sample_rates=48000:channel_layouts=stereo[a0];"
         f"[1:v]drawtext={font_opt}text='{text}':fontcolor={fg}:fontsize=64:"
         "x=(w-text_w)/2:"
-        f"y=h*{_SAFE_TOP:.2f}+(h*{1.0 - _SAFE_TOP - _SAFE_BOTTOM:.2f}-text_h)/2,"
+        f"y={text_y},"
         f"setpts=PTS-STARTPTS[v1];"
         f"[2:a]atrim=duration={duration:.3f},asetpts=PTS-STARTPTS[a1];"
         "[v0][a0][v1][a1]concat=n=2:v=1:a=1[vout][aout]"
@@ -113,7 +125,7 @@ def build_outro_concat_command(
         "-f",
         "lavfi",
         "-i",
-        f"color=c={bg}:s={TARGET_W}x{TARGET_H}:r=30:d={duration:.3f}",
+        f"color=c={bg}:s={width}x{height}:r=30:d={duration:.3f}",
         "-f",
         "lavfi",
         "-i",
@@ -141,6 +153,8 @@ def append_channel_outro(
     channel_id: str | None = None,
     output_path: str | None = None,
     command_callback: Callable[[str, list[str]], None] | None = None,
+    width: int = TARGET_W,
+    height: int = TARGET_H,
 ) -> str:
     """Append the generated card, restoring an in-place body on every failure path."""
     card = resolve_end_card(channel_id)
@@ -159,7 +173,9 @@ def append_channel_outro(
 
         retry_locked(lambda: os.replace(body_path, temp_body))
 
-    cmd = build_outro_concat_command(body_path=work_body, output_path=final_path, card=card)
+    cmd = build_outro_concat_command(
+        body_path=work_body, output_path=final_path, card=card, width=width, height=height
+    )
     if command_callback is not None:
         try:
             command_callback("outro_attempt", list(cmd))

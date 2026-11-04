@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-03 (Claude, wave 146 - the next five, S01).** Long-form hours: the 16:9 cut ends on
+the end card; last month's ten best Shorts become one video on the 1st (Dec 1 first, 6:34 for
+October); a Short past 1,000 organic views in 5 days gets a long video on its topic, for your
+review. A countdown's opener is read against its countdown (run 231). The sync asks a promoted
+video's paid views to date - run 170's 37,602 views were 37,270 paid. #1849 waits for the
+embargo date, so #1743 and #1740 took its place. Next, with **S01** before W4's freeze (Nov 16):
+**#1722** the UFC 334 recap within 12 hours (Nov 14), **#1746** long-form hours a week as the
+lane's number, **#1736** playlists ordered for binge-watching, **#1982** the compilation title's
+"GTA", **#1983** an older video's frozen views.
 **2026-11-03 (Claude, wave 145 - the next 15, S15, and the grand audit).** Tonight's run found the
 Nov 3 countdown held for its own day count, on a "since launch" angle, led by a fan's death, and
 lost for good; all fixed, the day redrafted (run 231) and approved past the second read. The next
@@ -87,15 +96,6 @@ same fight is never drafted twice; a leak is never titled as fact; runs 120 and 
 Gaming. Next, with **S15** (the menu 43 points off the views): **#1866** the week-one special
 Week in Review, **#1779** weekly per-platform rows, **#1713** unsubscribes a week, **#1961** the
 leak rule's subject-only warning.
-**2026-11-01 (Claude, wave 143 - the next five, S06).** All four public "recaps" made a call
-the take detector did not know ("Here's the trap", "the real question is density"); it
-learned six shapes and S06 reads 0 of 48 (decision 95). A countdown day was held for sharing
-GTA 6's words with yesterday's - series days now compare on wording. GTA long videos link both
-editions; a long description is a 150-250 word summary led by its title; no gambling link, ever.
-#1730 is parked: YouTube's API cannot set a Short's related video. Next, with **S02** (4
-subscribers from 91 videos): **#1729** deep-dive Shorts end on the full video, **#1726** keyword
-chapter titles on long videos, **#1960** the same fight drafted twice, **#1733** each long
-video's drop-off minute.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

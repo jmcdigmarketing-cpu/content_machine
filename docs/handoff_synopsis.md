@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-03: wave 145, the next 15 and the grand audit
+# Handoff synopsis — 2026-11-03: wave 146, the next five (S01)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-02/03 (Claude Code): wave 145, the next 15 (S15) and the grand audit
+## Last wave — 2026-11-03 (Claude Code): wave 146, the next five (S01)
+
+Long-form hours: the 16:9 cut ends on the end card; last month's ten best Shorts become one video
+on the 1st (the first Dec 1); a Short past 1,000 organic views in its first 5 days gets a long
+video on its topic, drafted for review. A countdown's opener is read against its countdown, not
+its long title (run 231). The sync asks a promoted video's paid views to date (run 170: 37,270 of
+37,602) - the paid total counts them, organic views by domain do not change.
+
+## Previous — 2026-11-02/03 (Claude Code): wave 145, the next 15 (S15) and the grand audit
 
 Found live and fixed: the Nov 3 countdown held for its own day count, written "since launch", led by
 a fan's death, and no night would redraft it; day 15 went public a day early. Never a death story
@@ -25,13 +33,6 @@ Every non-preview Short ends on a true reason to follow; long descriptions and t
 subscribe link (decision 96). Long videos: payoff early, search-term tags and chapters, a drop-off
 line. The GTA 6 editions video Nov 9, the trade-deadline fast lane, The Game Awards. The same fight
 never twice; a leak never titled as fact; runs 120 and 126 refiled as Gaming.
-
-## Previous — 2026-11-01 (Claude Code): wave 143, the next five (S06)
-
-The take detector learned six shapes the scripts' calls are written in; S06 reads 0 of 48 (decision
-95). A countdown day is compared with its own series on wording, not subject. GTA long videos link
-both editions; a long description is a 150-250 word summary led by its title; no gambling link,
-ever. #1730 parked (no API). Correction: run 222 waited on "no take", not its grade.
 
 ---
 

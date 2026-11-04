@@ -9,6 +9,9 @@ $0 and one ffmpeg pass a Short.
 `ops week-compile` is a dry run by default; `--apply` renders to output/<channel>/week/ and
 records a run; `--apply --schedule` also queues it public at the next free slot (the slot rule).
 Overnight does both on Monday mornings (`WEEK_COMPILE`, on by default; the suite pins it off).
+
+#1743 (wave 146): on the 1st, last month's ten most-watched Shorts by organic views to date, whole,
+counted down to #1 - `ops week-compile --month`, overnight with `MONTH_COMPILE`.
 """
 
 from __future__ import annotations
@@ -18,6 +21,7 @@ import os
 import re
 import subprocess
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -38,6 +42,7 @@ _CUT_TAIL_S = 0.3  # past the last word's end, so it is not clipped
 _SENTENCE_END = (".", "!", "?")
 _WIDTH, _HEIGHT = 1920, 1080
 _SEGMENT_TIMEOUT = 600
+MONTH_BEST = 10  # #1743 (B06.22): the month's most-watched Shorts, counted down
 
 
 @dataclass
@@ -48,6 +53,7 @@ class WeekPlan:
     description: str
     items: list[dict[str, Any]] = field(default_factory=list)
     seconds: float = 0.0
+    kind: str = "week"  # #1743: "month" - `week` then holds YYYY-MM
 
 
 def _now(now: datetime | None) -> datetime:
@@ -90,10 +96,18 @@ def _features(run: Any) -> dict[str, Any]:
 def week_shorts(channel_id: str, *, now: datetime | None = None) -> list[dict[str, Any]]:
     """The Shorts that went public in the seven days before `now`, oldest first, with a file on
     disk - not a held one, not an earlier compilation."""
-    from storage.repositories.publish_log import get_publish_log_repository, is_seeded
-
     moment = _now(now)
     since = moment - timedelta(days=7)
+    return _public_shorts(channel_id, lambda when: since < when <= moment)
+
+
+def _public_shorts(
+    channel_id: str, inside: Callable[[datetime], bool], *, lifetime: bool = False
+) -> list[dict[str, Any]]:
+    """The public Shorts whose publish time is `inside`, oldest first, with a file on disk.
+    ``lifetime`` (#1743): rank by organic views to date, not the synced window's."""
+    from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+
     seen: set[int] = set()
     out: list[dict[str, Any]] = []
     for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
@@ -104,7 +118,7 @@ def week_shorts(channel_id: str, *, now: datetime | None = None) -> list[dict[st
         when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
         if str(getattr(row, "privacy_status", "") or "").lower() != "public":
             continue
-        if not since < when <= moment or int(run_id) in seen:
+        if not inside(when) or int(run_id) in seen:
             continue
         run = _run(int(run_id))
         path = str(getattr(run, "mp4_path", "") or "") if run is not None else ""
@@ -124,17 +138,25 @@ def week_shorts(channel_id: str, *, now: datetime | None = None) -> list[dict[st
                                           default=_intro_offset(channel_id)),
                     # #1316 (wave 120): what the compilation's title names, and in which order
                     "names": list((_features(run).get("entity_research") or {}).get("names") or []),
-                    "views": _organic_views(getattr(row, "metrics_json", None))})  # fmt: skip
+                    "views": _organic_views(getattr(row, "metrics_json", None),
+                                            lifetime=lifetime)})  # fmt: skip
     return sorted(out, key=lambda s: s["published_at"])
 
 
-def _organic_views(metrics_json: Any) -> int:
+def _organic_views(metrics_json: Any, *, lifetime: bool = False) -> int:
     """The window's views less the paid ones - ads say nothing about what people look for -
-    or the lifetime count when the window has not synced."""
+    or the lifetime count when the window has not synced. ``lifetime`` (#1743): the lifetime
+    views less every paid view on record (#1977) when the lifetime count is known."""
     from core.ypp_readiness import _organic_views as window_organic
 
     try:
         metrics = json.loads(metrics_json or "{}") or {}
+        if lifetime:
+            from analytics.youtube_metrics import organic_lifetime
+
+            known = organic_lifetime(metrics)
+            if known is not None:
+                return known
         if metrics.get("views") is not None:
             return int(window_organic(metrics))
         return int(metrics.get("lifetime_views") or 0)
@@ -170,10 +192,12 @@ def subject_name(title: str, names: list[str]) -> str:
 
 
 def compilation_title(
-    name: str, items: list[dict[str, Any]], span: str, *, limit: int = 100
+    name: str, items: list[dict[str, Any]], span: str, *, limit: int = 100, label: str = ""
 ) -> str:
     """#1316: "Pereira, Mahomes & GTA 6 - TapIn Week in Review (Oct 19-25)" - the most-viewed
-    Shorts' names, within YouTube's 100 characters; the dates alone when none is named."""
+    Shorts' names, within YouTube's 100 characters; the dates alone when none is named.
+    ``label`` (#1743) replaces "Week in Review (span)" - "Best of October 2026"."""
+    label = label or f"Week in Review ({span})"
     ordered = sorted(enumerate(items), key=lambda pair: (-int(pair[1].get("views") or 0), pair[0]))
     chosen: list[str] = []
     for _i, item in ordered:
@@ -185,11 +209,11 @@ def compilation_title(
             break
     while chosen:
         named = ", ".join(chosen[:-1]) + f" & {chosen[-1]}" if len(chosen) > 1 else chosen[0]
-        title = f"{named} - {name} Week in Review ({span})"
+        title = f"{named} - {name} {label}"
         if len(title) <= limit:
             return title
         chosen.pop()
-    return f"{name} Week in Review ({span})"[:limit]
+    return f"{name} {label}"[:limit]
 
 
 def short_span(began: datetime, ended: datetime) -> str:
@@ -302,12 +326,7 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
         special = None  # too few named it: the regular Week in Review
     if len(items) < MIN_SHORTS:
         return None
-    try:
-        from config.channels import get_channel_profile
-
-        name = str(get_channel_profile(channel_id).name or channel_id)
-    except Exception:
-        name = channel_id
+    name = _channel_name(channel_id)
     first, last = items[0]["published_at"], items[-1]["published_at"]
     items = plan_clips(items)  # #1592: the rundown, then the top 3 counted down
     chapters, at = [], 0.0
@@ -323,8 +342,26 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
         f"Every {about} story from {short_span(first, last)}, then the week's top {deep_count} "
         "in full.\n\n" + "\n".join(chapters) + "\n"
     )
-    # #1522 (live 2026-10-19): the first compilation was scheduled public without the AI
-    # disclosure every other upload carries - this description is built here, not by the SEO path.
+    description = _with_disclosure(channel_id, description)
+    title = compilation_title(name, items, short_span(first, last))
+    if special and special.get("title"):  # #1866: its own title, with the dates
+        title = f"{special['title']} ({short_span(first, last)})"[:100]
+    return WeekPlan(channel_id=channel_id, week=monday, title=title,
+                    description=description, items=items, seconds=at)  # fmt: skip
+
+
+def _channel_name(channel_id: str) -> str:
+    try:
+        from config.channels import get_channel_profile
+
+        return str(get_channel_profile(channel_id).name or channel_id)
+    except Exception:
+        return channel_id
+
+
+def _with_disclosure(channel_id: str, description: str) -> str:
+    """#1522 (live 2026-10-19): the first compilation was scheduled public without the AI
+    disclosure every other upload carries - this description is built here, not by the SEO path."""
     try:
         from core.description_extras import ai_disclosure_line
 
@@ -332,13 +369,57 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
     except Exception as exc:
         logger.debug("week compile disclosure unread: %s", exc)
         disclosure = ""
-    if disclosure:
-        description += f"\n{disclosure}\n"
-    title = compilation_title(name, items, short_span(first, last))
-    if special and special.get("title"):  # #1866: its own title, with the dates
-        title = f"{special['title']} ({short_span(first, last)})"[:100]
-    return WeekPlan(channel_id=channel_id, week=monday, title=title,
-                    description=description, items=items, seconds=at)  # fmt: skip
+    return description + (f"\n{disclosure}\n" if disclosure else "")
+
+
+def last_month(channel_id: str, *, now: datetime | None = None) -> tuple[datetime, datetime]:
+    """#1743: the calendar month before `now`'s, in the channel's zone - [start, end)."""
+    try:
+        from core.spaced_queue import _channel_tz
+
+        zone: Any = _channel_tz(channel_id)
+    except Exception:
+        zone = timezone.utc
+    end = _now(now).astimezone(zone).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    return (end - timedelta(days=1)).replace(day=1), end
+
+
+def plan_month(channel_id: str, *, now: datetime | None = None) -> WeekPlan | None:
+    """#1743 (B06.22, wave 146): last month's `MONTH_BEST` most-watched public Shorts by organic
+    views to date (#1977 - a promoted Short's ads say nothing of what people look for), counted
+    down from the tenth: the rest as their openings, the top 3 whole (`plan_clips`, decision 81's
+    5-8 minutes - October's ten whole ran 11:53); None under MIN_SHORTS. $0 - the Shorts are on
+    disk."""
+    start, end = last_month(channel_id, now=now)
+    offset = _intro_offset(channel_id)
+    items: list[dict[str, Any]] = []
+    for short in _public_shorts(channel_id, lambda when: start <= when < end, lifetime=True):
+        length = _duration(short["path"])
+        cut = float(short.get("offset", offset))
+        if not length or length > _MAX_SHORT_SECONDS or length - cut < 10:
+            continue
+        items.append({**short, "offset": cut, "seconds": float(length) - cut})
+    if len(items) < MIN_SHORTS:
+        return None
+    ranked = sorted(items, key=lambda i: (-int(i.get("views") or 0), i["published_at"]))
+    top = [{**item, "rank": rank} for rank, item in enumerate(ranked[:MONTH_BEST], 1)]
+    items = plan_clips(top[::-1])  # the tenth first; the top 3 whole, #1 last
+    name = _channel_name(channel_id)
+    month = f"{start:%B %Y}"
+    chapters, at = [], 0.0
+    for item in items:
+        chapters.append(f"{_clock(at)} #{item['rank']}: {item['title']}")
+        item["start"] = at
+        at += item["seconds"]
+    deep_count = sum(1 for item in items if item.get("deep"))
+    description = _with_disclosure(
+        channel_id,
+        f"The {len(items)} most-watched {name} Shorts of {month}, counted down - the top "
+        f"{deep_count} in full.\n\n" + "\n".join(chapters) + "\n",
+    )  # fmt: skip
+    title = compilation_title(name, items, "", label=f"Best of {month}")
+    return WeekPlan(channel_id=channel_id, week=f"{start:%Y-%m}", title=title,
+                    description=description, items=items, seconds=at, kind="month")  # fmt: skip
 
 
 def segment_argv(src: str, dst: str, *, offset: float, duration: float | None = None) -> list[str]:
@@ -365,10 +446,10 @@ def concat_argv(list_file: str, dst: str) -> list[str]:
             "-c", "copy", "-movflags", "+faststart", dst]  # fmt: skip
 
 
-def _out_path(channel_id: str, week: str) -> str:
+def _out_path(channel_id: str, week: str, *, kind: str = "week") -> str:
     from config.paths import ROOT_DIR
 
-    return os.path.join(ROOT_DIR, "output", channel_id, "week", f"week_{week}.mp4")
+    return os.path.join(ROOT_DIR, "output", channel_id, "week", f"{kind}_{week}.mp4")
 
 
 def latest_public_compilation(channel_id: str) -> str:
@@ -397,15 +478,15 @@ def latest_public_compilation(channel_id: str) -> str:
     return best[1] if best else ""
 
 
-def week_done(channel_id: str, week: str) -> bool:
-    """A compilation for this week is already a run."""
+def week_done(channel_id: str, week: str, *, kind: str = "week") -> bool:
+    """A compilation for this week (or, with `kind="month"`, this YYYY-MM) is already a run."""
     from storage.repositories.content_runs import get_content_run_repository
 
     try:
         runs = get_content_run_repository().list_for_channel(channel_id)[:40]
     except Exception:
         return False
-    return any((_features(r).get("compilation") or {}).get("week") == week for r in runs)
+    return any((_features(r).get("compilation") or {}).get(kind) == week for r in runs)
 
 
 def _render(plan: WeekPlan, dst: str) -> str:
@@ -455,6 +536,9 @@ def make_thumbnail(plan: WeekPlan, video_path: str) -> str:
     # "Oct 15-18": the headline keeps five words, and "Oct 15 - Oct 18" lost its end to that.
     dates = [i["published_at"] for i in plan.items if isinstance(i.get("published_at"), datetime)]
     span = short_span(min(dates), max(dates)) if dates else ""  # #1592: items are not in date order
+    words = f"Week in Review {span}".strip()
+    if plan.kind == "month":  # #1743
+        words = f"Best of {datetime.strptime(plan.week, '%Y-%m'):%B}"
     try:
         from PIL import Image
 
@@ -462,7 +546,7 @@ def make_thumbnail(plan: WeekPlan, video_path: str) -> str:
 
         compose_thumbnail(
             Image.open(frame).convert("RGB"),
-            f"Week in Review {span}".strip(),
+            words,
             thumb,
             channel_id=plan.channel_id,
         )
@@ -477,7 +561,7 @@ def _record(plan: WeekPlan, path: str, *, thumbnail: str = "") -> int:
 
     features: dict[str, Any] = {
         "compilation": {
-            "week": plan.week,
+            plan.kind: plan.week,  # #1743: "month": YYYY-MM
             "runs": [i["run_id"] for i in plan.items],
             "seconds": round(plan.seconds, 1),
         }
@@ -495,7 +579,9 @@ def _record(plan: WeekPlan, path: str, *, thumbnail: str = "") -> int:
         variants=[],
         title=plan.title,
         description=plan.description,
-        tags_json=json.dumps(["week in review", "compilation"]),
+        tags_json=json.dumps(
+            ["best of the month" if plan.kind == "month" else "week in review", "compilation"]
+        ),
         mp4_path=path,
         features=features,
     )
@@ -513,10 +599,36 @@ def compile_week(
     if week_done(channel_id, plan.week):
         return [f"  Week compilation: the week of {plan.week} is already made."]
     lines = [f"  Week compilation: {plan.title} - {len(plan.items)} Shorts, {_clock(plan.seconds)}"]
-    lines += [f"    {line}" for line in plan.description.strip().splitlines()[2:]]
+    return _make(plan, lines, apply=apply, queue=queue, flags="")
+
+
+def compile_month(
+    channel_id: str, *, apply: bool = False, queue: bool = False, now: datetime | None = None
+) -> list[str]:
+    """#1743: last month's best Shorts as `compile_week` does a week's - lines for the operator."""
+    plan = plan_month(channel_id, now=now)
+    if plan is None:
+        start, end = last_month(channel_id, now=now)
+        count = len(_public_shorts(channel_id, lambda when: start <= when < end))
+        return [
+            f"  Month compilation: {count} public Short(s) in {start:%B} - it needs {MIN_SHORTS}."
+        ]
+    if week_done(channel_id, plan.week, kind="month"):
+        return [f"  Month compilation: {plan.week} is already made."]
+    lines = [
+        f"  Month compilation: {plan.title} - {len(plan.items)} Shorts, {_clock(plan.seconds)}"
+    ]
+    return _make(plan, lines, apply=apply, queue=queue, flags=" --month")
+
+
+def _make(plan: WeekPlan, lines: list[str], *, apply: bool, queue: bool, flags: str) -> list[str]:
+    """The chapters, then - with `apply` - the render, its thumbnail and run, and with `queue`
+    its public slot."""
+    channel_id = plan.channel_id
+    lines = [*lines, *(f"    {line}" for line in plan.description.strip().splitlines()[2:])]
     if not apply:
         return [*lines, "  Dry run - --apply renders it ($0, one ffmpeg pass a Short)."]
-    dst = _out_path(channel_id, plan.week)
+    dst = _out_path(channel_id, plan.week, kind=plan.kind)
     why = _render(plan, dst)
     if why:
         return [*lines, f"  Not made: {why}."]
@@ -526,7 +638,8 @@ def compile_week(
     if not queue:
         return [
             *lines,
-            f"  Queue it: py -m scripts.ops week-compile --channel {channel_id} --apply --schedule",
+            f"  Queue it: py -m scripts.ops week-compile{flags} --channel {channel_id} --apply "
+            "--schedule",
         ]
     from core.spaced_queue import SpacedSlot, queue_spaced_uploads, slot_for_run
 

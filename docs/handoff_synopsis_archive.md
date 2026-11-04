@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-01 (Claude Code): wave 143, the next five (S06)
+
+The take detector learned six shapes the scripts' calls are written in; S06 reads 0 of 48 (decision
+95). A countdown day is compared with its own series on wording, not subject. GTA long videos link
+both editions; a long description is a 150-250 word summary led by its title; no gambling link,
+ever. #1730 parked (no API). Correction: run 222 waited on "no take", not its grade.
+
 ## Previous — 2026-11-01 (Claude Code): wave 142, the next five (S05)
 
 The grade gates nothing (decision 94): your verdicts tracked the views and the grade did not (15 of

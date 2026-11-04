@@ -168,7 +168,7 @@ def subject_name(title: str, names: list[str]) -> str:
     """#1316: the name a Short is about - the researched name that comes first in its title,
     a team by its last word ("Kansas City Chiefs" -> "Chiefs") when only that is in it, with a
     number that follows it ("GTA 6"); the title's first name when research named none of it."""
-    from apis.topic_tokens import title_phrases
+    from apis.topic_tokens import phrase_with_number, title_phrases
 
     found: list[tuple[int, int, str]] = []
     for raw in names:
@@ -188,7 +188,9 @@ def subject_name(title: str, names: list[str]) -> str:
     if found:
         return min(found)[2]
     phrases = title_phrases(title, max_words=2)
-    return re.sub(r"(?:'s|')$", "", phrases[0]) if phrases else ""
+    if not phrases:
+        return ""
+    return phrase_with_number(re.sub(r"(?:'s|')$", "", phrases[0]), title)  # #1982
 
 
 def compilation_title(

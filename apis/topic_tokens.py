@@ -587,6 +587,18 @@ def _spaced(text: str) -> str:
     return re.sub(r"(?<=[a-z])(?=\d)|(?<=\d)(?=[a-z])", " ", low)
 
 
+def phrase_with_number(phrase: str, text: str) -> str:
+    """#1982 (wave 147): `phrase` with the number that follows it in `text` - "GTA" in "GTA 6
+    online mode ..." is "GTA 6". `title_phrases` reads capitalised words only, so a franchise's
+    number fell off: October's Best of was titled "GTA, Valve's Steam AI & Ben Affleck". A year
+    is not a name's number ("Chiefs 2026 schedule")."""
+    hit = (
+        re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text or "", flags=re.I) if phrase else None
+    )
+    number = re.match(r"\s+(\d{1,3})\b", text[hit.end() :]) if hit else None
+    return f"{phrase} {number.group(1)}" if number else phrase
+
+
 def names_any(text: str, markers: list[str]) -> bool:
     """Whether `text` names any marker, as whole words. A file stem counts:
     "gta6-subpoenas" names GTA. The marker is spaced the same way as the text (wave 111: "49ers"

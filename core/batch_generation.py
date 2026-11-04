@@ -192,10 +192,12 @@ def collect_topics(
             # makes the previews' calls.
             from core.series.countdown import countdown_idea
             from core.series.dated import dated_ideas
+            from core.series.recap import recap_ideas
 
             alone = _unique([countdown_idea(channel_id), countdown_idea(channel_id, ahead=1),
                              *dated_ideas(channel_id, notes=notes),
-                             *long_breakout_ideas(channel_id)])  # fmt: skip
+                             *long_breakout_ideas(channel_id),
+                             *recap_ideas(channel_id, notes=notes)])  # fmt: skip
             if picks is not None:
                 for bet in alone:
                     picks[bet.topic] = pick_record([bet], 1, by="batch")
@@ -205,9 +207,11 @@ def collect_topics(
         # Wave 135 (the operator: "a day ahead"): tomorrow's countdown too, scheduled for its
         # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
         from core.series.countdown import countdown_idea
+        from core.series.recap import recap_ideas
 
         extra = _unique([*extra, countdown_idea(channel_id, ahead=1),
-                         *long_breakout_ideas(channel_id)])  # #1740  # fmt: skip
+                         *long_breakout_ideas(channel_id),  # #1740
+                         *recap_ideas(channel_id, notes=notes)])  # #1722  # fmt: skip
         names = marquee_names(channel_id)
         kept: list[Any] = []
         for bet in ideas:

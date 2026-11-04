@@ -162,18 +162,55 @@ def young_days() -> float:
         return 8.0
 
 
+STALE_DAYS = 7  # #1983: a synced window older than this is refreshed in turn
+
+
+def stale_per_sync() -> int:
+    """`SYNC_STALE_PER_RUN` (default 8): how many older videos with a stale window a sync
+    refreshes, newest first (#1983)."""
+    try:
+        return max(0, int(os.getenv("SYNC_STALE_PER_RUN", "") or 8))
+    except ValueError:
+        return 8
+
+
+def _synced_on(row) -> str:
+    """The last day a video's window was synced (`period_end`, YYYY-MM-DD), or ""."""
+    try:
+        metrics = json.loads(getattr(row, "metrics_json", None) or "{}")
+    except (TypeError, ValueError):
+        return ""
+    return str(metrics.get("period_end") or "")[:10] if isinstance(metrics, dict) else ""
+
+
 def _to_sync(rows: list, limit: int) -> list:
-    """Every live video younger than `young_days()`, then the newest `limit`, newest first.
+    """Every live video younger than `young_days()`, then the newest `limit`, then the
+    `stale_per_sync()` newest older videos whose window is over `STALE_DAYS` old - newest first.
 
     Three-newest-only let a video age past its 24h snapshot and its first days of views
-    by day at five uploads a week (#918).
+    by day at five uploads a week (#918). #1983 (wave 147): an older video's `views` froze at
+    its youth - run 170 held 325 of 37,602, and 67 of 97 live videos' windows were over a week
+    old on 11-04 - while S15, the menu's domain order and the scorecard read them. The newest
+    first: the stalest were June's, whose numbers no longer move. At eight a sync every older
+    video comes round about weekly. A video never synced is left to the young rule; a deleted one
+    is not asked.
     """
     from datetime import datetime, timedelta, timezone
 
     ordered = sorted(rows, key=_recency_key, reverse=True)
-    cutoff = datetime.now(timezone.utc) - timedelta(days=young_days())
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=young_days())
     young = [r for r in ordered if _recency_key(r)[0] >= cutoff]
     picked = young + [r for r in ordered[: max(1, limit)] if r not in young]
+    before = (now - timedelta(days=STALE_DAYS)).date().isoformat()
+    stale = [
+        r
+        for r in ordered
+        if r not in picked
+        and str(getattr(r, "privacy_status", "") or "").lower() != "gone"
+        and "" < _synced_on(r) < before
+    ]
+    picked += stale[: stale_per_sync()]  # `ordered` is newest first
     return sorted(picked, key=_recency_key, reverse=True)
 
 

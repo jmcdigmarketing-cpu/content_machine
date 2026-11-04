@@ -109,7 +109,7 @@ The repo serves two products:
 | `core/engagement_predictor.py` | Data-gated predicted engaged-rate (baseline + hook/authenticity slopes) |
 | `core/grade_calibration.py` | Grade ↔ realized-engagement calibration + thumbnail-score join (`ops calibration`) |
 | `core/prompt_evals.py` | Golden-topic prompt eval harness (`config/prompt_evals.json`, `ops prompt-eval`) |
-| `core/series/` | The dated calendar (`config/series.json`): the GTA 6 countdown (`countdown`), moments, long videos and the week special (`dated`), and the 16:9 long videos' scripts, titles and covers (`long_form`) |
+| `core/series/` | The dated calendar (`config/series.json`): the GTA 6 countdown (`countdown`), moments, long videos and the week special (`dated`), the 16:9 long videos' scripts, titles and covers (`long_form`), and a numbered UFC card's recap from ESPN's results (`recap`) |
 | `core/success/` | What the channel is measured by: the 22 shortfalls (`shortfalls`), the bridge's YPP numbers (`bridge`), the wave scorecard, verdicts, winners |
 | `core/money/` | Spend and income beside each other (`ledger`) |
 | `core/facts/store.py` | **Pillar 3** structured facts — `FactRecord`, provenance tiers, freshness/expiry from vault frontmatter |

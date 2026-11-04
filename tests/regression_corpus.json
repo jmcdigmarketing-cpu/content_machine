@@ -8912,6 +8912,47 @@
         "equals": 325
       },
       "why": "the month ranks by organic views to date; an unasked promoted Short falls back to its synced organic views"
+    },
+    {
+      "id": "a-compilation-subject-keeps-its-number",
+      "item": 1982,
+      "source": "wave 146's dry run of October's Best of on the live store: run 191 has no researched names and its title gave 'GTA'",
+      "call": "video.week_compile:subject_name",
+      "args": [
+        "GTA 6 online mode may repeat GTA Online's early mistakes",
+        []
+      ],
+      "expect": {
+        "equals": "GTA 6"
+      },
+      "why": "title_phrases reads capitalised words only; the number after the name is part of it"
+    },
+    {
+      "id": "a-year-is-not-a-names-number",
+      "item": 1982,
+      "source": "the helper's edge: a four-digit year after a team is a date, not its number",
+      "call": "apis.topic_tokens:phrase_with_number",
+      "args": [
+        "Chiefs",
+        "Chiefs 2026 schedule leaks"
+      ],
+      "expect": {
+        "equals": "Chiefs"
+      },
+      "why": "GTA 6, UFC 334, Madden 26 - one to three digits"
+    },
+    {
+      "id": "a-hashtag-reads-its-number-apart",
+      "item": 1982,
+      "source": "the sibling: with the number kept, '#GTA6' read as 'gta6', matched no topic word and was dropped",
+      "call": "publishing.platform_captions:_split_camel",
+      "args": [
+        "GTA6"
+      ],
+      "expect": {
+        "equals": "GTA 6"
+      },
+      "why": "the tag is checked against the topic's words; the letters and the number are two"
     }
   ]
 }

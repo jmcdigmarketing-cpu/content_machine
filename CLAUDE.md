@@ -96,7 +96,7 @@ py -m scripts.ops test --order reverse         # same suite, reversed — CI-blo
 `writeback`, `evals`, `retier`) and `core/facts/` (`store`, `selection`, `grounding`,
 `intake`, `enrichment`, `conflicts`, `expiry`, `recency`, `confidence`, `room`, `trust`),
 `core/predictions/` (`ledger`, `features`, `calls`, `holdouts`), `core/runs/` (`replay`,
-`recheck`, `signal_audit`, ...), `core/series/` (`countdown`, `dated`, `long_form`),
+`recheck`, `signal_audit`, ...), `core/series/` (`countdown`, `dated`, `long_form`, `recap`),
 `core/success/` (`shortfalls`, `bridge`, `scorecard`, ...) and `core/money/` (`ledger`) exist. A new module goes in the sub-package for its subject;
 a new flat `core/*.py` needs a reason, and `tests/test_core_layout.py` holds the flat count
 to a ceiling that may fall, never rise. A moved module leaves a one-wave alias at its old

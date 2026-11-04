@@ -11035,3 +11035,56 @@ Next five: #1722 (the UFC 334 recap, Nov 14), #1746, #1736, #1982, #1983; #1849 
 date is known.
 
 Counts (`ops roadmap-index`): 265 open (was 267), 1,601 done, highest #1984.
+
+## 2026-11-04 — wave 147: the next five, S01 (Claude Code)
+
+**Prompt:** "Start wave 147"
+
+Verified first: HEAD `613854e` (wave 146, CI green), nothing since; overnight ran 11-04 05:00-05:17
+(exit 0, 4 drafts). The roadmap's five were #1722, #1746, #1736, #1982, #1983 - each open with a
+lane, none parked in the synopsis. #1984's first read: the 16:33 sync asked 5 videos' paid views to
+date (run 170 37,270 of 37,604; run 93 858 of 1,154), and `ops growth` holds 40,002 of YouTube's
+44,114 paid Shorts views (it held 1,874). Measured: 67 of 97 live windows over a week old, 34 over
+30 days (#1983); run 202 (public 10-28) never synced (#1985); YouTube's long-form hours in the last
+7 days 0.05 (#1746); ESPN's dated UFC board lists every bout's winner, round, clock and scheduled
+rounds (#1722).
+
+Shipped (worktree `wave147`):
+1. #1982 `topic_tokens.phrase_with_number` in `week_compile.subject_name` and
+   `platform_captions.tiktok_tags`; `_split_camel` splits letters from a number.
+2. #1983 `sync_metrics._to_sync` + `stale_per_sync` / `_synced_on` (`SYNC_STALE_PER_RUN`).
+3. #1746 `fetch_ypp_numbers` -> `long_hours_7d`; `save_ypp_numbers` keeps `weeks`;
+   `ypp_readiness.hours_lane` / `hours_lane_line` in `path_lines` and `bridge.scoreboard_lines`.
+4. #1736 `playlists.add_to_playlists(long_form=)` at position 0 with a fallback, `is_long_video`,
+   `long_playlists`; the "Full Videos" row; the publisher passes the file's length.
+5. #1722 `core/series/recap.py` (`finished_card`, `bout_lines`, `card_results`, `recap_ideas`),
+   `espn.get_scoreboard(dates=)`, in `collect_topics` beside the countdown (`UFC_RECAP`).
+
+Findings:
+- `publishing/platform_captions.py:49` `_split_camel` read "#GTA6" as "gta6", so the first #1982
+  build dropped the hashtag HEAD had kept as "#GTA"; it splits letters from digits now.
+- `analytics/sync_metrics.py` `_to_sync`: the first #1983 build refreshed the stalest windows first -
+  June's - while S15 and the menu read the last 28 days; it takes the newest stale ones now.
+- `core/ypp_readiness.py` `save_ypp_numbers`: an empty `weeks` broke `test_paid_views`' pin that the
+  stored numbers are what the sync fetched; `weeks` is stored once there is one.
+- Run 202 never synced (#1985); 4,112 paid views on no record (#1986); the playlists' old items keep
+  their order (#1987).
+
+Deliberately not done: reordering the ~95 videos already in playlists (50 units each - #1987); a
+live recap draft (UFC 334 is Nov 14 - replayed on UFC 333's real results instead, read back under
+#1988); `long_hours_7d` saved before tonight's sync (read live, not stored).
+
+Tests: `tests/test_wave147.py`, 24 - 23 fail on `613854e` (a clean HEAD checkout, the editable
+finder stripped); the 24th pins the rotation's off switch. Corpus +3 (530 -> 533), each failing on
+HEAD. Older test changed on purpose: `test_wave133`'s parent playlist positions (newest first).
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite 7,312 forward and reversed, OK (6
+skipped); corpus 533 of 533; `data/` untouched. Production callers: every new function is reached
+from the sync, the publisher, the night's topic collection, `ops ypp` or the scoreboard. Fields
+traced: `long_hours_7d` from `fetch_ypp_numbers` (0.05 live) to `save_ypp_numbers` -> `weeks` ->
+`hours_lane`; `long_form` from the file's length to the "Full Videos" insert, whose id the worker's
+`finish_playlists` creates; ESPN's `status.period` / `displayClock` / `format` to each fact line.
+
+Next five: #1985, #1986, #1987, #1732, #1745; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 264 open (was 265), 1,606 done, highest #1988.

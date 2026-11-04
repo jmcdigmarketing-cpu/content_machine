@@ -525,6 +525,20 @@ def fetch_ypp_numbers(
             v for k, v in minutes.items() if k[1] in LONG_FORM_TYPES and k[0] not in PAID_SOURCES
         )
         out["long_hours_365d"] = round(organic / 60.0, 1)
+    # #1746 (wave 147): the hours lane's number - the last 7 days, ads excluded as YouTube does.
+    week_minutes = _by_source_and_type(
+        service, (end - timedelta(days=7)).isoformat(), end.isoformat(), "estimatedMinutesWatched"
+    )
+    if week_minutes is not None:
+        out["long_hours_7d"] = round(
+            sum(
+                v
+                for k, v in week_minutes.items()
+                if k[1] in LONG_FORM_TYPES and k[0] not in PAID_SOURCES
+            )
+            / 60.0,
+            2,
+        )
     out["subscribers"] = _subscriber_count(cid)
     if youtube_channel_id(cid):  # #1707: kept with the numbers for the subscribe link
         out["youtube_channel_id"] = youtube_channel_id(cid)

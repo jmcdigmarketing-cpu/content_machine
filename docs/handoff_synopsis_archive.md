@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-01 (Claude Code): wave 144, the next 15 (S02)
+
+Every non-preview Short ends on a true reason to follow; long descriptions and the bio pages carry a
+subscribe link (decision 96). Long videos: payoff early, search-term tags and chapters, a drop-off
+line. The GTA 6 editions video Nov 9, the trade-deadline fast lane, The Game Awards. The same fight
+never twice; a leak never titled as fact; runs 120 and 126 refiled as Gaming.
+
 ## Previous — 2026-11-01 (Claude Code): wave 143, the next five (S06)
 
 The take detector learned six shapes the scripts' calls are written in; S06 reads 0 of 48 (decision

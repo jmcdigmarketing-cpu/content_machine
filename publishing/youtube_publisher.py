@@ -120,10 +120,15 @@ def _post_upload_extras(
         return
     if channel_id:
         try:
-            from core.playlists import add_to_playlists
+            from core.playlists import add_to_playlists, is_long_video
 
             note = add_to_playlists(
-                service, channel_id, video_id, title=request.title, tags=request.tags
+                service,
+                channel_id,
+                video_id,
+                title=request.title,
+                tags=request.tags,
+                long_form=is_long_video(request.file_path),  # #1736
             )
             if note:
                 logger.info("Playlists for %s: %s", video_id, note)

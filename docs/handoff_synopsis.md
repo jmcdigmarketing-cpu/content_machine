@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-03: wave 146, the next five (S01)
+# Handoff synopsis — 2026-11-04: wave 147, the next five (S01)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-03 (Claude Code): wave 146, the next five (S01)
+## Last wave — 2026-11-04 (Claude Code): wave 147, the next five (S01)
+
+Long-form hours: the night after a numbered UFC card, a long recap drafted from ESPN's results
+(UFC 334, Nov 14); the hours lane's number in `ops ypp` (0.05 qualified hours this week against
+10); playlists newest first and a "Full Videos" playlist. An older video's views are refreshed
+in turn (67 of 97 had frozen); "GTA 6" keeps its 6. The first paid check: 40,002 of YouTube's
+44,114 paid views on record.
+
+## Previous — 2026-11-03 (Claude Code): wave 146, the next five (S01)
 
 Long-form hours: the 16:9 cut ends on the end card; last month's ten best Shorts become one video
 on the 1st (the first Dec 1); a Short past 1,000 organic views in its first 5 days gets a long
@@ -26,13 +34,6 @@ a fan's death, and no night would redraft it; day 15 went public a day early. Ne
 share (decision 98). Unsubscribes a week, per-platform weeks, the policy site read live, breakout
 follow-ups, UFC 334 and Thanksgiving rows, the week-one special, a second cover under 2% CTR, the
 16:9 cut laid out for 16:9. Four sports videos refiled. Audit: [audit_2026-11-02.md](audit_2026-11-02.md).
-
-## Previous — 2026-11-01 (Claude Code): wave 144, the next 15 (S02)
-
-Every non-preview Short ends on a true reason to follow; long descriptions and the bio pages carry a
-subscribe link (decision 96). Long videos: payoff early, search-term tags and chapters, a drop-off
-line. The GTA 6 editions video Nov 9, the trade-deadline fast lane, The Game Awards. The same fight
-never twice; a leak never titled as fact; runs 120 and 126 refiled as Gaming.
 
 ---
 

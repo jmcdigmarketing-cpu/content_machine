@@ -50,7 +50,9 @@ aimed at with money outside YouTube started now.
 Review drew 4 views and 0 - `ops ypp` and S01 now say where long views come from, by traffic
 source; the written Week in Review (#1315) waits for a long video with an audience. Wave 146:
 the month's best Shorts on the 1st (#1743), a long video on any Short past 1,000 organic views in
-5 days (#1740), the end card on the 16:9 cut (#1976).
+5 days (#1740), the end card on the 16:9 cut (#1976). Wave 147: the lane's number in `ops ypp`
+(#1746 - 0.05 qualified hours in the week to 11-04), the UFC recap the night after a numbered
+card (#1722), playlists newest first with long videos playing into each other (#1736).
 
 **How.** At this size the Shorts path is not reachable by volume, so long-form hours come first:
 the weekly $0 compilation (#138) makes its first video on Monday 10-19. Per-video reach (S02, S12,

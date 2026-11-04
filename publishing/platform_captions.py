@@ -47,8 +47,9 @@ def caption_texts(run: Any) -> dict[str, str]:
 
 
 def _split_camel(word: str) -> str:
-    """ "MoicanoVsNolan" -> "Moicano Vs Nolan", "UFCFightNight" -> "UFC Fight Night"."""
-    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ", word)
+    """ "MoicanoVsNolan" -> "Moicano Vs Nolan", "UFCFightNight" -> "UFC Fight Night", "GTA6" ->
+    "GTA 6" (#1982)."""
+    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[A-Za-z])(?=\d)", " ", word)
 
 
 def domain_hashtag(channel_id: str, topic: str) -> str:
@@ -64,7 +65,7 @@ def domain_hashtag(channel_id: str, topic: str) -> str:
 def tiktok_tags(channel_id: str, run: Any) -> list[str]:
     """Three hashtags: two of the run's tags that name the topic (a word shared with its title or
     topic), then the sport or game. Title names fill in when the tags have fewer than two."""
-    from apis.topic_tokens import content_tokens, title_phrases
+    from apis.topic_tokens import content_tokens, phrase_with_number, title_phrases
     from publishing.crosspost import hashtags
 
     title = str(getattr(run, "title", "") or "")
@@ -75,7 +76,10 @@ def tiktok_tags(channel_id: str, run: Any) -> list[str]:
         tags = [str(t) for t in json.loads(getattr(run, "tags_json", "") or "[]")]
     except (TypeError, ValueError):
         tags = []
-    candidates = [*tags, *(re.sub(r"\s+", "", p) for p in title_phrases(title))]
+    candidates = [  # #1982: "#GTA6", not "#GTA"
+        *tags,
+        *(re.sub(r"\s+", "", phrase_with_number(p, title)) for p in title_phrases(title)),
+    ]
     picked: list[str] = []
     for tag in hashtags(candidates, limit=len(candidates) or 1):
         if tag[1:].lower() == domain.lower() or tag.lower() in (p.lower() for p in picked):

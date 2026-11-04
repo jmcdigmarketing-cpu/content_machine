@@ -53,25 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-03 · **HEAD at write:** `00d546e` (wave 145's docs sweep, CI green; this wave's
-commit follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
+**Written:** 2026-11-04 · **HEAD at write:** `613854e` (wave 146, CI green; this wave's commit
+follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 146, the next five with S01.** Defects first: the second read held run 231's countdown opener
-against its long title (#1978 - an opener naming GTA 6 or Nov 19 is now on its story); run 170's
-37,270 paid views were never recorded, because a video is synced only while young (#1977 - the sync
-asks paid views to date and the paid total counts them). Caught in the audit before the commit: the
-first #1977 build would have read run 170's organic views as 0 in the menu's domain order. Found and
-filed: an older video's synced views freeze (#1983); a compilation title says "GTA" for an
-unresearched GTA 6 Short (#1982). Built: the 16:9 cut's end card (#1976, rendered on a test clip);
-last month's best Shorts on the 1st (#1743, Dec 1 first; October's dry run 6:34); a long video on a
-Short past 1,000 organic views in 5 days (#1740, drafted for your review).
+**Wave 147, the next five with S01.** Defects first: 67 of 97 live videos' synced views had frozen
+at their youth - each sync now refreshes the 8 newest stale ones (#1983); a compilation title and
+a hashtag dropped GTA 6's number (#1982). Caught before the commit: the first #1982 build dropped
+the "#GTA6" tag entirely, and the first #1983 build refreshed June's videos first - both fixed.
+Found and filed: run 202 (public 10-28) never synced (#1985); 4,112 of YouTube's paid Shorts views
+on no record (#1986); the old playlist items keep their order (#1987). Built: the UFC recap the
+night after a numbered card, from ESPN's results (#1722 - UFC 334 Nov 14, replayed on UFC 333);
+the hours lane's number in `ops ypp` (#1746 - 0.05 hours this week, live); playlists newest first
+and a "Full Videos" playlist the worker creates (#1736). #1984: the paid check ran - 40,002 of
+44,114 on record.
 
-**Open:** #1979, #1981-#1984; dated reads #1953, #1955, #1956, #1959, #1984. **Next:** S01 with #1722
-(UFC 334, Nov 14), #1746, #1736, #1982, #1983; #1849 once the embargo date is known. **Overnight**
-05:00 runs this wave (merged before it); its sync makes the first paid checks.
+**Open:** #1979, #1981, #1984-#1988; dated reads #1953, #1955, #1956, #1959, #1988. **Next:** S01 with
+#1985, #1986, #1987, #1732, #1745 before W4's freeze (Nov 16); #1849 once the embargo date is known.
 
 **Operator:** publish the Google app before Sat Nov 7 (set POLICY_SITE_URL first - `ops check-youtube`
 reads the four pages); paste the bio pages; tracking IDs; Facebook in Buffer; #1922/#1956 on a phone.
+Review the UFC 334 recap draft the morning of Nov 15.
 
 ## Slot — Cursor
 

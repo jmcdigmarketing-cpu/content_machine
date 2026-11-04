@@ -112,6 +112,8 @@ os.environ["HOLDOUT_EVERY"] = "0"
 os.environ["WEEK_COMPILE"] = "false"
 # Wave 146 (#1743): and its month-end one on the 1st.
 os.environ["MONTH_COMPILE"] = "false"
+# Wave 147 (#1722): the UFC recap reads ESPN's board the night after a numbered card.
+os.environ["UFC_RECAP"] = "false"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).
 os.environ["SERIES_COUNTDOWN"] = "false"
 # Wave 133 (decision 84): the GTA 6 moments and long videos read the feeds on their dates.

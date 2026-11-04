@@ -519,7 +519,7 @@ class PlaylistOrderTests(unittest.TestCase):
         gta = [b.get("position") for b in bodies if b["playlistId"] == "PL1"]
         gaming = [b.get("position") for b in bodies if b["playlistId"] == "PL2"]
         self.assertEqual(gta, [0, 1, 2])
-        self.assertEqual(gaming, [None, None, None])
+        self.assertEqual(gaming, [0, 0, 0])  # wave 147 (#1736): newest first
 
     def test_a_countdown_title_names_its_playlist(self):
         from core.series.countdown import countdown_playlist

@@ -30,9 +30,13 @@ def _get(url: str, params: dict | None = None) -> dict:
     return response.json()
 
 
-def get_scoreboard(league: str = "nba", *, week: int | None = None) -> dict:
-    """The league's current board, or that week's ("week N" topics, NFL)."""
-    return _get(f"{_SITE}/{LEAGUES[league]}/scoreboard", {"week": week} if week else None)
+def get_scoreboard(league: str = "nba", *, week: int | None = None, dates: str = "") -> dict:
+    """The league's current board, or that week's ("week N" topics, NFL), or a day's
+    (`dates="20261114"` - #1722: a finished UFC card's results)."""
+    params: dict = {"week": week} if week else {}
+    if dates:
+        params["dates"] = dates
+    return _get(f"{_SITE}/{LEAGUES[league]}/scoreboard", params or None)
 
 
 def get_team(league: str, team: str) -> dict:

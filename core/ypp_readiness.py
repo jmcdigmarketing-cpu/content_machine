@@ -59,16 +59,73 @@ def save_ypp_numbers(channel_id: str, numbers: dict[str, Any]) -> None:
     """Keep the sync's YPP numbers (#954) for `ops ypp`, and the month's last snapshot (#1320)."""
     path = YPP_TEMPLATE.format(channel=channel_id)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    data = {k: v for k, v in dict(numbers).items() if k != "history"}
-    history = dict((load_ypp_numbers(channel_id) or {}).get("history") or {})
+    data = {k: v for k, v in dict(numbers).items() if k not in ("history", "weeks")}
+    stored = load_ypp_numbers(channel_id) or {}
+    history = dict(stored.get("history") or {})
     month = str(data.get("as_of") or "")[:7]
     if month:
         history[month] = {key: data.get(key) for key, _label in MONTHLY_NUMBERS}
     data["history"] = history
+    weeks = dict(stored.get("weeks") or {})  # #1746: the week's last 7-day hours
+    week = _iso_week(str(data.get("as_of") or ""))
+    if week and isinstance(data.get("long_hours_7d"), (int, float)):
+        weeks[week] = data["long_hours_7d"]
+    if weeks:
+        data["weeks"] = {k: weeks[k] for k in sorted(weeks)[-12:]}
     tmp = f"{path}.tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     os.replace(tmp, path)
+
+
+# #1746 (B06.25, wave 147): the hours lane is done at 10 qualified long-form hours a week for
+# four weeks running (0.2 a week on 10-27).
+HOURS_LANE_WEEKLY = 10.0
+HOURS_LANE_WEEKS = 4
+
+
+def _iso_week(day: str) -> str:
+    """ "2026-W45" for an ISO date, "" for anything else."""
+    from datetime import date
+
+    try:
+        year, week, _weekday = date.fromisoformat(day[:10]).isocalendar()
+    except ValueError:
+        return ""
+    return f"{year}-W{week:02d}"
+
+
+def hours_lane(numbers: dict[str, Any]) -> dict[str, Any] | None:
+    """#1746: {hours: the last 7 days, run: the latest weeks in a row at `HOURS_LANE_WEEKLY`,
+    done}, or None before the sync has asked. A week's figure is its last sync's 7 days."""
+    hours = numbers.get("long_hours_7d")
+    if not isinstance(hours, (int, float)):
+        return None
+    weeks = numbers.get("weeks") or {}
+    run = 0
+    for key in sorted(weeks, reverse=True):
+        try:
+            value = float(weeks[key])
+        except (TypeError, ValueError):
+            break
+        if value < HOURS_LANE_WEEKLY:
+            break
+        run += 1
+    return {"hours": float(hours), "run": run, "done": run >= HOURS_LANE_WEEKS}
+
+
+def hours_lane_line(numbers: dict[str, Any]) -> str:
+    """#1746: the hours lane's number in one line, "" before it is measured."""
+    lane = hours_lane(numbers)
+    if lane is None:
+        return ""
+    places = 1 if lane["hours"] >= 1 else 2  # 0.05 is not 0.1
+    head = (f"Hours lane: {lane['hours']:.{places}f} qualified long-form hours in the last 7 days (ads "
+            f"excluded) against {HOURS_LANE_WEEKLY:.0f} a week")  # fmt: skip
+    if lane["done"]:
+        return f"{head} - done: {lane['run']} weeks running at {HOURS_LANE_WEEKLY:.0f}."
+    return (f"{head} - {lane['run']} of {HOURS_LANE_WEEKS} weeks running at "
+            f"{HOURS_LANE_WEEKLY:.0f} (0.2 a week on 10-27).")  # fmt: skip
 
 
 # #1320: the four numbers the monthly card compares, in its order.
@@ -321,6 +378,9 @@ def path_lines(numbers: dict[str, Any], *, from_videos: dict[str, Any] | None = 
             f"{WATCH_HOURS_TARGET / 52:,.0f} hours a week. The channel does "
             f"{float(hours) / 52:.1f} (ads excluded)."
         )
+    lane = hours_lane_line(numbers)
+    if lane:
+        lines.append(f"  {lane}")
     return lines
 
 

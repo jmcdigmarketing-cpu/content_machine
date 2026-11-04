@@ -11,6 +11,7 @@
     {"name": "Basketball", "domain": "nba", "keys": ["nba", "wnba", "basketball", "nba 2k", "2k26"], "footage": ["2k26"]},
     {"name": "Football", "domain": "soccer", "keys": ["soccer", "premier league", "champions league", "world cup", "mls", "la liga", "ea fc", "fifa"], "footage": ["EA Sports FC"]},
     {"name": "AI Development", "keys": ["ai", "artificial intelligence", "openai", "chatgpt", "llm", "claude", "gemini", "machine learning"], "footage": []},
+    {"name": "Full Videos", "long_form": true, "keys": [], "footage": [], "_note": "#1736: every long video (over three minutes) joins it, newest first, so a long video's autoplay goes on to the next long one"},
     {"name": "Gaming", "keys": ["game", "games", "gaming", "gamer", "playstation", "ps5", "xbox", "nintendo", "switch 2", "steam", "esports", "fortnite", "call of duty", "valorant", "pokemon"], "footage": []}
   ]
 }

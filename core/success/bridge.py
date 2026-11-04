@@ -216,6 +216,11 @@ def scoreboard_lines(
             f"  long-form hours (365 days): {float(hours):,.1f} of {int(bar['hours']):,} - "
             f"{_days_to(bar['hours'], hours, per_day)}"
         )
+    from core.ypp_readiness import hours_lane_line
+
+    lane = hours_lane_line(nums)  # #1746: the lane's number
+    if lane:
+        lines.append(f"  {lane}")
     try:  # #1753 (wave 136): income beside spend
         from core.money.ledger import money_line
 

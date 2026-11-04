@@ -609,6 +609,8 @@ def footage_coverage(channel_id: str, *, library_root: str | None = None) -> lis
     parents = {str(r.get("parent")) for r in mapped if r.get("parent")}
     for row in mapped:
         name = str(row["name"])
+        if row.get("long_form"):  # #1736: a playlist of long videos, not a niche
+            continue
         if name in parents and not row.get("footage"):
             # An umbrella (Gaming) draws from whichever game folder the topic picks.
             rows.append({"niche": name, "folder": "", "clips": 0, "umbrella": True})

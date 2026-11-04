@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-04 (Claude, wave 147 - the next five, S01).** The night after UFC 334 (Nov 14) a long
+recap is drafted from ESPN's results, every bout, for your review. The hours lane has its
+number in `ops ypp`: YouTube counts 0.05 qualified long-form hours this week, against 10 a week
+for four weeks. Playlists play newest first, and long videos play into each other ("Full
+Videos"). An older video's views are refreshed in turn - 67 of 97 had frozen. "GTA 6" keeps its
+6. The first paid check ran: 40,002 of YouTube's 44,114 paid views on record (was 1,874). Next,
+before W4's freeze (Nov 16): **#1985** run 202 never synced, **#1986** the 4,112 paid views on no
+record, **#1987** the old playlist items newest first, **#1732** a length rule by long format,
+**#1745** each long video's first 30 seconds measured; **#1849** once the embargo date is known.
 **2026-11-03 (Claude, wave 146 - the next five, S01).** Long-form hours: the 16:9 cut ends on
 the end card; last month's ten best Shorts become one video on the 1st (Dec 1 first, 6:34 for
 October); a Short past 1,000 organic views in 5 days gets a long video on its topic, for your
@@ -87,15 +96,6 @@ cover under 2% CTR, the 16:9 cut laid out for 16:9. The audit: [audit_2026-11-02
 Next, with **S01** (long-form hours - the GTA 6 long videos from Nov 6): **#1976** the 16:9 cut's end
 card, **#1978** the second read on a countdown, **#1977** a promoted video's paid views, **#1849**
 the review-score Short once the embargo date is known. W4 (Nov 16-22) is launch week: defects only.
-**2026-11-01 (Claude, wave 144 - the next 15, S02).** Trending Shorts end on a true reason to
-follow - the subject's public long video, its countdown, or the Monday Week in Review - and long
-descriptions and the bio pages carry a subscribe link (decision 96). Long videos: payoff in the
-first 40 words, search-term tags and chapter titles, a drop-off line. The calendar: the GTA 6
-editions long video Nov 9, the trade-deadline fast lane Nov 9-11, The Game Awards Dec 11. The
-same fight is never drafted twice; a leak is never titled as fact; runs 120 and 126 refiled as
-Gaming. Next, with **S15** (the menu 43 points off the views): **#1866** the week-one special
-Week in Review, **#1779** weekly per-platform rows, **#1713** unsubscribes a week, **#1961** the
-leak rule's subject-only warning.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

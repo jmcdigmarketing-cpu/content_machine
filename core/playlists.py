@@ -15,6 +15,11 @@ operator re-consents once:
 
 Each insert is 50 quota units. Adding is idempotent - the store records what was added, so
 a healed or re-tried upload never adds the same video twice. Never raises into an upload.
+
+#1736 (B06.15, wave 147): a playlist plays newest first - a new video goes in at the top, where
+the playlist page and its autoplay start - except the countdown, which plays in day order. A long
+video (over three minutes) also joins the `long_form` row's playlist ("Full Videos"), so a long
+video's autoplay goes on to the next long one, not to a Short.
 """
 
 from __future__ import annotations
@@ -53,12 +58,34 @@ def _matches(text: str, keys: list[str]) -> bool:
     return False
 
 
+LONG_SECONDS = 185.0  # #1736: a Short is at most three minutes (`week_compile` reads it so)
+
+
+def is_long_video(path: str) -> bool:
+    """#1736: the file runs past three minutes - a long video, not a Short. False unread."""
+    try:
+        from video.channel_intro import _probe_duration
+
+        seconds = _probe_duration(path) if path and os.path.isfile(path) else None
+    except Exception as exc:
+        logger.debug("playlist length unread: %s", exc)
+        return False
+    return bool(seconds and seconds > LONG_SECONDS)
+
+
+def long_playlists(channel_id: str) -> list[str]:
+    """#1736: the playlists every long video joins (`"long_form": true` rows)."""
+    return [str(row["name"]) for row in playlist_map(channel_id) if row.get("long_form")]
+
+
 def playlists_for(
     channel_id: str, title: str, *, topic: str = "", tags: list[str] | None = None
 ) -> list[str]:
     """[specific, parent] for the first matching playlist, else []."""
     text = " ".join([title or "", topic or "", " ".join(tags or [])]).lower()
     for row in playlist_map(channel_id):
+        if row.get("long_form"):
+            continue
         if _matches(text, [str(k) for k in row.get("keys") or []]):
             names = [str(row["name"])]
             parent = str(row.get("parent") or "")
@@ -207,11 +234,15 @@ def add_to_playlists(
     topic: str = "",
     tags: list[str] | None = None,
     store_path: str | None = None,
+    long_form: bool = False,
 ) -> str:
-    """Add an uploaded video to its franchise playlists. Returns a one-line note. Never raises."""
+    """Add an uploaded video to its franchise playlists, at the top (#1736); a long video to the
+    long videos' playlist too. Returns a one-line note. Never raises."""
     if not service or not video_id:
         return ""
     names = playlists_for(channel_id, title, topic=topic, tags=tags)
+    if long_form:
+        names = list(dict.fromkeys([*long_playlists(channel_id), *names]))
     if not names:
         return "no franchise playlist matched"
     try:
@@ -243,11 +274,20 @@ def add_to_playlists(
             "playlistId": playlist_id,
             "resourceId": {"kind": "youtube#video", "videoId": video_id},
         }
-        if name == in_order:
-            snippet["position"] = len(series.get(name) or [])
+        # #1855: the countdown in day order; #1736: everything else newest first
+        snippet["position"] = len(series.get(name) or []) if name == in_order else 0
         try:
             record_call("playlistItems.insert")  # wave 113: it booked nothing
-            service.playlistItems().insert(part="snippet", body={"snippet": snippet}).execute()
+            try:
+                service.playlistItems().insert(part="snippet", body={"snippet": snippet}).execute()
+            except Exception as exc:
+                if name == in_order:
+                    raise
+                # a playlist sorted by YouTube refuses a position: added at its end instead
+                logger.info("playlist %s refused the top (%s) - added at the end", name, exc)
+                snippet.pop("position", None)
+                record_call("playlistItems.insert")
+                service.playlistItems().insert(part="snippet", body={"snippet": snippet}).execute()
         except Exception as exc:
             logger.warning("playlist add failed (%s -> %s): %s", video_id, name, exc)
             notes.append(f"{name}: {exc}")

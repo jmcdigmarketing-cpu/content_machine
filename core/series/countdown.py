@@ -121,6 +121,7 @@ def subject_headlines(
     """The dated headlines of the last `hours` naming one of `names`, each title once. An
     undated headline may be old news, so it is left out."""
     from apis.topic_tokens import names_any
+    from core.authenticity import is_death_story
 
     horizon = now - timedelta(hours=hours)
     seen: set[str] = set()
@@ -132,6 +133,8 @@ def subject_headlines(
             continue
         stamp = published if published.tzinfo else published.replace(tzinfo=timezone.utc)
         if stamp < horizon or not names_any(title, names) or title.lower() in seen:
+            continue
+        if is_death_story(title):  # #1966: run 226 opened on a fan's death from this list
             continue
         seen.add(title.lower())
         out.append({**item, "title": title})
@@ -208,7 +211,7 @@ def countdown_idea(
         topic = countdown_topic(
             str(row["title"]), day=day.isoformat(), start=str(row["from"]), until=str(row["until"])
         )
-        if not topic or series_drafted(channel_id, topic):
+        if not topic or series_drafted(channel_id, topic, redo_set_aside=True):  # #1964
             continue
         lines = (headlines or feed_headlines)(channel_id, row, moment)
         facts = countdown_facts(row, day, lines, now=moment)

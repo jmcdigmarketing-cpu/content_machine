@@ -128,6 +128,7 @@ def _post_time_running(channel_id: str) -> bool:
 # 6 PM was after the game. A game preview with none goes public as it uploads: a `publishAt`
 # this far ahead (the worker runs every 15 minutes), so the unlisted review hold does not apply.
 _ASAP_LEAD = timedelta(minutes=45)
+_BESIDE = timedelta(minutes=10)  # #1980: a dated draft whose day has no free slot
 _ASAP_GAP = timedelta(minutes=30)
 
 
@@ -351,17 +352,31 @@ def slot_for_run(
     if (planned is not None and planned >= moment + _FIRST_LEAD and planned not in taken
             and (deadline is None or planned < deadline)):  # fmt: skip
         return planned, ""
+    # #1980 (wave 145, live 11-03): a dated draft never goes out before its own day. Queued the
+    # evening before with every slot to its day's end taken, run 232 ("15 days to launch") fell
+    # through to "45 minutes from now" and went public on Nov 3.
+    floor, in_its_day = moment, True
+    if planned is not None:
+        tz = _channel_tz(channel_id)
+        day_start = datetime.combine(planned.astimezone(tz).date(), time.min, tzinfo=tz).astimezone(
+            timezone.utc
+        )
+        floor = max(moment, day_start - _FIRST_LEAD)  # the slots add the lead back
+        in_its_day = moment >= day_start
     from core.series.dated import slot_hours
 
-    main = free_slots(channel_id, 1, now=moment, taken=taken,
+    main = free_slots(channel_id, 1, now=floor, taken=taken,
                       hours_on=lambda day: slot_hours(channel_id, title, day))  # fmt: skip
     if main and (deadline is None or main[0] < deadline):
         return main[0], ""
-    evening = free_slots(channel_id, 3, now=moment, hours=_EVENING, taken=taken)
+    evening = free_slots(channel_id, 3, now=floor, hours=_EVENING, taken=taken)
     extra = next((e for e in evening if deadline is not None and e < deadline), None)
     if extra is not None:
         return extra, ""
-    if event is not None and moment + _ASAP_LEAD < event:
+    if (planned is not None and not in_its_day and planned >= moment + _FIRST_LEAD
+            and (deadline is None or planned < deadline)):  # fmt: skip
+        return planned + _BESIDE, ""  # its own day, beside the video that holds its slot
+    if in_its_day and event is not None and moment + _ASAP_LEAD < event:
         return moment + _ASAP_LEAD, ""
     return None, "no slot before its game" if event else "no slot inside its window"
 

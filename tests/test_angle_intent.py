@@ -76,7 +76,12 @@ class TestAngleTypesFollowIntent(unittest.TestCase):
             seen["types"] = list(angle_types)
             return ["angle"]
 
-        with patch.object(topic_variants, "generate_ai_titles", side_effect=_capture):
+        # #1965 (wave 145): a game still before its countdown's launch gets the pre-launch
+        # frames; these tests are about the established pivot, so the game is out.
+        with (
+            patch.object(topic_variants, "generate_ai_titles", side_effect=_capture),
+            patch.object(topic_variants, "unreleased_subject", return_value=False),
+        ):
             topic_variants.generate_variants(topic, channel_id="tapin", repeat_count=repeat_count)
         return seen.get("types", [])
 
@@ -206,7 +211,10 @@ class TestIntentsBeyondReaction(unittest.TestCase):
             seen["types"] = list(angle_types)
             return ["angle"]
 
-        with patch.object(topic_variants, "generate_ai_titles", side_effect=_capture):
+        with (
+            patch.object(topic_variants, "generate_ai_titles", side_effect=_capture),
+            patch.object(topic_variants, "unreleased_subject", return_value=False),  # #1965
+        ):
             topic_variants.generate_variants(
                 "GTA 6 meta breakdown", channel_id="tapin", repeat_count=5
             )

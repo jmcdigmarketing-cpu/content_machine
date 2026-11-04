@@ -207,8 +207,9 @@ slot it will never use (#1558).
 
 ### S11 Clicks are unmeasured
 
-**Now.** The operator turned the YouTube Reporting API on 2026-11-01 and the sync made the
-report job; S11 waits on YouTube's first daily file (#1946, #1950).
+**Now.** The operator turned the YouTube Reporting API on 2026-11-01; by 11-02 the sync had 30
+daily reports - click-through for 133 videos, 86 in the record (S11 met). Wave 145 (#1413): a long
+video past 1,000 impressions under 2% gets its second cover, once.
 
 **How.** You turn it on; then #1058 feeds impressions and click-through into title and thumbnail
 learning.
@@ -273,7 +274,10 @@ needed for 30 days.
 story (#1300). 10-25 (decision 79): while gaming leads organic views - 53% of them - at least two
 ideas of five are gaming (#1447); `ops predictions` shows the menu's mix (#1446). Wave 141 (#1935, decision
 93): met when no domain's menu share is over 15 points from its share of 28 days' organic
-views - gaming 24% against 59%, so three ideas of five are now gaming while gaming leads.
+views - gaming 24% against 59%, so three ideas of five are now gaming while gaming leads. Wave
+145 (decision 98): overnight's own slate never saw that floor - one gaming row in three every night
+- and `menu_mix` read each night's menu once per draft; a menu is counted once now and the night as
+a whole carries the gaming share.
 
 **How.** Weight domains by what holds viewers on this channel (the best 7-day video is a gaming
 one, Cyclops at 968).

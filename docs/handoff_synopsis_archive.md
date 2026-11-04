@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-01 (Claude Code): wave 142, the next five (S05)
+
+The grade gates nothing (decision 94): your verdicts tracked the views and the grade did not (15 of
+40 in their views' third, chance 33%); S05 reads it against the audience. NFL nicknames read NFL and
+10 stored subjects were corrected (S15: gaming 67%). Amazon links carry a tracking ID per place - a
+link page per bio - and the sync keeps which outside site sent a view. Captions end 450 px up.
+
 ## Previous — 2026-11-01 (Claude Code): wave 141, the next five (S01)
 
 The Associates tag is set and the Reporting API is on (S11 waits on YouTube's first file). The

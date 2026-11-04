@@ -73,7 +73,7 @@
     "-t",
     "12.500",
     "-filter_complex",
-    "[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setpts=PTS-STARTPTS,subtitles='captions.ass'[vout]",
+    "[0:v]split=2[fillbg][fillfg];[fillbg]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,boxblur=24:2[blurred];[fillfg]scale=-2:1080[sharp];[blurred][sharp]overlay=(W-w)/2:0,setpts=PTS-STARTPTS,subtitles='captions.ass'[vout]",
     "-map",
     "[vout]",
     "-map",

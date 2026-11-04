@@ -276,6 +276,13 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
     line = reach_report.sync_reach(channel_id)
     if line:
         print(line)
+    try:  # #1413: a long video under 2% after 1,000 impressions gets its second cover, once
+        from analytics.packaging import swap_low_ctr_covers
+
+        for swapped in swap_low_ctr_covers(channel_id, apply=True):
+            print(f"  {swapped}")
+    except Exception as exc:
+        logger.debug("cover swap skipped: %s", exc)
     # #114: viewers' questions on your own uploads - opt-in, about 1 unit per video.
     from analytics import mailbag
 

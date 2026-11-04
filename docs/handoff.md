@@ -53,23 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-01 · **HEAD at write:** `41ba596` (wave 143; this wave's commit follows) ·
-**Tree:** clean of mine; leave `.agents/` and `.codex/`. Pushed; read CI.
+**Written:** 2026-11-03 · **HEAD at write:** `ed0bf38` (wave 144; this wave's commit follows, then a
+docs-sweep commit) · **Tree:** clean of mine after the commit; leave `.agents/` and `.codex/`.
 
-**Wave 144, the next 15 with S02 (decision 96).** Defects first: the leak-title rule is wrong on
-1 of 3 stored titles it flags (run 138, #1961); four sports videos sit under Gaming (#1962). Done
-live on the operator's word: runs 120 and 126 refiled as Gaming (101 units, read back 20).
-`follow_brief`'s fall-through gives every non-preview Short a line (long video / countdown / Monday
-Week in Review); the sync keeps the channel id (`youtube_channel_id`) for `subscribe_line`; long
-videos get `payoff_rule`, `long_tags`, `chapter_keywords`, `long_drop_off_lines`; series rows for
-Nov 9 (editions), Nov 9-11 (trade deadline), Dec 11 (Game Awards); `drop_drafted_matchups` in the
-menu; `leak_as_fact` at the title check; `recategorize --run-id`. The suite turns SERIES_DATED off -
-calendar tests switch it on themselves.
+**Wave 145, the next 15 with S15, and the grand audit ([audit_2026-11-02.md](audit_2026-11-02.md)).**
+Defects first, found live: the Nov 3 countdown was held for its own day count, on a "since launch"
+angle, led by a fan's death, and no night would redraft it (#1963-#1966); the follow line was graded
+as your idea (#1967); day 15 went public at 9:13 PM ET Nov 3, a day early - left public (#1980,
+fixed). Decision 97: never a death story (title, first line, description). Decision 98: the night
+carries the gaming share, a menu is counted once, a deleted video is recorded `gone`. Done live on
+your word: day 16 redrafted (run 231), approved past the second read, public 8:38 PM ET Nov 3; four
+sports videos refiled as Sports (201 units, read back). The cheap free model was retired - replaced
+by live test, and an empty LLM answer now fails over. The 16:9 cut is laid out for 16:9 (checked on
+run 203's render).
 
-**Open:** #1953-#1956, #1959, #1961, #1962. **Next:** S15 with #1866, #1779, #1713, #1961.
+**Open:** #1976-#1979, #1981; dated reads #1953, #1955, #1956, #1959. **Next:** S01 with #1976, #1978,
+#1977, #1849. **Overnight** ran 11-03 19:14 on `main` with the countdown fixes copied in before the
+commit (the session was interrupted).
 
-**Operator:** publish the Google app (lapses Nov 7); paste the three bio pages; four tracking IDs;
-Facebook in Buffer; #1922 and #1956 on a phone; #1962 on your word.
+**Operator:** publish the Google app before Sat Nov 7 (set POLICY_SITE_URL first - `ops check-youtube`
+reads the four pages); paste the bio pages; tracking IDs; Facebook in Buffer; #1922/#1956 on a phone.
 
 ## Slot — Cursor
 

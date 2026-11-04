@@ -124,7 +124,9 @@ def dated_ideas(
     moment = now or datetime.now(timezone.utc)
     today = channel_day(channel_id, moment)
     out: list[Any] = []
-    lines: list[dict[str, Any]] | None = None
+    # #1873 (wave 145): one fetch per domain. Read once for the first row due, Nov 9's UFC 334
+    # week would have been checked against the GTA 6 editions row's gaming feeds and skipped.
+    by_domain: dict[str, list[dict[str, Any]]] = {}
     for row in series_rows(channel_id):
         kind = str(row.get("kind") or "")
         if kind not in _FACTS or not row.get("on") or not row.get("topic"):
@@ -136,8 +138,10 @@ def dated_ideas(
         topic = str(row["topic"])
         if not due or series_drafted(channel_id, topic):
             continue
-        if lines is None:
-            lines = (headlines or feed_headlines)(channel_id, row, moment)
+        domain = str(row.get("domain") or "gaming")
+        if domain not in by_domain:
+            by_domain[domain] = (headlines or feed_headlines)(channel_id, row, moment)
+        lines = by_domain[domain]
         names = _names(row)
         needs = [str(w) for w in row.get("needs") or [] if str(w).strip()]
         if needs:  # the titles, not the outlets: "PC Gamer reported" names no PC question

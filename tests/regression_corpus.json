@@ -8690,6 +8690,161 @@
         "truthy": true
       },
       "why": "a claim the script hedges is hedged in the title too"
+    },
+    {
+      "id": "a-countdowns-own-day-count-is-grounded",
+      "item": 1963,
+      "source": "live 2026-11-02: run 226, the Nov 3 GTA 6 countdown, held for 'Sixteen days before' - the future launch date was dropped and a Nov 1 snippet was the only anchor",
+      "call": "core.facts.date_math:find_elapsed_mismatches",
+      "args": [
+        "Sixteen days before launch, the conversation is about cost, not gameplay.",
+        "GTA 6 launches on November 19, 2026 - 16 days from November 3.\nToday is November 1, and GTA 6 is 18 days from its November 19 launch."
+      ],
+      "kwargs": {
+        "today": "2026-11-02"
+      },
+      "expect": {
+        "falsy": true
+      },
+      "why": "'N days before <event>' counts forward to the event, not back from today"
+    },
+    {
+      "id": "a-countdown-title-day-count-sibling",
+      "item": 1963,
+      "source": "sibling of run 226's case: the title and description go through the same arithmetic (#978)",
+      "call": "core.facts.date_math:find_meta_mismatches",
+      "args": [
+        "Sixteen days before GTA 6 launches: what we know",
+        "",
+        "GTA 6 launches on November 19, 2026 - 16 days from November 3."
+      ],
+      "kwargs": {
+        "today": "2026-11-02"
+      },
+      "expect": {
+        "falsy": true
+      },
+      "why": "a count to launch in the title is the same claim as in the script"
+    },
+    {
+      "id": "a-countdown-pick-is-news",
+      "item": 1965,
+      "source": "live 2026-11-02: run 226, a countdown read as 'default', took the repeat-coverage table's 'what changed since launch' for a game not yet out",
+      "call": "core.batch_generation:draft_intent",
+      "kwargs": {
+        "own_idea": false,
+        "preview": "",
+        "source": "countdown"
+      },
+      "expect": {
+        "equals": "news"
+      },
+      "why": "a countdown is the day's news on its subject"
+    },
+    {
+      "id": "a-frame-key-before-a-quoted-angle-is-stripped",
+      "item": 1965,
+      "source": "live 2026-11-02: run 226's angle was saved as 'what_changed_since_launch \"GTA 6 Update Cycles: ...' and the key reached the draft's name",
+      "call": "apis.topic_variants:_clean_angle_lines",
+      "args": [
+        "what_changed_since_launch \"GTA 6 Update Cycles: A 16-Day Countdown to Launch",
+        []
+      ],
+      "expect": {
+        "equals": [
+          "GTA 6 Update Cycles: A 16-Day Countdown to Launch"
+        ]
+      },
+      "why": "a frame's key is never part of the angle"
+    },
+    {
+      "id": "a-death-story-title-holds",
+      "item": 1966,
+      "source": "live 2026-11-02: run 229, 'GTA 6 Community Mourns Loss of Devoted Fan', held only by luck (the second read); decision 97",
+      "call": "core.authenticity:death_reason",
+      "args": [
+        "GTA 6 Community Mourns Loss of Devoted Fan 17 Days Before Launch",
+        ""
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "never a death story (decision 97)"
+    },
+    {
+      "id": "a-death-first-line-limits-the-render",
+      "item": 1966,
+      "source": "sibling: run 148 opened 'Mike Ditka died at 86' and run 226 on a fan's death - the first line goes through ad_limit_reason's four callers",
+      "call": "core.authenticity:ad_limit_reason",
+      "args": [
+        "Chicago Bears defense falters against Atlanta",
+        "Mike Ditka died at 86, and the Bears play Sunday without him. Chicago is 3-2."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a death is never the hook"
+    },
+    {
+      "id": "a-death-story-fills-no-slot",
+      "item": 1966,
+      "source": "sibling: the overnight topic gate, for any source",
+      "call": "core.batch_generation:story_passes_gate",
+      "args": [
+        "GTA 6 fan who went viral for hoping to live long enough to play the game has died"
+      ],
+      "kwargs": {
+        "source": "trending",
+        "outlets": 5,
+        "names": [
+          "GTA 6"
+        ]
+      },
+      "expect": {
+        "falsy": true
+      },
+      "why": "a death story never becomes a draft"
+    },
+    {
+      "id": "a-game-title-is-not-a-death",
+      "item": 1966,
+      "source": "the matcher's edge: replayed on 226 stored titles and 1,790 cached headlines, only real deaths matched",
+      "call": "core.authenticity:death_words",
+      "args": [
+        "Red Dead Redemption 2 and Death Stranding 2 lead a sudden death deathmatch week; RIP to the old meta"
+      ],
+      "expect": {
+        "equals": []
+      },
+      "why": "Red Dead, Death Stranding, sudden death, deathmatch and RIP-the-meta are not deaths"
+    },
+    {
+      "id": "a-title-naming-only-the-hedged-subject-is-clear",
+      "item": 1961,
+      "source": "replay 2026-11-01: run 138's title named the Knicks' half-court offense; the script said it was 'reportedly ranked No. 1' - the title stated no claim",
+      "call": "core.youtube_meta:leak_as_fact",
+      "args": [
+        "Knicks' half-court offense vs Toronto's new-look spacing in Raptors showdown",
+        "The Knicks' half-court offense, reportedly ranked No. 1 entering 2026-27, will face its first test against Toronto's new-look spacing."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a title carries a leak only when it shares the hedged clause, not just its subject"
+    },
+    {
+      "id": "a-countdown-title-is-not-a-leak",
+      "item": 1961,
+      "source": "replay 2026-11-02: run 225, 'GTA 6: 17 days to launch', warned because its script said 'sort the leaks from the wishful thinking'",
+      "call": "core.youtube_meta:leak_as_fact",
+      "args": [
+        "GTA 6: 17 days to launch",
+        "GTA 6 is 17 days out, so let's sort the leaks from the wishful thinking."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the sibling: a countdown's stem shares the subject with any leak line"
     }
   ]
 }

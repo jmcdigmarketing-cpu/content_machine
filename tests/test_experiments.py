@@ -231,7 +231,9 @@ class TestBatchIntegration(ExperimentCase):
 
         self.assertTrue(out.ok)
         self.assertEqual(out.experiment_arm, f"hook_style={first_arm}")
-        self.assertEqual(rp.call_args.kwargs["creative_brief"], directive("hook_style", first_arm))
+        # #1967 (wave 145): the arm is a direction, not the operator's idea.
+        self.assertEqual(rp.call_args.kwargs["creative_brief"], "")
+        self.assertIn(directive("hook_style", first_arm), rp.call_args.kwargs["directions"])
         report = ex.experiment_report("tapin")
         self.assertEqual(report["assigned"][first_arm], 1)
 
@@ -276,6 +278,7 @@ class TestBatchIntegration(ExperimentCase):
         self.assertTrue(out.ok)
         self.assertEqual(out.experiment_arm, "")
         self.assertEqual(rp.call_args.kwargs["creative_brief"], "")
+        self.assertEqual(rp.call_args.kwargs["directions"], "")
 
 
 if __name__ == "__main__":

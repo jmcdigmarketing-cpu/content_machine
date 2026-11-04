@@ -81,6 +81,12 @@ def check_channel_setup(channel_id: str | None = None) -> SetupReport:
             hints.append(publish)
     except Exception as exc:  # a hint, never a reason the check fails
         hints.append(f"Sign-in mode unread ({type(exc).__name__})")
+    try:
+        from publishing.policy_site import policy_site_lines
+
+        hints.extend(policy_site_lines())  # #1440: the consent screen's links, read live
+    except Exception as exc:
+        hints.append(f"Policy site unread ({type(exc).__name__})")
 
     if not issues and not is_upload_configured(channel_id):
         issues.append(

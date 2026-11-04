@@ -239,3 +239,103 @@ def backfill_stayed(channel_id: str, apply: bool, force: bool) -> dict[str, int]
             repo.update(row.id, {"metrics_json": json.dumps(metrics)})
             updated += 1
     return {"runs": len(rows), "stale": len(todo), "would_update": len(todo), "updated": updated}
+
+
+# #1413 (S11.7, wave 145): click-through is stored since 11-02 (86 videos). A long video YouTube
+# showed 1,000 times that drew under 2% of clicks gets its second cover - a frame 60% into its own
+# render instead of 30% - once. The Weeks in Review drew 1.08% and 0% on 279 and 137 impressions.
+SWAP_IMPRESSIONS = 1000
+SWAP_CTR = 0.02
+
+
+def cover_swap_candidates(channel_id: str) -> list[dict[str, Any]]:
+    """{run_id, video_id, impressions, ctr, title, mp4} for each public long video past
+    `SWAP_IMPRESSIONS` under `SWAP_CTR` whose cover was not swapped yet."""
+    from publishing.prepublish import _features, _is_long, _run
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    out: list[dict[str, Any]] = []
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        run_id = getattr(row, "content_run_id", None)
+        video_id = str(getattr(row, "youtube_video_id", "") or "")
+        if not run_id or not video_id or str(row.privacy_status or "").lower() != "public":
+            continue
+        metrics = _stored(row)
+        shown = int(metrics.get("thumbnail_impressions") or 0)
+        ctr = metrics.get("thumbnail_ctr")
+        if shown < SWAP_IMPRESSIONS or not isinstance(ctr, int | float) or ctr >= SWAP_CTR:
+            continue
+        run = _run(run_id)
+        if not _is_long(run_id) or _features(run).get("cover_swapped_at"):
+            continue
+        out.append({"run_id": int(run_id), "video_id": video_id, "impressions": shown,
+                    "ctr": float(ctr), "title": str(getattr(run, "title", "") or ""),
+                    "mp4": str(getattr(run, "mp4_path", "") or "")})  # fmt: skip
+    return out
+
+
+def _second_cover(candidate: dict[str, Any], channel_id: str) -> str:
+    import os
+
+    from core.output_paths import channel_output_root
+    from core.series.long_form import long_thumbnail
+
+    if not candidate.get("mp4") or not os.path.isfile(candidate["mp4"]):
+        return ""
+    dest = os.path.join(
+        channel_output_root(channel_id), "thumbnails", f"run{candidate['run_id']}-cover2.jpg"
+    )
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    return long_thumbnail(candidate["mp4"], candidate["title"], dest, channel_id=channel_id, at=0.6)
+
+
+def swap_low_ctr_covers(
+    channel_id: str,
+    *,
+    apply: bool = False,
+    cover: Any = None,
+    upload: Any = None,
+) -> list[str]:
+    """#1413: one line per long video whose cover is (or would be) swapped. `apply` sets the
+    second cover on YouTube (50 units) and records it on the run; COVER_SWAP=false stops it."""
+    import os
+    from datetime import datetime, timezone
+
+    if os.getenv("COVER_SWAP", "true").strip().lower() in ("0", "false", "no", "off"):
+        return []
+    lines: list[str] = []
+    for found in cover_swap_candidates(channel_id):
+        head = (f"Cover swap: run {found['run_id']} - {found['impressions']:,} impressions at "
+                f"{found['ctr']:.1%}")  # fmt: skip
+        if not apply:
+            lines.append(f"{head}; the next metrics sync puts up its second cover")
+            continue
+        path = (cover or _second_cover)(found, channel_id)
+        if not path:
+            lines.append(f"{head}; no second cover could be cut")
+            continue
+        try:
+            if upload is None:
+                from youtube.oauth import get_youtube_service
+                from youtube.thumbnails import set_video_thumbnail
+
+                service = get_youtube_service(channel_id)
+                result = set_video_thumbnail(service, found["video_id"], path) if service else None
+                ok = getattr(result, "status", "") == "set"
+            else:
+                ok = bool(upload(found["video_id"], path))
+        except Exception as exc:
+            logger.warning("cover swap for run %s failed: %s", found["run_id"], exc)
+            ok = False
+        if not ok:
+            lines.append(f"{head}; YouTube did not take the second cover")
+            continue
+        from core.run_features import merge_features
+
+        merge_features(found["run_id"], {
+            "cover_swapped_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "cover_swap": {"impressions": found["impressions"], "ctr": found["ctr"],
+                           "path": path},
+        })  # fmt: skip
+        lines.append(f"{head}; its second cover is up")
+    return lines

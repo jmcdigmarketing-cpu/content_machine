@@ -418,6 +418,12 @@ def _by_source_and_type(
 
 def _subscriber_change(service: Any, start_date: str, end_date: str) -> int | None:
     """Subscribers gained less subscribers lost over the range, or None (#1144)."""
+    flow = _subscriber_flow(service, start_date, end_date)
+    return None if flow is None else flow[0] - flow[1]
+
+
+def _subscriber_flow(service: Any, start_date: str, end_date: str) -> tuple[int, int] | None:
+    """(gained, lost) over the range, or None (#1713, wave 145: the net hid the unsubscribes)."""
     try:
         resp = (
             service.reports()
@@ -435,13 +441,14 @@ def _subscriber_change(service: Any, start_date: str, end_date: str) -> int | No
     names = {str(h.get("name") or "") for h in (resp or {}).get("columnHeaders") or []}
     if "subscribersGained" not in names:
         return None
-    net = 0.0
+    gained = lost = 0.0
     for row in _named_rows(resp or {}):
         try:
-            net += float(row.get("subscribersGained") or 0) - float(row.get("subscribersLost") or 0)
+            gained += float(row.get("subscribersGained") or 0)
+            lost += float(row.get("subscribersLost") or 0)
         except (TypeError, ValueError):
             continue
-    return int(net)
+    return int(gained), int(lost)
 
 
 _CHANNEL_IDS: dict[str, str] = {}  # #1707: the YouTube channel id `channels.list` answered
@@ -530,6 +537,9 @@ def fetch_ypp_numbers(
     net = _subscriber_change(service, pace_start, end.isoformat())
     if net is not None:
         out["subs_net_28d"] = net
+    week = _subscriber_flow(service, (end - timedelta(days=7)).isoformat(), end.isoformat())
+    if week is not None:  # #1713: the unsubscribes a week, beside the gains
+        out["subs_gained_7d"], out["subs_lost_7d"] = week
     out["pace_days"] = PACE_DAYS
     return out
 

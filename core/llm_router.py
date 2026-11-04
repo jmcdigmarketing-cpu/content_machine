@@ -151,7 +151,13 @@ _DEFAULT_MODELS: dict[str, dict[str, str]] = {
         # which would corrupt short prompt-shaped outputs. This one returned a clean
         # exact "OK". A 429 is fine either way — it fails over (O5) rather than being
         # recorded dead; only a 404 is a retired slug.
-        "cheap": "poolside/laguna-s-2.1:free",
+        #
+        # 2026-11-02 (wave 145): poolside/laguna-s-2.1:free 404'd every night. Of the 14
+        # `:free` ids then listed, inkling 403'd (agentic harnesses only), both gemma-4 and
+        # lfm-2.5 429'd, flint 503'd, xing4.0 leaked its reasoning; nemotron-3.5-lightning
+        # answered a clean "OK" and clean JSON - and nothing at all within 20-120 tokens about
+        # half the time, which `complete` now fails over instead of returning.
+        "cheap": "nvidia/nemotron-3.5-lightning:free",
         "extract": "deepseek/deepseek-chat",
         "premium": "deepseek/deepseek-chat",
     },
@@ -933,6 +939,11 @@ def complete(
                         max_tokens=max_tokens,
                         json_mode=json_mode,
                     )
+                if not (text or "").strip() and provider is None and not is_last:
+                    # Wave 145: an empty answer is no answer - the second read and every
+                    # cheap gate read "" as "fine", so silence from a model is not a pass.
+                    logger.info("LLM '%s' (%s) returned nothing - failing over to next", prov, mdl)
+                    break
                 elapsed = time.perf_counter() - started
                 escaped = False
                 if provider is None and not _is_free_llm(prov, mdl):

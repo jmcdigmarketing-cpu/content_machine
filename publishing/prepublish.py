@@ -132,6 +132,29 @@ def without_short_affiliates(
     return replace(request, description="\n".join(kept)), dropped
 
 
+def without_death_lines(request: PublishRequest) -> tuple[PublishRequest, int]:
+    """#1966 (decision 97): each description sentence about a death is dropped - the
+    description is read under the title. Run 231, the Nov 3 countdown, had a clean script and a
+    description saying a fan had died "three weeks before launch". (request, sentences dropped)."""
+    from dataclasses import replace
+
+    from apis.topic_tokens import split_sentences
+    from core.authenticity import death_words
+
+    lines, dropped = [], 0
+    for line in (request.description or "").split("\n"):
+        if not death_words(line):
+            lines.append(line)
+            continue
+        kept = [s for s in split_sentences(line) if not death_words(s)]
+        dropped += len(split_sentences(line)) - len(kept)
+        if kept:
+            lines.append(" ".join(kept))
+    if not dropped:
+        return request, 0
+    return replace(request, description="\n".join(lines)), dropped
+
+
 def _known_affiliates(channel_id: str | None) -> list[str]:
     """The `config/affiliates.json` links (no query), [] when unread."""
     try:

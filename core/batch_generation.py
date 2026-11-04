@@ -29,7 +29,7 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from core.logging import get_logger
@@ -225,6 +225,7 @@ def collect_topics(
         # Decision 66: an idea, then the preview, then the other ideas.
         candidates: list[Any] = [*kept[:1], *marquee[:1], *kept[1:]]
         chosen = candidates[:count]
+        night_gaming_share(channel_id, chosen, candidates, extra)  # #1968 (S15)
         held = _swap_holdouts(chosen, candidates)
         if picks is not None:
             for rank, bet in enumerate(chosen, 1):
@@ -246,6 +247,39 @@ def collect_topics(
 DATED_SOURCES = ("countdown", "moment", "long")  # decision 84: extra drafts on their day
 
 
+def night_gaming_share(
+    channel_id: str, chosen: list[Any], candidates: list[Any], extra: list[Any]
+) -> int:
+    """#1968 (S15, decision 98): while gaming leads the organic views, the night's drafts - its
+    dated ones included - carry the menu's gaming share (`GAMING_FLOOR` of five). On 11-02 every
+    night offered one series, one preview and one headline, so gaming was one in three while it
+    earned 67% of the views; the menu's floor never reached the night. A plain headline gives
+    way to the next gaming idea in line - never the series or the preview. Returns the swaps."""
+    try:
+        from core.best_bet import GAMING_FLOOR, _gaming_leads
+
+        total = len(chosen) + len(extra)
+        if not chosen or not _gaming_leads(channel_id):
+            return 0
+        need = -(-total * GAMING_FLOOR // 5)  # ceil: 3 of 5, 2 of 3
+        have = sum(1 for b in [*chosen, *extra] if getattr(b, "domain", "") == "gaming")
+        spare = [b for b in candidates[len(chosen) :] if getattr(b, "domain", "") == "gaming"]
+        swaps = 0
+        while have < need and spare:
+            plain = [i for i, b in enumerate(chosen)
+                     if getattr(b, "domain", "") != "gaming"
+                     and getattr(b, "source", "") not in ("series", "schedule")]  # fmt: skip
+            if not plain:
+                break
+            chosen[plain[-1]] = spare.pop(0)
+            have += 1
+            swaps += 1
+        return swaps
+    except Exception as exc:
+        logger.debug("night gaming share skipped: %s", exc)
+        return 0
+
+
 def _unique(bets: list[Any]) -> list[Any]:
     """The ideas that are not None, each topic once, in order."""
     seen: set[str] = set()
@@ -263,7 +297,12 @@ _PREVIEW_KINDS = ("national", "league", "ufc_numbered")
 
 def story_passes_gate(topic: str, *, source: str, outlets: int, names: list[str]) -> bool:
     """#1595: a headline (`trending`) fills an overnight slot on `OUTLETS_MIN` outlets or when it
-    names a marquee name. Series, replays, the follow-up and the calendar are not headlines."""
+    names a marquee name. Series, replays, the follow-up and the calendar are not headlines.
+    #1966 (decision 97): a death story fills no slot, whatever its source."""
+    from core.authenticity import is_death_story
+
+    if is_death_story(topic or ""):
+        return False
     if source != "trending":
         return True
     from apis.topic_tokens import names_any
@@ -315,9 +354,47 @@ def follow_up_topic(channel_id: str, *, now: datetime | None = None) -> str:
             # since" drew last season's "clinched the No. 1 seed" into run 179.
             day = f"{published:%b} {published.day}"
             return f'Follow-up to "{title}" ({day}): what has happened since {day}'
+        for title, published in breakouts(channel_id, now=moment):  # #1601
+            if not _followed_up(channel_id, title):
+                day = f"{published:%b} {published.day}"
+                return f'Follow-up to "{title}" ({day}): what has happened since {day}'
     except Exception as exc:
         logger.debug("follow-up topic skipped: %s", exc)
     return ""
+
+
+BREAKOUT_VIEWS = 300  # #1601 (B01.5): organic views in a video's first day
+BREAKOUT_HOURS = 48
+
+
+def breakouts(channel_id: str, *, now: datetime | None = None) -> list[tuple[str, datetime]]:
+    """#1601 (wave 145): (title, published) for each video whose first day brought
+    `BREAKOUT_VIEWS` organic views, judged in the last `BREAKOUT_HOURS` - most views first.
+    #1452 drafted a follow-up only for two subscribers; a breakout compounds while it is
+    fresh. The first-day verdict (#49, `metrics["first_day"]`) holds the 24-hour views."""
+    from analytics.first_day import _metrics
+    from storage.repositories.publish_log import get_publish_log_repository, video_title
+
+    moment = now or datetime.now(timezone.utc)
+    found: list[tuple[int, str, datetime]] = []
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        verdict = _metrics(row).get("first_day")
+        if not isinstance(verdict, dict) or int(verdict.get("views") or 0) < BREAKOUT_VIEWS:
+            continue
+        try:
+            judged = datetime.fromisoformat(str(verdict.get("judged_at") or ""))
+        except ValueError:
+            continue
+        judged = judged if judged.tzinfo else judged.replace(tzinfo=timezone.utc)
+        if moment - judged > timedelta(hours=BREAKOUT_HOURS):
+            continue
+        title = video_title(row, fallback="").strip()
+        published = getattr(row, "published_at", None) or judged - timedelta(days=1)
+        if isinstance(published, datetime) and published.tzinfo is None:
+            published = published.replace(tzinfo=timezone.utc)
+        if title:
+            found.append((int(verdict.get("views") or 0), title, published))
+    return [(title, when) for _views, title, when in sorted(found, key=lambda f: -f[0])]
 
 
 def _followed_up(channel_id: str, title: str) -> bool:
@@ -376,18 +453,68 @@ def pick_facts(best_bet: dict | None) -> list[str]:
     return [str(f) for f in ((best_bet or {}).get("facts") or []) if str(f).strip()]
 
 
-def series_drafted(channel_id: str, topic: str) -> bool:
-    """This week's series topic is already a draft or a run (#991): it is made once a week."""
+def series_drafted(channel_id: str, topic: str, *, redo_set_aside: bool = False) -> bool:
+    """This week's series topic is already a draft or a run (#991): it is made once a week.
+
+    #1964 (wave 145): with ``redo_set_aside`` (a countdown day), a run whose draft was rejected
+    or whose render was retired does not count. Run 226, the Nov 3 countdown, was rejected at
+    review and no night would have drafted the day again."""
     try:
+        key = " ".join(topic.lower().split())
+        if redo_set_aside:
+            from storage.repositories.content_runs import get_content_run_repository
+
+            aside = set_aside_runs(channel_id, key)
+            runs = get_content_run_repository().list_for_channel(channel_id)[:60]
+            for run in runs:
+                seed = " ".join(str(run.input_topic or run.selected_topic or "").lower().split())
+                if seed == key and int(run.id) not in aside and not _retired(run):
+                    return True
+            return unreviewed_draft(channel_id, topic) is not None
         from core.channel_context import recent_input_topics
 
-        key = topic.strip().lower()
         if any(str(t).strip().lower() == key for t in recent_input_topics(channel_id, limit=60)):
             return True
         return unreviewed_draft(channel_id, topic) is not None
     except Exception as exc:
         logger.debug("series lookup skipped: %s", exc)
         return False
+
+
+def set_aside_runs(channel_id: str, key: str) -> set[int]:
+    """#1964: the runs whose draft for this topic (normalised) was rejected at review."""
+    out: set[int] = set()
+    try:
+        root = _drafts_dir(channel_id)
+        names = os.listdir(root)
+    except OSError:
+        return out
+    for name in names:
+        try:
+            with open(os.path.join(root, name, "meta.json"), encoding="utf-8") as f:
+                meta = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(meta, dict):
+            continue
+        review = meta.get("review")
+        if not isinstance(review, dict) or review.get("decision") != "rejected":
+            continue
+        if " ".join(str(meta.get("topic") or "").lower().split()) == key:
+            try:
+                out.add(int(str(meta.get("run_id"))))
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
+def _retired(run: Any) -> bool:
+    """#1964: a render retired as wrong (`stale_renders`, wave 140) - its day may be made again."""
+    try:
+        features = json.loads(getattr(run, "features_json", None) or "{}")
+    except (TypeError, ValueError):
+        return False
+    return isinstance(features, dict) and bool(features.get("retired_at"))
 
 
 def _length_choice(channel_id: str, topic: str) -> str:
@@ -520,12 +647,16 @@ def generate_draft(
             length_choice=length_choice,
             proceed_video=False,
             channel_id=channel_id,
-            creative_brief=topic
+            # #1967 (wave 145): only words that say what the video is for are its idea - your
+            # own, or a preview's matchup and call. The arm, the shape and the follow line are
+            # directions: as "THE OPERATOR'S IDEA" they were checked as unanswered (2 of 5
+            # drafts on 11-02) and paid a premium rewrite.
+            creative_brief=topic if own_idea else preview,
+            directions=""
             if own_idea
             else "\n".join(
                 part
                 for part in (
-                    preview,
                     shape_arm[2] if shape_arm else "",
                     experiment[2] if experiment else "",
                     # #1699 (S02): the format's true reason to follow, in its last line
@@ -749,7 +880,9 @@ def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
         return ""
     if preview:
         return ANGLE_PREVIEW
-    return ANGLE_NEWS if source == "trending" else ANGLE_DEFAULT
+    # #1965 (wave 145): a countdown is the day's news on its subject. Read as "default", run 226
+    # took the repeat-coverage table's "what changed since launch" for a game not yet out.
+    return ANGLE_NEWS if source in ("trending", "countdown") else ANGLE_DEFAULT
 
 
 def pick_source(topic: str, best_bet: dict | None) -> str:

@@ -2304,7 +2304,10 @@ def cmd_packaging(args: argparse.Namespace) -> int:
     from analytics import packaging
     from config.channels import resolve_channel_id
 
-    for line in packaging.packaging_lines(resolve_channel_id(getattr(args, "channel", None))):
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    for line in packaging.packaging_lines(channel):
+        print(line)
+    for line in packaging.swap_low_ctr_covers(channel):  # #1413: what the sync would swap
         print(line)
     return 0
 

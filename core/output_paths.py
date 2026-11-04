@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime
 
 from config.channels import get_channel_profile, resolve_channel_id
@@ -45,15 +46,23 @@ def windows_long_prefix(path: str) -> str:
     return "\\\\?\\" + ap
 
 
+_STAMP_TAIL = re.compile(r"_\d{8}_\d{6}$")
+TITLE_MAX = 80  # wave 145: run 225's file name was its whole angle, 160+ characters
+
+
 def _clip_filename(directory: str, base: str, ext: str) -> str:
-    """Shorten `base` so abspath(directory/base+ext) stays under WIN_MAX_PATH."""
+    """Shorten `base` so abspath(directory/base+ext) stays under WIN_MAX_PATH - from the title,
+    so a trailing `_YYYYMMDD_HHMMSS` survives (wave 145: it was cut first)."""
     filename = f"{base}{ext}"
     path = os.path.join(directory, filename)
     overflow = len(os.path.abspath(path)) - max_path_limit()
     if overflow <= 0:
         return filename
-    keep = max(8, len(base) - overflow)
-    clipped = f"{base[:keep]}{ext}"
+    tail = _STAMP_TAIL.search(base)
+    stamp = tail.group(0) if tail else ""
+    head = base[: len(base) - len(stamp)]
+    keep = max(8, len(head) - overflow)
+    clipped = f"{head[:keep]}{stamp}{ext}"
     logger.warning(
         "Output name clipped for MAX_PATH (%s -> %s)",
         filename[:48],
@@ -96,7 +105,7 @@ def media_paths_for_topic(
     ts = timestamp or datetime.now().strftime("%Y%m%d_%H%M%S")
     safe_title = (
         "".join(c for c in topic if c.isalnum() or c == " ").strip().replace(" ", "_").lower()
-    )
+    )[:TITLE_MAX].rstrip("_")
     base = f"{safe_title}_{ts}"
     mp4_filename = _clip_filename(dirs["video"], base, ".mp4")
     stem = mp4_filename[: -len(".mp4")] if mp4_filename.lower().endswith(".mp4") else base

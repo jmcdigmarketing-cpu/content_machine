@@ -256,6 +256,34 @@ def plan_clips(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [*rundown, *sorted(deep, key=lambda d: -d["deep"])]
 
 
+def week_special(channel_id: str, *, now: datetime | None = None) -> dict[str, Any] | None:
+    """#1866 (B11.20, wave 145): a `week_special` row of `config/series.json` due on this
+    Monday - that week's Week in Review is its subject's alone, under its own title."""
+    try:
+        from core.series.countdown import series_rows
+        from core.series.dated import channel_day
+
+        today = channel_day(channel_id, _now(now)).isoformat()
+        for row in series_rows(channel_id):
+            if row.get("kind") == "week_special" and str(row.get("on") or "")[:10] == today:
+                return row
+    except Exception as exc:
+        logger.debug("week special unread: %s", exc)
+    return None
+
+
+def special_items(items: list[dict[str, Any]], row: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """#1866: the Shorts naming the special's subject, or `items` when under MIN_SHORTS do - a
+    thin launch week still gets its regular Week in Review."""
+    if not row:
+        return items
+    from apis.topic_tokens import names_any
+
+    names = [str(n) for n in row.get("names") or [row.get("subject") or ""] if str(n).strip()]
+    kept = [i for i in items if names_any(str(i.get("title") or ""), names)]
+    return kept if len(kept) >= MIN_SHORTS else items
+
+
 def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | None:
     """The week's compilation - its title, chapters and parts - or None under MIN_SHORTS."""
     moment = _now(now)
@@ -267,6 +295,11 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
         if not length or length > _MAX_SHORT_SECONDS or length - cut < 10:
             continue
         items.append({**short, "offset": cut, "seconds": float(length) - cut})
+    special = week_special(channel_id, now=moment)
+    every = len(items)
+    items = special_items(items, special)
+    if special and len(items) == every and every:
+        special = None  # too few named it: the regular Week in Review
     if len(items) < MIN_SHORTS:
         return None
     try:
@@ -285,8 +318,9 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
         at += item["seconds"]
     monday = (moment - timedelta(days=moment.weekday())).date().isoformat()
     deep_count = sum(1 for item in items if item.get("deep"))
+    about = str(special.get("subject") or name) if special else name
     description = (
-        f"Every {name} story from {short_span(first, last)}, then the week's top {deep_count} "
+        f"Every {about} story from {short_span(first, last)}, then the week's top {deep_count} "
         "in full.\n\n" + "\n".join(chapters) + "\n"
     )
     # #1522 (live 2026-10-19): the first compilation was scheduled public without the AI
@@ -301,6 +335,8 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
     if disclosure:
         description += f"\n{disclosure}\n"
     title = compilation_title(name, items, short_span(first, last))
+    if special and special.get("title"):  # #1866: its own title, with the dates
+        title = f"{special['title']} ({short_span(first, last)})"[:100]
     return WeekPlan(channel_id=channel_id, week=monday, title=title,
                     description=description, items=items, seconds=at)  # fmt: skip
 

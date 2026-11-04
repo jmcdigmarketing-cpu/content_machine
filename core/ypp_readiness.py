@@ -303,6 +303,9 @@ def path_lines(numbers: dict[str, Any], *, from_videos: dict[str, Any] | None = 
             bought = _bought_pace_line(numbers, from_videos, weeks, left)
             if bought:
                 lines.append(bought)
+    lost, gained = numbers.get("subs_lost_7d"), numbers.get("subs_gained_7d")
+    if isinstance(lost, int) and isinstance(gained, int):  # #1713
+        lines.append(f"  Unsubscribes: {lost} in the last 7 days, against {gained} gained.")
     recent = numbers.get("shorts_views_28d")
     if isinstance(recent, (int, float)):
         need = SHORTS_VIEWS_TARGET / (90 / 7.0)

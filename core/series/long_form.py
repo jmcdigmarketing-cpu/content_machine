@@ -201,13 +201,19 @@ def _frame(video: str, at: float, dest: str) -> str:
 
 
 def long_thumbnail(
-    video: str, title: str, dest: str, *, channel_id: str, palette: list[str] | None = None
+    video: str,
+    title: str,
+    dest: str,
+    *,
+    channel_id: str,
+    palette: list[str] | None = None,
+    at: float = 0.3,
 ) -> str:
-    """#1731 + #1869: a 1280x720 card - a frame 30% into our own 16:9 render, three title words
-    in the palette's first colour (`compose_thumbnail`'s contrast rule backs or refuses it).
-    "" when no card was made."""
+    """#1731 + #1869: a 1280x720 card - a frame `at` (30%) into our own 16:9 render, three title
+    words in the palette's first colour (`compose_thumbnail`'s contrast rule backs or refuses it).
+    "" when no card was made. #1413: the second cover is a frame 60% in."""
     length = _duration(video) or 0.0
-    frame = _frame(video, max(1.0, 0.3 * length), os.path.splitext(dest)[0] + "_frame.png")
+    frame = _frame(video, max(1.0, at * length), os.path.splitext(dest)[0] + "_frame.png")
     if not frame:
         return ""
     try:

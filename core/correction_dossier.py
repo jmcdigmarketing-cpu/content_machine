@@ -132,10 +132,38 @@ class CorrectionDossier:
 
 
 def _default_fetch(url: str) -> str:
-    from urllib.request import urlopen
+    from urllib.request import Request, urlopen
 
-    with urlopen(url, timeout=8) as resp:
+    # Wave 145: Python's default User-Agent drew 403s from pages a browser reads.
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0 (Content OS correction check)"})
+    with urlopen(request, timeout=8) as resp:
         return resp.read(_MAX_BODY_CHARS).decode("utf-8", errors="ignore")
+
+
+DEAD_AFTER = 2  # wave 145: a source that failed this many scans in a row is not fetched again
+
+
+def _dead_path(stamp: str) -> str:
+    root, ext = os.path.splitext(stamp)
+    return f"{root}_dead{ext or '.json'}"
+
+
+def _load_dead(path: str) -> dict[str, int]:
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return {str(k): int(v) for k, v in data.items()} if isinstance(data, dict) else {}
+
+
+def _save_dead(path: str, dead: dict[str, int]) -> None:
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(dict(sorted(dead.items())), handle, indent=2)
+    except OSError as exc:
+        logger.debug("dead sources not saved: %s", exc)
 
 
 def _claims_and_sources(run: Any) -> tuple[list[dict], list[str]]:
@@ -240,6 +268,12 @@ def scan_published_for_corrections(
     getter = fetch or _default_fetch
     store = negative_store if negative_store is not None else _default_negative_store
     found: list[CorrectionDossier] = []
+    # Wave 145: each source once a scan (a Yahoo page was fetched twice on 11-02), and one that
+    # failed `DEAD_AFTER` scans running is skipped - 9 such warnings a night, every night.
+    dead_file = _dead_path(stamp)
+    dead = _load_dead(dead_file)
+    bodies: dict[str, str | None] = {}
+    skipped: set[str] = set()
 
     for row in rows or []:
         raw_run_id = getattr(row, "content_run_id", None)
@@ -255,11 +289,20 @@ def scan_published_for_corrections(
         if not claims or not sources:
             continue
         for url in sources:
-            try:
-                body = getter(url) or ""
-            except Exception as exc:
-                # Not a clean result. The operator is told the check did not run.
-                logger.warning("correction source unreachable, not cleared: %s (%s)", url, exc)
+            if dead.get(url, 0) >= DEAD_AFTER:
+                skipped.add(url)
+                continue
+            if url not in bodies:
+                try:
+                    bodies[url] = getter(url) or ""
+                    dead.pop(url, None)
+                except Exception as exc:
+                    # Not a clean result. The operator is told the check did not run.
+                    logger.warning("correction source unreachable, not cleared: %s (%s)", url, exc)
+                    bodies[url] = None
+                    dead[url] = dead.get(url, 0) + 1
+            body = bodies[url]
+            if body is None:
                 continue
             body_lc = body.lower()
             has_retraction = any(word in body_lc for word in _RETRACTION_WORDS)
@@ -321,7 +364,13 @@ def scan_published_for_corrections(
                 break  # one dossier per source; the operator reads the page next
     # A completed clean scan is still work: stamp it so every overnight run
     # does not re-fetch the same published sources (#703). Individual source
-    # failures remain WARNINGs above and are retried on the next due scan.
+    # failures remain WARNINGs above and are retried on the next due scan - twice.
+    if skipped:
+        logger.info(
+            "correction scan: %d source(s) skipped after %d failed scans (%s)",
+            len(skipped), DEAD_AFTER, os.path.basename(dead_file),
+        )  # fmt: skip
+    _save_dead(dead_file, dead)
     write_stamp(stamp, now=now)
     return found
 

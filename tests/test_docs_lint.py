@@ -108,6 +108,13 @@ class TestRoadmapIndex(unittest.TestCase):
 
         self.assertIn("roadmap-index", COMMANDS)
 
+    def test_every_command_a_living_doc_names_is_registered(self):
+        # Wave 145: #633's helper was never asked; this asked one verb and could not fail.
+        from core.ops_doc_verbs import unregistered_verbs
+        from scripts.ops import COMMANDS
+
+        self.assertEqual(unregistered_verbs(COMMANDS), {})
+
 
 if __name__ == "__main__":
     unittest.main()

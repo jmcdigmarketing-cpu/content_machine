@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-01: wave 144, the next 15
+# Handoff synopsis — 2026-11-03: wave 145, the next 15 and the grand audit
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-01 (Claude Code): wave 144, the next 15 (S02)
+## Last wave — 2026-11-02/03 (Claude Code): wave 145, the next 15 (S15) and the grand audit
+
+Found live and fixed: the Nov 3 countdown held for its own day count, written "since launch", led by
+a fan's death, and no night would redraft it; day 15 went public a day early. Never a death story
+(decision 97). Directions are not your idea; S15 counts a menu once and the night carries the gaming
+share (decision 98). Unsubscribes a week, per-platform weeks, the policy site read live, breakout
+follow-ups, UFC 334 and Thanksgiving rows, the week-one special, a second cover under 2% CTR, the
+16:9 cut laid out for 16:9. Four sports videos refiled. Audit: [audit_2026-11-02.md](audit_2026-11-02.md).
+
+## Previous — 2026-11-01 (Claude Code): wave 144, the next 15 (S02)
 
 Every non-preview Short ends on a true reason to follow; long descriptions and the bio pages carry a
 subscribe link (decision 96). Long videos: payoff early, search-term tags and chapters, a drop-off
@@ -23,13 +32,6 @@ The take detector learned six shapes the scripts' calls are written in; S06 read
 95). A countdown day is compared with its own series on wording, not subject. GTA long videos link
 both editions; a long description is a 150-250 word summary led by its title; no gambling link,
 ever. #1730 parked (no API). Correction: run 222 waited on "no take", not its grade.
-
-## Previous — 2026-11-01 (Claude Code): wave 142, the next five (S05)
-
-The grade gates nothing (decision 94): your verdicts tracked the views and the grade did not (15 of
-40 in their views' third, chance 33%); S05 reads it against the audience. NFL nicknames read NFL and
-10 stored subjects were corrected (S15: gaming 67%). Amazon links carry a tracking ID per place - a
-link page per bio - and the sync keeps which outside site sent a view. Captions end 450 px up.
 
 ---
 

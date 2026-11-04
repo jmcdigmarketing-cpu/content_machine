@@ -116,11 +116,13 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(updates, [])
         self.assertEqual(run_updates, [])
 
-    def test_a_video_gone_from_youtube_is_reported_and_left_alone(self):
+    def test_a_video_gone_from_youtube_is_reported_and_recorded_gone(self):
+        # Wave 145 (decision 98): it was "reported and left alone" (#1128); runs 185 and 186,
+        # deleted in Studio, stayed on the shelf as unlisted. The row is kept, marked gone.
         rows = [_row(1, "a", "public"), _row(2, "b", "public")]
         report, updates, _runs, _spent = self._sync(rows, {"a": "public"})
         self.assertEqual([g["video_id"] for g in report["gone"]], ["b"])
-        self.assertEqual(updates, [])
+        self.assertEqual([u[1] for u in updates], [{"privacy_status": "gone"}])
 
     def test_a_run_still_scheduled_follows_its_public_video(self):
         rows = [_row(1, "a", "private", 7), _row(2, "b", "public", 8), _row(3, "c", "unlisted", 9)]

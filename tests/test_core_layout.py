@@ -29,7 +29,10 @@ CORE = ROOT / "core"
 # as modules move into sub-packages; never raise it.
 FLAT_CEILING = 228
 # Moves whose old name is still a one-wave alias.
-MOVED = {
+MOVED: dict[str, str] = {}
+# Moves whose alias wave is over: the old file is gone (#901 voice, #907 vault; the facts
+# aliases of #907 outlived their wave by 98 and were retired in wave 145).
+RETIRED_ALIASES = {
     "fact_store": "core.facts.store",
     "fact_selection": "core.facts.selection",
     "fact_grounding": "core.facts.grounding",
@@ -38,9 +41,6 @@ MOVED = {
     "fact_conflicts": "core.facts.conflicts",
     "fact_expiry": "core.facts.expiry",
     "fact_recency": "core.facts.recency",
-}
-# Moves whose alias wave is over: the old file is gone (#901 voice, #907 vault).
-RETIRED_ALIASES = {
     "voice_plan": "core.voice.plan",
     "voice_catalog": "core.voice.catalog",
     "voice_consistency": "core.voice.consistency",

@@ -636,9 +636,46 @@ def opening_sentence(script: str) -> str:
 
 
 def ad_limit_reason(title: str, script: str) -> str:
-    """Why the title or the first line would limit ads, else "" (#1319)."""
+    """Why the title or the first line would limit ads, else "" (#1319); #1966 a death."""
     words = ad_unfriendly_words(f"{title or ''} {opening_sentence(script)}")
-    return f'its title or first line would limit ads ("{words[0]}")' if words else ""
+    if words:
+        return f'its title or first line would limit ads ("{words[0]}")'
+    return death_reason(title, script)
+
+
+# Wave 145 (#1966, decision 97, the operator: "Never draft a death story"). Run 226, the Nov 3
+# countdown, opened on a viral fan's death ("has *died*") and run 229 was titled "GTA 6 Community
+# Mourns Loss of Devoted Fan"; nothing matched a death. Game titles and sport terms are not deaths:
+# Red Dead, Dead Island, Death Stranding, sudden death, deathmatch - so no bare "dead" or "death";
+# and sport's "killed by turnovers" and gaming's "RIP to the old meta" are not either.
+_DEATH = re.compile(
+    r"\b(?:died|passed away|passes away|death of|dead at \d+|found dead|shot dead|"
+    r"killed in an? (?:crash|accident|shooting|attack|collision|fire)|mourns?|mourning|mourned|"
+    r"funerals?|obituar(?:y|ies)|in memoriam)\b"
+    r"|\bdies\b(?! (?:down|out|off|hard))",
+    re.IGNORECASE,
+)
+
+
+def death_words(text: str) -> list[str]:
+    """The death phrases in `text`, lowercased, first-seen order; [] when none (#1966)."""
+    seen: list[str] = []
+    for match in _DEATH.finditer(text or ""):
+        word = match.group(0).lower()
+        if word not in seen:
+            seen.append(word)
+    return seen
+
+
+def is_death_story(headline: str) -> bool:
+    """#1966: a headline about a death - never an idea and never a countdown's fact."""
+    return bool(death_words(headline))
+
+
+def death_reason(title: str, script: str = "") -> str:
+    """#1966: why a death in the title or the first line holds the video, else ""."""
+    words = death_words(f"{title or ''} {opening_sentence(script)}")
+    return f'its title or first line is about a death ("{words[0]}")' if words else ""
 
 
 def has_insight(script: str) -> bool:

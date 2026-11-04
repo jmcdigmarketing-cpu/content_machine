@@ -4,7 +4,7 @@
 
 Every doc in this repo, by what it is for. Conventions:
 [docs_standard.md](docs_standard.md). Current verdict on the system:
-[audit_2026-10-17.md](audit_2026-10-17.md). What happens next:
+[audit_2026-11-02.md](audit_2026-11-02.md). What happens next:
 [master_plan.md](master_plan.md).
 
 **Status keys.** `living` = kept true at HEAD · `frozen` = true on its date, never
@@ -17,7 +17,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [../README.md](../README.md) | What the product is and how to run it |
 | [../CLAUDE.md](../CLAUDE.md) · [../AGENTS.md](../AGENTS.md) | Agent entry points — read before editing code |
 | [master_plan.md](master_plan.md) | The canonical forward plan (M0–M5) |
-| [audit_2026-10-17.md](audit_2026-10-17.md) | Where the system actually stands, with evidence |
+| [audit_2026-11-02.md](audit_2026-11-02.md) | Where the system actually stands, with evidence |
 | [handoff_synopsis.md](handoff_synopsis.md) | State as of the last working session |
 
 ## Charter — why this exists
@@ -36,7 +36,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 |---|---|
 | [architecture.md](architecture.md) | Pipeline, modules, data flow |
 | [decisions.md](decisions.md) | ADR-lite. §18, §24, §25, §26 are required reading |
-| [decisions_2026-10.md](decisions_2026-10.md) | Decisions 40 onward: overnight may render (§40), a parked channel (§41) |
+| [decisions_2026-10.md](decisions_2026-10.md) | Decisions 40-96: overnight may render (§40), a parked channel (§41) |
+| [decisions_2026-11.md](decisions_2026-11.md) | Decisions 97 onward: never a death story (§97), the night's gaming share and a deleted video recorded gone (§98) |
 | [vault.md](vault.md) | The Obsidian vault end to end: layout, tiers, what is read back, ops verbs |
 | [credit_efficiency.md](credit_efficiency.md) | Credit, quota and spend efficiency (O1–O12) |
 | [llm_provider_strategy.md](llm_provider_strategy.md) | Router tiers, providers, what each adds |
@@ -109,7 +110,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md) | 2026-08-26 — the clip pipeline against MoneyPrinter's (decisions §26) |
 | [cursor_audit_prompt.md](cursor_audit_prompt.md) | the one-off audit prompt handed to Cursor at `e6d5c9c` |
 | [backlog_audit_2026-10-18.md](backlog_audit_2026-10-18.md) | 2026-10-18 — 258 open items read: 92 merged into a later entry, 83 retired, 13 shipped, 70 kept |
-| [audit_2026-10-17.md](audit_2026-10-17.md) | 2026-10-17 — **current**; CI red six days, the suite reached the real database, Cursor's commits read |
+| [audit_2026-11-02.md](audit_2026-11-02.md) | 2026-11-02 — **current**; the countdown held for its own number, directions graded as your idea, S15 counting a night three times, silence from a model read as a pass, the paid views the record misses |
+| [audit_2026-10-17.md](audit_2026-10-17.md) | 2026-10-17 — CI red six days, the suite reached the real database, Cursor's commits read |
 | [audit_2026-09-26.md](audit_2026-09-26.md) | 2026-09-26 — before→after of the 09-20 findings |
 | [review_2026-09-26.md](review_2026-09-26.md) | 2026-09-26 — own review: fixes erased by later work, fixes that reached one copy, the regression corpus |
 | [audit_2026-09.md](audit_2026-09.md) | 2026-09-20 |

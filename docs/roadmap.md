@@ -67,6 +67,17 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-03 (Claude, wave 145 - the next 15, S15, and the grand audit).** Tonight's run found the
+Nov 3 countdown held for its own day count, on a "since launch" angle, led by a fan's death, and
+lost for good; all fixed, the day redrafted (run 231) and approved past the second read. The next
+evening day 15 went public a day early - a dated draft no longer goes out before its day. Never a
+death story (decision 97); directions are not your idea; S15 counts a menu once and the night
+carries the gaming share (decision 98). Also: unsubscribes a week, per-platform weeks, the policy
+site read live, breakout follow-ups, UFC 334 and Thanksgiving, the week-one special Nov 23, a second
+cover under 2% CTR, the 16:9 cut laid out for 16:9. The audit: [audit_2026-11-02.md](audit_2026-11-02.md).
+Next, with **S01** (long-form hours - the GTA 6 long videos from Nov 6): **#1976** the 16:9 cut's end
+card, **#1978** the second read on a countdown, **#1977** a promoted video's paid views, **#1849**
+the review-score Short once the embargo date is known. W4 (Nov 16-22) is launch week: defects only.
 **2026-11-01 (Claude, wave 144 - the next 15, S02).** Trending Shorts end on a true reason to
 follow - the subject's public long video, its countdown, or the Monday Week in Review - and long
 descriptions and the bio pages carry a subscribe link (decision 96). Long videos: payoff in the
@@ -85,26 +96,6 @@ editions; a long description is a 150-250 word summary led by its title; no gamb
 subscribers from 91 videos): **#1729** deep-dive Shorts end on the full video, **#1726** keyword
 chapter titles on long videos, **#1960** the same fight drafted twice, **#1733** each long
 video's drop-off minute.
-**2026-11-01 (Claude, wave 142 - the next five, S05).** Your verdicts tracked the views (0.65);
-the grade did not - 15 of 40 measured videos in their views' third, chance 33% - so it gates
-nothing now (decision 94; GRADE_GATE brings a floor back) and S05 reads it against the audience.
-An NFL team named by nickname reads NFL, and 10 stored subjects were corrected (S15: gaming 67% of
-the views). Amazon links carry a tracking ID per place - long videos and a link page per bio -
-and the sync keeps which outside site sent a view. The captions end 450 px up, clear of
-Instagram's caption rows. Next, with **S06** (4 of 48 public videos read as a recap): **#1730**
-each Short's related video set to its topic's long video (GTA 6 on Nov 6), **#1749** GTA 6
-edition links before 11-19, **#1741** long descriptions with the search terms, **#1764** no
-gambling affiliate, ever.
-**2026-11-01 (Claude, wave 141 - the next five, S01).** You set the Associates tag and turned on
-the Reporting API (the report job runs; S11 now waits on YouTube's first file). S01: the two
-Weeks in Review drew 4 views and 0, so the slot measured where long views come from - by
-traffic source, with minutes - before writing a better one (#1315 waits). The menu offered
-gaming 24% while gaming earned 59% of organic views: S15 passes within 15 points, and three
-ideas of five are gaming (decision 93). Chapter Shorts now count for their parent's domain;
-Cyber Monday is a long deals video drafted Nov 28; S09 counts corrections; S10 skips what you
-left. Next, with **S05** (your verdicts against the audience, 54%): **#1919** the link page's
-clicks, **#1752** Amazon tracking IDs per platform, **#1947** two gaming videos stored as
-another domain, **#1931** Instagram's side buttons.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

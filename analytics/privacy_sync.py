@@ -8,8 +8,9 @@ minute left eleven out. The operator found it: asked about three "unlisted" vide
 was "all 3 were published".
 
 One `videos.list(part="status,snippet")` per 50 videos, 1 quota unit each (a part costs
-nothing extra), inside the metrics sync. A video YouTube no longer returns is reported and left
-alone - nothing here deletes a row.
+nothing extra), inside the metrics sync. A video YouTube no longer returns is reported and, on
+apply, recorded `gone` (wave 145, decision 98: runs 179, 185 and 186 were deleted in Studio and
+`ops shelf` still listed two as "unlisted, held for a claim") - nothing here deletes a row.
 
 #1390 (S09): the same read brings back each video's title and description. One edited in
 Studio is copied to its run, so what the learning reads is what is live; the uploaded title
@@ -234,6 +235,8 @@ def sync_privacy(channel_id: str, *, service: Any = None, apply: bool = True) ->
         entry = {"run_id": row.content_run_id, "video_id": video_id, "was": was, "now": now}
         if now == GONE:
             report["gone"].append(entry)
+            if apply:  # wave 145: the record says what YouTube says; the row stays
+                repo.update(row.id, {"privacy_status": GONE})
             continue
         report["changed"].append(entry)
         if apply:
@@ -356,7 +359,7 @@ def sync_lines(report: dict[str, Any]) -> list[str]:
     if gone:
         lines.append(
             f"Privacy: {len(gone)} video(s) are no longer on YouTube ({_runs(gone)}) - "
-            "the record is left as it was"
+            "recorded as gone"
         )
     moved = report.get("runs_published") or []
     if moved:

@@ -576,12 +576,15 @@ def menu_mix_line(channel_id: str, *, last: int = 30) -> str:
 
 def menu_mix(channel_id: str, *, last: int = 30) -> tuple[Counter[str], Counter[str], int]:
     """(offered by domain, taken by domain, menus read) over the last `last` menus - the line
-    above and S15 (#1935) read the same counts."""
+    above and S15 (#1935) read the same counts. #1968 (wave 145): a menu is read once - each of a
+    night's drafts records the night's whole menu, so 11-02's three-row menu counted three times;
+    every draft still counts as a take."""
     from storage.repositories.content_runs import get_content_run_repository
 
     offered: Counter[str] = Counter()
     taken: Counter[str] = Counter()
     menus = 0
+    seen: set[tuple[str, ...]] = set()
     runs = sorted(
         get_content_run_repository().list_for_channel(channel_id) or [],
         key=lambda r: int(getattr(r, "id", 0) or 0),
@@ -598,8 +601,11 @@ def menu_mix(channel_id: str, *, last: int = 30) -> tuple[Counter[str], Counter[
         if not isinstance(pick, dict):
             continue
         options = [o for o in pick.get("offered") or [] if isinstance(o, dict)]
-        menus += 1
-        offered.update(str(o.get("domain") or "?") for o in options)
+        key = tuple(str(o.get("topic") or "") for o in options)
+        if key not in seen:
+            seen.add(key)
+            menus += 1
+            offered.update(str(o.get("domain") or "?") for o in options)
         rank = pick.get("picked")
         if isinstance(rank, int) and 1 <= rank <= len(options):
             taken[str(options[rank - 1].get("domain") or "?")] += 1

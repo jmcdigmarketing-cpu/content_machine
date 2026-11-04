@@ -1072,10 +1072,14 @@ def run_pipeline(
     own_idea: bool = False,
     own_topic: str = "",
     intent_read: Any = None,
+    directions: str = "",
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
     Pass discovery= to reuse a prior run_discovery() and avoid duplicate API calls.
+    ``directions`` (#1967, wave 145): the machine's own instructions for this draft - a script
+    experiment's arm, a preview's shape, the follow line - written as a style directive, never
+    as the operator's idea.
     """
     channel_id = resolve_channel_id(channel_id or (discovery.channel_id if discovery else None))
     result = PipelineResult(topic=topic, score=0.0, signals={}, channel_id=channel_id)
@@ -1267,6 +1271,7 @@ def run_pipeline(
         relevance_corpus=relevance_corpus,
         research_need=research_need,
         own_idea=own_idea,  # #1016: angle 1, the operator's own idea - no take pushed on it
+        extra_directive=directions,  # #1967: the machine's directions, not the operator's idea
         chapter_angles=angles if len(angles) >= 2 else None,  # #1010
         intent=run_intent.intent,  # #1091
         intent_also=run_intent.also,  # #1096

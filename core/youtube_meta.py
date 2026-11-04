@@ -252,12 +252,31 @@ _TITLE_HEDGE = re.compile(
     re.I,
 )
 LEAK_SHARED = 3  # content words a title shares with a leak-marked sentence to carry its claim
+# #1961 (wave 145): where a hedge's clause ends - a dash, a comma, "but", "and".
+_CLAUSE_BREAK = re.compile(r"\s+[-\u2013\u2014]\s+|[,;:!?.]|\s+(?:but|and|while|though)\s+", re.I)
+
+
+def _hedged_words(sentence: str) -> set[str]:
+    """#1961: the words a leak marker hedges - its own clause after the marker ("reportedly
+    ranked No. 1"), or the clause before it when the marker ends one ("..., per a rumour")."""
+    from apis.topic_tokens import content_tokens
+
+    words: set[str] = set()
+    for match in _LEAK_MARKERS.finditer(sentence):
+        after = _CLAUSE_BREAK.split(sentence[match.end() :], maxsplit=1)[0]
+        found = set(content_tokens(after))
+        if len(found) < 2:
+            found |= set(content_tokens(_CLAUSE_BREAK.split(sentence[: match.start()])[-1]))
+        words |= found
+    return words
 
 
 def leak_as_fact(title: str, script: str) -> str:
     """#1858 (decision 96): a title that states, as fact, a claim the script gives as a leak or a
     rumour - "" when the title says leak / report / rumour or asks, or shares under `LEAK_SHARED`
-    content words with every leak-marked sentence (it names the subject, not the claim)."""
+    content words with every leak-marked sentence (it names the subject, not the claim). #1961
+    (wave 145): it must also share a word of the hedged clause - run 138's title named the
+    Knicks' half-court offense, which the script said was "reportedly ranked No. 1"."""
     if not (title or "").strip() or not (script or "").strip() or _TITLE_HEDGE.search(title):
         return ""
     from apis.topic_tokens import content_tokens, split_sentences
@@ -267,6 +286,7 @@ def leak_as_fact(title: str, script: str) -> str:
         if (
             _LEAK_MARKERS.search(sentence)
             and len(words & set(content_tokens(sentence))) >= LEAK_SHARED
+            and words & _hedged_words(sentence)
         ):
             return f"title states a leak as fact: '{sentence.strip()[:120]}'"
     return ""

@@ -807,8 +807,8 @@ def expire_old_drafts(
         age = draft_age_days(draft.meta)
         window = freshness_window_days(draft.meta)
         game = game_block_reason(draft.meta)
-        if game.startswith("its game has started"):
-            reason = game  # #1173: a preview after its game can never render
+        if game.startswith(("its game has started", "its countdown day has passed")):
+            reason = game  # #1173: a preview after its game can never render; #1964 a countdown
         elif _event_ahead(draft.meta, datetime.now(timezone.utc)) is not None:
             continue  # #1548: current until its event
         elif age is None or age <= 2 * window:
@@ -1314,7 +1314,7 @@ def dead_reason(meta: dict[str, Any], *, now: datetime | None = None) -> str:
     window - else "". 2026-10-16: 8 of 21 waiting drafts were past their window and the morning
     said 1, because the window was checked after the claims, the labels and the title."""
     game = game_block_reason(meta, now=now)
-    if game.startswith("its game has started"):
+    if game.startswith(("its game has started", "its countdown day has passed")):  # #1964
         return game
     if _event_ahead(meta, now or datetime.now(timezone.utc)) is not None:
         # #1548: run 176, the UFC 333 preview, read "3 days old, past its window" the day before
@@ -1328,7 +1328,9 @@ def dead_reason(meta: dict[str, Any], *, now: datetime | None = None) -> str:
 
 
 def _is_dead(why: str) -> bool:
-    return "past its window" in why or why.startswith("its game has started")
+    return "past its window" in why or why.startswith(
+        ("its game has started", "its countdown day has passed")
+    )
 
 
 def unattended_candidates(
@@ -1830,6 +1832,8 @@ def unattended_plan_lines(channel_id: str, *, root: str | None = None) -> list[s
         key = "past its window" if "past its window" in why else why
         if why.startswith("its game has started"):
             key = "its game has started"
+        elif why.startswith("its countdown day has passed"):  # #1964
+            key = "its countdown day has passed"
         reasons[key] = reasons.get(key, 0) + 1
     if reasons:
         told = ", ".join(f"{n} {why}" for why, n in sorted(reasons.items(), key=lambda kv: -kv[1]))

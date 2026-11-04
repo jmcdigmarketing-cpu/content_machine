@@ -121,13 +121,67 @@ def tiktok_line(rows: dict[str, Any], posts: dict[str, Any], *, now: datetime | 
     )
 
 
+def weekly_platform_lines(
+    rows: dict[str, Any], posts: dict[str, Any], *, now: datetime | None = None, weeks: int = 4
+) -> list[str]:
+    """#1779 (wave 145): each platform's last `weeks` weeks, newest first - measured posts, views,
+    average watch (weighted by views) and follows; a week with nothing measured says so. Each post
+    counts in the week it was sent; Buffer gives no follower count, so follows are the posts'."""
+    from datetime import timedelta
+
+    moment = now or datetime.now(timezone.utc)
+    start = (moment - timedelta(days=moment.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    table: dict[str, list[dict[str, float]]] = {}
+    for run_id, slot in (rows or {}).items():
+        for platform, row in (slot or {}).items() if isinstance(slot, dict) else ():
+            if not isinstance(row, dict) or not row.get("measured"):
+                continue
+            state = ((posts or {}).get(str(run_id)) or {}).get(platform) or {}
+            stamp = state.get("sent_at") or state.get("due_at") or state.get("at")
+            try:
+                when = datetime.fromisoformat(str(stamp).replace("Z", "+00:00")) if stamp else None
+            except ValueError:
+                when = None
+            if when is None:
+                continue
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            back = (start - when).days // 7 + 1 if when < start else 0
+            if back >= weeks:
+                continue
+            cells = table.setdefault(platform, [{} for _ in range(weeks)])
+            cell = cells[back]
+            views = float(row.get("views") or 0)
+            cell["posts"] = cell.get("posts", 0) + 1
+            cell["views"] = cell.get("views", 0) + views
+            cell["watch"] = cell.get("watch", 0) + views * float(row.get("avg_watch_s") or 0)
+            if row.get("follows") is not None:
+                cell["follows"] = cell.get("follows", 0) + float(row.get("follows") or 0)
+    lines: list[str] = []
+    for platform in sorted(table):
+        parts = []
+        for cell in table[platform]:
+            if not cell:
+                parts.append("-")
+                continue
+            views = cell.get("views", 0)
+            watch = f"{cell['watch'] / views:.1f} s" if views else "0 s"
+            follows = f", {int(cell['follows'])} follows" if "follows" in cell else ""
+            parts.append(f"{int(cell['posts'])} posts {int(views):,} views {watch}{follows}")
+        lines.append(f"{platform.capitalize()}, weeks newest first: " + " | ".join(parts))
+    return lines
+
+
 def tiktok_lines(channel_id: str) -> list[str]:
     from publishing import crosspost
 
     rows = load(channel_id).get("rows") or {}
     if not rows:
         return []
-    return [tiktok_line(rows, crosspost._load(channel_id).get("posts") or {})]
+    posts = crosspost._load(channel_id).get("posts") or {}
+    return [tiktok_line(rows, posts), *weekly_platform_lines(rows, posts)]  # #1779
 
 
 def _stored_metrics(node: dict[str, Any], state: dict[str, Any], run_id: str) -> dict[str, Any]:

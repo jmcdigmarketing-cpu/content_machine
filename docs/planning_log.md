@@ -10870,3 +10870,92 @@ extras), `subscribe_url` (the link pages), `youtube_channel_id` (`fetch_ypp_numb
 main). Fields traced: `youtube_channel_id` from `channels.list` to the YPP store to the subscribe
 line; the series rows from config to `dated_ideas` / `launch_names`; `best_bet.offered` from the
 menu to `follow_brief`.
+
+## 2026-11-02/03 — wave 145: the next 15 (S15) and the grand audit (Claude Code)
+
+**Prompt:** "next 15. also, lets do another grand audit. update all docs too." (planned in plan
+mode, approved; the session was interrupted on 11-02 with the countdown fixes copied into `main`,
+and resumed on 11-03 with "Try again".)
+
+Measured first (read-only, no `ops` command, so no heartbeat): tonight's overnight log and drafts,
+the runs and publish log, the upload queue, the YPP and reach files, the spend ledger, the
+Back-Home ticks (none since 10-19), CI since the last audit. What changed the list: the Nov 3
+countdown (run 226) held for "Sixteen days before" - `core/facts/date_math.py:142` dropped every
+future fact date - on a `what_changed_since_launch` angle (`apis/topic_variants.py:503`), opening
+on a fan's death; `series_drafted` (`core/batch_generation.py:379`) still counted the rejected run,
+so the day was lost. The follow line graded as the operator's idea (`core/content_engine.py:537,
+2288, 2882`). Overnight's slate (`core/batch_generation.py:202-240`) never saw `GAMING_FLOOR`.
+
+**Asked (four), answered:** "Fix, redraft day 16 tonight"; "Never draft a death story" (the
+stricter option); "Yes, refile all four"; "Both, and prune the list". Later, on run 231 held by the
+second read: "Approve for Nov 3 noon".
+
+Done live on the operator's word: day 16 redrafted (run 231) through overnight's path and approved
+past the second read - uploaded for 6 PM ET (noon was the Week in Review's), public at 8:38 PM ET
+Nov 3 (the PC was off until 7:14 PM CST); runs 37, 63, 65 and 155 refiled as Sports (4 updated, 201
+units, read back 17 x4). Runs 226 and 229 had already been rejected by the operator at 17:08-17:09.
+
+Shipped (worktree `wave145`, decisions 97 and 98):
+1. #1963 `date_math._check_ahead`: "before" counts forward to a future date; ISO `today`.
+2. #1964 `series_drafted(redo_set_aside=True)`, `set_aside_runs`, `_retired`; a past countdown dead.
+3. #1965 `draft_intent` countdown -> news; `established_gaming_frames` / `unreleased_subject`;
+   `_LABEL_QUOTE_RE` in `_clean_angle_lines`.
+4. #1966 `authenticity.death_reason` / `is_death_story` at `_consider_candidate`,
+   `story_passes_gate`, `subject_headlines`, `ad_limit_reason`; `prepublish.without_death_lines`.
+5. #1967 `run_pipeline(directions=)` -> `extra_directive`; `creative_brief` = own idea or preview.
+6. #1968 `menu_mix` counts a menu once; `night_gaming_share` in `collect_topics`.
+7. #1961 `youtube_meta._hedged_words`.
+8. #1713 `_subscriber_flow`, `subs_gained_7d` / `subs_lost_7d`, the `ops ypp` line.
+9. #1779 `platform_metrics.weekly_platform_lines` in the weekly report.
+10. #1440 `policy_site.check_policy_site` / `policy_site_lines` in `ops check-youtube`.
+11. #1601 `batch_generation.breakouts` in `follow_up_topic`.
+12. #1853 + #1873 + #1885 series rows; #1975 `dated_ideas` one fetch per domain.
+13. #1866 `week_compile.week_special` / `special_items`, the `gta6-week-one` row.
+14. #1413 `packaging.cover_swap_candidates` / `swap_low_ctr_covers`, `long_thumbnail(at=)`.
+15. #1902 `render_profiles.landscape_ass` / `landscape_ass_file`; the 16:9 pillarbox.
+The audit's own: #1969 the cheap free model and empty answers fail over; #1970 the correction
+scan; #1971 `gone`; #1972 file names; #1973 the fact aliases; #1974 `unregistered_verbs`; #1980
+(found live 11-03) `slot_for_run` never before a dated draft's day.
+
+Found on the way:
+- The 16:9 render of run 203 (scratch): captions a twentieth of the frame, footage the middle third
+  of each vertical clip - fixed (#1902); no end card on the 16:9 cut (#1976).
+- Run 231's description stated the death and a wrong date ("three weeks before launch") - the
+  description is under the rule now.
+- The second read held run 231's opener as unrelated to its long title (#1978).
+- Run 170's 37,602 lifetime views are almost all paid; its record says 0 (#1977).
+- Day 15 (run 232) went public at 9:13 PM ET Nov 3 - every slot to its day's end was taken and
+  `slot_for_run` fell to "45 minutes from now" (#1980). Left public: it was true from midnight.
+- Of 14 free OpenRouter models, one answered cleanly and returned nothing half the time at
+  20-120 tokens; an empty answer had been returned to gates that read "" as a pass.
+- `core/spaced_queue.py` had no regression case; the slot fix is held by tests, not the corpus
+  (it reads stores).
+- The reversed suite failed 7 calendar tests: `core.series.dated` was first imported inside a
+  test's patch of `series_rows`, so its by-name import bound the mock for every later test. The
+  test now loads the module before patching.
+- My patch scripts wrote CRLF on Windows (`Path.write_text`); git normalises to LF on commit
+  (`.gitattributes` eol=lf); later scripts write bytes.
+
+Not done: #1976 (16:9 end card), #1977 (paid views after a window), #1978 (the second read on
+countdowns), #1979 (four unreached modules), #1981 (NVENC fallback). #1058 stays open.
+
+Tests: `tests/test_wave145.py`, 64 - 58 fail on `ed0bf38` (a clean HEAD checkout, the editable
+finder stripped); the other 6 pin what must not change ("since" still counts back, a live or held
+countdown still counts, a real rumour still warns, a free slot on its day is used, today's late
+countdown still goes out today). Corpus +10 (516 -> 526), each failing on HEAD. Older tests changed
+on purpose: `test_experiments` (the arm is a direction), `test_angle_intent` (pinned to a released
+game - it read GTA 6 against the real series.json), `test_privacy_sync` (`gone`),
+`test_core_layout` (aliases retired), the reviewed render argv's landscape entry; `test_docs_lint`
+gains the living-docs command guard.
+
+Audit: mypy 92 == baseline (two errors this wave added were fixed); ruff and format clean. Suite
+7,255 forward and reversed, OK (6 skipped); corpus 526 of 526; `data/` untouched by the suite. Production callers:
+every new function above is called from overnight, the pipeline, the sync, the publisher, an `ops`
+command or the weekly report. Fields traced: `review.decision` from batch-review to
+`set_aside_runs`; `directions` from `generate_draft` to the style directive; `thumbnail_ctr` from
+the reach merge to `cover_swap_candidates`; `subs_lost_7d` from the flow to `ops ypp`;
+`first_day.views` from the first-day verdict to `breakouts`.
+
+Grand audit: [audit_2026-11-02.md](audit_2026-11-02.md).
+
+Counts (`ops roadmap-index`): 269 open (was 279), 1,596 done, highest #1981.

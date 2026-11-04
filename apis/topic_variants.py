@@ -35,6 +35,9 @@ _LIST_PREFIX_RE = re.compile(r"^\s*(?:\d+[.)]\s*|[-*•]\s+)")
 _PREAMBLE_RE = re.compile(r"^(?:here(?:'s| is| are)\b|sure\b|okay\b|certainly\b|below\b)", re.I)
 _SNAKE_LABEL_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)+$")
 _LABEL_HEAD_RE = re.compile(r"^(?:take|angle|hook|lens|focus|frame|option|idea)\s*\d*$", re.I)
+# #1965 (wave 145): run 226's angle came back as `what_changed_since_launch "GTA 6 Update Cycles:
+# ...` - the frame's key, then the angle in an open quote - and the key reached the title.
+_LABEL_QUOTE_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)+\s+[\"\u201c\u201d'\u2018\u2019]\s*")
 _MIN_REAL_ANGLES = 3
 _LENS_PAREN_RE = re.compile(r"\s*\(([^()]{2,60})\)")
 
@@ -95,6 +98,8 @@ def _clean_angle_lines(
         text = _LIST_PREFIX_RE.sub("", line).strip()
         text = text.replace("**", "").replace("__", "").strip().strip("`").strip().strip('"')
         text = _LIST_PREFIX_RE.sub("", text).strip()
+        if _LABEL_QUOTE_RE.match(text):
+            text = _LABEL_QUOTE_RE.sub("", text).strip().strip('"\u201c\u201d').strip()
         if not text or text.endswith(":") or _PREAMBLE_RE.match(text) or _is_label(text):
             continue
         head, sep, rest = text.partition(":")
@@ -160,6 +165,49 @@ def _heuristic_angles(topic: str, angle_types) -> list[str]:
 
 
 _ESTABLISHED_THRESHOLD = 3  # times same anchor covered before switching angles
+
+_RELEASED_FRAMES = [
+    "what_changed_since_launch",  # what is different now, stated not judged
+    "upcoming_content_predictions",  # roadmap / leaks / future heroes
+    "meta_evolution_analysis",  # how the game has changed over time
+    "community_wishlist",  # what players want next
+    "where_the_game_stands_now",  # players, updates, what is confirmed next
+]
+# #1965 (wave 145): a game not out yet has no launch to measure from, no meta and no players.
+_UNRELEASED_FRAMES = [
+    "what_is_confirmed_so_far",
+    "upcoming_content_predictions",
+    "community_wishlist",
+    "the_open_questions",
+    "what_to_watch_at_launch",
+]
+
+
+def established_gaming_frames(topic: str, channel_id: str | None) -> list[str]:
+    """The repeat-coverage frames for a gaming topic - the pre-launch set while a countdown row
+    (`config/series.json`) names its subject and its launch is still ahead."""
+    return list(_UNRELEASED_FRAMES if unreleased_subject(topic, channel_id) else _RELEASED_FRAMES)
+
+
+def unreleased_subject(topic: str, channel_id: str | None, *, today=None) -> bool:
+    """#1965: does a countdown row name this topic's subject, with its launch day still ahead?"""
+    try:
+        from datetime import date
+
+        from apis.topic_tokens import names_any
+        from core.series.countdown import series_rows
+
+        day = today or date.today()
+        for row in series_rows(channel_id or "tapin"):
+            if row.get("kind") != "countdown" or not row.get("until"):
+                continue
+            names = [str(n) for n in row.get("names") or [row.get("subject") or ""] if str(n)]
+            if names_any(topic or "", names) and date.fromisoformat(str(row["until"])[:10]) > day:
+                return True
+    except Exception as exc:
+        logger.debug("release lookup skipped: %s", exc)
+    return False
+
 
 # Frames for a reaction video. Every one is a genuine lens on "I just watched this
 # and here is what I saw" — none asks what is broken or missing.
@@ -500,13 +548,7 @@ def generate_variants(
             # #1088 (operator, 2026-10-10): neutral unless asked. The two frames that were a
             # verdict ("whats_broken_needs_fixing", "is_it_still_worth_playing") are gone; a
             # take on a repeat game comes from the take table, when the idea asks for one.
-            angle_types = [
-                "what_changed_since_launch",  # what is different now, stated not judged
-                "upcoming_content_predictions",  # roadmap / leaks / future heroes
-                "meta_evolution_analysis",  # how the game has changed over time
-                "community_wishlist",  # what players want next
-                "where_the_game_stands_now",  # players, updates, what is confirmed next
-            ]
+            angle_types = established_gaming_frames(topic, channel_id)
         else:
             # #1084: no `community_controversy` / "take" frame unless a take is asked for.
             angle_types = [

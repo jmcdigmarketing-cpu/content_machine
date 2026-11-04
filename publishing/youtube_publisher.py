@@ -635,6 +635,9 @@ class YouTubePublisher(Publisher):
             if dropped:  # #1758
                 print(f"  pre-publish: {dropped} affiliate link line(s) dropped - a Short's links "
                       "are not clickable")  # fmt: skip
+            request, deaths = prepublish.without_death_lines(request)
+            if deaths:  # #1966 (decision 97)
+                print(f"  pre-publish: {deaths} description sentence(s) about a death dropped")
             request, ftc_added = prepublish.with_ftc(request, channel_id)
             if ftc_added:  # #1751
                 logger.info("pre-publish: the FTC line was missing under an affiliate link - added")

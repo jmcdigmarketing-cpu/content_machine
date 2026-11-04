@@ -11,6 +11,10 @@ days/weeks/months/years since/ago/after/later/before", "for N years" - and check
   line exists and none of its dates fits.
 
 A count fits within one unit, or a quarter of the span when that is more. Pure; never raises.
+
+"N days before <event>" counts forward (#1963, wave 145): it is checked against the facts' future
+dates only. Run 226, "Sixteen days before launch" for the GTA 6 countdown, was held because the
+future launch date was dropped and a past snippet ("18 days", Nov 1) was the only anchor left.
 """
 
 from __future__ import annotations
@@ -88,11 +92,22 @@ def _today() -> datetime.date:
     return datetime.date.today()
 
 
+def _as_day(today: datetime.date | str | None) -> datetime.date:
+    """`today` as a date: a date, an ISO string (a pinned replay - the regression corpus passes
+    JSON), or the machine's today."""
+    if isinstance(today, datetime.date):
+        return today
+    try:
+        return datetime.date.fromisoformat(str(today)[:10]) if today else _today()
+    except ValueError:
+        return _today()
+
+
 def find_elapsed_mismatches(
-    script: str, facts: str, *, today: datetime.date | None = None
+    script: str, facts: str, *, today: datetime.date | str | None = None
 ) -> list[str]:
     """Elapsed-time phrases the dates do not support: '"ten years since" - 2019 gives 7'."""
-    today = today or _today()
+    today = _as_day(today)
     fact_lines = [line for line in (facts or "").splitlines() if line.strip()]
     found: list[str] = []
     for sentence in _SENTENCE.split(script or ""):
@@ -103,8 +118,12 @@ def find_elapsed_mismatches(
             if claimed is None:
                 continue
             phrase = match.group(0)
-            note = _check_sentence(sentence, claimed, unit, today) or _check_facts(
-                sentence, claimed, unit, today, fact_lines
+            ahead = (match.group(3) or "").lower() == "before"  # #1963: counts to a future date
+            note = (
+                _check_ahead(sentence, claimed, unit, today, fact_lines)
+                if ahead
+                else _check_sentence(sentence, claimed, unit, today)
+                or _check_facts(sentence, claimed, unit, today, fact_lines)
             )
             if note:
                 found.append(f'"{phrase}" - {note}')
@@ -149,8 +168,30 @@ def _check_facts(
     return f"the facts date it {day.isoformat()} ({_show(actual)} {unit}(s))"
 
 
+def _check_ahead(
+    sentence: str, claimed: int, unit: str, today: datetime.date, fact_lines: list[str]
+) -> str:
+    """#1963: "N days before <event>" against the facts' future dates; a past date says nothing
+    about it ("two years before the trade" is not measured from today)."""
+    words = _words(sentence)
+    if not words:
+        return ""
+    anchored: list[tuple[datetime.date, float]] = []
+    for line in fact_lines:
+        if not words & _words(line):
+            continue
+        for day, year_only in _fact_dates(line, today):
+            if day <= today or year_only:
+                continue
+            anchored.append((day, _span(today, day, unit)))
+    if not anchored or any(_fits(claimed, actual) for _day, actual in anchored):
+        return ""
+    day, actual = anchored[0]
+    return f"the facts date it {day.isoformat()} ({_show(actual)} {unit}(s) away)"
+
+
 def find_meta_mismatches(
-    title: str, description: str, facts: str, *, today: datetime.date | None = None
+    title: str, description: str, facts: str, *, today: datetime.date | str | None = None
 ) -> list[str]:
     """#978: the same check over the title and the description, each flag tagged by where.
 
@@ -160,6 +201,8 @@ def find_meta_mismatches(
     """
     from core.facts.event_dates import past_year_prediction
 
+    if isinstance(today, str):
+        today = _as_day(today)
     found: list[str] = []
     for where, text in (("title", title), ("description", description)):
         found.extend(

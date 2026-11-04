@@ -328,14 +328,19 @@ def build_render_ffmpeg_command(
     scrim_filter = _scrim_filter(caption_scrim)
 
     # Video-only filter graph from input 0; input 1 audio mapped explicitly.
-    picture = (
-        f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
-        f"crop={width}:{height},"
-        f"{grade_filter}"
-        f"{look_filter}"
-        f"{motion_filter}"
-        f"setpts=PTS-STARTPTS,"
+    fill = (
+        f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},"
     )
+    if profile is not None and profile.width > profile.height and not is_draft:
+        # #1902 (wave 145): a vertical background in a 16:9 frame - whole and sharp in the
+        # middle over a blurred fill. Cropped to fill, run 203 kept the middle third of each
+        # clip at 1.78x: the fighters' heads and the game's clock were cut off.
+        fill = (
+            f"[0:v]split=2[fillbg][fillfg];[fillbg]scale={width}:{height}:"
+            f"force_original_aspect_ratio=increase,crop={width}:{height},boxblur=24:2[blurred];"
+            f"[fillfg]scale=-2:{height}[sharp];[blurred][sharp]overlay=(W-w)/2:0,"
+        )
+    picture = f"{fill}{grade_filter}{look_filter}{motion_filter}setpts=PTS-STARTPTS,"
     captions = (
         f"{scrim_filter}"
         f"{lower_thirds_filter}"
@@ -969,20 +974,27 @@ def _render_extra_formats(
     for profile in extras:
         alt_output = f"{stem}{profile.suffix}{ext}"
         try:
+            subs, thirds, policy = subtitle_path, lower_thirds_path, policy_overlays_path
+            if profile.width > profile.height:  # #1902: captions laid out for 16:9
+                from video.render_profiles import landscape_ass_file
+
+                subs = landscape_ass_file(subtitle_path) or subtitle_path
+                thirds = landscape_ass_file(lower_thirds_path)
+                policy = landscape_ass_file(policy_overlays_path)
             cmd = build_render_ffmpeg_command(
                 background_path=background_path,
                 mp3_path=mp3_path,
                 output_path=alt_output,
-                subtitle_path=subtitle_path,
+                subtitle_path=subs,
                 duration=duration,
                 profile=profile,
                 music_path=music_path,
-                lower_thirds_path=lower_thirds_path,
+                lower_thirds_path=thirds,
                 color_grade=color_grade,
                 color_lut=color_lut,
                 hook_motion_filter=hook_motion_filter,
                 channel_id=channel_id,
-                policy_overlays_path=policy_overlays_path,
+                policy_overlays_path=policy,
             )
             stage(f"Extra format: {profile.name} ({profile.width}x{profile.height})...")
             proc = _ffmpeg_run(cmd)

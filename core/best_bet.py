@@ -850,6 +850,10 @@ def _consider_candidate(
         return None
     if _is_roundup_headline(t):  # wave 112: another outlet's picks
         return None
+    from core.authenticity import is_death_story
+
+    if is_death_story(t):  # #1966 (decision 97): a death story is never an idea
+        return None
     seen_local.add(key)
     return {"topic": t, "domain": domain, "source": source, "published": published}
 

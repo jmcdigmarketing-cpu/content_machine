@@ -11271,3 +11271,24 @@ the recorded `tts_speed`.
 Next five: #1647, #1649, #1995, #1872, #1875; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 257 open (was 260), 1,623 done, highest #1996.
+
+## 2026-11-05 — wave 150b: the long videos' music bed (Claude Code)
+
+**Prompt:** "Generate one with ffmpeg" (asked at wave 150's close: tracks from YouTube's Audio
+Library, or a bed made here).
+
+Shipped (#1995, decision 101): `core/music.synth_expr` / `synth_bed_argv` / `synth_bed` /
+`synth_enabled`, read by `render_video._resolve_music_bed` for a render over 3 minutes with no
+track in the folder; `library_status_line` says so. Six variants (three progressions x A and G
+minor), 64 s each, made once into `data/music_beds/` and taken in turn.
+
+Findings: a 600 s bed took 57 s to make, so the bed is a loop the render already repeats; the first
+loop jumped at its wrap (385 against a typical 186) - every stage repeated to 1e-11 between cycles
+except `aresample`, which differed by 0.006, and AAC added priming; at 22,050 Hz FLAC the wrap is
+inside the bed's own steps. Samples sent; the operator: "much much quieter but i love the concept" - 12 dB
+down (`SYNTH_GAIN_DB` -8): -32 LUFS alone, -47.5 at 0.18, about 23 dB under the voice.
+
+Tests: `tests/test_wave150b.py`, 9 - all 9 fail on `6985727`. The suite pins `MUSIC_SYNTH_LONG`
+off. Audit: mypy 92 == baseline; suite 7,387 forward and reversed, OK (6 skipped).
+
+Next five: #1647, #1649, #1650, #1872, #1875; #1849 once the embargo date is known.

@@ -59,3 +59,14 @@ slot was free - while every long draft's last line said "every Monday". YouTube'
 Premiere, so the slot is a scheduled publish. **Consequence:** the GTA 6 launch-week special moves
 from Monday Nov 23 to Sunday Nov 22; `LONG_SLOT=off` puts the compile back on Mondays.
 
+## 101. A long video's music bed is generated here, from sines (2026-11-05)
+**Decision:** with no track of the operator's in the channel's music folder, a long render gets a
+pad generated with ffmpeg - six 64 s variants, taken in turn, looped by the render and ducked under
+the voice at the channel's music volume - -32 LUFS alone, about 23 dB under the voice (the
+operator, hearing the first cut: "much much quieter"). A Short gets no bed unless a track is added. **Why:** no
+track had ever been in `assets/music/tapin`, so no render had a bed (#1735); MusicGen meant a
+multi-gigabyte download under a non-commercial licence. Asked, the operator chose "Generate one
+with ffmpeg" over adding Audio Library tracks. A pad from sines is nobody else's music and costs
+nothing. **Consequence:** `core/music.synth_bed`, `MUSIC_SYNTH_LONG`; a track dropped in the folder
+replaces it for every render.
+

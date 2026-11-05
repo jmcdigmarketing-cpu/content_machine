@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-05 · **HEAD at write:** `1d0a48c` (wave 149, CI green; this wave's commit
+**Written:** 2026-11-05 · **HEAD at write:** `6985727` (wave 150, CI green; wave 150b's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
 **Wave 150, the next five.** Nothing found broken in the code this wave; the gap was a daily league's
@@ -62,11 +62,11 @@ the long formats (#1723, #1737, #1738) stay open; #1670 + #1893 and #1608 came i
 and left (no news render waited on the 24 hours). Built: overnight's preview is a game 24-48 hours
 away from the next two days' boards, a national game or numbered card first (#1670); a "more of what
 worked" idea each night, second in the menu - tonight Real Madrid's (#1608, `WORKED_SLOT`); a season
-explainer's title, tags and chapters from search (#1993); long videos at 1.0x (#1735). No music track
-exists for any render (#1995 - your call).
+explainer's title, tags and chapters from search (#1993); long videos at 1.0x (#1735). Wave 150b, on
+your "Generate one with ffmpeg": a long render with no track gets a generated pad (#1995, decision 101).
 
-**Open:** #1984, #1988, #1991, #1994, #1995, #1996; dated reads #1953, #1955, #1956, #1959, #1988,
-#1991, #1994, #1996. **Next:** #1647, #1649, #1995, #1872, #1875 before W4's freeze (Nov 16); #1849
+**Open:** #1984, #1988, #1991, #1994, #1996; dated reads #1953, #1955, #1956, #1959, #1988,
+#1991, #1994, #1996. **Next:** #1647, #1649, #1650, #1872, #1875 before W4's freeze (Nov 16); #1849
 once the embargo date is known.
 
 **Operator:** publish the Google app before Sat Nov 7 (set POLICY_SITE_URL first - `ops check-youtube`

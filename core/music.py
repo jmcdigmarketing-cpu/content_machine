@@ -109,14 +109,125 @@ def pick_track(channel_id: str | None):
     return track
 
 
+# ---- #1995 (wave 150b, the operator: "Generate one with ffmpeg") ------------------------------
+# No track had ever been in assets/music/tapin, so no render had a bed; MusicGen meant a
+# multi-gigabyte download under a non-commercial licence. A long video's bed is made here from
+# sines - nobody else's music, $0: two four-chord progressions, 8 s a chord, each chord eased into
+# the next by raised-cosine windows that sum to one, warmed by a soft octave, filtered to a pad,
+# given a little room and width. Every frequency is rounded to whole cycles in the 64 s loop, so
+# the render's `-stream_loop` joins it without a seam. Generated once per variant into
+# data/music_beds/ as FLAC - lossless, no AAC priming at the loop (about 15 s each) and taken in turn, never the one the last long video used.
+LONG_BED_SECONDS = 180.0  # a render longer than this is a long video (tts.is_long_length's rule)
+SYNTH_SLOT = 8.0
+# The pad comes out of the expression at -24.1 LUFS. The first cut took it to -20; the operator
+# heard it under a voice (11-05): "much much quieter" - 12 dB down, -32 LUFS alone, so at the
+# channel's 0.18 it sits about 23 dB under the voice before the ducking.
+SYNTH_GAIN_DB = -8.0
+_A3 = 220.0
+# Semitones from A3 (low root first) in A minor - Am, F, C, G, Em, Dm.
+_AM, _F, _C, _G = (-12, 0, 3, 7), (-16, -4, 0, 3), (-21, -9, -5, -2), (-14, -2, 2, 5)
+_EM, _DM = (-17, -5, -2, 2), (-19, -7, -4, 0)
+SYNTH_PROGRESSIONS: tuple[tuple[tuple[int, ...], ...], ...] = (
+    (_AM, _F, _C, _G, _AM, _EM, _F, _G),  # i VI III VII, i v VI VII
+    (_AM, _DM, _F, _EM, _AM, _F, _C, _G),  # i iv VI v, i VI III VII
+    (_F, _G, _AM, _AM, _DM, _F, _G, _EM),  # VI VII i i, iv VI VII v
+)
+SYNTH_KEYS = (0, -2)  # A minor, G minor
+
+
+def synth_variants() -> int:
+    return len(SYNTH_PROGRESSIONS) * len(SYNTH_KEYS)
+
+
+def synth_expr(chords: tuple[tuple[int, ...], ...], *, transpose: int = 0) -> str:
+    """The pad as an `aevalsrc` expression, periodic over len(chords) * `SYNTH_SLOT` seconds."""
+    slot = SYNTH_SLOT
+    cycle = slot * len(chords)
+    terms = []
+    for k, chord in enumerate(chords):
+        centre = k * slot + slot / 2
+        d = f"(mod(t-{centre:g}+{cycle / 2:g},{cycle:g})-{cycle / 2:g})"
+        window = f"if(lt(abs({d}),{slot:g}),pow(cos(PI*{d}/{2 * slot:g}),2),0)"
+        notes = []
+        for i, semis in enumerate(chord):
+            freq = round(_A3 * 2 ** ((semis + transpose) / 12) * cycle) / cycle  # whole cycles
+            notes.append(
+                f"{0.5 if i == 0 else 1.0:g}*(sin(2*PI*{freq:.6f}*t)+0.25*sin(4*PI*{freq:.6f}*t))"
+            )
+        terms.append(f"{window}*({'+'.join(notes)})")
+    tremolo = f"(0.88+0.12*sin(2*PI*{8 / cycle:.6f}*t))"
+    return f"0.11*{tremolo}*(" + "+".join(terms) + ")"
+
+
+def synth_bed_argv(dest: str, variant: int) -> list[str]:
+    """ffmpeg for one bed variant: two cycles rendered, the second kept (its echo already
+    warm), so the loop's end runs into its start."""
+    chords = SYNTH_PROGRESSIONS[variant % len(SYNTH_PROGRESSIONS)]
+    transpose = SYNTH_KEYS[(variant // len(SYNTH_PROGRESSIONS)) % len(SYNTH_KEYS)]
+    cycle = SYNTH_SLOT * len(chords)
+    graph = (
+        f"aevalsrc='{synth_expr(chords, transpose=transpose)}':s=22050:d={2 * cycle:g},"
+        "lowpass=f=1400,highpass=f=60,aecho=0.8:0.55:90|170:0.22|0.14,"
+        "pan=stereo|c0=c0|c1=c0,adelay=0|12,"  # 22,050 Hz: aresample broke the loop's period
+        f"atrim=start={cycle:g}:end={2 * cycle:g},asetpts=PTS-STARTPTS,"
+        f"volume={SYNTH_GAIN_DB:g}dB"
+    )
+    return ["ffmpeg", "-nostdin", "-y", "-filter_complex", graph,
+            "-c:a", "flac", dest]  # fmt: skip
+
+
+def synth_enabled() -> bool:
+    return os.getenv("MUSIC_SYNTH_LONG", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def synth_bed(channel_id: str | None, *, variant: int | None = None) -> str:
+    """#1995: a long video's generated bed - the next variant after the one the channel's last
+    long video had, made once into data/music_beds/. "" when ffmpeg could not make it."""
+    import json
+    import subprocess
+
+    from config.paths import DATA_DIR
+
+    key = f"{channel_id or 'default'}:synth"
+    last = _load_last()
+    if variant is None:
+        try:
+            variant = (int(last.get(key, -1)) + 1) % synth_variants()
+        except (TypeError, ValueError):
+            variant = 0
+    folder = os.path.join(DATA_DIR, "music_beds")
+    # the level is in the name: a pad made at another gain is made again, never reused
+    dest = os.path.join(folder, f"pad{variant}_{SYNTH_GAIN_DB:+g}dB.flac")
+    if not os.path.isfile(dest):
+        os.makedirs(folder, exist_ok=True)
+        try:
+            subprocess.run(synth_bed_argv(dest, variant), capture_output=True,
+                           stdin=subprocess.DEVNULL, timeout=300, check=False)  # fmt: skip
+        except (OSError, subprocess.SubprocessError) as exc:
+            logger.warning("generated music bed not made: %s", exc)
+            return ""
+        if not os.path.isfile(dest):
+            logger.warning("generated music bed not made (ffmpeg wrote nothing)")
+            return ""
+    last[key] = variant
+    try:
+        os.makedirs(os.path.dirname(MUSIC_STATE_FILE) or ".", exist_ok=True)
+        with open(MUSIC_STATE_FILE, "w", encoding="utf-8") as handle:
+            json.dump(last, handle)
+    except OSError as exc:
+        logger.debug("bed variant not remembered: %s", exc)
+    return dest
+
+
 def library_status_line(channel_id: str | None) -> str:
     """One line for preflight / `ops reliability`."""
     cfg = music_config(channel_id)
     if not cfg["enabled"]:
         return "Music bed: off for this channel"
     n = len(library_tracks(channel_id))
-    if not n:
-        return f"Music bed: none - drop royalty-free tracks in {cfg['folder']}"
+    if not n:  # #1995: a long video still gets the generated pad
+        pad = " (long videos: the generated pad)" if synth_enabled() else ""
+        return f"Music bed: none - drop royalty-free tracks in {cfg['folder']}{pad}"
     return f"Music bed: {n} track{'s' if n != 1 else ''} in {cfg['folder']}"
 
 

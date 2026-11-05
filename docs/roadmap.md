@@ -75,8 +75,9 @@ hours away, read from the next days' boards, a prime game first; a "more of what
 each night (tonight Real Madrid's); a season explainer's title from search; long videos at
 1.0x. #1665 measured and left (no news render waited on the 24 hours). Next, before W4's freeze
 (Nov 16): **#1647** the breaking-news fast lane (L), **#1649** the results fast lane on the same
-pass, **#1995** a music bed (your call on the tracks), **#1872** the two-week sports calendar,
-**#1875** NFL prime time's result within the hour; **#1849** once the embargo date is known.
+pass, **#1650** a numbered card's finishes within 30 minutes (UFC 334, Nov 14), **#1872** the
+two-week sports calendar, **#1875** NFL prime time's result within the hour; **#1849** once the
+embargo date is known. Wave 150b: the long videos' music bed is generated (#1995, decision 101).
 **2026-11-04 (Claude, wave 149 - the next five, S01).** The Week in Review's cover is its top
 Short's own picture with that Short's subject on it ("GTA 6 This Week"), and the two live ones
 under 2% get it at the next sync. Run 230's cover had never gone up: frames-only mode let no long

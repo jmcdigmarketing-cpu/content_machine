@@ -15,7 +15,8 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 Overnight's preview is a game 24-48 hours away - the next two days' NBA and NHL boards are
 read, and a national game or numbered card leads - so it is drafted, rendered and slotted a
 day ahead. Each night one "more of what worked" idea from last week's top subjects; a season
-explainer's title from search; long videos spoken at 1.0x. No music track exists (#1995).
+explainer's title from search; long videos spoken at 1.0x. Wave 150b: a long video's music bed
+is generated with ffmpeg - six seamless 64 s pads in turn (#1995, decision 101).
 
 ## Previous — 2026-11-04 (Claude Code): wave 149, the next five (S01)
 

@@ -491,6 +491,14 @@ def _resolve_music_bed(duration: float, stage, *, channel_id: str | None = None)
                 return None
             track = pick_track(channel_id)
             if track is None:
+                # #1995: a long video with no track of yours gets the generated pad
+                from core.music import LONG_BED_SECONDS, synth_bed, synth_enabled
+
+                if duration > LONG_BED_SECONDS and synth_enabled():
+                    bed = synth_bed(channel_id)
+                    if bed:
+                        stage(f"Music bed: generated pad ({os.path.basename(bed)})")
+                        return os.path.abspath(bed).replace("\\", "/")
                 logger.info("%s", library_status_line(channel_id))
                 return None
             stage(f"Music bed: {track.name}")

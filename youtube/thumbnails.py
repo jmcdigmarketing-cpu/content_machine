@@ -40,6 +40,14 @@ def frames_only() -> bool:
     return os.getenv("YOUTUBE_THUMBNAIL_UPLOAD", "auto").strip().lower() == "frames"
 
 
+def is_frame_cover(path: str) -> bool:
+    """A cover cut from the video's own footage: a Short's clean frame, or (#1992) a long video's
+    frame with its words - never an AI image (decision 85)."""
+    from assets.cover_frames import LONG_SUFFIX, SUFFIX
+
+    return str(path).endswith((SUFFIX, LONG_SUFFIX))
+
+
 def _mimetype_for_path(path: str) -> str:
     lower = path.lower()
     if lower.endswith(".png"):
@@ -150,7 +158,7 @@ def maybe_upload_thumbnail(
             "not_found",
             "No thumbnail file (render with THUMBNAIL_MODE=auto or add assets row)",
         )
-    if frames_only() and not str(path).endswith("_frame_cover.jpg"):
+    if frames_only() and not is_frame_cover(path):
         # Wave 135 (the operator: "frames only"): only a frame of the video's own footage goes up.
         return ThumbnailUploadResult(
             "skipped", "YOUTUBE_THUMBNAIL_UPLOAD=frames - not a frame cover"

@@ -669,7 +669,7 @@ class WeekCompileTests(unittest.TestCase):
         self.assertIn("0:00 Short 3", plan.description)
         self.assertIn("0:50 Short 4", plan.description)  # 52 s less the 2 s intro
         self.assertIn("3:20 Deep dive #1: Short 0", plan.description)
-        self.assertEqual(plan.week, "2026-10-19")
+        self.assertEqual(plan.week, "2026-10-25")  # #1727 (wave 149): the slot's Sunday after
 
     def test_four_shorts_are_not_a_week_yet(self):
         from video.week_compile import plan_week
@@ -714,7 +714,8 @@ class WeekCompileTests(unittest.TestCase):
         result = SimpleNamespace(channel_id="tapin", week_line="")
         monday = WEEK_NOW  # 2026-10-19 is a Monday
         with (
-            patch.dict(os.environ, {"WEEK_COMPILE": "true"}),
+            # #1727 (wave 149): Monday is the compile day only with the weekly long slot off
+            patch.dict(os.environ, {"WEEK_COMPILE": "true", "LONG_SLOT": "off"}),
             patch("video.week_compile.compile_week", return_value=["  queued"]) as compile_,
         ):
             overnight._week_compile(result, now=monday)

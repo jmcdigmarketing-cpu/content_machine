@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-04 (Claude, wave 149 - the next five, S01).** The Week in Review's cover is its top
+Short's own picture with that Short's subject on it ("GTA 6 This Week"), and the two live ones
+under 2% get it at the next sync. Run 230's cover had never gone up: frames-only mode let no long
+cover through (#1992, decision 99). Long videos that are not news go public Sundays at 7 PM,
+compiled that morning (decision 100); a franchise's new season gets a long explainer when two
+outlets name it. NVENC's fallback says why; four dead modules are gone. Next, before W4's freeze
+(Nov 16): **#1993** a season explainer's title from search, **#1723** monthly tier lists,
+**#1737** "every X ranked" long videos, **#1738** season previews, **#1735** long-form pacing
+with a music bed; **#1849** once the embargo date is known.
 **2026-11-04 (Claude, wave 148 - the next five, S01).** The 4,112 paid views on no record were
 on five December 2025 uploads promoted in September; `ops growth` now says so. A video with no
 views is recorded synced with 0 (run 202, a Week in Review). Long drafts are 8-12 minutes (a
@@ -85,15 +94,6 @@ Videos"). An older video's views are refreshed in turn - 67 of 97 had frozen. "G
 before W4's freeze (Nov 16): **#1985** run 202 never synced, **#1986** the 4,112 paid views on no
 record, **#1987** the old playlist items newest first, **#1732** a length rule by long format,
 **#1745** each long video's first 30 seconds measured; **#1849** once the embargo date is known.
-**2026-11-03 (Claude, wave 146 - the next five, S01).** Long-form hours: the 16:9 cut ends on
-the end card; last month's ten best Shorts become one video on the 1st (Dec 1 first, 6:34 for
-October); a Short past 1,000 organic views in 5 days gets a long video on its topic, for your
-review. A countdown's opener is read against its countdown (run 231). The sync asks a promoted
-video's paid views to date - run 170's 37,602 views were 37,270 paid. #1849 waits for the
-embargo date, so #1743 and #1740 took its place. Next, with **S01** before W4's freeze (Nov 16):
-**#1722** the UFC 334 recap within 12 hours (Nov 14), **#1746** long-form hours a week as the
-lane's number, **#1736** playlists ordered for binge-watching, **#1982** the compilation title's
-"GTA", **#1983** an older video's frozen views.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

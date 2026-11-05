@@ -74,6 +74,32 @@ def executed_cmd(process: Any, cmd: list[str]) -> list[str]:
     return list(stamped) if stamped else list(cmd)
 
 
+# #1981 (wave 149): run 227's render (11-02) logged "NVENC encode failed - retrying libx264" and
+# nothing else. Its command, replayed from data/traces/227.json on 11-04, encoded on NVENC in 19.2 s
+# (libx264: 23.7 s) - the failure was of the moment (another session, the GPU's memory) and its
+# reason was thrown away. 1 fallback in 18 renders since 10-27. The warning now carries ffmpeg's
+# own last error line.
+_ERROR_WORDS = ("error", "failed", "nvenc", "cuda", "cannot", "no capable", "out of memory")
+
+
+def nvenc_error(stderr: str | None) -> str:
+    """ffmpeg's last line that says what went wrong, at most 200 characters; "" without one."""
+    lines = [line.strip() for line in str(stderr or "").splitlines() if line.strip()]
+    for line in reversed(lines):
+        low = line.lower()
+        if low.startswith(("frame=", "size=")):
+            continue
+        if any(word in low for word in _ERROR_WORDS):
+            return line[:200]
+    return lines[-1][:200] if lines else ""
+
+
+def warn_nvenc_fallback(process: Any) -> None:
+    """#1981: the fallback's warning, with the reason ffmpeg gave."""
+    reason = nvenc_error(getattr(process, "stderr", "") or "")
+    logger.warning("NVENC encode failed (%s) — retrying libx264", reason or "ffmpeg gave no reason")
+
+
 def _default_runner(cmd: list[str]) -> Any:
     return subprocess.run(
         cmd,
@@ -99,5 +125,5 @@ def run_ffmpeg_with_nvenc_fallback(
     if "h264_nvenc" not in cmd:
         return mark_executed(process, cmd)
     fallback = fallback_libx264_cmd(cmd, preset=preset, crf=crf)
-    logger.warning("NVENC encode failed — retrying libx264")
+    warn_nvenc_fallback(process)
     return mark_executed(run(fallback), fallback)

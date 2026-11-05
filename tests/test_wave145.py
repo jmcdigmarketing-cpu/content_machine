@@ -619,7 +619,7 @@ class CalendarRowTests(unittest.TestCase):
         self.assertEqual(days.get("ufc334-weigh-ins"), "2026-11-13")
         self.assertEqual(days.get("ufc334-results"), "2026-11-15")
         self.assertEqual(days.get("thanksgiving-nfl"), "2026-11-25")
-        self.assertEqual(days.get("gta6-week-one"), "2026-11-23")
+        self.assertEqual(days.get("gta6-week-one"), "2026-11-22")  # #1727: the slot's Sunday
 
     def test_two_domains_on_one_day_read_their_own_feeds(self):
         from core.series import dated

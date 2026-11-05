@@ -14,13 +14,10 @@ import unittest
 from unittest import mock
 
 from core import (
-    avatar,
     caption_align,
     comfy_client,
     grade,
     music,
-    reframe,
-    run_eval_corpus,
 )
 from core.providers import (
     STATUS_OK,
@@ -112,8 +109,6 @@ class SeamsFailOpenWhenOff(unittest.TestCase):
             "MUSIC_PROVIDER",
             "AI_VIDEO_PROVIDER",
             "EXPERT_PANEL_ENABLED",
-            "AVATAR_PROVIDER",
-            "REFRAME_ENABLED",
             "OBSIDIAN_VAULT_PATH",
         ):
             os.environ.pop(var, None)
@@ -134,12 +129,6 @@ class SeamsFailOpenWhenOff(unittest.TestCase):
     def test_expert_panel_disabled(self):
         self.assertFalse(grade.expert_panel_review("draft text").ok)
 
-    def test_avatar(self):
-        self.assertFalse(avatar.lip_sync("p.png", "vo.mp3").ok)
-
-    def test_reframe(self):
-        self.assertFalse(reframe.reframe_vertical("clip.mp4").ok)
-
     def test_vault_ingest_url_shape_and_save_noop(self):
         with mock.patch("core.link_facts.extract_facts_from_url", return_value=["Fact one."]):
             rec = vault_ingest.ingest_url("https://example.com/a")
@@ -148,11 +137,6 @@ class SeamsFailOpenWhenOff(unittest.TestCase):
         self.assertIn("retrieved_at", rec)
         # No vault configured ⇒ save is a no-op returning None.
         self.assertIsNone(vault_ingest.save_to_vault(rec, "tapin"))
-
-    def test_eval_corpus_lists_without_llm(self):
-        rows = run_eval_corpus.run_corpus()  # README excluded; never raises
-        self.assertIsInstance(rows, list)
-        self.assertTrue(all(not r["scored"] for r in rows))
 
     def test_tts_default_is_elevenlabs(self):
         from core import tts

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-04: wave 148, the next five (S01)
+# Handoff synopsis — 2026-11-04: wave 149, the next five (S01)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-04 (Claude Code): wave 148, the next five (S01)
+## Last wave — 2026-11-04 (Claude Code): wave 149, the next five (S01)
+
+The Week in Review's cover is its top Short's own picture with that Short's subject on it, and
+the two live ones under 2% get it at the next sync; a long video's cover now goes up in
+frames-only mode (run 230's never had - #1992). Long videos that are not news go public Sundays
+at 7 PM, compiled that morning; a franchise's new season gets a long explainer when two outlets
+name it. NVENC's fallback says why; four dead modules are gone.
+
+## Previous — 2026-11-04 (Claude Code): wave 148, the next five (S01)
 
 The 4,112 paid views on no record are on five December 2025 uploads promoted in September -
 `ops growth` says so. A video with no views is recorded synced with 0 (run 202). Long drafts
@@ -24,14 +32,6 @@ Long-form hours: the night after a numbered UFC card, a long recap drafted from 
 10); playlists newest first and a "Full Videos" playlist. An older video's views are refreshed
 in turn (67 of 97 had frozen); "GTA 6" keeps its 6. The first paid check: 40,002 of YouTube's
 44,114 paid views on record.
-
-## Previous — 2026-11-03 (Claude Code): wave 146, the next five (S01)
-
-Long-form hours: the 16:9 cut ends on the end card; last month's ten best Shorts become one video
-on the 1st (the first Dec 1); a Short past 1,000 organic views in its first 5 days gets a long
-video on its topic, drafted for review. A countdown's opener is read against its countdown, not
-its long title (run 231). The sync asks a promoted video's paid views to date (run 170: 37,270 of
-37,602) - the paid total counts them, organic views by domain do not change.
 
 ---
 

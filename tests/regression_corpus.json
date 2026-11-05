@@ -9027,6 +9027,51 @@
         ]
       },
       "why": "the countdown in day order first, then the rest newest first"
+    },
+    {
+      "id": "a-long-videos-frame-cover-passes-the-frames-gate",
+      "item": 1992,
+      "source": "measured 2026-11-04: run 230's Week in Review cover (week_2026-11-02_thumb.png) was never set - YOUTUBE_THUMBNAIL_UPLOAD=frames let only _frame_cover.jpg through, so every long video's cover would have been skipped too",
+      "call": "youtube.thumbnails:is_frame_cover",
+      "args": [
+        "output/tapin/week/week_2026-11-08_frame_long.jpg"
+      ],
+      "expect": {
+        "equals": true
+      },
+      "why": "a cover cut from the video's own footage goes up in frames-only mode, words or not"
+    },
+    {
+      "id": "the-frames-gate-still-refuses-a-word-png",
+      "item": 1992,
+      "source": "the sibling of the case above: the gate keeps refusing what is not named as a frame of the video",
+      "call": "youtube.thumbnails:is_frame_cover",
+      "args": [
+        "output/tapin/week/week_2026-11-02_thumb.png"
+      ],
+      "expect": {
+        "equals": false
+      },
+      "why": "decision 85 - no AI image, so only a named frame cover passes"
+    },
+    {
+      "id": "a-long-drafts-follow-line-names-the-weekly-slot",
+      "item": 1727,
+      "source": "measured 2026-11-04: long drafts ended on 'the Week in Review lands every Monday' while the three went public Tuesday noon, Tuesday noon and Monday noon",
+      "call": "core.batch_generation:follow_brief",
+      "args": [
+        {
+          "draft_kind": "long"
+        }
+      ],
+      "env": {
+        "LONG_SLOT": "6@19"
+      },
+      "expect": {
+        "contains": "every Sunday",
+        "not_contains": "Monday"
+      },
+      "why": "the script promises the day the video actually comes out"
     }
   ]
 }

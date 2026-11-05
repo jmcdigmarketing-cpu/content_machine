@@ -7,6 +7,14 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-03 (Claude Code): wave 146, the next five (S01)
+
+Long-form hours: the 16:9 cut ends on the end card; last month's ten best Shorts become one video
+on the 1st (the first Dec 1); a Short past 1,000 organic views in its first 5 days gets a long
+video on its topic, drafted for review. A countdown's opener is read against its countdown, not
+its long title (run 231). The sync asks a promoted video's paid views to date (run 170: 37,270 of
+37,602) - the paid total counts them, organic views by domain do not change.
+
 ## Previous — 2026-11-02/03 (Claude Code): wave 145, the next 15 (S15) and the grand audit
 
 Found live and fixed: the Nov 3 countdown held for its own day count, written "since launch", led by

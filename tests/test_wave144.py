@@ -376,14 +376,14 @@ class TrendingFollowTests(unittest.TestCase):
             brief = follow_brief(_bet("GTA 6 trailer 3 lands this week"), today=date(2026, 11, 7))
         self.assertIn("countdown", brief)
 
-    def test_else_the_monday_week_in_review(self):
+    def test_else_the_weekly_week_in_review(self):
         from core.batch_generation import follow_brief
 
         with patch("core.series.long_form.public_long_subject", return_value=""):
             brief = follow_brief(
                 _bet("Lakers beat Warriors behind Doncic"), today=date(2026, 11, 7)
             )
-        self.assertIn("every Monday", brief)
+        self.assertIn("every Sunday", brief)  # #1727 (wave 149)
 
     def test_an_idea_of_your_own_gets_none(self):
         from core.batch_generation import follow_brief

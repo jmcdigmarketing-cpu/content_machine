@@ -198,15 +198,17 @@ def _crosspost(result: OvernightResult) -> None:
 
 
 def _week_compile(result: Any, now: datetime | None = None) -> None:
-    """#138 (the operator: a $0 compilation, public at a slot): on Monday mornings in the
-    channel's zone, last week's public Shorts become one long video, queued for a slot."""
+    """#138 (the operator: a $0 compilation, public at a slot): last week's public Shorts become
+    one long video, queued for a slot - #1727: on the weekly long slot's own morning in the
+    channel's zone (Sunday, public at 7 PM), Monday when LONG_SLOT is off."""
     if os.getenv("WEEK_COMPILE", "true").strip().lower() in ("0", "false", "no", "off"):
         return
     moment = now or datetime.now(timezone.utc)
     try:
-        from core.spaced_queue import _channel_tz
+        from core.spaced_queue import _channel_tz, long_slot
 
-        if moment.astimezone(_channel_tz(result.channel_id)).weekday() != 0:
+        slot = long_slot()
+        if moment.astimezone(_channel_tz(result.channel_id)).weekday() != (slot[0] if slot else 0):
             return
         from core.nightly_task import beat_step
         from video.week_compile import compile_week

@@ -48,7 +48,9 @@ def _ffmpeg_run(cmd, *, duration_sec=None, progress=None, use_progress=False):
         if "h264_nvenc" in cmd:
             fallback = fallback_libx264_cmd(cmd)
             if fallback != cmd and "h264_nvenc" not in fallback:
-                logger.warning("NVENC encode failed — retrying libx264")
+                from video.encoder import warn_nvenc_fallback
+
+                warn_nvenc_fallback(process)  # #1981: with ffmpeg's reason
                 return _ffmpeg_run(
                     fallback,
                     duration_sec=duration_sec,

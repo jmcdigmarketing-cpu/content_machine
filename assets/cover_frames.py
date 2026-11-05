@@ -26,6 +26,10 @@ NEAR_BITS = 10  # of 64: closer than this is the same picture
 MIN_BRIGHT = 45.0  # the fast cut's own dark-shot floor (_MIN_LUMA)
 MIN_SHARP = 60.0  # edge variance under this is motion blur or a flat screen
 SUFFIX = "_frame_cover.jpg"  # the upload's "frames" mode sends only these
+# #1992 (wave 149): a long video's cover - a frame of its own footage, with words (L9's "words"
+# arm, a Week in Review's subject) or none. The frames gate let only SUFFIX through, so run 230's
+# cover was never set and every long video's would not have been.
+LONG_SUFFIX = "_frame_long.jpg"
 
 
 @dataclass

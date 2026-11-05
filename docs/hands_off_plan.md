@@ -54,7 +54,9 @@ the month's best Shorts on the 1st (#1743), a long video on any Short past 1,000
 (#1746 - 0.05 qualified hours in the week to 11-04), the UFC recap the night after a numbered
 card (#1722), playlists newest first with long videos playing into each other (#1736). Wave 148:
 long drafts 8-12 minutes capped by their facts (#1732), long videos read 30 s in (#1745), the
-playlists' older videos moved into binge order (#1987).
+playlists' older videos moved into binge order (#1987). Wave 149: the Week in Review's cover a
+band of its top Short with its subject (#1990), long covers through the frames gate (#1992),
+Sundays at 7 PM for long videos that are not news (#1727), a season's explainer (#1724).
 
 **How.** At this size the Shorts path is not reachable by volume, so long-form hours come first:
 the weekly $0 compilation (#138) makes its first video on Monday 10-19. Per-video reach (S02, S12,

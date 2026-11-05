@@ -150,10 +150,11 @@ class WeekThumbnailTests(unittest.TestCase):
                 ) as compose,  # fmt: skip
             ):
                 thumb = week_compile.make_thumbnail(plan, video)
-        self.assertTrue(thumb.endswith(".png"))
+        self.assertTrue(thumb.endswith("_frame_long.jpg"))  # #1992 (wave 149): frames-only gate
         self.assertIn("-ss", frames[0])
         self.assertEqual(frames[0][frames[0].index("-ss") + 1], "40.0")  # 40% into chapter one
-        self.assertIn("Week in Review", compose.call_args.args[1])
+        # #1990 (wave 149): no Short names a subject here, so the words fall back to these
+        self.assertEqual(compose.call_args.args[1], "Week in Review")
 
     def test_the_record_carries_the_pick(self):
         from unittest.mock import MagicMock

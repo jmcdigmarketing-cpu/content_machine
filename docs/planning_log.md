@@ -11144,3 +11144,72 @@ clearing merge; `paid_outside_{channel}.json` from `sync_paid_outside` to `paid_
 Next five: #1990, #1727, #1981, #1979, #1724; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 261 open (was 264), 1,612 done, highest #1991.
+
+## 2026-11-04 — wave 149: the next five, S01 (Claude Code)
+
+**Prompt:** "Start wave 149"
+
+Verified first: HEAD `37ecb11` (wave 148, CI green), nothing since; the tree clean but `.agents/`
+and `.codex/`. The five: #1990, #1727, #1981, #1979, #1724 - each open with a lane, none parked.
+Measured read-only: the three Weeks in Review drew 279 impressions at 1.08% (run 172), 139 at 0%
+(run 202) and none yet (run 230). Their covers were a frame 40% into the compilation - the Short
+centred on a blurred copy of itself - with its burned caption mid-word ("San Francisco is",
+"months.") under "Week in Review Oct 26-Nov": the headline keeps five words and the date lost its
+end. Run 230's upload record has no `thumbnails.set`: `YOUTUBE_THUMBNAIL_UPLOAD=frames` lets only
+`_frame_cover.jpg` through, so its cover never went up, and no long video's would have (#1992). The
+three went public Tuesday noon, Tuesday noon and Monday noon, while the scripts promised "every
+Monday". NVENC: 1 fallback in 18 renders since 10-27; run 227's command, replayed from its trace,
+encoded on NVENC in 19.2 s (libx264 23.7 s). None of 244 gaming headlines from 12 feeds named a
+season.
+
+Shipped (worktree `wave149`):
+1. #1990 `week_compile.cover_item` / `cover_words` / `cover_frame_argv` / `_fresh_band` in
+   `make_thumbnail` (a band of the top Short, its subject, never a used picture, nor dark);
+   `compilation.cover` on the run; `packaging.COMPILATION_SWAP_IMPRESSIONS` (100) and
+   `week_compile.compilation_cover` as a compilation's second cover.
+2. #1992 `cover_frames.LONG_SUFFIX`, `thumbnails.is_frame_cover` in the frames gate; the long
+   render's and the compilation's covers named for it.
+3. #1727 `spaced_queue.long_slot` / `long_slot_words` / `next_long_slot` / `takes_long_slot`
+   (first in `slot_for_run`); `week_compile.week_key` and `compiled_runs`; overnight's compile on
+   the slot's morning; `follow_brief`'s "every Sunday"; the week-one special on Nov 22.
+4. #1724 `core/series/seasons.py` (`season_label`, `latest_season`, `season_idea`,
+   `season_drafted`), read in `dated_ideas`; five `season` rows; `DATED_SOURCES` + "season"; the
+   draft's `series: season`.
+5. #1981 `encoder.nvenc_error` / `warn_nvenc_fallback` in both fallbacks.
+6. #1979 avatar, reframe, run_eval_corpus (and `prompts/eval_corpus/`) retired;
+   `roadmap_index.untagged_open_items`; `FLAT_CEILING` 228 -> 224.
+
+Findings:
+- `youtube/thumbnails.py:153` (the frames gate) refused every long cover - run 230's and, from Nov 6,
+  the GTA long videos' and the L9 experiment's (#1992).
+- `video/week_compile.py` `plan_week`: compiled on Sunday Nov 8, the old week key (the Monday on or
+  before) is Nov 2 - run 230's - so the first Sunday compile would have read as already made.
+- `core/spaced_queue.py` `slot_for_run`: a Week in Review naming a team took the team's next game
+  as its deadline ("49ers" in run 202's title); a long-slot video skips that guard.
+- `core/batch_generation.py` `series_drafted` reads the last 60 runs (about ten days); a season's
+  headlines run longer, so a season is checked against every run.
+- The first live cut gave runs 202 and 230 one tower shot - both weeks' top GTA 6 Shorts used the
+  gameplay library's clip; covers now skip a picture an earlier cover used (`data/covers.json`).
+- A season explainer gets no search suggestion in its title (#1993).
+
+Deliberately not done: a live cover swap (the next metrics sync makes it - read back under #1994);
+the title's "TapIn Media" (the title is #1316's and was not measured against); a tier list or
+"ranked" format (#1723, #1737); a retry rule for NVENC (no repeated reason yet).
+
+Tests: `tests/test_wave149.py`, 32 - all 32 fail on `37ecb11` (a clean HEAD checkout, the editable
+finder stripped). Corpus +3 (535 -> 538), each failing on HEAD. Older tests changed on purpose:
+`test_wave111` (the Monday compile with `LONG_SLOT` off; the week key the slot's Sunday),
+`test_wave112` (the cover's name), `test_wave140` and `test_wave144` ("every Sunday"),
+`test_wave145` (the special on Nov 22), `test_providers` and `test_next15` (the retired modules);
+`test_eval_corpus_fixture` removed with its module.
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite 7,360 forward and reversed, OK (6
+skipped); corpus 538 of 538; `data/` untouched. Production callers: every new function is reached from the metrics sync's
+cover swap, the week compile, the upload, the slot rule, the night's drafts or `ops roadmap-index`.
+Fields traced: `compilation.cover` from `_record` to `compilation_cover`'s rank; `series: season`
+from the draft's entry to `takes_long_slot` via `draft_meta_for_run`; `LONG_SLOT` to the compile
+day, the week key, the slot and the follow line; the swap's `cover_swapped_at` once per video.
+
+Next five: #1993, #1723, #1737, #1738, #1735; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 260 open (was 261), 1,618 done, highest #1994.

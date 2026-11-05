@@ -1,6 +1,6 @@
 # Decisions, continued (2026-11 onward)
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-03
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-11-04
 
 [decisions_2026-10.md](decisions_2026-10.md) holds decisions 40-96 and was near its size ceiling
 (675 of 800 lines). Decisions 97 onward are here, numbered on. Same rules: code says *what*, this
@@ -36,3 +36,26 @@ listed two as "held for a claim" - #1128 had left the record alone on purpose. *
 night with two gaming countdowns already carries the share (3 of 5); after the countdown ends a
 three-draft night swaps a headline for gaming. S09 does not count a `gone` record as drift - the
 operator deleting a video is not the record drifting.
+
+## 99. A long video's cover cut from its own footage goes up in frames-only mode (2026-11-04)
+**Decision:** `YOUTUBE_THUMBNAIL_UPLOAD=frames` uploads a Short's clean frame cover and a long
+video's cover cut from its own footage - with its words (L9's "words" arm, a Week in Review's
+subject) or none - named `_frame_long.jpg`. Nothing else goes up. **Why:** decision 85 took the AI
+images off the covers; its gate was a file name, `_frame_cover.jpg`, which only a Short's cover
+carries. Run 230's Week in Review cover was never set (its upload record has no `thumbnails.set`),
+and from Nov 6 every long video's - and the L9 words-against-none test - would have gone out on a
+frame YouTube picked. A long cover is a frame of the video itself; the words are the test.
+**Consequence:** `cover_frames.LONG_SUFFIX`, `thumbnails.is_frame_cover`; a Short's cover keeps no
+words.
+
+## 100. Long videos that are not news go public at one weekly time, Sunday 7 PM (2026-11-04)
+**Decision:** the Week in Review and a season's explainer go public at the weekly long slot -
+Sunday 7 PM in the channel's zone (`LONG_SLOT`) - with no news window or game guard; overnight
+compiles the week that morning and leaves out a Short an earlier week's video holds. Dated long
+videos (the GTA rows, a card's recap, the deals) keep their own days, and the month's best keeps
+the next free slot. The scripts promise the day ("every Sunday"), not the hour. **Why:** B06.6
+(#1727). The three Weeks in Review went out Tuesday noon, Tuesday noon and Monday noon - whatever
+slot was free - while every long draft's last line said "every Monday". YouTube's API has no
+Premiere, so the slot is a scheduled publish. **Consequence:** the GTA 6 launch-week special moves
+from Monday Nov 23 to Sunday Nov 22; `LONG_SLOT=off` puts the compile back on Mondays.
+

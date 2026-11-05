@@ -26,8 +26,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "core"
 # Non-alias flat modules in core/ (with __init__.py) after the facts move (#907). Lower it
-# as modules move into sub-packages; never raise it.
-FLAT_CEILING = 228
+# as modules move into sub-packages; never raise it. #1979 (wave 149): 228 -> 224, the four
+# modules no production code imported (avatar, reframe, run_eval_corpus, backlog_index).
+FLAT_CEILING = 224
 # Moves whose old name is still a one-wave alias.
 MOVED: dict[str, str] = {}
 # Moves whose alias wave is over: the old file is gone (#901 voice, #907 vault; the facts

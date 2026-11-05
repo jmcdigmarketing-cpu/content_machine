@@ -7,11 +7,16 @@ rather than once a chapter, a chapter each in the description. No new script, vo
 $0 and one ffmpeg pass a Short.
 
 `ops week-compile` is a dry run by default; `--apply` renders to output/<channel>/week/ and
-records a run; `--apply --schedule` also queues it public at the next free slot (the slot rule).
-Overnight does both on Monday mornings (`WEEK_COMPILE`, on by default; the suite pins it off).
+records a run; `--apply --schedule` also queues it public (the slot rule). Overnight does both on
+the morning of the weekly long slot's day (`WEEK_COMPILE`, on by default; the suite pins it off).
 
 #1743 (wave 146): on the 1st, last month's ten most-watched Shorts by organic views to date, whole,
 counted down to #1 - `ops week-compile --month`, overnight with `MONTH_COMPILE`.
+
+#1727 (wave 149): the Week in Review goes public at one weekly time, Sunday 7 PM in the channel's
+zone (`spaced_queue.LONG_SLOT`) - compiled that morning, so a Short is in one week's video only.
+#1990 (wave 149): its cover is a clean 16:9 band of the week's top Short with that Short's subject
+on it - "GTA 6 This Week" - not "Week in Review Oct 26-Nov" over a blurred, captioned frame.
 """
 
 from __future__ import annotations
@@ -43,12 +48,16 @@ _SENTENCE_END = (".", "!", "?")
 _WIDTH, _HEIGHT = 1920, 1080
 _SEGMENT_TIMEOUT = 600
 MONTH_BEST = 10  # #1743 (B06.22): the month's most-watched Shorts, counted down
+# #1990 (wave 149): the cover's frame is a 16:9 band of the Short itself, from 36% of its height -
+# below the top-anchored captions (519 px of 1920 and two lines down, `safe_zone`) and above the
+# bottom ones (450 px up from the foot). The blurred full frame carried a caption mid-word.
+COVER_BAND_TOP = 0.36
 
 
 @dataclass
 class WeekPlan:
     channel_id: str
-    week: str  # the Monday it is made, YYYY-MM-DD - one compilation a week
+    week: str  # #1727: the weekly long slot's day it is made for, YYYY-MM-DD - one a week
     title: str
     description: str
     items: list[dict[str, Any]] = field(default_factory=list)
@@ -95,10 +104,49 @@ def _features(run: Any) -> dict[str, Any]:
 
 def week_shorts(channel_id: str, *, now: datetime | None = None) -> list[dict[str, Any]]:
     """The Shorts that went public in the seven days before `now`, oldest first, with a file on
-    disk - not a held one, not an earlier compilation."""
+    disk - not a held one, not an earlier compilation, not one an earlier week's video holds
+    (#1727: the move from Monday to Sunday would have put Nov 1's Shorts in two)."""
     moment = _now(now)
     since = moment - timedelta(days=7)
-    return _public_shorts(channel_id, lambda when: since < when <= moment)
+    held = compiled_runs(channel_id)
+    shorts = _public_shorts(channel_id, lambda when: since < when <= moment)
+    return [s for s in shorts if s["run_id"] not in held]
+
+
+def compiled_runs(channel_id: str) -> set[int]:
+    """#1727: the Shorts an earlier Week in Review already holds (its `compilation.runs`)."""
+    from storage.repositories.content_runs import get_content_run_repository
+
+    try:
+        runs = get_content_run_repository().list_for_channel(channel_id)[:60]
+    except Exception as exc:
+        logger.debug("compiled runs unread: %s", exc)
+        return set()
+    out: set[int] = set()
+    for run in runs:
+        compilation = _features(run).get("compilation") or {}
+        if not compilation.get("week"):
+            continue
+        for run_id in compilation.get("runs") or []:
+            try:
+                out.add(int(run_id))
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
+def week_key(channel_id: str, moment: datetime) -> str:
+    """#1727: the week a compilation made at `moment` is for - the date of the weekly long slot's
+    day on or after the channel's day (Monday when the slot is off). Compiled on a Monday, the
+    old key; compiled on Sunday Nov 8, "2026-11-08", not Nov 2's (run 230's), which would have
+    read as already made."""
+    from core.series.dated import channel_day
+    from core.spaced_queue import long_slot
+
+    slot = long_slot()
+    day = channel_day(channel_id, moment)
+    target = slot[0] if slot else 0
+    return (day + timedelta(days=(target - day.weekday()) % 7)).isoformat()
 
 
 def _public_shorts(
@@ -337,7 +385,7 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
         chapters.append(f"{_clock(at)} {label}")
         item["start"] = at
         at += item["seconds"]
-    monday = (moment - timedelta(days=moment.weekday())).date().isoformat()
+    week = week_key(channel_id, moment)  # #1727
     deep_count = sum(1 for item in items if item.get("deep"))
     about = str(special.get("subject") or name) if special else name
     description = (
@@ -348,7 +396,7 @@ def plan_week(channel_id: str, *, now: datetime | None = None) -> WeekPlan | Non
     title = compilation_title(name, items, short_span(first, last))
     if special and special.get("title"):  # #1866: its own title, with the dates
         title = f"{special['title']} ({short_span(first, last)})"[:100]
-    return WeekPlan(channel_id=channel_id, week=monday, title=title,
+    return WeekPlan(channel_id=channel_id, week=week, title=title,
                     description=description, items=items, seconds=at)  # fmt: skip
 
 
@@ -518,29 +566,93 @@ def _render(plan: WeekPlan, dst: str) -> str:
     return ""
 
 
-def make_thumbnail(plan: WeekPlan, video_path: str) -> str:
-    """Wave 112: the compilation's own thumbnail - a frame 40% into its first chapter with "Week
-    in Review" and the dates painted on (`compose_thumbnail`, its contrast rules). "" when none."""
-    if not plan.items:
+def cover_item(plan: WeekPlan, rank: int = 1) -> dict[str, Any] | None:
+    """The Short a cover shows: deep dive #`rank` (#1592), else the `rank`-th most watched."""
+    deep = sorted((i for i in plan.items if i.get("deep")), key=lambda i: int(i["deep"]))
+    ordered = deep or sorted(plan.items, key=lambda i: -int(i.get("views") or 0))
+    return ordered[min(max(rank, 1), len(ordered)) - 1] if ordered else None
+
+
+def cover_words(plan: WeekPlan, item: dict[str, Any]) -> str:
+    """#1990: what the cover says - the Short's subject and "This Week" ("GTA 6 This Week"), so
+    the cover names what the title names first. Run 230's said "Week in Review Oct 26-Nov": the
+    headline keeps five words and the date lost its end. A month keeps "Best of October"."""
+    if plan.kind == "month":  # #1743
+        return f"Best of {datetime.strptime(plan.week, '%Y-%m'):%B}"
+    subject = subject_name(str(item.get("title") or ""), list(item.get("names") or []))
+    return f"{subject} This Week" if subject else "Week in Review"
+
+
+def cover_frame_argv(src: str, dst: str, *, at: float) -> list[str]:
+    """#1990: one frame of the Short itself at `at` s, a full-width 16:9 band from
+    `COVER_BAND_TOP` of its height (clear of its captions), at 1280x720. A landscape source is
+    its whole frame."""
+    band = f"crop=iw:'min(ih,iw*9/16)':0:'min(ih-oh,ih*{COVER_BAND_TOP})',scale=1280:720"
+    return ["ffmpeg", "-nostdin", "-y", "-ss", str(round(at, 1)), "-i", src, "-frames:v", "1",
+            "-vf", band, dst]  # fmt: skip
+
+
+def _grab(argv: list[str]) -> None:
+    subprocess.run(argv, capture_output=True, stdin=subprocess.DEVNULL, timeout=120, check=False)
+
+
+# #1990: where in the Short a cover's band is taken, in turn - live, runs 202 and 230's top GTA 6
+# Shorts showed one tower shot 40% in (the gameplay library's clip), so the two covers matched.
+_COVER_AT = (0.4, 0.25, 0.6, 0.75)
+
+
+def _fresh_band(item: dict[str, Any], frame: str) -> int | None:
+    """The first band of the Short no earlier cover shares (decision 85's rule, `cover_frames`)
+    written to `frame`, and its hash - the band 40% in when every one is taken. None when the
+    Short's file gives no frame."""
+    from PIL import Image
+
+    from assets.cover_frames import dhash, frame_score, near, used_covers
+
+    def band(share: float) -> tuple[int, float] | None:
+        at = float(item.get("offset") or 0.0) + share * float(item.get("seconds") or 0.0)
+        _grab(cover_frame_argv(str(item["path"]), frame, at=at))
+        if not os.path.isfile(frame):
+            return None
+        with Image.open(frame) as image:
+            return dhash(image), frame_score(image)["score"]
+
+    taken = [int(str(r["hash"]), 16) for r in used_covers()]
+    for share in _COVER_AT:
+        found = band(share)
+        if found is None:
+            return None
+        # the Shorts' floors too: not dark, not blurred (live, run 230's 25% band was dusk)
+        if found[1] > 0 and not any(near(found[0], h) for h in taken):
+            return found[0]
+    found = band(_COVER_AT[0])  # every band is taken or dark: the one 40% in, as before
+    return found[0] if found else None
+
+
+def make_thumbnail(plan: WeekPlan, video_path: str, *, rank: int = 1, dest: str = "") -> str:
+    """Wave 112: the compilation's own thumbnail; #1990: a band of its `rank`-th Short with that
+    Short's subject on it (`compose_thumbnail`, its contrast rules), saved to `dest` (beside the
+    video when "") and recorded as taken. A frame of the compilation itself when the Short's file
+    cannot be read. "" when none."""
+    item = cover_item(plan, rank)
+    if item is None:
         return ""
-    # #1592: the week's most-watched Short (deep dive #1), the subject the title names first
-    first = next((i for i in plan.items if i.get("deep") == 1), plan.items[0])
-    at = round(float(first.get("start") or 0.0) + 0.4 * float(first.get("seconds") or 0.0), 1)
-    stem = os.path.splitext(video_path)[0]
-    frame, thumb = f"{stem}_frame.png", f"{stem}_thumb.png"
-    subprocess.run(
-        ["ffmpeg", "-nostdin", "-y", "-ss", str(at), "-i", video_path, "-frames:v", "1",
-         "-vf", "scale=1280:720", frame],
-        capture_output=True, stdin=subprocess.DEVNULL, timeout=120, check=False,
-    )  # fmt: skip
+    from assets.cover_frames import LONG_SUFFIX  # #1992: the frames-only upload sends it
+
+    thumb = dest or f"{os.path.splitext(video_path)[0]}{LONG_SUFFIX}"
+    frame = f"{os.path.splitext(thumb)[0]}_frame.png"
+    if os.path.isfile(frame):
+        os.remove(frame)
+    picture = None
+    if item.get("path") and os.path.isfile(str(item["path"])):
+        picture = _fresh_band(item, frame)
+    if not os.path.isfile(frame):  # wave 112's frame: 40% into the Short's chapter
+        at = float(item.get("start") or 0.0) + 0.4 * float(item.get("seconds") or 0.0)
+        _grab(["ffmpeg", "-nostdin", "-y", "-ss", str(round(at, 1)), "-i", video_path,
+               "-frames:v", "1", "-vf", "scale=1280:720", frame])  # fmt: skip
     if not os.path.isfile(frame):
         return ""
-    # "Oct 15-18": the headline keeps five words, and "Oct 15 - Oct 18" lost its end to that.
-    dates = [i["published_at"] for i in plan.items if isinstance(i.get("published_at"), datetime)]
-    span = short_span(min(dates), max(dates)) if dates else ""  # #1592: items are not in date order
-    words = f"Week in Review {span}".strip()
-    if plan.kind == "month":  # #1743
-        words = f"Best of {datetime.strptime(plan.week, '%Y-%m'):%B}"
+    words = cover_words(plan, item)
     try:
         from PIL import Image
 
@@ -555,7 +667,40 @@ def make_thumbnail(plan: WeekPlan, video_path: str) -> str:
     except Exception as exc:
         logger.warning("week compile thumbnail skipped: %s", exc)
         return ""
-    return thumb if os.path.isfile(thumb) else ""
+    if not os.path.isfile(thumb):
+        return ""
+    if picture is not None:  # the next compilation's cover will not repeat this picture
+        from assets.cover_frames import record_cover
+
+        record_cover(picture, thumb)
+    return thumb
+
+
+def compilation_cover(channel_id: str, run_id: int, dest: str) -> str:
+    """#1990: a stored compilation's next cover, for `packaging.swap_low_ctr_covers` - its most
+    watched Short's subject cover when it went out with wave 112's (runs 172, 202 and 230), else
+    its second Short's. "" when none can be cut."""
+    run = _run(run_id)
+    compilation = _features(run).get("compilation") or {}
+    wanted: set[int] = set()
+    for value in compilation.get("runs") or []:
+        try:
+            wanted.add(int(value))
+        except (TypeError, ValueError):
+            continue
+    if run is None or not wanted:
+        return ""
+    kind = "month" if compilation.get("month") else "week"
+    shorts = _public_shorts(channel_id, lambda _when: True, lifetime=kind == "month")
+    items = [s for s in shorts if s["run_id"] in wanted]
+    for item in items:
+        length = float(_duration(item["path"]) or 0.0)
+        item["seconds"] = max(0.0, length - float(item.get("offset") or 0.0))
+    plan = WeekPlan(channel_id=channel_id, week=str(compilation.get(kind) or ""),
+                    title=str(getattr(run, "title", "") or ""), description="", items=items,
+                    kind=kind)  # fmt: skip
+    rank = 2 if compilation.get("cover") == "subject" else 1
+    return make_thumbnail(plan, str(getattr(run, "mp4_path", "") or ""), rank=rank, dest=dest)
 
 
 def _record(plan: WeekPlan, path: str, *, thumbnail: str = "") -> int:
@@ -570,6 +715,7 @@ def _record(plan: WeekPlan, path: str, *, thumbnail: str = "") -> int:
     }
     if thumbnail:  # the upload takes it through thumbnail_pick.ensure_thumbnail_ready
         features["thumbnail_pick"] = {"path": thumbnail, "arm": "compilation"}
+        features["compilation"]["cover"] = "subject"  # #1990: a swap shows the second Short
 
     return record_content_run(
         channel_id=plan.channel_id,
@@ -593,13 +739,14 @@ def compile_week(
     channel_id: str, *, apply: bool = False, queue: bool = False, now: datetime | None = None
 ) -> list[str]:
     """What the week's compilation is - and with `apply` it rendered and recorded, with `queue`
-    also queued public at the next free slot. Lines for the operator."""
+    also queued public at the weekly long slot (#1727). Lines for the operator."""
+    week = week_key(channel_id, _now(now))
+    if week_done(channel_id, week):  # first: a made week's Shorts are held, so none would show
+        return [f"  Week compilation: the week of {week} is already made."]
     plan = plan_week(channel_id, now=now)
     if plan is None:
         count = len(week_shorts(channel_id, now=now))
         return [f"  Week compilation: {count} public Short(s) this week - it needs {MIN_SHORTS}."]
-    if week_done(channel_id, plan.week):
-        return [f"  Week compilation: the week of {plan.week} is already made."]
     lines = [f"  Week compilation: {plan.title} - {len(plan.items)} Shorts, {_clock(plan.seconds)}"]
     return _make(plan, lines, apply=apply, queue=queue, flags="")
 

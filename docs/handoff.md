@@ -53,25 +53,25 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-04 · **HEAD at write:** `1b80042` (wave 147, CI green; this wave's commit
+**Written:** 2026-11-04 · **HEAD at write:** `37ecb11` (wave 148, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 148, the next five with S01.** Defects first: wave 147's top-of-playlist insert would have
-split the GTA countdown block - fixed before any GTA video was added (#1989); a video with no views
-read as never synced (#1985 - run 202, now stored with 0). Found: the 4,112 paid views on no record
-are on five December 2025 uploads promoted on 09-26 and 10-25 (#1986) - `ops growth` names them now,
-asked weekly. Built: long drafts 8-12 minutes (a recap 6-10), capped at 130 words a fact (#1732);
-long videos read 30 s in, the opener learned from 5 (#1745 - none measured yet); the playlists'
-older videos moved into binge order, 1,000 units a day, two uploads always left (#1987 - 22 moves).
-Filed: the Weeks in Review get impressions and no clicks (#1990).
+**Wave 149, the next five with S01.** Defects first: frames-only mode let no long video's cover up -
+run 230's Week in Review was never set, and the Nov 6 GTA long video's would not have been (#1992,
+decision 99). Built: the Week in Review's cover is a band of its top Short with that Short's subject
+("GTA 6 This Week"); runs 172 and 202 (under 2%) get it at the next metrics sync (#1990). Long videos
+that are not news go public Sundays at 7 PM, compiled that morning; the scripts say "every Sunday";
+the GTA week-one special is Nov 22 (#1727, decision 100). A franchise's new season, named by two
+outlets, drafts a long explainer for your review (#1724). NVENC's fallback logs ffmpeg's reason
+(#1981); avatar, reframe, run_eval_corpus and backlog_index are gone (#1979).
 
-**Open:** #1979, #1981, #1984, #1988, #1990, #1991; dated reads #1953, #1955, #1956, #1959, #1988,
-#1991. **Next:** #1990, #1727, #1981, #1979, #1724 before W4's freeze (Nov 16); #1849 once the
+**Open:** #1984, #1988, #1991, #1993, #1994; dated reads #1953, #1955, #1956, #1959, #1988, #1991,
+#1994. **Next:** #1993, #1723, #1737, #1738, #1735 before W4's freeze (Nov 16); #1849 once the
 embargo date is known.
 
 **Operator:** publish the Google app before Sat Nov 7 (set POLICY_SITE_URL first - `ops check-youtube`
 reads the four pages); paste the bio pages; tracking IDs; Facebook in Buffer; #1922/#1956 on a phone.
-Review the UFC 334 recap draft the morning of Nov 15.
+Review the UFC 334 recap draft the morning of Nov 15. The first Sunday Week in Review is Nov 8, 7 PM.
 
 ## Slot — Cursor
 

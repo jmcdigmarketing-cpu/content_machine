@@ -315,7 +315,9 @@ def finish_long_render(run_id: int, channel_id: str, title: str) -> str:
         int(run_id), mp3_path=str(getattr(run, "mp3_path", "") or ""), mp4_path=wide
     )
     arm = cover_arm(channel_id, int(run_id))  # L9: three words against none
-    thumb = long_thumbnail(wide, title if arm == "words" else "", f"{stem}{WIDE_SUFFIX}_thumb.png",
+    from assets.cover_frames import LONG_SUFFIX  # #1992: the frames-only upload sends it
+
+    thumb = long_thumbnail(wide, title if arm == "words" else "", f"{stem}{WIDE_SUFFIX}{LONG_SUFFIX}",
                            channel_id=channel_id, palette=style_palette(channel_id, title))  # fmt: skip
     from core.run_features import merge_features
 

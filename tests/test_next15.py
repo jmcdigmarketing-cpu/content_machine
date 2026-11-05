@@ -87,7 +87,7 @@ class TestOpsVerbsNamedInDocsExist(unittest.TestCase):
 
 class TestSizeTagsOnOpenItems(unittest.TestCase):
     def test_numbered_open_items_carry_a_size_tag(self):
-        from core.backlog_index import untagged_open_items
+        from core.roadmap_index import untagged_open_items
 
         leftover = untagged_open_items()
         self.assertEqual(leftover, [], f"untagged open items: {leftover[:12]}")

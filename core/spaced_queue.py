@@ -195,6 +195,74 @@ def twice_daily_slots(
 
 _EVENING = (18,)  # #1285: the extra slot a news video gets to stay inside its window
 
+# #1727 (B06.6, wave 149): a long video that is not news - the Week in Review, a season explainer
+# (#1724) - goes public at one weekly time, so a viewer learns when the next one comes. The three
+# Weeks in Review went out Tuesday noon, Tuesday noon and Monday noon, at whatever slot was free.
+# LONG_SLOT is "weekday@hour" in the channel's zone (Monday 0): "6@19" is Sunday 7 PM; "off" puts
+# them back on the next free slot. Overnight compiles the week on the slot's own morning.
+LONG_SLOT_DEFAULT = "6@19"
+_WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+_LONG_SLOT_WEEKS = 5
+
+
+def long_slot() -> tuple[int, int] | None:
+    """(weekday, hour) of the weekly long slot, or None when LONG_SLOT is off."""
+    import os
+
+    raw = (os.getenv("LONG_SLOT") or LONG_SLOT_DEFAULT).strip().lower()
+    if raw in ("off", "false", "no", "none"):
+        return None
+    try:
+        day, hour = (int(part) for part in raw.split("@"))
+    except ValueError:
+        day, hour = (int(part) for part in LONG_SLOT_DEFAULT.split("@"))
+    if not (0 <= day <= 6 and 0 <= hour <= 23):
+        day, hour = (int(part) for part in LONG_SLOT_DEFAULT.split("@"))
+    return day, hour
+
+
+def long_slot_words() -> str:
+    """ "every Sunday" - what a script's follow line can promise ("every week" with the slot off).
+    The day, not the hour: 7 PM is the channel's zone, not the viewer's."""
+    slot = long_slot()
+    return f"every {_WEEKDAYS[slot[0]]}" if slot else "every week"
+
+
+def next_long_slot(channel_id: str, *, now: datetime | None = None) -> datetime | None:
+    """The next free weekly long slot at least `_FIRST_LEAD` away, within five weeks, or None."""
+    slot = long_slot()
+    if slot is None:
+        return None
+    weekday, hour = slot
+    moment = now or datetime.now(timezone.utc)
+    tz = _channel_tz(channel_id)
+    held = _taken_slots(channel_id)
+    day = moment.astimezone(tz).date()
+    day += timedelta(days=(weekday - day.weekday()) % 7)
+    for _week in range(_LONG_SLOT_WEEKS):
+        when = datetime.combine(day, time(hour, 0), tzinfo=tz).astimezone(timezone.utc)
+        if when >= moment + _FIRST_LEAD and when not in held:
+            return when
+        day += timedelta(days=7)
+    return None
+
+
+def takes_long_slot(channel_id: str, run_id: int) -> bool:
+    """#1727: a Week in Review, or a season explainer's draft (#1724) - not news."""
+    from storage.repositories.content_runs import get_content_run_repository
+
+    try:
+        run = get_content_run_repository().get(int(run_id))
+        features = json.loads(getattr(run, "features_json", "") or "{}") if run else {}
+        if isinstance(features, dict) and (features.get("compilation") or {}).get("week"):
+            return True
+        from core.batch_review import draft_meta_for_run
+
+        return (draft_meta_for_run(channel_id, run_id) or {}).get("series") == "season"
+    except Exception as exc:
+        logger.debug("long slot unread for run %s: %s", run_id, exc)
+        return False
+
 
 def job_reserves_slot(content_run_id: object) -> bool:
     """#1558 (2026-10-23): a pending upload holds its publish time only when it can go public
@@ -334,8 +402,14 @@ def slot_for_run(
     channel_id: str, run_id: int, *, title: str = "", now: datetime | None = None
 ) -> tuple[datetime | None, str]:
     """#1270: the public slot for one video - the next free noon/10 PM, before its game, inside
-    its news window (6 PM when needed) - or (None, why)."""
+    its news window (6 PM when needed) - or (None, why). #1727: a Week in Review or a season
+    explainer takes the weekly long slot - no news window, and "49ers" in run 202's title is not
+    a game to beat."""
     moment = now or datetime.now(timezone.utc)
+    if takes_long_slot(channel_id, run_id):
+        weekly = next_long_slot(channel_id, now=moment)
+        if weekly is not None:
+            return weekly, ""
     if not title:  # the event a title names is the only guard a draft without event_at has
         title = _run_title(run_id)
     window, age = _window_days(run_id, channel_id), _age_days(run_id)

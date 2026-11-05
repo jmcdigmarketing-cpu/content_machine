@@ -1,6 +1,6 @@
 # Providers runbook — Pillar 6 seams (code-tied)
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-03
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-11-04
 
 The living, in-repo version of the operator's master tool-integration runbook: each tool
 mapped to the **module that hosts it**, its **env gate**, a **proof command**, and its
@@ -42,9 +42,7 @@ gate are supplied · `excluded` = deliberately not integrated this pass.
 | LTX-Video | [workflows/](../workflows/README.md) + comfy_client | `AI_VIDEO_PROVIDER=comfyui` | export `workflows/ltx_broll.json`, submit via comfy_client | seam |
 | AI video-gen slot | [assets/ai_video_provider.py](../assets/ai_video_provider.py) | `AI_VIDEO_PROVIDER` | registered in the asset chain, routes via `core/comfy_client` | **wired** (U4; ComfyUI/Wan/LTX backend parked — GPU) |
 | MusicGen | [core/music.py](../core/music.py) | `MUSIC_PROVIDER=musicgen` | `generate_bed('calm', 10)` returns a wav path | **wired** (U3: ducked under VO in render; backend parked — GPU) |
-| system_prompts_leaks | [core/run_eval_corpus.py](../core/run_eval_corpus.py) | (`EVAL_CORPUS_LLM` for scoring) | drop cases in `prompts/eval_corpus/`, `py -m core.run_eval_corpus` | seam |
-| LatentSync (avatar) | [core/avatar.py](../core/avatar.py) | `AVATAR_PROVIDER` | — (real-likeness ⇒ must trip AI disclosure) | seam |
-| Ultralytics YOLO (auto-reframe) | [core/reframe.py](../core/reframe.py) | `REFRAME_ENABLED` | — (**AGPL** — license check before shipping) | seam |
+| system_prompts_leaks, LatentSync (avatar), Ultralytics YOLO (auto-reframe) | retired (#1979, wave 149) | - | stubs that always failed open, imported by nothing since 07-09; the regression corpus (`tests/regression_corpus.json`) is the guardrail harness. Rebuild from git history if one is ever wired | retired |
 | n8n / lucaswalter / Marvomatic | [core/events.py](../core/events.py) (already shipped) | `EVENT_WEBHOOK_URL` | point an n8n Webhook node at the URL; fire a run | wired (webhook) |
 
 ### Excluded this pass

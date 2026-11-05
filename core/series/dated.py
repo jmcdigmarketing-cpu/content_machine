@@ -9,6 +9,8 @@
   after the operator's review.
 - `slots` - extra public hours for videos naming the subject between `from` and `to` (#1868),
   and the days a story naming it on five outlets is drafted first (#1867).
+- `season` - a franchise's long explainer, drafted when two outlets name a new season
+  (#1724, `core/series/seasons.py`) - no date kept by hand.
 
 `SERIES_DATED=false` stops the moments and long videos (the suite does).
 """
@@ -129,6 +131,16 @@ def dated_ideas(
     by_domain: dict[str, list[dict[str, Any]]] = {}
     for row in series_rows(channel_id):
         kind = str(row.get("kind") or "")
+        if kind == "season":  # #1724: drafted when two outlets name a new season, not on a date
+            from core.series.seasons import season_drafted, season_idea
+
+            domain = str(row.get("domain") or "gaming")
+            if domain not in by_domain:
+                by_domain[domain] = (headlines or feed_headlines)(channel_id, row, moment)
+            idea = season_idea(row, by_domain[domain], now=moment)
+            if idea is not None and not season_drafted(channel_id, idea.topic):
+                out.append(idea)
+            continue
         if kind not in _FACTS or not row.get("on") or not row.get("topic"):
             continue
         try:

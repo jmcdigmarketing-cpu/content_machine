@@ -250,7 +250,8 @@ def collect_topics(
         return []
 
 
-DATED_SOURCES = ("countdown", "moment", "long")  # decision 84: extra drafts on their day
+# decision 84: extra drafts on their day; #1724 a season's explainer when its season is named
+DATED_SOURCES = ("countdown", "moment", "long", "season")
 
 
 def night_gaming_share(
@@ -900,6 +901,8 @@ def generate_draft(
         or None,
         # #1847: a countdown's day passing reads as that, not as a game starting
         **({"series": "countdown"} if (best_bet or {}).get("title_stem") else {}),
+        # #1724: a season explainer is not news - it takes the weekly long slot (#1727)
+        **({"series": "season"} if pick_source(topic, best_bet) == "season" else {}),
         # #1850: a long video; #1856 what YouTube suggests for its subject ([] = nobody searches)
         **(
             {"kind": "long", "search_suggestions": result.features.get("search_suggestions")}
@@ -1036,7 +1039,8 @@ def follow_brief(
 
     - a countdown: there is one every day until launch, and tomorrow's number;
     - a launch moment: the subject's countdown, while it runs;
-    - a long video: the Week in Review every Monday (`week_compile`)."""
+    - a long video: the Week in Review at the weekly long slot (#1727: "every Sunday"; it said
+      "every Monday" while the three went out Tuesday, Tuesday and Monday)."""
     bet = best_bet or {}
     offered = bet.get("offered") or []
     raw = bet.get("picked")
@@ -1053,10 +1057,13 @@ def follow_brief(
             else "It's out tomorrow - follow for launch day."
         )
         return f'{lead} there is one of these every day until launch - for example "{example}"'
+    from core.spaced_queue import long_slot_words
+
+    when = long_slot_words()
     if bet.get("draft_kind") == "long" or source == "long":
         return (
             " End on why to subscribe, in your own words, once: the Week in Review comes out "
-            'every Monday - for example "Subscribe - the Week in Review lands every Monday."'
+            f'{when} - for example "Subscribe - the Week in Review lands {when}."'
         )
     if not bet:
         return ""  # an idea of your own: it says what it means to
@@ -1086,10 +1093,10 @@ def follow_brief(
                     f'example "Follow - the {subject} countdown is here every day until launch."')  # fmt: skip
     if source == "moment":
         return ""
-    # #1943 (S02): a trending Short's true reason - the Week in Review, every Monday.
+    # #1943 (S02): a trending Short's true reason - the Week in Review, at its weekly time.
     return (
-        f"{lead} every Monday the week's Shorts come out as one video - for example "
-        '"Follow - the week\'s best lands every Monday."'
+        f"{lead} {when} the week's Shorts come out as one video - for example "
+        f'"Follow - the week\'s best lands {when}."'
     )
 
 

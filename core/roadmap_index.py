@@ -83,6 +83,17 @@ def counts() -> dict[str, object]:
     }
 
 
+def untagged_open_items() -> list[str]:
+    """#632: open checklist rows missing a backtick size tag, as "file:line". #1979 (wave 149):
+    moved from `core/backlog_index`, which only a test imported - `render` names them now."""
+    leftover: list[str] = []
+    for name in FILES:
+        for i, line in enumerate(_lines(name), 1):
+            if OPEN_RE.match(line) and not SIZE_RE.search(line):
+                leftover.append(f"{name}:{i}")
+    return leftover
+
+
 def shortfall_counts(lines: list[str]) -> dict[str, int]:
     """#1510: open backlog items per shortfall of the hands-off plan, "S01" to "S22" - an item
     that names none is not counted."""
@@ -197,7 +208,8 @@ def render(
     sizes = "  ".join(f"{s} {by_size[s]}" for s in SIZES)
     out.append(f"  open by size : {sizes}")
     if data["untagged"]:
-        out.append(f"  untagged     : {data['untagged']} open item(s) carry no size")
+        where = ", ".join(untagged_open_items()[:6])  # #1979: which rows, not only how many
+        out.append(f"  untagged     : {data['untagged']} open item(s) carry no size: {where}")
     out.append(f"  numbered     : {data['numbered_open']} open, highest #{data['highest_number']}")
     shortfalls: dict[str, int] = data.get("by_shortfall") or {}  # type: ignore[assignment]
     if shortfalls:

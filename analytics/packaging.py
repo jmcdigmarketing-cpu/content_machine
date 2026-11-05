@@ -246,11 +246,16 @@ def backfill_stayed(channel_id: str, apply: bool, force: bool) -> dict[str, int]
 # render instead of 30% - once. The Weeks in Review drew 1.08% and 0% on 279 and 137 impressions.
 SWAP_IMPRESSIONS = 1000
 SWAP_CTR = 0.02
+# #1990 (wave 149): a Week in Review is shown 139-279 times its first week and never reaches 1,000;
+# at 100 under 2% it gets its subject cover (`week_compile.compilation_cover`) - run 172 (279 at
+# 1.08%) and run 202 (139 at 0%) went out with "Week in Review" and the dates over a blurred frame.
+COMPILATION_SWAP_IMPRESSIONS = 100
 
 
 def cover_swap_candidates(channel_id: str) -> list[dict[str, Any]]:
-    """{run_id, video_id, impressions, ctr, title, mp4} for each public long video past
-    `SWAP_IMPRESSIONS` under `SWAP_CTR` whose cover was not swapped yet."""
+    """{run_id, video_id, impressions, ctr, title, mp4, compilation} for each public long video
+    past `SWAP_IMPRESSIONS` (a compilation: `COMPILATION_SWAP_IMPRESSIONS`) under `SWAP_CTR` whose
+    cover was not swapped yet."""
     from publishing.prepublish import _features, _is_long, _run
     from storage.repositories.publish_log import get_publish_log_repository
 
@@ -263,29 +268,42 @@ def cover_swap_candidates(channel_id: str) -> list[dict[str, Any]]:
         metrics = _stored(row)
         shown = int(metrics.get("thumbnail_impressions") or 0)
         ctr = metrics.get("thumbnail_ctr")
-        if shown < SWAP_IMPRESSIONS or not isinstance(ctr, int | float) or ctr >= SWAP_CTR:
+        if shown < COMPILATION_SWAP_IMPRESSIONS or not isinstance(ctr, int | float):
+            continue
+        if ctr >= SWAP_CTR:
             continue
         run = _run(run_id)
-        if not _is_long(run_id) or _features(run).get("cover_swapped_at"):
+        features = _features(run)
+        compilation = bool(features.get("compilation"))
+        floor = COMPILATION_SWAP_IMPRESSIONS if compilation else SWAP_IMPRESSIONS
+        if shown < floor or not _is_long(run_id) or features.get("cover_swapped_at"):
             continue
         out.append({"run_id": int(run_id), "video_id": video_id, "impressions": shown,
                     "ctr": float(ctr), "title": str(getattr(run, "title", "") or ""),
-                    "mp4": str(getattr(run, "mp4_path", "") or "")})  # fmt: skip
+                    "mp4": str(getattr(run, "mp4_path", "") or ""),
+                    "compilation": compilation})  # fmt: skip
     return out
 
 
 def _second_cover(candidate: dict[str, Any], channel_id: str) -> str:
     import os
 
+    from assets.cover_frames import LONG_SUFFIX
     from core.output_paths import channel_output_root
     from core.series.long_form import long_thumbnail
 
     if not candidate.get("mp4") or not os.path.isfile(candidate["mp4"]):
         return ""
     dest = os.path.join(
-        channel_output_root(channel_id), "thumbnails", f"run{candidate['run_id']}-cover2.jpg"
+        channel_output_root(channel_id),
+        "thumbnails",
+        f"run{candidate['run_id']}-cover2{LONG_SUFFIX}",
     )
     os.makedirs(os.path.dirname(dest), exist_ok=True)
+    if candidate.get("compilation"):  # #1990: a Short's subject, not a frame 60% in
+        from video.week_compile import compilation_cover
+
+        return compilation_cover(channel_id, int(candidate["run_id"]), dest)
     return long_thumbnail(candidate["mp4"], candidate["title"], dest, channel_id=channel_id, at=0.6)
 
 

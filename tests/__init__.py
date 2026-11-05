@@ -116,6 +116,8 @@ os.environ["MONTH_COMPILE"] = "false"
 os.environ["UFC_RECAP"] = "false"
 # Wave 148 (#1987): the worker's playlist reorder spends YouTube units.
 os.environ["PLAYLIST_ORDER_UNITS"] = "0"
+# #1608 (wave 150): the "more of what worked" idea reads the store and the feeds - off here.
+os.environ["WORKED_SLOT"] = "false"
 # #1727 (wave 149): the weekly long slot the follow lines and the compile day read.
 os.environ["LONG_SLOT"] = "6@19"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).

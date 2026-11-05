@@ -11213,3 +11213,61 @@ day, the week key, the slot and the follow line; the swap's `cover_swapped_at` o
 Next five: #1993, #1723, #1737, #1738, #1735; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 260 open (was 261), 1,618 done, highest #1994.
+
+## 2026-11-05 — wave 150: the next five (Claude Code)
+
+**Prompt:** "Start wave 150"
+
+Verified first: HEAD `1d0a48c` (wave 149, CI green), nothing since; the tree clean but `.agents/`
+and `.codex/`. The recommended five were #1993, #1723, #1737, #1738, #1735. Scored against the
+bridge (`bridge_scores.md`) the three long formats are 3-4 - and a tier list or "every champion
+ranked" would be written from twelve headline titles, past what the fact gates pass - while
+#1670/#1893 (13.5) and #1608 (9) sit above them, specified in `cloud_brief_wave135.md` and never
+built. #1665 (9) was measured first: in the 12 days to 11-04 overnight rendered 9 videos and none
+was a news render left for the 24-hour rule, so it stays open with the number. The five taken:
+#1993, #1670 (+ #1893), #1608, #1735.
+
+Measured read-only: the 22 previews drafted 10-14 to 11-04 - overnight's 13-38 hours before their
+game, the daytime ones 0.4-4 (run 193, 31 minutes). ESPN's NBA board on 11-04 held only that day's
+14 games; 11-06's 9 came only from `dates=20261106`, and `dates=20261105-20261106` is a 400.
+TapIn's `tts.speed` 1.05 applies to every render; `assets/music/tapin` is empty. Shorts with seven
+days measured in the last two weeks: GTA 6 1,091 (run 191), 308 (run 154), Real Madrid 91 (run 195).
+
+Shipped (worktree `wave150`):
+1. #1735 `tts.speech_speed(length_choice=)`, `is_long_length`, `LONG_SPEECH_SPEED` /
+   `TTS_SPEED_LONG`; the pipeline records the pace it used.
+2. #1993 `long_form._long_row` matches a `season` row (`season_in`), the season leading its search
+   terms; `long_title` uses it; the five rows carry search terms.
+3. #1670 `seasonal_calendar._board_ahead` / `merge_boards` (NBA and NHL, two days);
+   `best_bet.ahead_rank` / `ahead_first` / `PRIME_KINDS`, `preview_options(ahead=)`,
+   `get_idea_menu(prefer_ahead=)`; `collect_topics` asks for it and orders the marquee by it.
+4. #1893 closed by #1670 with #1574's 30-hour rule (no new code).
+5. #1608 `core/series/worked.py` (`worked_subjects`, `drafted_since`, `worked_idea`,
+   `WORKED_SLOT`), second in `get_idea_menu`; `draft_intent` reads "worked" as news.
+
+Findings:
+- `core/seasonal_calendar.py` `fetch_week_topics`: a daily league's board is today only, so the
+  previews could never be a day ahead whatever the pick.
+- The window alone would have traded 11-05's Jaguars-Ravens (TNF, 14 h) for Wizards-Hawks (37 h);
+  a national broadcast or a numbered card now leads its band.
+- `video/week_compile.subject_name` needs the name in the title - a test's title without "Xbox
+  Game Pass" gave "Pass"; the live title has it.
+- No music track exists for any render (#1995).
+
+Deliberately not done: the music bed (a track is the operator's call - #1995); the long formats
+(#1723, #1737, #1738, kept open); #1665's 6 hours (nothing to move yet); a moment drafted a day
+ahead (its facts are its day's).
+
+Tests: `tests/test_wave150.py`, 18 - all 18 fail on `1d0a48c` (a clean HEAD checkout, the editable
+finder stripped). Corpus +3 (538 -> 541), each failing on HEAD. The suite pins `WORKED_SLOT` off.
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite 7,378 forward and reversed, OK (6
+skipped); corpus 541 of 541; `data/` untouched. Production callers: every new function is reached
+from the night's `collect_topics`, the menu, the pipeline's long title and tags, or the synth.
+Fields traced: `prefer_ahead` from `collect_topics` to `preview_options`' order; source "worked"
+from `worked_idea` to the pick record to `draft_intent`; `length_choice` from `run_pipeline` to
+the recorded `tts_speed`.
+
+Next five: #1647, #1649, #1995, #1872, #1875; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 257 open (was 260), 1,623 done, highest #1996.

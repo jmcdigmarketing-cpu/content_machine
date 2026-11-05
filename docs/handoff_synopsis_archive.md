@@ -7,6 +7,14 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-04 (Claude Code): wave 147, the next five (S01)
+
+Long-form hours: the night after a numbered UFC card, a long recap drafted from ESPN's results
+(UFC 334, Nov 14); the hours lane's number in `ops ypp` (0.05 qualified hours this week against
+10); playlists newest first and a "Full Videos" playlist. An older video's views are refreshed
+in turn (67 of 97 had frozen); "GTA 6" keeps its 6. The first paid check: 40,002 of YouTube's
+44,114 paid views on record.
+
 ## Previous — 2026-11-03 (Claude Code): wave 146, the next five (S01)
 
 Long-form hours: the 16:9 cut ends on the end card; last month's ten best Shorts become one video

@@ -89,10 +89,40 @@ AWARD_DATES = (
 _WEEK = timedelta(days=7)
 _AWARD_WINDOW = timedelta(days=21)
 _BOARD_LEAGUES = ("nfl", "nba", "nhl", "mlb", "college-football", "soccer")
+# #1670 (B03.24, wave 150): a daily league's board is today's games only - read 11-04, NBA's held
+# 14 games on 11-05 and none of the 9 on 11-06 - so no game was ever 24-48 hours away for a preview.
+# Its next days are read one by one (ESPN refuses a `dates` range with a 400).
+_DAILY_LEAGUES = ("nba", "nhl")
+BOARD_DAYS_AHEAD = 2
 
 
 def _board_today() -> date:
     return date.today()
+
+
+def merge_boards(board: dict[str, Any], extra: dict[str, Any]) -> dict[str, Any]:
+    """#1670: `board` with `extra`'s events added - each event once, by its id."""
+    events = list((board or {}).get("events") or [])
+    seen = {str(e.get("id") or "") for e in events if isinstance(e, dict)}
+    for event in (extra or {}).get("events") or []:
+        key = str(event.get("id") or "") if isinstance(event, dict) else ""
+        if key and key not in seen:
+            seen.add(key)
+            events.append(event)
+    return {**(board or {}), "events": events}
+
+
+def _board_ahead(league: str, board: dict[str, Any], today: date) -> dict[str, Any]:
+    """#1670: a daily league's board with its next `BOARD_DAYS_AHEAD` days' games."""
+    from sports.espn import get_scoreboard
+
+    for ahead in range(1, BOARD_DAYS_AHEAD + 1):
+        day = today + timedelta(days=ahead)
+        try:
+            board = merge_boards(board, get_scoreboard(league, dates=day.strftime("%Y%m%d")))
+        except Exception as exc:
+            logger.debug("%s board for %s skipped: %s", league, day, exc)
+    return board
 
 
 # #1151: each coming game's start, as its board wrote it. The week fetch fills it; a draft
@@ -360,6 +390,9 @@ def fetch_week_topics() -> list[tuple[str, str]]:
             boards[league] = get_scoreboard(league)
         except Exception as exc:
             logger.debug("scoreboard skipped for %s: %s", league, exc)
+            continue
+        if league in _DAILY_LEAGUES:  # #1670: tomorrow's and the next day's games too
+            boards[league] = _board_ahead(league, boards[league], today)
     topics = week_topics(boards, today=today, starts=_STARTS, details=_DETAILS)
     now = datetime.now(timezone.utc)
     ufc_board: dict[str, Any] = {}

@@ -67,6 +67,16 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-05 (Claude, wave 150 - the next five).** The list changed on measurement: the three
+long formats (#1723 tier lists, #1737 "ranked", #1738 season previews) score 3-4 on the
+bridge and would be written from a dozen headline titles; #1670/#1893 (13.5) and #1608 (9) were
+specified in wave 135's brief and never built. Shipped: overnight's preview is a game 24-48
+hours away, read from the next days' boards, a prime game first; a "more of what worked" idea
+each night (tonight Real Madrid's); a season explainer's title from search; long videos at
+1.0x. #1665 measured and left (no news render waited on the 24 hours). Next, before W4's freeze
+(Nov 16): **#1647** the breaking-news fast lane (L), **#1649** the results fast lane on the same
+pass, **#1995** a music bed (your call on the tracks), **#1872** the two-week sports calendar,
+**#1875** NFL prime time's result within the hour; **#1849** once the embargo date is known.
 **2026-11-04 (Claude, wave 149 - the next five, S01).** The Week in Review's cover is its top
 Short's own picture with that Short's subject on it ("GTA 6 This Week"), and the two live ones
 under 2% get it at the next sync. Run 230's cover had never gone up: frames-only mode let no long
@@ -85,15 +95,6 @@ series playlist keeps its countdown on top (#1989, caught before it bit). Next, 
 freeze (Nov 16): **#1990** the Weeks in Review's 0% click-through, **#1727** a weekly long-form
 premiere slot, **#1981** the NVENC fallback, **#1979** four unreached modules, **#1724** one long
 explainer per marquee franchise; **#1849** once the embargo date is known.
-**2026-11-04 (Claude, wave 147 - the next five, S01).** The night after UFC 334 (Nov 14) a long
-recap is drafted from ESPN's results, every bout, for your review. The hours lane has its
-number in `ops ypp`: YouTube counts 0.05 qualified long-form hours this week, against 10 a week
-for four weeks. Playlists play newest first, and long videos play into each other ("Full
-Videos"). An older video's views are refreshed in turn - 67 of 97 had frozen. "GTA 6" keeps its
-6. The first paid check ran: 40,002 of YouTube's 44,114 paid views on record (was 1,874). Next,
-before W4's freeze (Nov 16): **#1985** run 202 never synced, **#1986** the 4,112 paid views on no
-record, **#1987** the old playlist items newest first, **#1732** a length rule by long format,
-**#1745** each long video's first 30 seconds measured; **#1849** once the embargo date is known.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

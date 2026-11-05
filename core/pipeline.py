@@ -1602,7 +1602,7 @@ def run_media_only(
 
         used = last_run_voices()
         if used:
-            pace = speech_speed(channel_id)
+            pace = speech_speed(channel_id, length_choice=length_choice)  # #1735
             if voice_features is not None:
                 voice_features["voices"] = used
                 voice_features["tts_speed"] = pace

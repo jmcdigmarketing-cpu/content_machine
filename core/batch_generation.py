@@ -202,7 +202,7 @@ def collect_topics(
                 for bet in alone:
                     picks[bet.topic] = pick_record([bet], 1, by="batch")
             return [b.topic for b in alone]
-        ideas, previews = get_idea_menu(channel_id, notes=notes)
+        ideas, previews = get_idea_menu(channel_id, notes=notes, prefer_ahead=True)  # #1670
         extra = [b for b in ideas if getattr(b, "source", "") in DATED_SOURCES]
         # Wave 135 (the operator: "a day ahead"): tomorrow's countdown too, scheduled for its
         # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
@@ -226,8 +226,13 @@ def collect_topics(
         from core.series.dated import channel_day, jump_first, launch_names
 
         kept = jump_first(kept, launch_names(channel_id, channel_day(channel_id)))  # #1867
-        # #1593 (decision 81): at most one preview a night, marquee only.
-        marquee = [p for p in previews if preview_qualifies(str(getattr(p, "kind", "") or ""))]
+        # #1593 (decision 81): at most one preview a night, marquee only - #1670: a game 24-48
+        # hours away first, a day ahead of it.
+        from core.best_bet import ahead_first
+
+        marquee = ahead_first(
+            [p for p in previews if preview_qualifies(str(getattr(p, "kind", "") or ""))]
+        )
         # Decision 66: an idea, then the preview, then the other ideas.
         candidates: list[Any] = [*kept[:1], *marquee[:1], *kept[1:]]
         chosen = candidates[:count]
@@ -978,7 +983,8 @@ def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
         return ANGLE_PREVIEW
     # #1965 (wave 145): a countdown is the day's news on its subject. Read as "default", run 226
     # took the repeat-coverage table's "what changed since launch" for a game not yet out.
-    return ANGLE_NEWS if source in ("trending", "countdown") else ANGLE_DEFAULT
+    # #1608: a "more of what worked" idea is a fresh headline - news too.
+    return ANGLE_NEWS if source in ("trending", "countdown", "worked") else ANGLE_DEFAULT
 
 
 def pick_source(topic: str, best_bet: dict | None) -> str:

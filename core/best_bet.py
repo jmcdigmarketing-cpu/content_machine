@@ -1756,6 +1756,50 @@ def same_story(preview: str, ideas: list[str]) -> bool:
     return False
 
 
+# #1670 (B03.24, wave 150): overnight's preview is a game 24-48 hours away - drafted, rendered
+# and in its slot a day ahead. Of the 22 previews drafted from 10-14 to 11-04, the overnight ones
+# were 13-38 hours out and the daytime ones 0.4-4 (run 193, 31 minutes before kickoff).
+PREVIEW_AHEAD_HOURS = (24.0, 48.0)
+
+
+def ahead_rank(start: str, now: datetime) -> int:
+    """#1670: 0 for an event 24-48 hours from `now`, 1 sooner, 2 later, 3 when unknown."""
+    try:
+        when = datetime.fromisoformat(str(start).replace("Z", "+00:00"))
+    except ValueError:
+        return 3
+    when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+    hours = (when - now).total_seconds() / 3600
+    low, high = PREVIEW_AHEAD_HOURS
+    return 0 if low <= hours <= high else (1 if hours < low else 2)
+
+
+# #1670: a national broadcast or a numbered card outranks a league's own game. Live 11-05, the
+# window alone would have traded tonight's Jaguars-Ravens (TNF, 14 h) for Wizards-Hawks (37 h);
+# from the next night on, a prime-time game is in the window the day before and drafted then.
+PRIME_KINDS = ("national", "ufc_numbered")
+
+
+def ahead_first(bets: list[Any], *, now: datetime | None = None) -> list[Any]:
+    """#1670: the previews whose event is 24-48 hours away first, then the sooner ones, then the
+    later - a prime one (national, a numbered card) before the rest in the window and in the
+    sooner group, each group in its own order. So a game under a day away is taken only when no
+    game in the window qualifies - or when it is prime and the window's is not."""
+    from core.seasonal_calendar import event_start
+
+    moment = now or datetime.now(timezone.utc)
+
+    def bucket(bet: Any) -> int:
+        rank = ahead_rank(event_start(str(getattr(bet, "topic", "") or "")), moment)
+        prime = str(getattr(bet, "kind", "") or "") in PRIME_KINDS
+        if rank <= 1:  # window prime 0, sooner prime 1, window other 2, sooner other 3
+            return (0 if rank == 0 else 1) + (0 if prime else 2)
+        return rank + 2  # later 4, unknown 5
+
+    ranked = sorted((bucket(b), i) for i, b in enumerate(bets))
+    return [bets[i] for _bucket, i in ranked]
+
+
 def preview_options(
     scheduled: list[tuple[str, str]],
     *,
@@ -1764,10 +1808,12 @@ def preview_options(
     ideas: list[str] | tuple[str, ...] = (),
     n: int = 5,
     now: datetime | None = None,
+    ahead: bool = False,
 ) -> list[BestBetResult]:
     """The coming events worth a preview or a prediction (decision 66): marquee NFL/NBA games,
     UFC cards, awards, then the other NFL and NBA games - one of each kind in turn, each kind
-    soonest first. Nothing started, nothing already covered."""
+    soonest first. Nothing started, nothing already covered. ``ahead`` (#1670, overnight): each
+    kind's games 24-48 hours away first, so the window's game is among the `n`."""
     from dataclasses import replace
 
     from core.seasonal_calendar import game_details
@@ -1824,8 +1870,14 @@ def preview_options(
                 str(detail.get("league") or ""),
             )
         )
+    from core.seasonal_calendar import event_start
+
+    def order(row: tuple[str, Any, str]) -> tuple[int, str]:
+        rank = ahead_rank(event_start(row[1].topic), moment) if ahead else 0
+        return rank, row[0]
+
     queues = [
-        [bet for _when, bet, _league in _alternate_leagues(sorted(rows, key=lambda r: r[0]))]
+        [bet for _when, bet, _league in _alternate_leagues(sorted(rows, key=order))]
         for rows in kinds.values()
     ]
     out: list[BestBetResult] = []
@@ -1857,9 +1909,11 @@ def get_idea_menu(
     previews: int | None = None,
     now: datetime | None = None,
     notes: list[str] | None = None,
+    prefer_ahead: bool = False,
 ) -> tuple[list[BestBetResult], list[BestBetResult]]:
     """(ideas, previews): five of each by default (the operator, 2026-10-17, decision 66 -
-    "5 ideas 5 previews/predictions"). ``notes`` gets why a dated entry was skipped."""
+    "5 ideas 5 previews/predictions"). ``notes`` gets why a dated entry was skipped.
+    ``prefer_ahead`` (#1670, overnight): the previews 24-48 hours away first."""
     scheduled: list[tuple[str, str]] = []
     try:
         from core.seasonal_calendar import fetch_week_topics
@@ -1876,6 +1930,14 @@ def get_idea_menu(
             idea_list = [series, *idea_list][: max(len(idea_list), 1)]
     except Exception as exc:
         logger.debug("series idea skipped: %s", exc)
+    try:  # #1608: one "more of what worked" idea, second - after the night's top story
+        from core.series.worked import worked_idea
+
+        worked = worked_idea(channel_id, now=now, notes=notes)
+        if worked is not None and not same_story(worked.topic, [b.topic for b in idea_list]):
+            idea_list = [*idea_list[:1], worked, *idea_list[1:]]
+    except Exception as exc:
+        logger.debug("worked idea skipped: %s", exc)
     try:  # #1847: the day's countdown leads, an extra idea (the operator: "an extra fourth")
         from core.series.countdown import countdown_idea
 
@@ -1912,6 +1974,7 @@ def get_idea_menu(
         ideas=[b.topic for b in idea_list],
         n=want,
         now=now,
+        ahead=prefer_ahead,
     )
     try:  # #1301: each preview with its call - fail-open
         from core.predictions import calls

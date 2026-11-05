@@ -332,12 +332,23 @@ def voice_role(role: str):
 
 
 DEFAULT_SPEECH_SPEED = 0.95  # #890: "a touch slower" (operator, 2026-09-27)
+# #1735 (B06.14, wave 150): a long video is spoken at 1.0x. TapIn's Shorts run at the channel's
+# 1.05 - quick for a feed, tiring across ten minutes. `TTS_SPEED_LONG` overrides it.
+LONG_SPEECH_SPEED = 1.0
 _SPEED_MIN, _SPEED_MAX = 0.7, 1.2  # ElevenLabs' accepted range
 _saved_voice_settings: dict[str, dict[str, Any]] = {}
 
 
-def speech_speed(channel_id: str | None = None) -> float:
-    """Speaking pace: `TTS_SPEED`, else the channel's `tts.speed`, else 0.95; clamped."""
+def speech_speed(channel_id: str | None = None, *, length_choice: str | None = None) -> float:
+    """Speaking pace: `TTS_SPEED`, else the channel's `tts.speed`, else 0.95; clamped. #1735: a
+    long length (`length_choice`, else the render's own) speaks at `TTS_SPEED_LONG` or 1.0."""
+    if is_long_length(_length_choice_context if length_choice is None else length_choice):
+        raw_long = (os.getenv("TTS_SPEED_LONG", "") or "").strip()
+        try:
+            value = float(raw_long) if raw_long else LONG_SPEECH_SPEED
+        except ValueError:
+            value = LONG_SPEECH_SPEED
+        return round(min(_SPEED_MAX, max(_SPEED_MIN, value)), 3)
     raw: Any = (os.getenv("TTS_SPEED", "") or "").strip()
     if not raw:
         try:
@@ -1369,6 +1380,20 @@ def length_context(length_choice: str):
         yield
     finally:
         _length_choice_context = previous
+
+
+def is_long_length(length_choice: str | None) -> bool:
+    """A length preset over three minutes at the nominal pace - a long video, not a Short."""
+    if not length_choice:
+        return False
+    try:
+        from core.script_length import WORDS_PER_SECOND, get_length_preset
+
+        words = get_length_preset(str(length_choice)).max_words
+        return words / max(WORDS_PER_SECOND, 0.1) > 180
+    except Exception as exc:
+        logger.debug("length unread: %s", exc)
+        return False
 
 
 def long_form_provider(provider: str, length_choice: str) -> str:

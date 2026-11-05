@@ -56,7 +56,8 @@ card (#1722), playlists newest first with long videos playing into each other (#
 long drafts 8-12 minutes capped by their facts (#1732), long videos read 30 s in (#1745), the
 playlists' older videos moved into binge order (#1987). Wave 149: the Week in Review's cover a
 band of its top Short with its subject (#1990), long covers through the frames gate (#1992),
-Sundays at 7 PM for long videos that are not news (#1727), a season's explainer (#1724).
+Sundays at 7 PM for long videos that are not news (#1727), a season's explainer (#1724). Wave
+150: the explainer's title from search (#1993), long videos spoken at 1.0x (#1735).
 
 **How.** At this size the Shorts path is not reachable by volume, so long-form hours come first:
 the weekly $0 compilation (#138) makes its first video on Monday 10-19. Per-video reach (S02, S12,

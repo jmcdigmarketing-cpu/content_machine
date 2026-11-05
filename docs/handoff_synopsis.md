@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-04: wave 149, the next five (S01)
+# Handoff synopsis — 2026-11-05: wave 150, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-04 (Claude Code): wave 149, the next five (S01)
+## Last wave — 2026-11-05 (Claude Code): wave 150, the next five
+
+Overnight's preview is a game 24-48 hours away - the next two days' NBA and NHL boards are
+read, and a national game or numbered card leads - so it is drafted, rendered and slotted a
+day ahead. Each night one "more of what worked" idea from last week's top subjects; a season
+explainer's title from search; long videos spoken at 1.0x. No music track exists (#1995).
+
+## Previous — 2026-11-04 (Claude Code): wave 149, the next five (S01)
 
 The Week in Review's cover is its top Short's own picture with that Short's subject on it, and
 the two live ones under 2% get it at the next sync; a long video's cover now goes up in
@@ -24,14 +31,6 @@ The 4,112 paid views on no record are on five December 2025 uploads promoted in 
 `ops growth` says so. A video with no views is recorded synced with 0 (run 202). Long drafts
 are 8-12 minutes, capped by their facts; long videos are read 30 s in. The playlists' older
 videos move into binge order daily, and a series playlist keeps its countdown on top (#1989).
-
-## Previous — 2026-11-04 (Claude Code): wave 147, the next five (S01)
-
-Long-form hours: the night after a numbered UFC card, a long recap drafted from ESPN's results
-(UFC 334, Nov 14); the hours lane's number in `ops ypp` (0.05 qualified hours this week against
-10); playlists newest first and a "Full Videos" playlist. An older video's views are refreshed
-in turn (67 of 97 had frozen); "GTA 6" keeps its 6. The first paid check: 40,002 of YouTube's
-44,114 paid views on record.
 
 ---
 

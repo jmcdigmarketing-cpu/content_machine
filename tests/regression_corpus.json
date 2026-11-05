@@ -9072,6 +9072,77 @@
         "not_contains": "Monday"
       },
       "why": "the script promises the day the video actually comes out"
+    },
+    {
+      "id": "a-daily-leagues-next-day-joins-its-board",
+      "item": 1670,
+      "source": "measured 2026-11-04: NBA's board held only today's 14 games, none of the 9 on 11-06, and ESPN refuses a dates range - so no NBA game was ever 24-48 hours away for a preview",
+      "call": "core.seasonal_calendar:merge_boards",
+      "args": [
+        {
+          "events": [
+            {
+              "id": "1",
+              "name": "Tonight"
+            }
+          ]
+        },
+        {
+          "events": [
+            {
+              "id": "1",
+              "name": "Tonight"
+            },
+            {
+              "id": "2",
+              "name": "Tomorrow"
+            }
+          ]
+        }
+      ],
+      "select": "events",
+      "pluck": "name",
+      "expect": {
+        "equals": [
+          "Tonight",
+          "Tomorrow"
+        ]
+      },
+      "why": "tomorrow's games are on the board, each once"
+    },
+    {
+      "id": "a-season-explainer-finds-its-row",
+      "item": 1993,
+      "source": "wave 149: long_title matched only `long` rows by topic, so a season row's explainer got no YouTube suggestion in its title; live 11-05 the suggestion is 'marvel rivals season 5'",
+      "call": "core.series.long_form:season_in",
+      "args": [
+        "Everything in Marvel Rivals {season}",
+        "Everything in Marvel Rivals Season 5"
+      ],
+      "expect": {
+        "equals": "Season 5"
+      },
+      "why": "the season leads the search terms of its explainer's title"
+    },
+    {
+      "id": "a-long-video-is-spoken-at-one",
+      "item": 1735,
+      "source": "measured 2026-11-05: TapIn's tts.speed 1.05 applied to every render, long ones included",
+      "call": "core.tts:speech_speed",
+      "args": [
+        "tapin"
+      ],
+      "kwargs": {
+        "length_choice": "4"
+      },
+      "env": {
+        "TTS_SPEED": "",
+        "TTS_SPEED_LONG": ""
+      },
+      "expect": {
+        "equals": 1.0
+      },
+      "why": "ten minutes at a feed's pace tires the ear"
     }
   ]
 }

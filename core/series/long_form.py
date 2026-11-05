@@ -95,8 +95,7 @@ def search_title(
 
 def long_title(channel_id: str, topic: str, title: str) -> tuple[str, list[str] | None]:
     """The long draft's title from search, and the suggestions it read (None when unread)."""
-    row = next((r for r in series_rows(channel_id)
-                if r.get("kind") == "long" and r.get("topic") == topic), None)  # fmt: skip
+    row = _long_row(channel_id, topic)
     subject = str((row or {}).get("subject") or "").strip()
     if not subject:
         return title, None
@@ -120,8 +119,31 @@ def long_title(channel_id: str, topic: str, title: str) -> tuple[str, list[str] 
 
 
 def _long_row(channel_id: str, topic: str) -> dict[str, Any] | None:
-    return next((r for r in series_rows(channel_id)
-                 if r.get("kind") == "long" and r.get("topic") == topic), None)  # fmt: skip
+    """The series row a long draft was written from: a `long` row by its topic, or (#1993) a
+    `season` row whose topic it is with the season filled in - its search terms led by the season
+    ("season 5"), so "Everything in Marvel Rivals Season 5" reads "marvel rivals season 5 ..."."""
+    for row in series_rows(channel_id):
+        if row.get("kind") == "long" and row.get("topic") == topic:
+            return row
+        if row.get("kind") == "season":
+            label = season_in(str(row.get("topic") or ""), topic)
+            if label:
+                terms = [str(t) for t in row.get("search_terms") or [] if str(t).strip()]
+                return {**row, "search_terms": [label.lower(), *terms]}
+    return None
+
+
+def season_in(template: str, topic: str) -> str:
+    """#1993: the season `topic` fills into a season row's `template` ("Season 5" from
+    "Everything in Marvel Rivals {season}"), or "" when it is not that row's."""
+    head, found, tail = template.partition("{season}")
+    text = " ".join(str(topic or "").split())
+    if not found or len(text) <= len(head) + len(tail):
+        return ""
+    low = text.lower()
+    if not low.startswith(head.lower()) or not low.endswith(tail.lower()):
+        return ""
+    return text[len(head) : len(text) - len(tail)].strip()
 
 
 _TAG_CHARS = 450  # YouTube allows 500 characters of tags in all; leave room for its separators

@@ -1482,6 +1482,13 @@ def overnight_render_limit(channel_id: str, *, now: datetime | None = None) -> t
     renders and waits): a channel that renders overnight renders one more when nothing is
     scheduled for the next 24 hours; it goes up unlisted and waits like the rest (decision 60)."""
     limit = unattended_limit(channel_id)
+    if limit > 0:  # #1648 (wave 152): a slots row's third slot needs a third render
+        try:
+            from core.series.dated import channel_day, slot_renders
+
+            limit = max(limit, slot_renders(channel_id, channel_day(channel_id, now)))
+        except Exception as exc:
+            logger.debug("slot renders unread: %s", exc)
     if limit > 0 and coming_day_empty(channel_id, now=now):
         return limit + 1, "nothing is scheduled for the next 24 hours - one more render"
     return limit, ""

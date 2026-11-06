@@ -11344,3 +11344,63 @@ the store's `done` and `days` from `run_fast_lane` to `blocked` / `next_story`; 
 Next five: #1599, #1648, #1892, #1597, #1613; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 251 open (was 256), 1,631 done, highest #1998.
+
+## 2026-11-06 — wave 152: the next ten (Claude Code)
+
+**Prompt:** "next 10"
+
+Verified first: HEAD `6835e68` (wave 151, CI green); overnight Ready (it ran 05:00-05:16, 4 drafts).
+The roadmap's five (#1599, #1648, #1892, #1597, #1613) plus five by the bridge's scores, each open
+with a lane and S-sized but #1892: #1622, #1612, #1874, #1890, #1653. #1798 was already true by
+decision 85 and closed with that read.
+
+Read before building (#1997): the fast lane never saw the TNF final. The worker's log has no pass
+from 20:22 on 11-05 to 05:07 - the PC sleeps - and the 05:07 pass skipped the lane because
+overnight was running. Asked: should the worker wake the PC for finals? The operator: "no wake
+timers please, continue." Filed #1999 (overnight drafts the final it slept through).
+
+Measured read-only: every non-draft render appended tapin's 1.5 s end card (`render_video.py:909`),
+Shorts included; competitor breakouts joined the pool as plain rows (`best_bet.py:928`); the
+marquee list was the operator's 40 names only; slots were noon and 10 PM; ESPN's calendar names
+each card with its main event ("UFC 334: Gane vs. Hokit", Nov 15 01:00 UTC).
+
+Shipped (worktree `wave152`):
+1. #1622 `render_video.ends_on_card` - a Short ends on its last word; long videos keep the card.
+2. #1599 `OUTLIER_FIRST`, the `outlier` mark through `rank_by_coverage` and `BestBetResult`.
+3. #1597 `worked.learn_marquee` / `refresh_marquee` / `load_learned`; `marquee_names` merges.
+4. #1613 `best_bet.injury_story`; `batch_generation.lead_first` (the night's lead order).
+5. #1612 `recap.card_names` / `coming_card` / `fight_week`.
+6. #1874 / #1890 `fast_lane.quick_stories` - injury, fight week, press conference; `NEWS_KINDS`.
+7. #1648 the `three-a-day` row, `dated.slot_renders`, `core/success/cadence.py`.
+8. #1653 `overnight.night_wide`, `collect_topics(wide=, gate=)`.
+9. #1892 `recap.matchup_ideas` / `main_event_lines`; `long_form`'s `matchup` (6-8 minutes).
+
+Findings:
+- Found by tracing the field, not by a test: a one-outlet breakout or injury ranks last by coverage,
+  `_fresh_candidates`' cut at 12 dropped it, and the menu's one-per-domain pass gave its domain's
+  place to the domain's first headline - so `lead_first` would never have seen it. Now kept past the
+  12 (`_keep_leads`) and offered first.
+- The three-a-day row would have broken #1868's corpus sibling (a UFC title on 11-18, now inside
+  the trial): moved to 11-21, inside launch week and past the trial.
+- A match-up from ESPN's four lines alone would be about 4 minutes (600 words); the length follows
+  the facts, so the night's headlines make it 6-8 - read on Nov 10 (#2000).
+- The marquee list's live read moves nobody yet: 27 Shorts measured, median 63.
+
+Deliberately not done: wake timers (the operator); a lower bar for every news story (#1998 is read
+after Nov 22); the match-up for a Fight Night (numbered cards only, decision 81).
+
+Tests: `tests/test_wave152.py`, 29 - 28 fail on `6835e68` (a clean HEAD checkout, the editable
+finder stripped); the 29th, the menu test added after the field trace, failed on the build before
+its fix. Changed on purpose: #1976's extra-cut test now uses a 9-minute cut. The suite pins
+`UFC_FIGHT_WEEK`, `UFC_MATCHUP` and `MARQUEE_LEARN` off and redirects the learned list.
+
+Audit: mypy 92 == baseline; ruff and format clean; corpus 543 of 543. Suite 7,436 forward and
+reversed, OK; `data/` untouched. Production callers: every new function is reached from
+overnight, the worker's fast lane, the render, `ops scoreboard` or the weekly report. Fields traced:
+`outlier` from `_competitor_outlier_candidates` through `rank_by_coverage`, `_keep_leads` and the
+menu to `lead_first`; `joined` / `left` from `refresh_marquee` to `marquee_names`; `renders` from the
+row to `overnight_render_limit`; the match-up's `deadline` to the draft's `event_at`.
+
+Next five: #1999, #1623, #1626, #1877, #1687; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 243 open (was 251), 1,641 done, highest #2000.

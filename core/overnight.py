@@ -83,11 +83,13 @@ class OvernightResult:
     draft_line: str = ""
     gate_line: str = ""  # #1595: the stories the topic gate held back for the menu
     series_line: str = ""  # decision 84: a dated entry due tonight and skipped, with why
+    marquee_line: str = ""  # #1597: who joined or left the marquee list tonight
     # #1430: chapter Shorts cut to fill an empty week.
     chapter_lines: list[str] = field(default_factory=list)
 
 
 _DRAFT_WAIT_CAP = 8
+NIGHT_WIDE = 5  # #1653: drafts on a night five ideas pass the topic gate
 
 
 def draft_count(waiting: int, requested: int) -> tuple[int, str]:
@@ -103,6 +105,15 @@ def draft_count(waiting: int, requested: int) -> tuple[int, str]:
             f"{waiting} drafts are waiting for a decision; drafting {want} not {requested}",
         )
     return want, ""
+
+
+def night_wide(*, waiting: int, requested: int, want: int) -> int:
+    """#1653 (B03.7, wave 152): how many drafts a night may write when `NIGHT_WIDE` ideas pass the
+    topic gate - only a night nothing cut (the quota gate or the wait cap: `want` under
+    `requested`), and never past the cap of 8 waiting. 0 = no wider night."""
+    if want <= 0 or want < requested:
+        return 0
+    return draft_count(waiting, NIGHT_WIDE)[0]
 
 
 def _sign_in_line(channel_id: str) -> str:
@@ -337,13 +348,22 @@ def _run_overnight_body(
     except Exception as exc:
         logger.debug("dead renders not retired: %s", exc)
 
+    waiting = 0
+    asked = want
     try:
         from core.batch_review import pending_drafts
 
-        want, draft_line = draft_count(len(pending_drafts(channel)), want)
+        waiting = len(pending_drafts(channel))
+        want, draft_line = draft_count(waiting, want)
         result.draft_line = draft_line
     except Exception as exc:
         logger.warning("overnight draft queue unread: %s", exc)
+    try:  # #1597: tonight's gate reads the list the channel's own Shorts taught
+        from core.series.worked import refresh_marquee
+
+        result.marquee_line = refresh_marquee(channel)
+    except Exception as exc:
+        logger.debug("marquee refresh skipped: %s", exc)
 
     picks: dict[str, dict] = {}
     picked: list[str] = []
@@ -358,9 +378,15 @@ def _run_overnight_body(
     else:
         held_back: list[str] = []
         skipped = []
+        wide = night_wide(waiting=waiting, requested=count, want=want) if asked == count else 0
+        gate: dict[str, int] = {}
         picked = collect_topics(
-            channel, topics, file, want, picks=picks, held_back=held_back, notes=skipped
-        )
+            channel, topics, file, want, picks=picks, held_back=held_back, notes=skipped,
+            wide=wide, gate=gate,
+        )  # fmt: skip
+        if wide > want and int(gate.get("passed") or 0) >= wide:
+            result.draft_line = (f"the topic gate passed {gate['passed']} ideas - drafting {wide}, "
+                                 f"not {want} (#1653)")  # fmt: skip
         result.series_line = "; ".join(skipped)
         result.requested = len(picked)
         result.gate_line = topic_gate_line(held_back)  # #1595
@@ -550,6 +576,8 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(result.draft_line)
     if result.gate_line:
         lines.append(result.gate_line)
+    if result.marquee_line:
+        lines.append(result.marquee_line)
     if result.series_line:
         lines.append(result.series_line)
     if not result.requested:

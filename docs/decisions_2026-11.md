@@ -81,3 +81,17 @@ when it went out, previews were drafted 31 minutes before kickoff, and a result 
 noon slot. Countdowns already went public unattended (wave 135); decision 78's 24 hours stays for
 everything else. **Consequence:** `FAST_LANE=false` stops it; `FAST_LANE_OUTLETS` sets the news bar.
 
+## 103. The night leads with what moves now; three Shorts a day for two weeks (2026-11-06)
+**Decision:** the night's first idea is, in order, a launch-week story on five outlets, an injury
+to a marquee name, a story naming a numbered card or its main event in its fight week, a marquee
+name's competitor breakout at five times its channel's median. The fast lane also takes a marquee
+injury, a fight-week weigh-in or drama story and a marquee press-conference quote on three outlets
+within the hour, counted in its news cap of two a day. A Short ends on its last word, with no end
+card. From Nov 7 to Nov 20 every title gets the 6 PM slot and overnight renders three, measured
+against the two weeks before; a night five ideas pass the gate drafts five. The marquee list
+learns from the channel's own Shorts, beside the operator's list. **Why:** the bridge's B01.1, B01.3,
+B01.16, B01.17, B02.1, B03.2, B03.7, B12.3, B12.19 and B12.21 (decision 82), taken as the operator's
+"next 10" before W4's freeze. **Consequence:** no wake timers (the operator, 11-06) - the worker,
+and so the fast lane, runs only while the PC is awake; a final it sleeps through is #1999. The
+trial ends with its row; `UFC_FIGHT_WEEK`, `UFC_MATCHUP` and `MARQUEE_LEARN` stop the rest.
+

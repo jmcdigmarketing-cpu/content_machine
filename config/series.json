@@ -60,6 +60,8 @@
      "topic": "GTA 6's sales record", "on": null},
     {"id": "gta6-launch-slots", "kind": "slots", "subject": "GTA 6", "names": ["GTA 6", "GTA VI", "Grand Theft Auto VI"],
      "from": "2026-11-16", "to": "2026-11-22", "extra_hours": [18]},
+    {"id": "three-a-day", "kind": "slots", "all": true, "subject": "three Shorts a day (#1648, against two)",
+     "from": "2026-11-07", "to": "2026-11-20", "extra_hours": [18], "renders": 3},
     {"id": "nfl-trade-deadline", "kind": "slots", "subject": "NFL trade deadline", "names": ["NFL trade deadline", "trade deadline", "traded to"],
      "from": "2026-11-09", "to": "2026-11-11", "domain": "nfl"},
     {"id": "game-awards-winners", "kind": "moment", "subject": "The Game Awards", "names": ["The Game Awards", "Game Awards"], "domain": "gaming",

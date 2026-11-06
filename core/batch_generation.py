@@ -168,6 +168,8 @@ def collect_topics(
     picks: dict[str, dict] | None = None,
     held_back: list[str] | None = None,
     notes: list[str] | None = None,
+    wide: int = 0,
+    gate: dict[str, int] | None = None,
 ) -> list[str]:
     """Explicit topics → file lines → best bets, capped at `count` for implicit sources.
 
@@ -176,6 +178,8 @@ def collect_topics(
     not picks. ``held_back`` (optional) gets the headlines the topic gate kept for the menu
     (#1595). The day's countdown (#1847) and dated moments and long videos (decision 84) come
     on top of `count` - even at 0; ``notes`` gets why a dated entry due today was skipped.
+    #1653 (wave 152): ``wide`` drafts instead of `count` when that many pass the topic gate;
+    ``gate`` (optional) gets how many passed.
     """
     if topics:
         return [t.strip() for t in topics if t.strip()]
@@ -192,12 +196,13 @@ def collect_topics(
             # makes the previews' calls.
             from core.series.countdown import countdown_idea
             from core.series.dated import dated_ideas
-            from core.series.recap import recap_ideas
+            from core.series.recap import matchup_ideas, recap_ideas
 
             alone = _unique([countdown_idea(channel_id), countdown_idea(channel_id, ahead=1),
                              *dated_ideas(channel_id, notes=notes),
                              *long_breakout_ideas(channel_id),
-                             *recap_ideas(channel_id, notes=notes)])  # fmt: skip
+                             *recap_ideas(channel_id, notes=notes),
+                             *matchup_ideas(channel_id, notes=notes)])  # #1892  # fmt: skip
             if picks is not None:
                 for bet in alone:
                     picks[bet.topic] = pick_record([bet], 1, by="batch")
@@ -207,11 +212,12 @@ def collect_topics(
         # Wave 135 (the operator: "a day ahead"): tomorrow's countdown too, scheduled for its
         # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
         from core.series.countdown import countdown_idea
-        from core.series.recap import recap_ideas
+        from core.series.recap import matchup_ideas, recap_ideas
 
         extra = _unique([*extra, countdown_idea(channel_id, ahead=1),
                          *long_breakout_ideas(channel_id),  # #1740
-                         *recap_ideas(channel_id, notes=notes)])  # #1722  # fmt: skip
+                         *recap_ideas(channel_id, notes=notes),  # #1722
+                         *matchup_ideas(channel_id, notes=notes)])  # #1892  # fmt: skip
         names = marquee_names(channel_id)
         kept: list[Any] = []
         for bet in ideas:
@@ -223,9 +229,11 @@ def collect_topics(
                 kept.append(bet)
             elif held_back is not None:
                 held_back.append(bet.topic)
-        from core.series.dated import channel_day, jump_first, launch_names
-
-        kept = jump_first(kept, launch_names(channel_id, channel_day(channel_id)))  # #1867
+        kept = lead_first(kept, channel_id)  # #1867, #1613, #1612, #1599
+        if gate is not None:
+            gate["passed"] = len(kept)
+        if wide > count and len(kept) >= wide:  # #1653: five drafts when five pass the gate
+            count = wide
         # #1593 (decision 81): at most one preview a night, marquee only - #1670: a game 24-48
         # hours away first, a day ahead of it.
         from core.best_bet import ahead_first
@@ -257,6 +265,42 @@ def collect_topics(
 
 # decision 84: extra drafts on their day; #1724 a season's explainer when its season is named
 DATED_SOURCES = ("countdown", "moment", "long", "season")
+
+
+def lead_first(
+    ideas: list[Any],
+    channel_id: str,
+    *,
+    now: datetime | None = None,
+    week: list[str] | None = None,
+) -> list[Any]:
+    """Wave 152: what leads the night, highest first - a launch-week story on five outlets
+    (#1867), an injury to a marquee name (#1613), a story naming a numbered card or its main
+    event in its fight week (#1612, `week` - read from ESPN's calendar when None), a marquee
+    name's competitor breakout at `OUTLIER_FIRST`x (#1599). Each moves its first idea to the
+    front, the lowest first, so the highest leads. The rest keep their order."""
+    from apis.topic_tokens import names_any
+    from core.best_bet import OUTLIER_FIRST, injury_story, marquee_names
+    from core.series.dated import channel_day, jump_first, launch_names
+
+    names = marquee_names(channel_id)
+    if week is None:
+        from core.series.recap import fight_week
+
+        week = fight_week(now=now)
+
+    def front(items: list[Any], test: Callable[[str, Any], bool]) -> list[Any]:
+        for i, bet in enumerate(items):
+            if test(str(getattr(bet, "topic", "") or ""), bet):
+                return [bet, *items[:i], *items[i + 1 :]]
+        return items
+
+    out = front(list(ideas), lambda topic, bet: (
+        float(getattr(bet, "outlier", 0) or 0) >= OUTLIER_FIRST and names_any(topic, names)))  # fmt: skip
+    if week:
+        out = front(out, lambda topic, _bet: names_any(topic, week))
+    out = front(out, lambda topic, _bet: injury_story(topic, names))
+    return jump_first(out, launch_names(channel_id, channel_day(channel_id, now)))
 
 
 def night_gaming_share(

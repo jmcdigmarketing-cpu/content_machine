@@ -7,6 +7,14 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-04 (Claude Code): wave 149, the next five (S01)
+
+The Week in Review's cover is its top Short's own picture with that Short's subject on it, and
+the two live ones under 2% get it at the next sync; a long video's cover now goes up in
+frames-only mode (run 230's never had - #1992). Long videos that are not news go public Sundays
+at 7 PM, compiled that morning; a franchise's new season gets a long explainer when two outlets
+name it. NVENC's fallback says why; four dead modules are gone.
+
 ## Previous — 2026-11-04 (Claude Code): wave 148, the next five (S01)
 
 The 4,112 paid views on no record are on five December 2025 uploads promoted in September -

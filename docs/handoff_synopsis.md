@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-05: wave 151, the fast lanes
+# Handoff synopsis — 2026-11-06: wave 152, the next ten
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-05 (Claude Code): wave 151, the fast lanes
+## Last wave — 2026-11-06 (Claude Code): wave 152, the next ten
+
+The night leads with a launch-week story, a marquee injury, a numbered card's fight week or a
+marquee breakout; the fast lane takes first-hour injury, weigh-in and press-conference stories;
+a Short ends on its last word; three Shorts a day Nov 7-20; five drafts on a wide night; UFC
+334's main event as a 6-8 minute match-up on Nov 10; the marquee list learns (decision 103).
+The fast lane runs only while the PC is awake - no wake timers (the operator).
+
+## Previous — 2026-11-05 (Claude Code): wave 151, the fast lanes
 
 A national final, a numbered card's finish or a marquee story on five outlets within two hours
 is drafted, rendered and public in about an hour from the worker, through the claim gate - at
@@ -23,14 +31,6 @@ read, and a national game or numbered card leads - so it is drafted, rendered an
 day ahead. Each night one "more of what worked" idea from last week's top subjects; a season
 explainer's title from search; long videos spoken at 1.0x. Wave 150b: a long video's music bed
 is generated with ffmpeg - six seamless 64 s pads in turn (#1995, decision 101).
-
-## Previous — 2026-11-04 (Claude Code): wave 149, the next five (S01)
-
-The Week in Review's cover is its top Short's own picture with that Short's subject on it, and
-the two live ones under 2% get it at the next sync; a long video's cover now goes up in
-frames-only mode (run 230's never had - #1992). Long videos that are not news go public Sundays
-at 7 PM, compiled that morning; a franchise's new season gets a long explainer when two outlets
-name it. NVENC's fallback says why; four dead modules are gone.
 
 ---
 

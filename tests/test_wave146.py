@@ -157,8 +157,8 @@ class LandscapeEndCardTests(unittest.TestCase):
             ):  # fmt: skip
                 written = video.render_video._render_extra_formats(
                     background_path="bg.mp4", mp3_path="v.mp3", primary_output=primary,
-                    subtitle_path="s.ass", duration=60.0, stage=lambda _m: None,
-                    channel_id="tapin",
+                    subtitle_path="s.ass", duration=540.0, stage=lambda _m: None,
+                    channel_id="tapin",  # #1622 (wave 152): a long video's cut - a Short's has none
                 )  # fmt: skip
         self.assertEqual(len(written), 1)
         append.assert_called_once()

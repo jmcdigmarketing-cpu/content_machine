@@ -7901,7 +7901,7 @@
       "args": [
         "tapin",
         "UFC 335 preview: the main event",
-        "2026-11-18"
+        "2026-11-21"
       ],
       "expect": {
         "excludes_any": [
@@ -9143,6 +9143,32 @@
         "equals": 1.0
       },
       "why": "ten minutes at a feed's pace tires the ear"
+    },
+    {
+      "id": "a-short-ends-on-its-last-word",
+      "item": 1622,
+      "source": "measured 2026-11-06: tapin's end card (1.5 s, 'TAP IN FOR MORE') appended to every non-draft render, Shorts included",
+      "call": "video.render_video:ends_on_card",
+      "args": [
+        40.0
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a Short ends on its last word so the loop starts at once"
+    },
+    {
+      "id": "a-long-video-keeps-its-end-card",
+      "item": 1622,
+      "source": "the sibling: a 9-minute long video",
+      "call": "video.render_video:ends_on_card",
+      "args": [
+        540.0
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "only a Short loses the card"
     }
   ]
 }

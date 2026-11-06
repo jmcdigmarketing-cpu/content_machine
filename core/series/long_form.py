@@ -28,14 +28,18 @@ WIDE_SUFFIX = "_16x9"  # video/render_profiles' landscape suffix
 # 6-10 - and never padded: a verified line carries about 130 words of script (the fact, then the
 # read on it), so the facts a draft is written from cap its words. The Extended preset asked
 # 1,000-2,000 words (5-10 minutes) of every long draft, whatever it had to say.
-LONG_MINUTES = {"long": (8.0, 12.0), "recap": (6.0, 10.0)}
+LONG_MINUTES = {"long": (8.0, 12.0), "recap": (6.0, 10.0), "matchup": (6.0, 8.0)}  # #1892
 WORDS_PER_FACT = 130
 _FLOOR_WORDS = 600  # three minutes - under it a long video is not one
 
 
 def long_format(topic: str) -> str:
-    """ "recap" for a card's recap (`core/series/recap`), else "long"."""
-    return "recap" if " recap: " in f" {(topic or '').lower()} " else "long"
+    """ "recap" for a card's recap (`core/series/recap`), "matchup" for a main event's match-up
+    (#1892), else "long"."""
+    low = f" {(topic or '').lower()} "
+    if " how they match up " in low:
+        return "matchup"
+    return "recap" if " recap: " in low else "long"
 
 
 def long_word_range(topic: str, facts: int) -> tuple[int, int]:

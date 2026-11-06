@@ -67,6 +67,16 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-06 (Claude, wave 152 - the next ten).** The night now leads with a launch-week story,
+a marquee injury, a numbered card's fight week or a marquee breakout; the fast lane takes the
+first-hour injury, weigh-in and press-conference stories; a Short ends on its last word; three
+Shorts a day from Nov 7 to 20, against the two weeks before; UFC 334's main event as a 6-8
+minute match-up on Nov 10 (decision 103). The fast lane missed the TNF final - the PC sleeps,
+and the operator wants no wake timers - so the list changed: next, before W4's freeze (Nov 16):
+**#1999** overnight drafts the national final the PC slept through, **#1623** a loop line, the
+last sentence leading back to the first, **#1626** the subject in the first three words,
+**#1877** NBA 40-point nights, **#1687** "what's next" after a big result; **#1849** once the
+embargo date is known.
 **2026-11-05 (Claude, wave 151 - the fast lanes).** A national final, a numbered card's finish
 or a marquee story on five outlets within two hours is now drafted, rendered and public in
 about an hour from the worker, through the claim gate (decision 102) - first live tonight with
@@ -86,15 +96,6 @@ each night (tonight Real Madrid's); a season explainer's title from search; long
 pass, **#1650** a numbered card's finishes within 30 minutes (UFC 334, Nov 14), **#1872** the
 two-week sports calendar, **#1875** NFL prime time's result within the hour; **#1849** once the
 embargo date is known. Wave 150b: the long videos' music bed is generated (#1995, decision 101).
-**2026-11-04 (Claude, wave 149 - the next five, S01).** The Week in Review's cover is its top
-Short's own picture with that Short's subject on it ("GTA 6 This Week"), and the two live ones
-under 2% get it at the next sync. Run 230's cover had never gone up: frames-only mode let no long
-cover through (#1992, decision 99). Long videos that are not news go public Sundays at 7 PM,
-compiled that morning (decision 100); a franchise's new season gets a long explainer when two
-outlets name it. NVENC's fallback says why; four dead modules are gone. Next, before W4's freeze
-(Nov 16): **#1993** a season explainer's title from search, **#1723** monthly tier lists,
-**#1737** "every X ranked" long videos, **#1738** season previews, **#1735** long-form pacing
-with a music bed; **#1849** once the embargo date is known.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

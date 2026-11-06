@@ -67,7 +67,8 @@ def _active(row: dict[str, Any], day: date) -> bool:
 
 def slot_hours(channel_id: str, title: str, day: str | date) -> tuple[int, ...]:
     """#1868 (B11.22): the public hours for a video titled `title` on `day` - noon and 10 PM, plus
-    a `slots` row's extra hours when the title names its subject inside its dates."""
+    a `slots` row's extra hours when the title names its subject inside its dates. #1648 (wave
+    152): a row with `"all": true` gives its hours to every title - three Shorts a day."""
     from apis.topic_tokens import names_any
 
     when = _day(day)
@@ -76,18 +77,33 @@ def slot_hours(channel_id: str, title: str, day: str | date) -> tuple[int, ...]:
         if (
             row.get("kind") == "slots"
             and _active(row, when)
-            and names_any(title or "", _names(row))
+            and (row.get("all") or names_any(title or "", _names(row)))
         ):
             hours.update(int(h) for h in row.get("extra_hours") or [])
     return tuple(sorted(hours))
 
 
+def slot_renders(channel_id: str, day: str | date) -> int:
+    """#1648: the most renders an active `slots` row asks of a night (0 when none asks) - the
+    third slot needs a third render, and the row's end date ends both."""
+    when = _day(day)
+    most = 0
+    for row in series_rows(channel_id):
+        if row.get("kind") == "slots" and _active(row, when):
+            try:
+                most = max(most, int(row.get("renders") or 0))
+            except (TypeError, ValueError):
+                continue
+    return most
+
+
 def launch_names(channel_id: str, day: str | date) -> list[str]:
-    """#1867: the names whose stories jump the queue today - an active `slots` row's."""
+    """#1867: the names whose stories jump the queue today - an active `slots` row's. A row for
+    every title (#1648) names no story."""
     when = _day(day)
     out: list[str] = []
     for row in series_rows(channel_id):
-        if row.get("kind") == "slots" and _active(row, when):
+        if row.get("kind") == "slots" and _active(row, when) and not row.get("all"):
             out.extend(_names(row))
     return out
 

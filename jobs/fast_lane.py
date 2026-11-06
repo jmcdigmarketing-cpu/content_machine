@@ -7,6 +7,13 @@
   call (decision 76, `event_dates.result_brief`); its final is the draft's key fact.
 - #1650 (B03.4) a numbered UFC card's finish: its result headline on `UFC_OUTLETS`+ outlets within
   the hour, once the card has started.
+- Wave 152, first-hour stories on `QUICK_OUTLETS`+ outlets within `QUICK_MINUTES` (each counts as
+  news): #1613 an injury to a marquee name (`best_bet.injury_story`); #1874 a weigh-in miss or
+  fight-week drama naming a numbered card or its main event in its fight week (`recap.fight_week`);
+  #1890 a marquee name's press-conference quote.
+
+The worker runs only while the PC is awake - no wake timers (the operator, 2026-11-06): a final
+that ends while it sleeps is not made.
 
 The worker runs it once a pass, at most every `CHECK_MINUTES`: one story, the result first. The
 draft is made the way overnight makes one (its own process), held by the same checks an unattended
@@ -42,7 +49,20 @@ RESULT_LEAGUES = ("nfl", "nba")
 # A game's length from kickoff to its final, then the hour a result is still fresh.
 GAME_HOURS = {"nfl": 3.3, "nba": 2.4}
 FRESH_HOURS = 1.25
+QUICK_OUTLETS = 3
+QUICK_MINUTES = 60
+NEWS_KINDS = ("news", "injury", "fight_week", "presser")  # NEWS_PER_DAY counts them together
 _UFC_CARD = re.compile(r"\bUFC\s+\d{3}\b")
+_DRAMA = re.compile(
+    r"\b(miss(es|ed)? weight|weigh-?ins?|on the scale|pulled (out|from)|withdraws?|withdrew|"
+    r"replaced|replacement|altercation|scuffle|shov(es|ed)|face-?offs?|brawl)\b",
+    re.IGNORECASE,
+)
+_PRESSER = re.compile(
+    r"\b(press conference|presser|media day|post-?fight|post-?game|calls? out|fires? back|"
+    r"blasts?|slams?|trashes)\b",
+    re.IGNORECASE,
+)
 _FINISH = re.compile(
     r"\b(results?|knocks? out|knockout|KO|TKO|submits?|submission|stops|stoppage|defeats?|"
     r"def\.|beats?|wins?|decision|finish(es|ed)?)\b",
@@ -268,6 +288,68 @@ def ufc_story(
     return None
 
 
+def _quick_story(
+    channel_id: str,
+    kind: str,
+    *,
+    now: datetime,
+    pool: list[dict[str, Any]],
+    done: set[str],
+    match: Callable[[str], bool],
+    why: str,
+) -> dict[str, Any] | None:
+    """Wave 152: the first story `match` takes on `QUICK_OUTLETS`+ outlets whose first outlet
+    published within `QUICK_MINUTES` - never a death story, never one drafted."""
+    from core.authenticity import is_death_story
+
+    for cand in pool:
+        topic = str(cand.get("topic") or "")
+        key = f"{kind}:{topic}"
+        if key in done or len(cand.get("outlets") or []) < QUICK_OUTLETS:
+            continue
+        if not _fresh(cand, now, QUICK_MINUTES) or not match(topic):
+            continue
+        if is_death_story(topic) or _drafted(channel_id, topic):
+            continue
+        return {"kind": kind, "key": key, "topic": topic,
+                "domain": str(cand.get("domain") or "gaming"),
+                "why": f"{why} on {len(cand['outlets'])} outlets within the hour"}  # fmt: skip
+    return None
+
+
+def quick_stories(
+    channel_id: str,
+    *,
+    now: datetime,
+    pool: list[dict[str, Any]],
+    done: set[str],
+    week: list[str] | None = None,
+) -> dict[str, Any] | None:
+    """#1613, then #1874, then #1890. `week` is the fight week's names; None reads them from
+    ESPN's calendar - only when a headline has a fight-week word."""
+    from apis.topic_tokens import names_any
+    from core.best_bet import injury_story, marquee_names
+
+    names = marquee_names(channel_id)
+    found = _quick_story(channel_id, "injury", now=now, pool=pool, done=done,
+                         match=lambda t: injury_story(t, names), why="a marquee injury")  # fmt: skip
+    if found:
+        return found
+    if week is None and any(_DRAMA.search(str(c.get("topic") or "")) for c in pool):
+        from core.series.recap import fight_week
+
+        week = fight_week(now=now)
+    if week:
+        found = _quick_story(channel_id, "fight_week", now=now, pool=pool, done=done,
+                             match=lambda t: bool(_DRAMA.search(t)) and names_any(t, week),
+                             why=f"{week[0]} fight week")  # fmt: skip
+        if found:
+            return found
+    return _quick_story(channel_id, "presser", now=now, pool=pool, done=done,
+                        match=lambda t: bool(_PRESSER.search(t)) and names_any(t, names),
+                        why="a marquee press-conference quote")  # fmt: skip
+
+
 def _side(comp: dict[str, Any], key: str) -> dict[str, Any]:
     for side in comp.get("competitors") or []:
         if isinstance(side, dict) and side.get("homeAway") == key:
@@ -354,9 +436,10 @@ def next_story(
     store: dict[str, Any],
     pool: Callable[[str], list[dict[str, Any]]] | None = None,
     boards: dict[str, Any] | None = None,
+    week: list[str] | None = None,
 ) -> dict[str, Any] | None:
-    """The one story this pass makes: a result, then a card's finish, then breaking news (while
-    today's news is under `NEWS_PER_DAY`)."""
+    """The one story this pass makes: a result, then a card's finish, then - while today's news
+    kinds are under `NEWS_PER_DAY` - a quick story (#1613, #1874, #1890), then breaking news."""
     done = set(store.get("done") or [])
     found = result_story(channel_id, now=now, done=done, boards=boards)
     if found:
@@ -366,8 +449,11 @@ def next_story(
     if found:
         return found
     today = (store.get("days") or {}).get(_day(channel_id, now)) or {}
-    if int(today.get("news") or 0) >= NEWS_PER_DAY:
+    if sum(int(today.get(kind) or 0) for kind in NEWS_KINDS) >= NEWS_PER_DAY:
         return None
+    found = quick_stories(channel_id, now=now, pool=rows, done=done, week=week)
+    if found:
+        return found
     return news_story(channel_id, now=now, pool=rows, done=done)
 
 

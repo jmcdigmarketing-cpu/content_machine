@@ -905,7 +905,7 @@ def render_vertical_video(
             if progress:
                 progress.note(f"Intro skipped: {e}")
 
-    if render_preset != "draft":
+    if render_preset != "draft" and ends_on_card(duration):  # #1622: a Short ends on its word
         from video.channel_outro import append_channel_outro, resolve_end_card
 
         if resolve_end_card(channel_id):
@@ -947,6 +947,18 @@ def render_vertical_video(
         progress.done(f"Video saved: {output_path}")
     logger.info("Video saved: %s", output_path)
     return output_path, asset, intro_landed
+
+
+def ends_on_card(duration: float) -> bool:
+    """#1622 (B02.1, wave 152): only a long video ends on the generated end card. A Short ends on
+    its last word so the loop starts at once - every Short ended on 1.5 s of "TAP IN FOR MORE" on
+    a dark still. The bound is the long videos' (`music.LONG_BED_SECONDS`)."""
+    from core.music import LONG_BED_SECONDS
+
+    try:
+        return float(duration or 0) > LONG_BED_SECONDS
+    except (TypeError, ValueError):
+        return False
 
 
 def _end_card_on_cut(path: str, profile: Any, channel_id: str | None) -> None:
@@ -1026,7 +1038,8 @@ def _render_extra_formats(
             if proc.returncode == 0 and os.path.isfile(alt_output):
                 written.append(alt_output)
                 logger.info("Extra-format render saved: %s", alt_output)
-                _end_card_on_cut(alt_output, profile, channel_id)
+                if ends_on_card(duration):  # #1622: a Short's cut ends on its word too
+                    _end_card_on_cut(alt_output, profile, channel_id)
             else:
                 logger.warning(
                     "Extra-format render %s failed (kept primary): %s",

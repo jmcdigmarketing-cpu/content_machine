@@ -85,6 +85,7 @@ class BestBetResult:
     deadline: str = ""  # #1847: ISO UTC - after it the video's number is wrong
     draft_kind: str = ""  # #1850: "long" - a 10-12 minute 16:9 video
     publish_at: str = ""  # #1870: ISO UTC - when a dated moment goes public
+    outlier: float = 0.0  # #1599: a competitor breakout's times its channel's median (5+ leads)
 
 
 # ---------------------------------------------------------------------------
@@ -925,31 +926,51 @@ def _keyless_candidates(
     return out
 
 
+# #1599 (B01.3, wave 152): a breakout this far ahead of its channel's median, published within
+# this many hours of the snapshot, is marked - and leads the night when it names a marquee name
+# (`batch_generation.lead_first`). The snapshot is the channels' RSS: it gives no duration, so a
+# tracked channel's video counts whether it is a Short or not.
+OUTLIER_FIRST = 5.0
+OUTLIER_HOURS = 48
+
+
 def _competitor_outlier_candidates(
     channel_id: str, *, allowed: set[str], exclude: set[str], seen_local: set[str], limit: int = 3
 ) -> list[dict]:
     """#1063: a watched channel's breakout video as a topic candidate, labelled with the
     channel and how far ahead of its median it is. Reads the stored snapshot - no network.
-    Vetted like every other headline (on-brand domain, not a repeat, not a deal)."""
+    Vetted like every other headline (on-brand domain, not a repeat, not a deal). #1599: one at
+    `OUTLIER_FIRST`x within `OUTLIER_HOURS` of the snapshot carries `outlier` (its ratio)."""
     try:
         from analytics.competitor_context import load_competitor_snapshot, outliers
 
-        rows = outliers(load_competitor_snapshot(channel_id))[:limit]
+        snapshot = load_competitor_snapshot(channel_id)
+        rows = outliers(snapshot)[:limit]
+        synced = _parse_pubdate(str((snapshot or {}).get("synced_at") or ""))
     except Exception as exc:
         logger.debug("competitor outliers skipped: %s", exc)
         return []
     out: list[dict] = []
     for row in rows:
+        published = _parse_pubdate(row.get("published_at"))
         cand = _consider_candidate(
             row["title"],
             f"{row['label']} breakout, {row['ratio']:.1f}x their median",
             allowed=allowed,
             exclude=exclude,
             seen_local=seen_local,
-            published=_parse_pubdate(row.get("published_at")),
+            published=published,
         )
-        if cand:
-            out.append(cand)
+        if not cand:
+            continue
+        if (
+            float(row.get("ratio") or 0) >= OUTLIER_FIRST
+            and published is not None
+            and synced is not None
+            and synced - published <= timedelta(hours=OUTLIER_HOURS)
+        ):
+            cand["outlier"] = float(row["ratio"])
+        out.append(cand)
     return out
 
 
@@ -1023,7 +1044,24 @@ def _fresh_candidates(
 
     # Daily rotation breaks ties only (#1300): the story on the most outlets leads.
     random.Random(datetime.now(timezone.utc).strftime("%Y-%m-%d")).shuffle(base)
-    return rank_by_coverage(base)[:limit]
+    return _keep_leads(rank_by_coverage(base), limit, marquee_names(channel_id))
+
+
+def _leads(cand: dict, names: list[str]) -> bool:
+    """#1599 / #1613 (wave 152): a candidate the night leads with - a marquee name's competitor
+    breakout at `OUTLIER_FIRST`x, or an injury to a marquee name."""
+    from apis.topic_tokens import names_any
+
+    topic = str(cand.get("topic") or "")
+    if float(cand.get("outlier") or 0) >= OUTLIER_FIRST and names_any(topic, names):
+        return True
+    return injury_story(topic, names)
+
+
+def _keep_leads(ranked: list[dict], limit: int, names: list[str]) -> list[dict]:
+    """The top `limit` by coverage, plus any lead past them: one outlet ranks a breakout last, and
+    the cut at `limit` dropped it before the night could put it first."""
+    return [*ranked[:limit], *(c for c in ranked[limit:] if _leads(c, names))]
 
 
 _IDEA_FEED_CAP = 24
@@ -1117,6 +1155,11 @@ def rank_by_coverage(pool: list[dict], *, now: datetime | None = None) -> list[d
         times = [p.get("published") for p in (cand, *(pool[j] for j in story))]
         dated = [t for t in times if isinstance(t, datetime)]
         cand["first"] = min(dated) if dated else None
+        # #1599 (wave 152): a competitor's breakout keeps its mark when another outlet's
+        # headline is the one the story keeps
+        ratio = max(float(p.get("outlier") or 0) for p in (cand, *(pool[j] for j in story)))
+        if ratio:
+            cand["outlier"] = ratio
 
     def stamp(c: dict) -> float:
         published = c.get("published")
@@ -1279,6 +1322,24 @@ def marquee_reason(
     return "", ""
 
 
+# #1613 (B01.17, wave 152): an injury to a marquee player jumps the queue - the night's slate
+# (`batch_generation.lead_first`) and the fast lane at three outlets within the hour.
+_INJURY = re.compile(
+    r"\b(injur(y|ies|ed)|torn|ACL|MCL|Achilles|surgery|ruled out|out for the (season|year)|"
+    r"season-ending|concussion|fractured?|blood clots?|sprain(ed)?|on IR|placed on IR)\b",
+    re.IGNORECASE,
+)
+
+
+def injury_story(topic: str, names: list[str]) -> bool:
+    """#1613: a headline about an injury to one of `names` - never a death story (decision 97)."""
+    from apis.topic_tokens import names_any
+    from core.authenticity import is_death_story
+
+    text = topic or ""
+    return bool(_INJURY.search(text)) and names_any(text, names) and not is_death_story(text)
+
+
 def card_kind(topic: str) -> str:
     """#1593: "ufc_numbered" for a numbered card ("UFC 334: ..."), "ufc" for a Fight Night."""
     return "ufc_numbered" if re.search(r"\bUFC \d{3}\b", topic or "") else "ufc"
@@ -1291,7 +1352,29 @@ _MARQUEE_FILE = os.path.join(
 
 def marquee_names(channel_id: str) -> list[str]:
     """#1595: the channel's marquee names (`config/marquee.json`, the operator's to edit) - a story
-    naming one may fill an overnight slot on fewer than three outlets. [] when unread."""
+    naming one may fill an overnight slot on fewer than three outlets. [] when unread.
+    #1597 (B01.1, wave 152): plus the subjects the channel's own Shorts earned a place for, less
+    the listed names whose last three Shorts missed (`core/series/worked.learn_marquee`)."""
+    names = _configured_marquee(channel_id)
+    try:
+        from core.series.worked import load_learned
+
+        learned = load_learned(channel_id)
+    except Exception as exc:
+        logger.debug("learned marquee unread: %s", exc)
+        learned = {}
+    left = {str(n).lower() for n in learned.get("left") or {}}
+    out = [n for n in names if n.lower() not in left]
+    have = {n.lower() for n in out}
+    for name in learned.get("joined") or {}:
+        if str(name).strip() and str(name).lower() not in have:
+            out.append(str(name))
+            have.add(str(name).lower())
+    return out
+
+
+def _configured_marquee(channel_id: str) -> list[str]:
+    """`config/marquee.json`'s names for the channel - the operator's list. [] when unread."""
     try:
         with open(_MARQUEE_FILE, encoding="utf-8") as handle:
             data = json.load(handle)
@@ -1572,6 +1655,7 @@ def get_best_bets(
                 supporting_runs=0,
                 rationale=rationale,
                 outlets=len(c.get("outlets") or []),
+                outlier=float(c.get("outlier") or 0.0),  # #1599
             )
         )
         return True
@@ -1627,6 +1711,16 @@ def get_best_bets(
             )
         )
         return True
+
+    # Wave 152 (#1599, #1613): a lead is offered before the one-per-domain pass, which would
+    # otherwise give its domain's place to the domain's first headline.
+    lead_names = marquee_names(channel_id)
+    for c in [
+        c for d in ordered_fresh_domains for c in by_domain.get(d, []) if _leads(c, lead_names)
+    ]:
+        if len(options) >= n:
+            break
+        _emit_fresh(c)
 
     # Phase 1 — DIVERSITY: at most one pick per domain, confidence-first order,
     # preferring a fresh headline for the domain, else its best historical run. This

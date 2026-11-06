@@ -783,9 +783,11 @@ def cmd_signal_diff(args: argparse.Namespace) -> int:
 @_register("scoreboard", "The goal's scoreboard: views so far, pace needed vs pace now (#934)")
 def cmd_scoreboard(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
+    from core.success.cadence import cadence_lines
     from core.success.goals import scoreboard_lines
 
-    for line in scoreboard_lines(resolve_channel_id(getattr(args, "channel", None))):
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    for line in [*scoreboard_lines(channel), *cadence_lines(channel)]:  # #1648
         print(line)
     return 0
 

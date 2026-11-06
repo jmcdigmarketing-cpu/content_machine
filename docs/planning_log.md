@@ -11404,3 +11404,55 @@ row to `overnight_render_limit`; the match-up's `deadline` to the draft's `event
 Next five: #1999, #1623, #1626, #1877, #1687; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 243 open (was 251), 1,641 done, highest #2000.
+
+## 2026-11-06 — wave 153: the next five (Claude Code)
+
+**Prompt:** "Start wave 153"
+
+Verified first: HEAD `df01d1f` (wave 152, CI green); overnight Ready until 05:00. The five:
+#1999, #1623, #1626, #1877, #1687 - each open with a lane; #1624 is #1623's other half (the sign-off
+the check would fail) and ships with it.
+
+Found before building: run 249, a preview of Saturday's Nuggets at Pacers, was queued to go public at
+6:24 PM ET titled "Denver Nuggets win: Jamal Murray's form decides it all". Asked; the operator:
+"Retitle it". Retitled on YouTube at 17:23 CST ("Why the Nuggets beat the Pacers on Saturday:
+Jamal Murray's form"), read back, publish time kept. Filed and built as #2001.
+
+Shipped (worktree `wave153`):
+1. #1999 `core/series/last_night.py` - `last_night_ideas`, `result_drafted`; `final_of(fresh_hours=)`.
+2. #1877 `last_night.big_night` - a marquee name's 40-point night from ESPN's game leaders.
+3. #1687 `last_night.next_game_lines`, `fast_lane.story_facts` - each team's next game as a fact.
+4. #1623 + #1624 `script_craft.loop_close`, `content_engine.short_loop_pass` / `LOOP_RULE`,
+   `human_context_block(short=)`.
+5. #1626 `script_craft.subject_first`, `content_engine.hook_subject`, inside `_hook_variants`.
+6. #2001 `youtube_meta.preview_as_call` / `preview_title`; #2002 `content_engine._PLACEHOLDER`.
+
+Findings (each from a live read):
+- Run 242's preview ("Jacksonville Jaguars at Baltimore Ravens") read as the same story as its
+  result, so the replay for 11-06 05:00 found no TNF final - `result_drafted` counts only an earlier
+  result. With it: "Jaguars beat Ravens 33-10: what it means".
+- `subject_name` made "People", "All" and "Indie" the subjects of 45 of 58 hooks; the subject is now a
+  game's teams or the marquee names a topic names (37 of 58 checkable, 11 pass).
+- Run 232, public 11-03, speaks "<who> can't maintain <what>" - the opener prompt's shape hint, kept
+  by the hook rewrite (#2002). It stays as published.
+- 43 of 58 recent Shorts ended on "Tap in for more."; 16 last lines loop back to the first.
+
+Deliberately not done: re-rendering run 232; a "what's next" Short of its own (the result Short
+carries the next games); the stored title of run 249.
+
+Tests: `tests/test_wave153.py`, 16 - 14 fail on `df01d1f` (a clean HEAD checkout, the editable
+finder stripped); the other two, added after the live reads, each failed on the build before its
+fix, as did the subject test once changed to the narrower subject. The suite pins `LAST_NIGHT` off.
+The first full run failed wave 118's guard on private sentence splitters (28, cap 27):
+`loop_close`'s regex used the `(?<=[.!?])` lookbehind - it now walks `split_sentences`.
+
+Audit: mypy 92 == baseline; ruff and format clean; corpus all held. Suite 7,452 forward and
+reversed, OK; `data/` untouched. Production callers: `last_night_ideas` from `collect_topics`
+(both branches); `story_facts` from the fast lane's `_draft`; `short_loop_pass` and `preview_title`
+from `generate_content_package`; `hook_subject` at both `_hook_variants` calls. Fields traced: a
+result's `teams` from `final_of` / `big_night` to `next_game_lines`; the `result` source to
+`draft_intent`.
+
+Next five: #1629, #1857, #1666, #1660, #1620; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 238 open (was 243), 1,649 done, highest #2003.

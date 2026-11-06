@@ -639,9 +639,13 @@ You must:
         event_warning += UNCONFIRMED_BLOCK
 
     from core.channel_persona import human_context_block
+    from core.tts import is_long_length
 
-    human_block = human_context_block(channel_id)
+    short = not is_long_length(length_choice)
+    human_block = human_context_block(channel_id, short=short)  # #1624: no sign-off on a Short
     human_block = f"{human_block}\n\n" if human_block else ""
+    if short:  # #1623: the last line leads back into the first, so the Short loops
+        human_block += LOOP_RULE + "\n\n"
 
     # Pillar 4: optional playbook/style guidance from the vault (strategy notes +
     # machine beliefs). Bounded, clearly non-factual, "" when the vault is unset.
@@ -836,6 +840,48 @@ def _script_pass_snapshot(script: str) -> dict[str, Any]:
     }
 
 
+# Run 232 (public 11-03) opened "15 days out, and the wait since 2022 has become <who> can't
+# maintain <what>." - the shape hint of the opener prompt, kept; run 229 had "<b>17 days</b>".
+_PLACEHOLDER = re.compile(r"<\s*/?\s*[A-Za-z][^<>]{0,40}>")
+
+LOOP_RULE = (
+    "LOOP: end on a line that leads back into the first sentence - it answers or turns the hook, "
+    "so the Short plays straight into its opening again. No sign-off and no call to follow or "
+    "subscribe - the last line is part of the story."
+)
+
+
+def short_loop_pass(script: str, length_choice: str) -> tuple[str, dict[str, Any]]:
+    """#1623 + #1624: a Short's trailing sign-off goes and its last line is read (`loop_close`);
+    a long video keeps its sign-off."""
+    from core.script_craft import loop_close
+    from core.tts import is_long_length
+
+    if is_long_length(length_choice):
+        return script, {"skipped": "a long video keeps its sign-off"}
+    return loop_close(script)
+
+
+_GAME_TOPIC = re.compile(r"^(?P<away>[A-Z][^:]*?)\s+(?:at|vs\.?)\s+(?P<home>[A-Z][^:]*?)\s*$")
+
+
+def hook_subject(topic: str, channel_id: str = "tapin") -> list[str]:
+    """#1626: the names the first three words must carry - a game's two teams ("Denver Nuggets
+    at Indiana Pacers"), else the marquee names the topic names; [] (no check) when it names
+    none. `subject_name` made "People", "All" and "Indie" the subjects of 45 of 58 live hooks."""
+    text = str(topic or "").strip()
+    game = _GAME_TOPIC.match(text)
+    if game:
+        return [game.group("away").strip(), game.group("home").strip()]
+    try:
+        from apis.topic_tokens import names_any
+        from core.best_bet import marquee_names
+
+        return [n for n in marquee_names(channel_id) if names_any(text, [n])]
+    except Exception:
+        return []
+
+
 def run_script_pass(
     ledger: list[dict[str, Any]],
     name: str,
@@ -1004,6 +1050,7 @@ def _hook_variants(
     intent: str = "",
     idea: str = "",
     unbacked: list[str] | None = None,
+    subject: str | list[str] = "",
 ) -> tuple[str, dict[str, Any]]:
     """
     Opt-in (HOOK_REGEN_ENABLED=true): ask for `HOOK_VARIANTS` (#987, default 3) new first
@@ -1033,6 +1080,13 @@ def _hook_variants(
     rule = _first_line_rule(channel_id)
     if rule and not first_line_take(current.hook):
         problems.append("it carries no call or take - " + rule)
+    from core.script_craft import subject_first
+
+    subjects = [subject] if isinstance(subject, str) else list(subject or [])
+    subjects = [s for s in subjects if str(s or "").strip()]
+    named = " or ".join(subjects[:2])
+    if subjects and not subject_first(current.hook, subjects):  # #1626
+        problems.append(f"it does not name {named} in its first three words")
     if problems:
         extra["problems"] = problems
     guidance: dict[str, Any] = {}
@@ -1064,6 +1118,8 @@ def _hook_variants(
             "will lose in Seattle, and the spread already says so.' An opener without one is "
             "thrown away."
         )
+    if subjects:  # #1626: the voice names the subject before the viewer can swipe
+        system_prompt += f"\nEach opener names {named} within its first three words."
     shape_hint = "<a fact from the script>, and <who> will <what>" if rule else "first sentence 1"
     if problems and grounding_text.strip():
         # #1018: the current hook is not on solid ground - build the new one from facts.
@@ -1127,8 +1183,12 @@ def _hook_variants(
         words = set(content_tokens(opener))
         opener_problems = _hook_problems(opener, grounding_text, recent_openers=recent)
         flip = stance_flip(opener, intent, idea=idea) if intent else ""
-        if opener_problems:
+        if _PLACEHOLDER.search(opener):  # run 232 kept "<who> can't maintain <what>"
+            row["refused"] = "carries the prompt's placeholder or markup"
+        elif opener_problems:
             row["refused"] = "; ".join(opener_problems)
+        elif subjects and not subject_first(opener, subjects):
+            row["refused"] = f"does not name {named} in its first three words"
         elif rule and not first_line_take(opener):
             row["refused"] = "no call or take in the first sentence"
         elif flip:
@@ -2257,6 +2317,7 @@ def generate_content_package(
             grounding_text=grounding_text,
             intent=resolved_intent,
             idea=creative_brief or seed_topic or topic,
+            subject=hook_subject(seed_topic or topic, channel_id or "tapin"),  # #1626
         ),
         disabled=not hook_regen_enabled(),
     )
@@ -2542,6 +2603,7 @@ def generate_content_package(
             intent=resolved_intent,
             idea=creative_brief or seed_topic or topic,
             unbacked=in_hook,
+            subject=hook_subject(seed_topic or topic, channel_id or "tapin"),  # #1626
         )
         if new == s:
             return s, {"hook_claims": len(in_hook)}
@@ -2619,6 +2681,10 @@ def generate_content_package(
 
     from core.authenticity import _recent_scripts, payoff_closer, rewrite_repeated
 
+    # #1623 + #1624: a Short ends on its last real line - before the payoff check reads it.
+    script = run_script_pass(
+        script_passes, "loop_close", script, lambda text: short_loop_pass(text, length_choice)
+    )
     script = run_script_pass(script_passes, "closer_payoff", script, payoff_closer)
     _recent = _recent_scripts(channel_id, exclude_run_id=None) if channel_id else []
     script = run_script_pass(
@@ -2737,6 +2803,12 @@ def generate_content_package(
                 topic=topic,
             ),
         )
+    from core.youtube_meta import preview_title
+
+    title, _final_shaped = preview_title(title, resolved_intent)  # #2001
+    if _final_shaped:
+        logger.warning("A preview's title read as a final; said as a call: %r -> %r",
+                       _final_shaped, title)  # fmt: skip
     from core.youtube_meta import check_title_script_consistency
 
     title_script_check = check_title_script_consistency(title, script, topic=topic)

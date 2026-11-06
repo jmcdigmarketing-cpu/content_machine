@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-06: wave 152, the next ten
+# Handoff synopsis — 2026-11-06: wave 153, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-06 (Claude Code): wave 152, the next ten
+## Last wave — 2026-11-06 (Claude Code): wave 153, the next five
+
+Overnight drafts last night's national final the PC slept through and a marquee name's
+40-point night, each with both teams' next games. A Short ends on its loop line, not a sign-off;
+a hook names its subject in its first three words; a preview's title is a call (decision 104).
+Run 249 was retitled before it went public.
+
+## Previous — 2026-11-06 (Claude Code): wave 152, the next ten
 
 The night leads with a launch-week story, a marquee injury, a numbered card's fight week or a
 marquee breakout; the fast lane takes first-hour injury, weigh-in and press-conference stories;
@@ -23,14 +30,6 @@ The fast lane runs only while the PC is awake - no wake timers (the operator).
 A national final, a numbered card's finish or a marquee story on five outlets within two hours
 is drafted, rendered and public in about an hour from the worker, through the claim gate - at
 most three a day (decision 102). `ops calendar` lists the next 14 days of marquee events.
-
-## Previous — 2026-11-05 (Claude Code): wave 150, the next five
-
-Overnight's preview is a game 24-48 hours away - the next two days' NBA and NHL boards are
-read, and a national game or numbered card leads - so it is drafted, rendered and slotted a
-day ahead. Each night one "more of what worked" idea from last week's top subjects; a season
-explainer's title from search; long videos spoken at 1.0x. Wave 150b: a long video's music bed
-is generated with ffmpeg - six seamless 64 s pads in turn (#1995, decision 101).
 
 ---
 

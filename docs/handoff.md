@@ -53,18 +53,19 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-06 · **HEAD at write:** `6835e68` (wave 151, CI green; this wave's commit
+**Written:** 2026-11-06 · **HEAD at write:** `df01d1f` (wave 152, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 152, the next ten.** Broken and not fixable by code: the fast lane missed the TNF final - the
-PC slept 20:22-05:07 and the operator wants no wake timers (#1999 drafts it at overnight instead).
-Built: the night's lead order (launch week, marquee injury #1613, fight week #1612, marquee breakout
-#1599); the fast lane's injury, weigh-in (#1874) and press-conference (#1890) kinds; no end card on
-a Short (#1622); three a day Nov 7-20 (#1648, read 11-27); five drafts on a wide night (#1653); the
-UFC 334 match-up long video, drafted Nov 10 (#1892); the marquee list learns (#1597). Decision 103.
+**Wave 153, the next five.** Broken and found live: run 249's preview was titled as a final
+(retitled on YouTube before it went public, #2001); run 232, public, speaks the hook prompt's
+"<who> ... <what>" (left as published, #2002 refuses it now); a game's preview hid its result from
+the "already drafted" check. Built: overnight drafts last night's national final the PC slept
+through (#1999) and a marquee 40-point night (#1877), with both teams' next games (#1687); a Short
+ends on its loop line, no sign-off (#1623, #1624); the subject in a hook's first three words (#1626).
+Decision 104.
 
-**Open:** #1648, #1984, #1988, #1991, #1994, #1996, #1997, #1998, #1999, #2000. **Next:** #1999,
-#1623, #1626, #1877, #1687 before W4's freeze (Nov 16); #1849 once the embargo date is known.
+**Open:** #1648, #1984, #1988, #1991, #1994, #1996, #1997, #1998, #2000, #2003. **Next:** #1629,
+#1857, #1666, #1660, #1620 before W4's freeze (Nov 16); #1849 once the embargo date is known.
 
 **Operator:** publish the Google app before Sat Nov 7 - the sign-in lapses and uploads stop (set
 POLICY_SITE_URL first; `ops check-youtube` reads the four pages); bio pages; tracking IDs; Facebook in

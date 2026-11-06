@@ -435,3 +435,54 @@ def drop_unbacked_sentences(
     if not kept:
         return f"Reports say {sentences[0][0].lower()}{sentences[0][1:]}", []
     return " ".join(kept), dropped
+
+
+# ---- #2001 (wave 153): a preview's title says its call as a call ------------------------------
+# Run 249, queued 11-06 for Saturday's game: "Denver Nuggets win: Jamal Murray's form decides it
+# all" - a preview worded as the final of a game not yet played (retitled by hand before it went
+# public). Run 162's "Detroit Pistons bench outplays Boston Celtics reserves" was another.
+_FINAL_VERBS = {
+    "win": "win", "wins": "win", "beat": "beat", "beats": "beat", "top": "top", "tops": "top",
+    "outplay": "outplay", "outplays": "outplay", "outplayed": "outplay", "stun": "stun",
+    "stuns": "stun", "stunned": "stun", "rout": "rout", "routs": "rout", "routed": "rout",
+    "edge": "edge", "edges": "edge", "edged": "edge", "defeat": "defeat", "defeats": "defeat",
+    "defeated": "defeat", "dominate": "dominate", "dominates": "dominate",
+    "dominated": "dominate", "crush": "crush", "crushes": "crush", "crushed": "crush",
+    "upset": "upset", "upsets": "upset",
+}  # fmt: skip
+_FINAL_TITLE = re.compile(
+    r"^(?P<subject>\S.{0,60}?)\s+(?P<verb>"
+    + "|".join(sorted(_FINAL_VERBS, key=len, reverse=True))
+    + r")\b(?P<rest>.*)$",
+    re.I | re.S,
+)
+_HEDGED = re.compile(
+    r"\b(will|won't|to|can|could|should|would|why|how|if|may|might|vs\.?|versus|preview|odds|"
+    r"picks?|predictions?)\b",
+    re.I,
+)
+
+
+def preview_as_call(title: str) -> tuple[str, str]:
+    """(title, the title it replaced or ""): "Denver Nuggets win: ..." -> "Denver Nuggets will win:
+    ..." - a preview's call said as one. A title already hedged (will, to, why, vs) is left."""
+    found = _FINAL_TITLE.match((title or "").strip())
+    if not found:
+        return title, ""
+    subject, verb, rest = found.group("subject"), found.group("verb"), found.group("rest")
+    if not subject[:1].isupper() or _HEDGED.search(subject) or len(subject.split()) > 6:
+        return title, ""
+    base = _FINAL_VERBS[verb.lower()]
+    will = "will"
+    if verb[:1].isupper() and subject.split()[-1][:1].isupper():  # Title Case stays Title Case
+        base, will = base.capitalize(), "Will"
+    return f"{subject} {will} {base}{rest}", title
+
+
+def preview_title(title: str, intent: str) -> tuple[str, str]:
+    """`preview_as_call` for a preview (`angle_intent.ANGLE_PREVIEW`); any other title is left."""
+    from core.angle_intent import ANGLE_PREVIEW
+
+    if intent != ANGLE_PREVIEW:
+        return title, ""
+    return preview_as_call(title)

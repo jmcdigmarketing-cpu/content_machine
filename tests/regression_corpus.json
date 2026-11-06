@@ -9169,6 +9169,86 @@
         "truthy": true
       },
       "why": "only a Short loses the card"
+    },
+    {
+      "id": "a-preview-title-worded-as-a-final",
+      "item": 2001,
+      "source": "run 249, queued 11-06 for Saturday's Nuggets at Pacers (retitled by hand before it went public)",
+      "call": "core.youtube_meta:preview_as_call",
+      "args": [
+        "Denver Nuggets win: Jamal Murray's form decides it all"
+      ],
+      "select": 0,
+      "expect": {
+        "equals": "Denver Nuggets will win: Jamal Murray's form decides it all"
+      },
+      "why": "a game not yet played has no winner"
+    },
+    {
+      "id": "a-preview-title-with-a-past-tense-result",
+      "item": 2001,
+      "source": "the sibling: run 162's preview title",
+      "call": "core.youtube_meta:preview_as_call",
+      "args": [
+        "Detroit Pistons bench outplays Boston Celtics reserves in key stretch"
+      ],
+      "select": 0,
+      "expect": {
+        "contains": "will outplay"
+      },
+      "why": "a preview's call is said as a call"
+    },
+    {
+      "id": "the-games-preview-is-not-its-result",
+      "item": 1999,
+      "source": "live 11-06: run 242's preview kept the TNF final the PC slept through from being drafted",
+      "call": "core.series.last_night:result_drafted",
+      "args": [
+        "tapin",
+        "Jaguars beat Ravens 33-10: what it means"
+      ],
+      "kwargs": {
+        "recent": [
+          "Jacksonville Jaguars at Baltimore Ravens"
+        ]
+      },
+      "expect": {
+        "falsy": true
+      },
+      "why": "only a result already drafted stops a result"
+    },
+    {
+      "id": "a-result-already-drafted-is-not-drafted-twice",
+      "item": 1999,
+      "source": "the sibling: the same final already drafted",
+      "call": "core.series.last_night:result_drafted",
+      "args": [
+        "tapin",
+        "Jaguars beat Ravens 33-10: what it means"
+      ],
+      "kwargs": {
+        "recent": [
+          "Jaguars beat Ravens 33-10: what it means"
+        ]
+      },
+      "expect": {
+        "truthy": true
+      },
+      "why": "one result Short a game"
+    },
+    {
+      "id": "a-shorts-trailing-sign-off-goes",
+      "item": 1624,
+      "source": "measured 11-06: 43 of 58 recent Shorts ended on 'Tap in for more.' (run 249 among them)",
+      "call": "core.script_craft:loop_close",
+      "args": [
+        "Denver wins, and Murray's scoring is the difference. I grade this call after the game. Tap in for more."
+      ],
+      "select": 0,
+      "expect": {
+        "not_contains": "Tap in for more"
+      },
+      "why": "a Short ends on its last real line so the loop starts at once"
     }
   ]
 }

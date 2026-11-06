@@ -357,9 +357,12 @@ def _side(comp: dict[str, Any], key: str) -> dict[str, Any]:
     return {}
 
 
-def final_of(league: str, event: dict[str, Any], *, now: datetime) -> dict[str, Any] | None:
-    """A national broadcast's final, fresh off the board: {topic, final, key, winner, loser} or
-    None - a game not over, not national, or past `FRESH_HOURS` after its expected end."""
+def final_of(
+    league: str, event: dict[str, Any], *, now: datetime, fresh_hours: float = FRESH_HOURS
+) -> dict[str, Any] | None:
+    """A national broadcast's final, fresh off the board: {topic, final, key, teams, ...} or
+    None - a game not over, not national, or past `fresh_hours` after its expected end (#1999:
+    overnight reads last night's with twelve)."""
     from core.best_bet import _NATIONAL_TV
 
     state = ((event.get("status") or {}).get("type") or {}) if isinstance(event, dict) else {}
@@ -376,7 +379,7 @@ def final_of(league: str, event: dict[str, Any], *, now: datetime) -> dict[str, 
         return None
     start = start if start.tzinfo else start.replace(tzinfo=timezone.utc)
     end = start + timedelta(hours=GAME_HOURS.get(league, 3.0))
-    if not start < now <= end + timedelta(hours=FRESH_HOURS):
+    if not start < now <= end + timedelta(hours=fresh_hours):
         return None
     away, home = _side(comp, "away"), _side(comp, "home")
 
@@ -401,6 +404,9 @@ def final_of(league: str, event: dict[str, Any], *, now: datetime) -> dict[str, 
         "final": f"ESPN final: {name(away)} {scores['away']}, {name(home)} {scores['home']} - "
                  f"{winner} won ({', '.join(sorted(tv & set(_NATIONAL_TV[league])))})",
         "why": f"a {league.upper()} final on national TV",
+        "league": league,
+        "teams": [{"abbr": str((s.get("team") or {}).get("abbreviation") or ""), "name": name(s)}
+                  for s in (away, home)],
     }  # fmt: skip
 
 
@@ -467,9 +473,30 @@ def _draft(channel_id: str, story: dict[str, Any]) -> Any:
 
     bet = BestBetResult(topic=story["topic"], domain=story["domain"], avg_engaged_rate=0.0,
                         source=f"fast_{story['kind']}", supporting_runs=0, rationale=story["why"])  # fmt: skip
-    facts = [story["final"]] if story.get("final") else None
+    facts = story_facts(channel_id, story) or None
     return _draft_one(channel_id, story["topic"], key_facts=facts,
                       pick=pick_record([bet], 1, by="fast lane"))  # fmt: skip
+
+
+def story_facts(
+    channel_id: str,
+    story: dict[str, Any],
+    *,
+    schedule: Callable[[str, str], dict[str, Any]] | None = None,
+) -> list[str]:
+    """A story's key facts: a result's ESPN final, then each team's next game (#1687)."""
+    if not story.get("final"):
+        return []
+    facts = [str(story["final"])]
+    try:
+        from core.series.last_night import next_game_lines
+
+        facts += next_game_lines(str(story.get("league") or story.get("domain") or ""),
+                                 list(story.get("teams") or []), now=datetime.now(timezone.utc),
+                                 channel_id=channel_id, schedule=schedule)  # fmt: skip
+    except Exception as exc:
+        logger.debug("next games skipped: %s", exc)
+    return facts
 
 
 def _hold_toast(channel_id: str, run_id: int, reason: str) -> None:

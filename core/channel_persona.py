@@ -38,12 +38,14 @@ _PERSONA_FIELDS: tuple[tuple[str, str], ...] = (
 _CONTINUITY_LOOKBACK = 12
 
 
-def _persona_lines(channel_id: str) -> list[str]:
+def _persona_lines(channel_id: str, *, short: bool = False) -> list[str]:
     persona = get_channel_profile(channel_id).persona or {}
     if not persona:
         return []
     lines: list[str] = []
     for key, label in _PERSONA_FIELDS:
+        if short and key == "signoff":  # #1624: a Short ends on its loop line (#1623)
+            continue
         val = str(persona.get(key, "")).strip()
         if val:
             lines.append(f"- {label}: {val}")
@@ -83,12 +85,12 @@ def _continuity_line(channel_id: str) -> str:
     )
 
 
-def human_context_block(channel_id: str | None = None) -> str:
+def human_context_block(channel_id: str | None = None, *, short: bool = False) -> str:
     """Persona + continuity prompt block for the script. '' when there's nothing."""
     cid = channel_id or "default"
     sections: list[str] = []
 
-    persona_lines = _persona_lines(cid)
+    persona_lines = _persona_lines(cid, short=short)
     if persona_lines:
         sections.append(
             "CHANNEL PERSONA — write in this channel's established voice (stay "

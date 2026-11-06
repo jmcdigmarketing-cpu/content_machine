@@ -411,6 +411,58 @@ def points_used(script: str, points: list[str]) -> tuple[list[str], list[str]]:
     return used, missing
 
 
+# #1623 + #1624 (B02.2, B02.3, wave 152's next): a Short ends on its last real line, so the loop
+# starts at once - "Tap in for more" closed 9 of 12 recent scripts. A question to the viewer is not
+# a sign-off; it stays.
+_SIGN_OFF_LINE = re.compile(
+    r"^\s*(?:tap in for more|like and subscribe|follow for more|subscribe for more|"
+    r"smash (?:that )?like|hit (?:that )?follow|see you (?:next time|tomorrow))\b[^.!?]*[.!?]*\s*$",
+    re.I,
+)
+
+
+def loop_close(script: str) -> tuple[str, dict[str, Any]]:
+    """(script, verdict): a trailing sign-off dropped; `loops` is whether the last line names
+    something the first does (a content word of four letters or more)."""
+    from apis.topic_tokens import content_tokens
+
+    text = script or ""
+    dropped = 0
+    while True:
+        parts = [s for s in split_sentences(text) if s.strip()]
+        if len(parts) < 2 or not _SIGN_OFF_LINE.match(parts[-1]):
+            break
+        cut = text.rstrip().rfind(parts[-1].strip())
+        if cut <= 0:
+            break
+        text = text[:cut].rstrip()
+        dropped += 1
+    sentences = [s for s in script_sentences(text) if s.strip()]
+    loops = False
+    if len(sentences) >= 2:
+        first = {t for t in content_tokens(sentences[0]) if len(t) >= 4}
+        last = {t for t in content_tokens(sentences[-1]) if len(t) >= 4}
+        loops = bool(first & last)
+    return text, {"sign_off_dropped": dropped, "loops": loops}
+
+
+def subject_first(sentence: str, subject: str | list[str]) -> bool:
+    """#1626 (B02.5): whether the voice names a subject - or its first or last word ("Nuggets",
+    "Denver") - within its first three words. True when there is no subject to name."""
+    from apis.topic_tokens import names_any
+
+    subjects = [subject] if isinstance(subject, str) else list(subject or [])
+    subjects = [s.strip() for s in subjects if str(s or "").strip()]
+    if not subjects:
+        return True
+    head = " ".join(re.findall(r"[\w'\u2019.-]+", sentence or "")[:3])
+    forms: set[str] = set()
+    for name in subjects:
+        parts = name.split()
+        forms |= {name, *((parts[0], parts[-1]) if len(parts) > 1 else ())}
+    return names_any(head, [f for f in forms if len(f) >= 3 and not f.isdigit()])
+
+
 _REPEAT_MIN_WORDS = 5
 _REPEAT_SHARE = 0.7
 _SIGN_OFF_RE = re.compile(r"^tap in for more\.?$", re.I)

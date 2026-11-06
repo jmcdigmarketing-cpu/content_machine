@@ -95,3 +95,14 @@ B01.16, B01.17, B02.1, B03.2, B03.7, B12.3, B12.19 and B12.21 (decision 82), tak
 and so the fast lane, runs only while the PC is awake; a final it sleeps through is #1999. The
 trial ends with its row; `UFC_FIGHT_WEEK`, `UFC_MATCHUP` and `MARQUEE_LEARN` stop the rest.
 
+## 104. Last night's games at overnight; a Short ends on its loop line (2026-11-06)
+**Decision:** overnight drafts last night's national final the fast lane did not make, and a
+marquee name's 40-point night, as result Shorts written as news, each with both teams' next games
+as facts. A Short ends on a line that leads back into its first and never on a sign-off; long videos
+keep theirs. A hook names its subject - a game's teams or a marquee name - in its first three
+words, inside the rewrite that already runs. A preview's title says its call as a call. **Why:** the
+fast lane missed the TNF final while the PC slept, and the operator wants no wake timers (decision
+103); the bridge's B02.2, B02.3, B02.5, B04.16 and B12.6 (decision 82), the operator's "Start wave
+153"; run 249's title was found the same afternoon. **Consequence:** `LAST_NIGHT=false` stops the
+morning's results.
+

@@ -196,13 +196,15 @@ def collect_topics(
             # makes the previews' calls.
             from core.series.countdown import countdown_idea
             from core.series.dated import dated_ideas
+            from core.series.last_night import last_night_ideas
             from core.series.recap import matchup_ideas, recap_ideas
 
             alone = _unique([countdown_idea(channel_id), countdown_idea(channel_id, ahead=1),
                              *dated_ideas(channel_id, notes=notes),
                              *long_breakout_ideas(channel_id),
                              *recap_ideas(channel_id, notes=notes),
-                             *matchup_ideas(channel_id, notes=notes)])  # #1892  # fmt: skip
+                             *matchup_ideas(channel_id, notes=notes),  # #1892
+                             *last_night_ideas(channel_id)])  # #1999, #1877  # fmt: skip
             if picks is not None:
                 for bet in alone:
                     picks[bet.topic] = pick_record([bet], 1, by="batch")
@@ -212,12 +214,14 @@ def collect_topics(
         # Wave 135 (the operator: "a day ahead"): tomorrow's countdown too, scheduled for its
         # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
         from core.series.countdown import countdown_idea
+        from core.series.last_night import last_night_ideas
         from core.series.recap import matchup_ideas, recap_ideas
 
         extra = _unique([*extra, countdown_idea(channel_id, ahead=1),
                          *long_breakout_ideas(channel_id),  # #1740
                          *recap_ideas(channel_id, notes=notes),  # #1722
-                         *matchup_ideas(channel_id, notes=notes)])  # #1892  # fmt: skip
+                         *matchup_ideas(channel_id, notes=notes),  # #1892
+                         *last_night_ideas(channel_id)])  # #1999, #1877  # fmt: skip
         names = marquee_names(channel_id)
         kept: list[Any] = []
         for bet in ideas:
@@ -1028,7 +1032,8 @@ def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
     # #1965 (wave 145): a countdown is the day's news on its subject. Read as "default", run 226
     # took the repeat-coverage table's "what changed since launch" for a game not yet out.
     # #1608: a "more of what worked" idea is a fresh headline - news too.
-    return ANGLE_NEWS if source in ("trending", "countdown", "worked") else ANGLE_DEFAULT
+    # #1999 (wave 153): last night's result is news - what it means.
+    return ANGLE_NEWS if source in ("trending", "countdown", "worked", "result") else ANGLE_DEFAULT
 
 
 def pick_source(topic: str, best_bet: dict | None) -> str:

@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-06 (Claude, wave 153 - the next five).** Overnight now drafts last night's national
+final the PC slept through and a marquee name's 40-point night, each with both teams' next
+games; a Short ends on its loop line, not "Tap in for more" (43 of 58 did); a hook names its
+subject in its first three words; a preview's title is a call - run 249 was retitled before it
+went public (decision 104). Next, before W4's freeze (Nov 16), for launch week: **#1629** footage
+of another game under a story is flagged, **#1857** Rockstar's trailers and screenshots as GTA 6
+footage, **#1666** overnight's draft step also at 1 PM, **#1660** every long video yields 3-5
+Shorts, **#1620** a celebrity in a gaming story flagged as high-travel; **#1849** once the embargo
+date is known.
 **2026-11-06 (Claude, wave 152 - the next ten).** The night now leads with a launch-week story,
 a marquee injury, a numbered card's fight week or a marquee breakout; the fast lane takes the
 first-hour injury, weigh-in and press-conference stories; a Short ends on its last word; three
@@ -85,17 +94,6 @@ with each. Next, before W4's freeze (Nov 16): **#1599** a competitor's outlier S
 **#1648** three Shorts a day for two weeks against two, **#1892** UFC 334's main event as a 6-8
 minute match-up video, **#1597** the marquee list learns, **#1613** marquee injury news jumps the
 queue; **#1849** once the embargo date is known.
-**2026-11-05 (Claude, wave 150 - the next five).** The list changed on measurement: the three
-long formats (#1723 tier lists, #1737 "ranked", #1738 season previews) score 3-4 on the
-bridge and would be written from a dozen headline titles; #1670/#1893 (13.5) and #1608 (9) were
-specified in wave 135's brief and never built. Shipped: overnight's preview is a game 24-48
-hours away, read from the next days' boards, a prime game first; a "more of what worked" idea
-each night (tonight Real Madrid's); a season explainer's title from search; long videos at
-1.0x. #1665 measured and left (no news render waited on the 24 hours). Next, before W4's freeze
-(Nov 16): **#1647** the breaking-news fast lane (L), **#1649** the results fast lane on the same
-pass, **#1650** a numbered card's finishes within 30 minutes (UFC 334, Nov 14), **#1872** the
-two-week sports calendar, **#1875** NFL prime time's result within the hour; **#1849** once the
-embargo date is known. Wave 150b: the long videos' music bed is generated (#1995, decision 101).
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

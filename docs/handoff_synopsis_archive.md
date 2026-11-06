@@ -7,6 +7,14 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-05 (Claude Code): wave 150, the next five
+
+Overnight's preview is a game 24-48 hours away - the next two days' NBA and NHL boards are
+read, and a national game or numbered card leads - so it is drafted, rendered and slotted a
+day ahead. Each night one "more of what worked" idea from last week's top subjects; a season
+explainer's title from search; long videos spoken at 1.0x. Wave 150b: a long video's music bed
+is generated with ffmpeg - six seamless 64 s pads in turn (#1995, decision 101).
+
 ## Previous — 2026-11-04 (Claude Code): wave 149, the next five (S01)
 
 The Week in Review's cover is its top Short's own picture with that Short's subject on it, and

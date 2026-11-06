@@ -120,6 +120,8 @@ os.environ["PLAYLIST_ORDER_UNITS"] = "0"
 os.environ["WORKED_SLOT"] = "false"
 # #1995 (wave 150b): a long render's generated pad runs ffmpeg into data/music_beds - off here.
 os.environ["MUSIC_SYNTH_LONG"] = "false"
+# Wave 151: the fast lane drafts, renders and uploads public from the worker - off here.
+os.environ["FAST_LANE"] = "false"
 # #1727 (wave 149): the weekly long slot the follow lines and the compile day read.
 os.environ["LONG_SLOT"] = "6@19"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).
@@ -245,6 +247,7 @@ from core.runs import signal_skips as _signal_skips
 from core.success import goals as _goals
 from core.success import review as _review
 from core.success import verdicts as _verdicts
+from jobs import fast_lane as _fast_lane
 from publishing import buffer_api as _buffer_api
 from publishing import crosspost as _crosspost
 from publishing import platform_metrics as _platform_metrics
@@ -377,6 +380,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(
         _youtube_metrics, "OUTSIDE_PAID_TEMPLATE", _suite_store("paid_outside_{channel}.json")
     ),
+    # wave 151: the fast lane's day counts and stories done
+    patch.object(_fast_lane, "store_path", lambda cid: _suite_store(f"fast_lane_{cid}.json")),
     patch.object(_policy_canary, "SNAPSHOT_FILE", _suite_store("policy_canary.json")),
     patch.object(_topic_trajectory, "_TRAJECTORY_FILE", _suite_store("topic_trajectory.json")),
     patch.object(_seo, "HINTS_DIR", _SUITE_DATA_TMP),

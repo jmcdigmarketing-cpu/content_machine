@@ -933,6 +933,28 @@ def _tonight_watch(now: datetime | None = None) -> None:
         logger.debug("tonight watch skipped: %s", exc)
 
 
+def _fast_lane(cap: int = 3) -> int:
+    """#1647 / #1649 / #1650 (wave 151): one fast-lane story a pass, at most every 30 minutes -
+    drafted, rendered and queued public now, then uploaded in this same pass. Fail-open."""
+    sent = 0
+    try:
+        from config.channels import active_channel_ids
+        from jobs.fast_lane import run_fast_lane
+
+        for channel in active_channel_ids():
+            if channel == "default":
+                continue
+            lines = run_fast_lane(channel)
+            for line in lines:
+                print(line)
+            if any("queued public now" in line for line in lines):
+                while sent < cap and process_one():  # not the next pass, 15 minutes on
+                    sent += 1
+    except Exception as exc:
+        logger.warning("fast lane skipped: %s", exc)
+    return sent
+
+
 def _sync_metrics() -> None:
     """Wave 113: the metrics sync, once a day - `ops morning` was its only caller, and this
     pass runs every 15 minutes from the UploadWorker task. Fail-open."""
@@ -994,6 +1016,7 @@ def main():
 
     if args.loop <= 0:
         processed = drain_due()
+        processed += _fast_lane()  # wave 151
         _sync_metrics()
         _overnight_watch()
         _sign_in_watch()  # #1438
@@ -1013,6 +1036,8 @@ def main():
         while True:
             did_work = False
             while process_one():
+                did_work = True
+            if _fast_lane():  # wave 151
                 did_work = True
             _sync_metrics()
             _overnight_watch()

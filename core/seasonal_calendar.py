@@ -404,3 +404,129 @@ def fetch_week_topics() -> list[tuple[str, str]]:
         logger.debug("UFC board skipped: %s", exc)
     _EVENTS.update(events_from_boards(boards, ufc_board, now=now))
     return topics
+
+
+# ---- #1872 (B12.1, wave 151): the two weeks of marquee events ---------------------------------
+# What the plan acts on, in one list: NFL prime time and national NBA games (each previewed the day
+# before - #1670 - and its final made a Short within the hour - #1649), numbered UFC cards (their
+# finishes - #1650), the calendar's dated rows and the awards. `ops calendar` prints it.
+CALENDAR_DAYS = 14
+
+
+def _national(league: str, event: dict[str, Any]) -> list[str]:
+    from core.best_bet import _NATIONAL_TV
+
+    detail = game_detail(league, event)
+    return sorted(set(detail.get("broadcasts") or []) & set(_NATIONAL_TV.get(league, ())))
+
+
+def _when_of(raw: str) -> datetime | None:
+    try:
+        when = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+
+
+def marquee_calendar(
+    *,
+    now: datetime | None = None,
+    days: int = CALENDAR_DAYS,
+    fetch: Any = None,
+    channel_id: str = "tapin",
+) -> list[dict[str, Any]]:
+    """{when, name, league, kind, tv, preview, result} for the next `days`, by time: national NFL
+    and NBA games (the NFL's weeks, NBA's days one by one), numbered UFC cards, the calendar's
+    dated rows and the awards. `preview` is the day its preview is drafted; `result` whether its
+    final or finishes take the fast lane."""
+    if fetch is None:
+        from sports.espn import get_scoreboard as fetch
+    moment = now or datetime.now(timezone.utc)
+    horizon = moment + timedelta(days=days)
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def add_game(league: str, event: dict[str, Any]) -> None:
+        when = _when_of(str(event.get("date") or ""))
+        key = str(event.get("id") or event.get("name") or "")
+        if when is None or not moment <= when <= horizon or key in seen:
+            return
+        tv = _national(league, event)
+        if not tv:
+            return
+        seen.add(key)
+        rows.append({"when": when, "name": str(event.get("name") or ""), "league": league,
+                     "kind": "national", "tv": tv, "preview": True, "result": True})  # fmt: skip
+
+    try:
+        board = fetch("nfl")
+        week = int(((board or {}).get("week") or {}).get("number") or 0)
+        boards = [board] + [fetch("nfl", week=week + n) for n in (1, 2) if week]
+        for nfl in boards:
+            for event in (nfl or {}).get("events") or []:
+                add_game("nfl", event)
+    except Exception as exc:
+        logger.debug("calendar: NFL unread: %s", exc)
+    for ahead in range(days + 1):
+        day = (moment + timedelta(days=ahead)).strftime("%Y%m%d")
+        try:
+            for event in (fetch("nba", dates=day) or {}).get("events") or []:
+                add_game("nba", event)
+        except Exception as exc:
+            logger.debug("calendar: NBA %s unread: %s", day, exc)
+    try:
+        from core.best_bet import card_kind
+
+        for name, _domain in ufc_cards(fetch("ufc"), now=moment, days=days, starts=_STARTS):
+            when = _when_of(_STARTS.get(name, ""))
+            if when is not None and card_kind(name) == "ufc_numbered":
+                rows.append({"when": when, "name": name, "league": "ufc", "kind": "ufc_numbered",
+                             "tv": [], "preview": True, "result": True})  # fmt: skip
+    except Exception as exc:
+        logger.debug("calendar: UFC unread: %s", exc)
+    try:
+        from core.series.countdown import series_rows
+
+        for row in series_rows(channel_id):
+            on = str(row.get("on") or "")[:10]
+            when = _when_of(f"{on}T12:00:00+00:00") if on else None
+            if when is not None and moment.date() <= when.date() <= horizon.date():
+                rows.append({"when": when, "name": str(row.get("topic") or row.get("title")
+                                                       or row.get("id")),
+                             "league": str(row.get("subject") or ""), "kind": str(row.get("kind")),
+                             "tv": [], "preview": False, "result": False})  # fmt: skip
+    except Exception as exc:
+        logger.debug("calendar: series unread: %s", exc)
+    for award_day, name, domain in AWARD_DATES:
+        when = datetime.combine(award_day, datetime.min.time(), tzinfo=timezone.utc)
+        if moment.date() <= award_day <= horizon.date():
+            rows.append({"when": when, "name": name, "league": domain, "kind": "award", "tv": [],
+                         "preview": False, "result": False})  # fmt: skip
+    return sorted(rows, key=lambda r: r["when"])
+
+
+def calendar_lines(rows: list[dict[str, Any]], *, channel_id: str = "tapin") -> list[str]:
+    """`ops calendar`: one line an event, by day in the channel's zone."""
+    from core.series.dated import channel_zone
+
+    zone = channel_zone(channel_id)
+    out = [f"Marquee calendar - the next {CALENDAR_DAYS} days ({len(rows)} events)"]
+    day = ""
+    for row in rows:
+        local = row["when"].astimezone(zone)
+        label = f"{local:%a %b} {local.day}"
+        if label != day:
+            day = label
+            out.append(f"  {label}")
+        clock = (
+            f"{local:%I:%M %p}".lstrip("0") if row["kind"] in ("national", "ufc_numbered") else ""
+        )
+        tv = f" ({', '.join(row['tv'])})" if row["tv"] else ""
+        plan = []
+        if row["preview"]:
+            plan.append("preview the day before")
+        if row["result"]:
+            plan.append("result in the fast lane")
+        what = f" - {'; '.join(plan)}" if plan else f" - {row['kind']}"
+        out.append(f"    {clock:>8} {row['league'].upper()[:12]:12} {row['name'][:60]}{tv}{what}")
+    return out

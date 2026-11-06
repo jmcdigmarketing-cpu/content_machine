@@ -67,6 +67,14 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-05 (Claude, wave 151 - the fast lanes).** A national final, a numbered card's finish
+or a marquee story on five outlets within two hours is now drafted, rendered and public in
+about an hour from the worker, through the claim gate (decision 102) - first live tonight with
+the TNF final. `ops calendar` shows the next 14 days of marquee events and what the plan does
+with each. Next, before W4's freeze (Nov 16): **#1599** a competitor's outlier Short first,
+**#1648** three Shorts a day for two weeks against two, **#1892** UFC 334's main event as a 6-8
+minute match-up video, **#1597** the marquee list learns, **#1613** marquee injury news jumps the
+queue; **#1849** once the embargo date is known.
 **2026-11-05 (Claude, wave 150 - the next five).** The list changed on measurement: the three
 long formats (#1723 tier lists, #1737 "ranked", #1738 season previews) score 3-4 on the
 bridge and would be written from a dozen headline titles; #1670/#1893 (13.5) and #1608 (9) were
@@ -87,15 +95,6 @@ outlets name it. NVENC's fallback says why; four dead modules are gone. Next, be
 (Nov 16): **#1993** a season explainer's title from search, **#1723** monthly tier lists,
 **#1737** "every X ranked" long videos, **#1738** season previews, **#1735** long-form pacing
 with a music bed; **#1849** once the embargo date is known.
-**2026-11-04 (Claude, wave 148 - the next five, S01).** The 4,112 paid views on no record were
-on five December 2025 uploads promoted in September; `ops growth` now says so. A video with no
-views is recorded synced with 0 (run 202, a Week in Review). Long drafts are 8-12 minutes (a
-recap 6-10), capped by their facts; long videos are read 30 s in and teach the opener once five
-are measured. The playlists' older videos move into binge order a little each day, and a
-series playlist keeps its countdown on top (#1989, caught before it bit). Next, before W4's
-freeze (Nov 16): **#1990** the Weeks in Review's 0% click-through, **#1727** a weekly long-form
-premiere slot, **#1981** the NVENC fallback, **#1979** four unreached modules, **#1724** one long
-explainer per marquee franchise; **#1849** once the embargo date is known.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

@@ -1113,6 +1113,10 @@ def rank_by_coverage(pool: list[dict], *, now: datetime | None = None) -> list[d
             str(cand.get("source") or "")
         }
         cand["outlets"] = sorted(o for o in outlets if o)
+        # #1647 (wave 151): when the story broke - its first outlet's time - for the fast lane
+        times = [p.get("published") for p in (cand, *(pool[j] for j in story))]
+        dated = [t for t in times if isinstance(t, datetime)]
+        cand["first"] = min(dated) if dated else None
 
     def stamp(c: dict) -> float:
         published = c.get("published")

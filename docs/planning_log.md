@@ -11292,3 +11292,55 @@ Tests: `tests/test_wave150b.py`, 9 - all 9 fail on `6985727`. The suite pins `MU
 off. Audit: mypy 92 == baseline; suite 7,387 forward and reversed, OK (6 skipped).
 
 Next five: #1647, #1649, #1650, #1872, #1875; #1849 once the embargo date is known.
+
+## 2026-11-05 — wave 151: the fast lanes (Claude Code)
+
+**Prompt:** "Start wave 151"
+
+Verified first: HEAD `7acac4f` (wave 150b, CI green); overnight Ready until 05:00 (checked again
+before the merge). The five: #1647, #1649, #1650, #1872, #1875 - each open with a lane, specified
+in `cloud_brief_wave135.md` sections 7-9; #1655 and #1667 are parts of #1647 and ship with it.
+
+Measured read-only: the worker task runs one pass every 15 minutes (`UploadWorker`); overnight's
+draft is a child process (`overnight._draft_one`) and its render another (`batch_review
+._render_in_process`); nothing ever queued public on render. The live pool (23 feeds, 190
+candidates) had no marquee story on 5 outlets; the most-covered marquee one was on 3 in 2.8 hours.
+The uploader takes off any run whose game has started (`worker._after_its_game`) - a result's draft
+carries no `event_at` (`_named_event_start` keeps only coming events), so it is not taken.
+
+Shipped (worktree `wave151`):
+1. #1647 `jobs/fast_lane.py` (`news_story`, `blocked`, `on_battery`, `overnight_running`,
+   `units_left`, the store `data/fast_lane_<channel>.json`), `rank_by_coverage`'s `first`.
+2. #1649 / #1875 `final_of`, `result_story` (national broadcasts, 75 minutes after the expected end).
+3. #1650 `ufc_story` (a numbered card's finish headline once the card has started).
+4. #1655 / #1667 `_render_and_queue` (public now), `_hold_toast` (a claim only); `run_fast_lane`;
+   `worker._fast_lane` in both the single pass and the loop, uploading at once.
+5. #1872 `seasonal_calendar.marquee_calendar` / `calendar_lines`, `ops calendar`.
+
+Findings:
+- The results lane must not be read as a late preview: `_after_its_game` and the slot rule key off
+  `event_at`; a result topic ("Ravens beat Jaguars 27-17") never sets one.
+- A UFC prelim finish posted before the card's listed start would set the card's start as its
+  `event_at` and be held as an unplayed result - the UFC lane waits for the start.
+- mypy found two this wave added (a reused name, an int of an optional); fixed.
+- The first full run failed four worker tests on #1305's guard: with the lane off, the worker's
+  pass still read `data/fast_lane_tapin.json`. The switch is read first now, and the suite
+  redirects the store.
+- The news bar: 5 outlets catches nothing on an ordinary evening (#1998).
+
+Deliberately not done: a lower news bar (5 stands until launch week is read - #1998); finishes on a
+Fight Night (numbered cards only, decision 81); a live fast-lane run before the merge (its first is
+tonight's TNF final - read back under #1997).
+
+Tests: `tests/test_wave151.py`, 20 - all 20 fail on `7acac4f` (a clean HEAD checkout, the editable
+finder stripped). The suite pins `FAST_LANE` off. `docs/ops_commands.md` regenerated.
+
+Audit: mypy 92 == baseline; ruff and format clean. Suite 7,407 forward and reversed, OK (6
+skipped); `data/` untouched. Production callers: every new function is reached from the worker's
+pass or `ops calendar`. Fields traced: `first` from `rank_by_coverage` to `news_story` / `ufc_story`;
+the store's `done` and `days` from `run_fast_lane` to `blocked` / `next_story`; the ESPN final from
+`final_of` to the draft's key facts.
+
+Next five: #1599, #1648, #1892, #1597, #1613; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 251 open (was 256), 1,631 done, highest #1998.

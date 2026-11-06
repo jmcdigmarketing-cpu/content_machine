@@ -70,3 +70,14 @@ with ffmpeg" over adding Audio Library tracks. A pad from sines is nobody else's
 nothing. **Consequence:** `core/music.synth_bed`, `MUSIC_SYNTH_LONG`; a track dropped in the folder
 replaces it for every render.
 
+## 102. The fast lanes publish without waiting (2026-11-05)
+**Decision:** a national final, a numbered card's finish or a marquee story on five outlets within
+two hours is drafted, rendered and made public by the worker in about an hour - no review, no
+slot. It passes every check an unattended render passes (the claim gate, the title check, the
+second read) or it is held; a claim hold raises one toast. At most three a day (news two), never
+under 1,600 YouTube units, on battery or while overnight runs. **Why:** the bridge's B03.1, B03.3
+and B03.4 (decision 82), taken by the operator as the wave ("Start wave 151"): news was hours old
+when it went out, previews were drafted 31 minutes before kickoff, and a result waited for the
+noon slot. Countdowns already went public unattended (wave 135); decision 78's 24 hours stays for
+everything else. **Consequence:** `FAST_LANE=false` stops it; `FAST_LANE_OUTLETS` sets the news bar.
+

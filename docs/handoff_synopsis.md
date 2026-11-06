@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-05: wave 150, the next five
+# Handoff synopsis — 2026-11-05: wave 151, the fast lanes
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,13 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-05 (Claude Code): wave 150, the next five
+## Last wave — 2026-11-05 (Claude Code): wave 151, the fast lanes
+
+A national final, a numbered card's finish or a marquee story on five outlets within two hours
+is drafted, rendered and public in about an hour from the worker, through the claim gate - at
+most three a day (decision 102). `ops calendar` lists the next 14 days of marquee events.
+
+## Previous — 2026-11-05 (Claude Code): wave 150, the next five
 
 Overnight's preview is a game 24-48 hours away - the next two days' NBA and NHL boards are
 read, and a national game or numbered card leads - so it is drafted, rendered and slotted a
@@ -25,13 +31,6 @@ the two live ones under 2% get it at the next sync; a long video's cover now goe
 frames-only mode (run 230's never had - #1992). Long videos that are not news go public Sundays
 at 7 PM, compiled that morning; a franchise's new season gets a long explainer when two outlets
 name it. NVENC's fallback says why; four dead modules are gone.
-
-## Previous — 2026-11-04 (Claude Code): wave 148, the next five (S01)
-
-The 4,112 paid views on no record are on five December 2025 uploads promoted in September -
-`ops growth` says so. A video with no views is recorded synced with 0 (run 202). Long drafts
-are 8-12 minutes, capped by their facts; long videos are read 30 s in. The playlists' older
-videos move into binge order daily, and a series playlist keeps its countdown on top (#1989).
 
 ---
 

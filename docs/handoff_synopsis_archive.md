@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-04 (Claude Code): wave 148, the next five (S01)
+
+The 4,112 paid views on no record are on five December 2025 uploads promoted in September -
+`ops growth` says so. A video with no views is recorded synced with 0 (run 202). Long drafts
+are 8-12 minutes, capped by their facts; long videos are read 30 s in. The playlists' older
+videos move into binge order daily, and a series playlist keeps its countdown on top (#1989).
+
 ## Previous — 2026-11-04 (Claude Code): wave 147, the next five (S01)
 
 Long-form hours: the night after a numbered UFC card, a long recap drafted from ESPN's results

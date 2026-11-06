@@ -32,6 +32,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `booth-shortcut` | Install Desktop shortcut for the persistent review booth |
 | `brand-kit` | Print the compiled brand kit and what is missing |
 | `brand-panel` | Compiled brand kit per channel (requires pip install -e ".[app]") |
+| `calendar` | Marquee events of the next 14 days and what the plan does with each (#1872) |
 | `calibration` | Pre-publish grade vs realized engaged-rate (Pillar 2) |
 | `caption-anchor` | Measure whether a frame's bottom band carries an overlay (#717) |
 | `caption-still` | Overlay captions on a still so names can be proofread before burn (--path image, --file script) |

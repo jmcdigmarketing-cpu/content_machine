@@ -2097,6 +2097,18 @@ def cmd_mutate_gates(args: argparse.Namespace) -> int:
     return mutate_main(extra)
 
 
+@_register(
+    "calendar", "Marquee events of the next 14 days and what the plan does with each (#1872)"
+)
+def cmd_calendar(args: argparse.Namespace) -> int:
+    from core.seasonal_calendar import CALENDAR_DAYS, calendar_lines, marquee_calendar
+
+    days = int(getattr(args, "days", 0) or 0) or CALENDAR_DAYS
+    rows = marquee_calendar(days=days, channel_id=args.channel)
+    _emit_text("Marquee calendar", "\n".join(calendar_lines(rows, channel_id=args.channel)), args)
+    return 0
+
+
 @_register("playlists", "Franchise playlists: show the map; --apply creates missing (#601)")
 def cmd_playlists(args: argparse.Namespace) -> int:
     from core.playlists import (

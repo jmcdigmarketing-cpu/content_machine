@@ -53,25 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-05 · **HEAD at write:** `6985727` (wave 150, CI green; wave 150b's commit
+**Written:** 2026-11-05 · **HEAD at write:** `7acac4f` (wave 150b, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 150, the next five.** Nothing found broken in the code this wave; the gap was a daily league's
-board holding today only, so no NBA preview could be a day ahead. The list changed on measurement:
-the long formats (#1723, #1737, #1738) stay open; #1670 + #1893 and #1608 came in, #1665 was measured
-and left (no news render waited on the 24 hours). Built: overnight's preview is a game 24-48 hours
-away from the next two days' boards, a national game or numbered card first (#1670); a "more of what
-worked" idea each night, second in the menu - tonight Real Madrid's (#1608, `WORKED_SLOT`); a season
-explainer's title, tags and chapters from search (#1993); long videos at 1.0x (#1735). Wave 150b, on
-your "Generate one with ffmpeg": a long render with no track gets a generated pad (#1995, decision 101).
+**Wave 151, the fast lanes.** Nothing found broken. Built: the worker drafts, renders and publishes
+a national final (#1649, #1875), a numbered card's finish (#1650) or a marquee story on 5 outlets
+within 2 hours (#1647) in about an hour, through the claim gate - public now (#1655), a toast only
+for a claim hold (#1667), at most 3 a day, never under 1,600 units, on battery or during overnight
+(decision 102, `FAST_LANE`). `ops calendar` - the next 14 days of marquee events (#1872). First live:
+tonight's TNF final. Wave 150b before it: the long videos' music bed, generated (#1995, decision 101).
 
-**Open:** #1984, #1988, #1991, #1994, #1996; dated reads #1953, #1955, #1956, #1959, #1988,
-#1991, #1994, #1996. **Next:** #1647, #1649, #1650, #1872, #1875 before W4's freeze (Nov 16); #1849
-once the embargo date is known.
+**Open:** #1984, #1988, #1991, #1994, #1996, #1997, #1998; dated reads #1953, #1955, #1956, #1959,
+#1988, #1991, #1994, #1996, #1997. **Next:** #1599, #1648, #1892, #1597, #1613 before W4's freeze
+(Nov 16); #1849 once the embargo date is known.
 
-**Operator:** publish the Google app before Sat Nov 7 (set POLICY_SITE_URL first - `ops check-youtube`
-reads the four pages); paste the bio pages; tracking IDs; Facebook in Buffer; #1922/#1956 on a phone.
-Review the Nov 6 GTA 6 long video and the UFC 334 recap draft the morning of Nov 15.
+**Operator:** publish the Google app before Sat Nov 7 - the sign-in lapses and uploads stop (set
+POLICY_SITE_URL first; `ops check-youtube` reads the four pages); bio pages; tracking IDs; Facebook in
+Buffer; #1922/#1956 on a phone. Review the Nov 6 GTA 6 long video, the UFC 334 recap on Nov 15.
 
 ## Slot — Cursor
 

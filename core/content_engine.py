@@ -844,6 +844,9 @@ def _script_pass_snapshot(script: str) -> dict[str, Any]:
 # maintain <what>." - the shape hint of the opener prompt, kept; run 229 had "<b>17 days</b>".
 _PLACEHOLDER = re.compile(r"<\s*/?\s*[A-Za-z][^<>]{0,40}>")
 
+# #1631 (B02.10): the prompt asked for under 12 words; 41 of 58 recent first sentences ran over.
+HOOK_WORDS = 12
+
 LOOP_RULE = (
     "LOOP: end on a line that leads back into the first sentence - it answers or turns the hook, "
     "so the Short plays straight into its opening again. No sign-off and no call to follow or "
@@ -1096,6 +1099,10 @@ def _hook_variants(
         logger.debug("hook learning skipped: %s", exc)
     count = hook_variant_count()
     learned = _settled_overrides(guidance)
+    long_hook = len(current.hook.split()) if "length" not in learned else 0
+    if long_hook > HOOK_WORDS:  # #1631: the voice's first sentence in under 12 words
+        problems.append(f"it runs {long_hook} words - say it in {HOOK_WORDS} or fewer")
+        extra["problems"] = problems
     shape = "a specific fact, number, or contradiction" + (
         "" if "length" in learned else ", under 12 words"
     )
@@ -1185,6 +1192,8 @@ def _hook_variants(
         flip = stance_flip(opener, intent, idea=idea) if intent else ""
         if _PLACEHOLDER.search(opener):  # run 232 kept "<who> can't maintain <what>"
             row["refused"] = "carries the prompt's placeholder or markup"
+        elif "length" not in learned and len(opener.split()) > HOOK_WORDS:  # #1631
+            row["refused"] = f"runs {len(opener.split())} words - over {HOOK_WORDS}"
         elif opener_problems:
             row["refused"] = "; ".join(opener_problems)
         elif subjects and not subject_first(opener, subjects):

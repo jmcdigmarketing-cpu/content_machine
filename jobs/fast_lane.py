@@ -174,6 +174,14 @@ def blocked(channel_id: str, *, now: datetime, store: dict[str, Any]) -> str:
         return f"{PER_DAY} made today"
     if units_left() < MIN_UNITS:
         return f"under {MIN_UNITS:,} YouTube units left"
+    try:  # #1662: never more than four Shorts a day
+        from core.spaced_queue import day_full
+
+        full = day_full(channel_id, now)
+        if full:
+            return full
+    except Exception as exc:
+        logger.debug("day count unread: %s", exc)
     if on_battery():
         return "on battery"
     if overnight_running(now):

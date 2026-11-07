@@ -404,6 +404,28 @@ def layout_problem(description: str, channel_id: str) -> str:
     return ""
 
 
+def playlist_line(channel_id: str, title: str, topic: str = "") -> str:
+    """#1709 (B05.13): "More GTA: https://www.youtube.com/playlist?list=..." - the series playlist
+    a Short joins (`playlists.playlists_for`), when the channel has made it. "" otherwise."""
+    try:
+        from core import playlists
+
+        names = playlists.playlists_for(channel_id, title, topic=topic)
+        if not names:
+            return ""
+        with open(playlists.store_path_for(channel_id), encoding="utf-8") as handle:
+            ids = (json.load(handle) or {}).get("ids") or {}
+        playlist_id = str(ids.get(names[0]) or "")
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        logger.debug("series playlist line skipped: %s", exc)
+        return ""
+    return (
+        f"More {names[0]}: https://www.youtube.com/playlist?list={playlist_id}"
+        if playlist_id
+        else ""
+    )
+
+
 def apply_description_extras(
     description: str,
     channel_id: str,
@@ -461,6 +483,11 @@ def apply_description_extras(
     ):
         if line not in body and line not in additions:
             additions.append(line)
+
+    if str(length_choice) != "4":  # #1709: a Short's viewer finds the rest of its series
+        series = playlist_line(channel_id, title, topic)
+        if series and "playlist?list=" not in body and series not in additions:
+            additions.append(series)
 
     if str(length_choice) == "4":  # #1707: a long video's viewer can subscribe in one click
         subscribe = subscribe_line(channel_id)

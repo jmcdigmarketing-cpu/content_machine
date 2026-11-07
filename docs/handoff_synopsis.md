@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-06: wave 153, the next five
+# Handoff synopsis — 2026-11-06: wave 154, the first ten of next 20
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-06 (Claude Code): wave 153, the next five
+## Last wave — 2026-11-06 (Claude Code): wave 154, the first ten of next 20
+
+One idea a subject a night; a stale idea waits; the menu says what the subject earned last
+time; a hook is 12 words or fewer; never four a day or two within three hours; the weekly
+report ranks formats and frames and says what worked; a Short links its series playlist;
+promotions suggest nothing (decision 105). Wave 155 takes the other ten.
+
+## Previous — 2026-11-06 (Claude Code): wave 153, the next five
 
 Overnight drafts last night's national final the PC slept through and a marquee name's
 40-point night, each with both teams' next games. A Short ends on its loop line, not a sign-off;
@@ -24,12 +31,6 @@ marquee breakout; the fast lane takes first-hour injury, weigh-in and press-conf
 a Short ends on its last word; three Shorts a day Nov 7-20; five drafts on a wide night; UFC
 334's main event as a 6-8 minute match-up on Nov 10; the marquee list learns (decision 103).
 The fast lane runs only while the PC is awake - no wake timers (the operator).
-
-## Previous — 2026-11-05 (Claude Code): wave 151, the fast lanes
-
-A national final, a numbered card's finish or a marquee story on five outlets within two hours
-is drafted, rendered and public in about an hour from the worker, through the claim gate - at
-most three a day (decision 102). `ops calendar` lists the next 14 days of marquee events.
 
 ---
 

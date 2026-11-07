@@ -80,20 +80,20 @@ class CandidateTests(unittest.TestCase):
 
 class ShownTests(unittest.TestCase):
     def test_lines_say_the_video_and_the_test(self):
-        from analytics.promotions import candidate_lines
+        # #1802 (wave 154, decision 82): the section names no video and no test budget any more.
+        from analytics.promotions import _candidate_lines_997, candidate_lines
 
         ready = {"state": "ready", "budget": 10.0, "days": 5, "picks": [
             {"title": "Video v1", "video_id": "v1", "stayed": 0.70, "views7": 900}]}  # fmt: skip
         with patch("analytics.promotions.candidates", return_value=ready):
             text = "\n".join(candidate_lines("tapin"))
-        self.assertIn("Video v1", text)
-        self.assertIn("v1", text)
-        self.assertIn("70%", text)
-        self.assertIn("$10", text)
-        self.assertIn("5 days", text)
+            kept = "\n".join(_candidate_lines_997("tapin"))
+        self.assertNotIn("Video v1", text)
+        self.assertIn("decision 82", text)
+        self.assertIn("Video v1", kept)  # #997's picks are kept for the record
         spent = dict(ready, budget=0.0)
         with patch("analytics.promotions.candidates", return_value=spent):
-            self.assertIn("cap is spent", "\n".join(candidate_lines("tapin")))
+            self.assertIn("cap is spent", "\n".join(_candidate_lines_997("tapin")))
 
     def test_ops_promotions_prints_them(self):
         from scripts.ops import COMMANDS

@@ -357,14 +357,17 @@ def _bridge_block(channel_id: str) -> str:
     """#1822: the bridge's scoreboard after the goal's - what counts toward YPP."""
     try:
         from core.experiments import experiment_lines
+        from core.series.worked import what_worked_lines
         from core.success.bridge import scoreboard_lines
         from core.success.cadence import cadence_lines
+        from core.success.formats import format_lines
         from core.success.scorecard import scorecard_lines
 
         # #1827 the open experiments, #1836 each wave's number 14 days on (wave 135), #1648 the
         # three-a-day trial against the two weeks before it (wave 152)
         lines = [*scoreboard_lines(channel_id), *experiment_lines(channel_id),
-                 *cadence_lines(channel_id), *scorecard_lines(channel_id)]  # fmt: skip
+                 *cadence_lines(channel_id), *what_worked_lines(channel_id),  # #1618
+                 *format_lines(channel_id), *scorecard_lines(channel_id)]  # #1691  # fmt: skip
         return "\n".join(lines) + "\n\n"
     except Exception as exc:
         logger.debug("bridge scoreboard skipped in the weekly report: %s", exc)

@@ -224,8 +224,13 @@ def collect_topics(
                          *last_night_ideas(channel_id)])  # #1999, #1877  # fmt: skip
         names = marquee_names(channel_id)
         kept: list[Any] = []
+        moment = datetime.now(timezone.utc)
         for bet in ideas:
             if getattr(bet, "source", "") in DATED_SOURCES:
+                continue
+            if stale_idea(bet, moment):  # #1607: past 36 hours on under three outlets
+                if held_back is not None:
+                    held_back.append(bet.topic)
                 continue
             outlets = int(getattr(bet, "outlets", 0) or 0)
             if story_passes_gate(bet.topic, source=str(getattr(bet, "source", "") or ""),
@@ -234,6 +239,10 @@ def collect_topics(
             elif held_back is not None:
                 held_back.append(bet.topic)
         kept = lead_first(kept, channel_id)  # #1867, #1613, #1612, #1599
+        from core.series.dated import channel_day, launch_names
+
+        kept = one_per_subject(kept, names, exempt=launch_names(channel_id, channel_day(channel_id)),
+                               held_back=held_back)  # #1606  # fmt: skip
         if gate is not None:
             gate["passed"] = len(kept)
         if wide > count and len(kept) >= wide:  # #1653: five drafts when five pass the gate
@@ -269,6 +278,51 @@ def collect_topics(
 
 # decision 84: extra drafts on their day; #1724 a season's explainer when its season is named
 DATED_SOURCES = ("countdown", "moment", "long", "season")
+
+
+STALE_HOURS = 36.0  # #1607
+STALE_OUTLETS = 3
+
+
+def stale_idea(bet: Any, now: datetime) -> bool:
+    """#1607 (B01.11): a headline whose story broke more than `STALE_HOURS` ago and that fewer
+    than `STALE_OUTLETS` outlets still carry - it is not tonight's news. Unknown age: not stale."""
+    if getattr(bet, "source", "") != "trending":
+        return False
+    try:
+        broke = datetime.fromisoformat(str(getattr(bet, "first", "") or ""))
+    except ValueError:
+        return False
+    broke = broke if broke.tzinfo else broke.replace(tzinfo=timezone.utc)
+    old = now - broke > timedelta(hours=STALE_HOURS)
+    return old and int(getattr(bet, "outlets", 0) or 0) < STALE_OUTLETS
+
+
+def one_per_subject(
+    ideas: list[Any],
+    names: list[str],
+    *,
+    exempt: list[str] | None = None,
+    held_back: list[str] | None = None,
+) -> list[Any]:
+    """#1606 (B01.10): one idea a marquee subject a night - the second waits for tomorrow (it
+    stays in the menu). A subject with an active launch-week `slots` row (#1868) keeps two."""
+    from apis.topic_tokens import names_any
+
+    free = list(exempt or [])
+    seen: list[str] = []
+    out: list[Any] = []
+    for bet in ideas:
+        topic = str(getattr(bet, "topic", "") or "")
+        named = [n for n in names or [] if names_any(topic, [n])]
+        clash = [n for n in named if any(names_any(n, [s]) or names_any(s, [n]) for s in seen)]
+        if clash and not any(names_any(n, free) or names_any(f, [n]) for n in clash for f in free):
+            if held_back is not None:
+                held_back.append(topic)
+            continue
+        seen.extend(named)
+        out.append(bet)
+    return out
 
 
 def lead_first(

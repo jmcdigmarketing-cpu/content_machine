@@ -7,6 +7,12 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-05 (Claude Code): wave 151, the fast lanes
+
+A national final, a numbered card's finish or a marquee story on five outlets within two hours
+is drafted, rendered and public in about an hour from the worker, through the claim gate - at
+most three a day (decision 102). `ops calendar` lists the next 14 days of marquee events.
+
 ## Previous — 2026-11-05 (Claude Code): wave 150, the next five
 
 Overnight's preview is a game 24-48 hours away - the next two days' NBA and NHL boards are

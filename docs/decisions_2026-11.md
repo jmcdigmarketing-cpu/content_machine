@@ -106,3 +106,14 @@ fast lane missed the TNF final while the PC slept, and the operator wants no wak
 153"; run 249's title was found the same afternoon. **Consequence:** `LAST_NIGHT=false` stops the
 morning's results.
 
+## 105. One idea a subject a night; never four a day or two within three hours (2026-11-06)
+**Decision:** a night drafts one headline idea a marquee subject - the second waits for tomorrow,
+except a subject in its launch week - and holds back a headline past 36 hours that fewer than three
+outlets still carry. No more than four Shorts go public a day and none within three hours of
+another; a dated draft keeps its day and a preview its game. A hook is 12 words or fewer. `ops
+promotions` suggests nothing while ads stay at $0. **Why:** the bridge's B01.10, B01.11, B02.10,
+B03.16 and B09.6 (decision 82), the operator's "next 20"; measured 11-06: 41 of 58 first sentences
+over 12 words, 13 pairs within three hours in 30 days, one day of six. **Consequence:** the weekly
+report gains the what-worked note and the format and frame ranking; a Short links its series
+playlist.
+

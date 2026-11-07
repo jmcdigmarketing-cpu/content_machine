@@ -53,19 +53,17 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-06 · **HEAD at write:** `df01d1f` (wave 152, CI green; this wave's commit
+**Written:** 2026-11-06 · **HEAD at write:** `96a551c` (wave 153, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 153, the next five.** Broken and found live: run 249's preview was titled as a final
-(retitled on YouTube before it went public, #2001); run 232, public, speaks the hook prompt's
-"<who> ... <what>" (left as published, #2002 refuses it now); a game's preview hid its result from
-the "already drafted" check. Built: overnight drafts last night's national final the PC slept
-through (#1999) and a marquee 40-point night (#1877), with both teams' next games (#1687); a Short
-ends on its loop line, no sign-off (#1623, #1624); the subject in a hook's first three words (#1626).
-Decision 104.
+**Wave 154, the first ten of "next 20".** Nothing found broken. Built: one idea a subject a night
+(#1606); a stale idea waits (#1607); the menu's "last time" note (#1615); the weekly what-worked note
+(#1618) and format / frame ranking (#1691, #1698); hooks of 12 words or fewer (#1631); never four a
+day or two within three hours (#1662); a Short links its series playlist (#1709); promotions suggest
+nothing (#1802). #1664 already true; #1600 measured and left. Decision 105. Wave 155 is next.
 
-**Open:** #1648, #1984, #1988, #1991, #1994, #1996, #1997, #1998, #2000, #2003. **Next:** #1629,
-#1857, #1666, #1660, #1620 before W4's freeze (Nov 16); #1849 once the embargo date is known.
+**Open:** #1600, #1648, #1984, #1988, #1991, #1994, #1996, #1997, #1998, #2000, #2003, #2004.
+**Next:** wave 155 - #1621, #1646, #1671, #1696, #1721, #1660, #1658, #1666, #1652, #1620.
 
 **Operator:** publish the Google app before Sat Nov 7 - the sign-in lapses and uploads stop (set
 POLICY_SITE_URL first; `ops check-youtube` reads the four pages); bio pages; tracking IDs; Facebook in

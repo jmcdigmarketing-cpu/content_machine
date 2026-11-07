@@ -311,6 +311,50 @@ def _taken_slots(channel_id: str) -> set[datetime]:
     return taken
 
 
+# #1662 (B03.16, wave 154): never more than four Shorts a day, never two within three hours.
+# Measured 11-06: in 30 days two went out within three hours 13 times, and one day had six.
+MAX_A_DAY = 4
+MIN_GAP = timedelta(hours=3)
+
+
+def _recent_public(channel_id: str, moment: datetime) -> set[datetime]:
+    """The public times of the last day's uploads - what a new slot is spaced from."""
+    out: set[datetime] = set()
+    try:
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+            when = _when(getattr(row, "published_at", None))
+            if when is not None and moment - timedelta(days=1) <= when <= moment:
+                out.add(when.astimezone(timezone.utc))
+    except Exception as exc:
+        logger.debug("recent public times unread: %s", exc)
+    return out
+
+
+def crowded(when: datetime, times: set[datetime] | list[datetime], channel_id: str) -> str:
+    """#1662: why `when` is too close to the channel's other public times, or ""."""
+    tz = _channel_tz(channel_id)
+    day = when.astimezone(tz).date()
+    others = [t for t in times if t != when]
+    if sum(1 for t in others if t.astimezone(tz).date() == day) >= MAX_A_DAY:
+        return f"{MAX_A_DAY} Shorts that day"
+    if any(abs(t - when) < MIN_GAP for t in others):
+        return "within 3 hours of another"
+    return ""
+
+
+def day_full(channel_id: str, now: datetime | None = None) -> str:
+    """#1662: "4 Shorts that day" once today's public and scheduled ones reach `MAX_A_DAY`."""
+    moment = now or datetime.now(timezone.utc)
+    tz = _channel_tz(channel_id)
+    today = moment.astimezone(tz).date()
+    times = _taken_slots(channel_id) | _recent_public(channel_id, moment)
+    if sum(1 for t in times if t.astimezone(tz).date() == today) >= MAX_A_DAY:
+        return f"{MAX_A_DAY} Shorts that day"
+    return ""
+
+
 def free_slots(
     channel_id: str,
     count: int,
@@ -439,12 +483,16 @@ def slot_for_run(
         in_its_day = moment >= day_start
     from core.series.dated import slot_hours
 
-    main = free_slots(channel_id, 1, now=floor, taken=taken,
-                      hours_on=lambda day: slot_hours(channel_id, title, day))  # fmt: skip
+    # #1662: a slot within three hours of another public time, or on a day of four, is passed
+    times = set(taken) | _recent_public(channel_id, moment)
+    main = [s for s in free_slots(channel_id, 6, now=floor, taken=taken,
+                                  hours_on=lambda day: slot_hours(channel_id, title, day))
+            if not crowded(s, times, channel_id)]  # fmt: skip
     if main and (deadline is None or main[0] < deadline):
         return main[0], ""
     evening = free_slots(channel_id, 3, now=floor, hours=_EVENING, taken=taken)
-    extra = next((e for e in evening if deadline is not None and e < deadline), None)
+    extra = next((e for e in evening if deadline is not None and e < deadline
+                  and not crowded(e, times, channel_id)), None)  # fmt: skip
     if extra is not None:
         return extra, ""
     if (planned is not None and not in_its_day and planned >= moment + _FIRST_LEAD

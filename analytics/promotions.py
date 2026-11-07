@@ -369,8 +369,17 @@ def candidates(channel_id: str, *, today: date | None = None) -> dict[str, Any]:
     return out
 
 
+ADS_OFF_LINE = "  Worth promoting: nothing - ads stay at $0 (decision 82); organic views only."
+
+
 def candidate_lines(channel_id: str) -> list[str]:
-    """`ops promotions`: the "Worth promoting" section."""
+    """`ops promotions`: the "Worth promoting" section. #1802 (B09.6, wave 154): it suggests
+    nothing - decision 82 keeps ads at $0, so a pick was only a nudge to spend."""
+    return [ADS_OFF_LINE]
+
+
+def _candidate_lines_997(channel_id: str) -> list[str]:
+    """#997's picks, kept for the record - nothing calls it since #1802."""
     got = candidates(channel_id)
     if got["state"] == "collecting":
         return [
@@ -409,7 +418,12 @@ def _test_text(got: dict[str, Any]) -> str:
 
 
 def candidates_line(channel_id: str) -> str:
-    """The app's Analytics page: one line."""
+    """The app's Analytics page: one line - "" since #1802 (decision 82: ads stay at $0)."""
+    return ""
+
+
+def _candidates_line_997(channel_id: str) -> str:
+    """#997's line, kept for the record - nothing calls it since #1802."""
     got = candidates(channel_id)
     if got["state"] == "collecting" or not got["picks"]:
         return ""

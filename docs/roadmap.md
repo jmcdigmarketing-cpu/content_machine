@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-06 (Claude, wave 154 - the first ten of "next 20").** One idea a subject a night; a
+stale idea waits; the menu says what the subject earned last time; a hook is 12 words or fewer;
+never four a day or two within three hours; the weekly report ranks formats and frames and says
+what worked; a Short links its series playlist; promotions suggest nothing (decision 105). #1600
+measured and left (soccer is not below the rest); #1664 already true. Next, wave 155 (the other
+ten): the bridge's lane numbers **#1621**, **#1646**, **#1671**, **#1696**, **#1721**; **#1660**
+every long video yields 3-5 Shorts; **#1658** a free slot never passes empty; **#1666** a 1 PM
+draft step; **#1652** a 300-view Short re-cut; **#1620** celebrity crossovers; **#1849** once the
+embargo date is known.
 **2026-11-06 (Claude, wave 153 - the next five).** Overnight now drafts last night's national
 final the PC slept through and a marquee name's 40-point night, each with both teams' next
 games; a Short ends on its loop line, not "Tap in for more" (43 of 58 did); a hook names its
@@ -86,14 +95,6 @@ and the operator wants no wake timers - so the list changed: next, before W4's f
 last sentence leading back to the first, **#1626** the subject in the first three words,
 **#1877** NBA 40-point nights, **#1687** "what's next" after a big result; **#1849** once the
 embargo date is known.
-**2026-11-05 (Claude, wave 151 - the fast lanes).** A national final, a numbered card's finish
-or a marquee story on five outlets within two hours is now drafted, rendered and public in
-about an hour from the worker, through the claim gate (decision 102) - first live tonight with
-the TNF final. `ops calendar` shows the next 14 days of marquee events and what the plan does
-with each. Next, before W4's freeze (Nov 16): **#1599** a competitor's outlier Short first,
-**#1648** three Shorts a day for two weeks against two, **#1892** UFC 334's main event as a 6-8
-minute match-up video, **#1597** the marquee list learns, **#1613** marquee injury news jumps the
-queue; **#1849** once the embargo date is known.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

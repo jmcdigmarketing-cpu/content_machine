@@ -11456,3 +11456,47 @@ result's `teams` from `final_of` / `big_night` to `next_game_lines`; the `result
 Next five: #1629, #1857, #1666, #1660, #1620; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 238 open (was 243), 1,649 done, highest #2003.
+
+## 2026-11-06 — wave 154: the first ten of "next 20" (Claude Code)
+
+**Prompt:** "next 20, resume when limit hit"
+
+Taken as two waves of ten, each audited, committed and pushed alone, so a limit mid-way strands
+nothing. Verified first: HEAD `96a551c` (wave 153, CI green); overnight Ready until 05:00.
+
+Measured before choosing (read-only): soccer's 3 Shorts in 90 days, median 57 first-week organic
+views, against NFL's 56 and the channel's 66 (#1600 left); 41 of the last 58 first sentences over 12
+words (#1631); in 30 days 59 public, 13 pairs within three hours, one day of six (#1662);
+`features["format"]` is the length preset ("Medium" 99 times) - the format is read from the pick's
+source and the intent instead (#1691); metrics carry lifetime subscribers, no daily series (#1708
+cannot be measured, not taken); the 13-character playlist IDs read back from YouTube (#1709);
+`unattended_candidates` already renders a game-bound draft first (#1664 closed).
+
+Shipped (worktree `wave154`):
+1. #1606 `batch_generation.one_per_subject`.
+2. #1607 `batch_generation.stale_idea`, `BestBetResult.first`.
+3. #1615 `best_bet.earned_note` / `_menu_shorts`.
+4. #1618 `worked.what_worked_lines`.
+5. #1631 `HOOK_WORDS` in `_hook_variants`.
+6. #1662 `spaced_queue.crowded` / `day_full` / `_recent_public`; the fast lane's daily cap.
+7. #1691 + #1698 `core/success/formats.py` (`run_format`, `format_lines`).
+8. #1709 `description_extras.playlist_line`.
+9. #1802 `promotions.candidate_lines` / `candidates_line` say ads stay at $0.
+
+Deliberately not done: #1857 (Rockstar's media - footage the operator would supply); #1629 (the
+footage chooser's "mix" needs its own read); #1708 (no daily subscriber series).
+
+Tests: `tests/test_wave154.py`, 15 - all fail on `96a551c` (a clean HEAD checkout, the editable
+finder stripped). Changed on purpose: #997's lines test now checks #1802's line. The suite pins
+`MENU_EARNED` off. The first full run failed the env lint (`MENU_EARNED` not in `.env.example`); documented.
+
+Audit: mypy 92 == baseline; ruff and format clean; corpus 548 of 548. Suite 7,467 forward and
+reversed, OK; `data/` untouched. Production callers: `one_per_subject`, `stale_idea` from
+`collect_topics`; `earned_note` from the menu; `what_worked_lines` and `format_lines` from the weekly
+report; `crowded` from `slot_for_run`, `day_full` from the fast lane; `playlist_line` from
+`apply_description_extras`. Fields traced: `first` from `rank_by_coverage` through the menu to
+`stale_idea`.
+
+Next: wave 155 - #1621, #1646, #1671, #1696, #1721, #1660, #1658, #1666, #1652, #1620.
+
+Counts (`ops roadmap-index`): 228 open (was 238), 1,660 done, highest #2004.

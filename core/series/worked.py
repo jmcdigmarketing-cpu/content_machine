@@ -280,3 +280,30 @@ def worked_idea(
             facts=[f"{story.get('source') or 'A source'} reported: {story['title']}"],
         )
     return None
+
+
+def what_worked_lines(
+    channel_id: str, *, now: datetime | None = None, shorts: list[dict[str, Any]] | None = None
+) -> list[str]:
+    """#1618 (B01.22): the weekly note - the three subjects whose Shorts earned the most in their
+    first week over the last `WORKED_DAYS`, and the three dead ones. The menu leans to the first
+    through its "more of what worked" idea (#1608). [] with under two subjects measured."""
+    moment = now or datetime.now(timezone.utc)
+    rows = (
+        shorts if shorts is not None else _measured_shorts(channel_id, now=moment, days=WORKED_DAYS)
+    )
+    best: dict[str, int] = {}
+    for row in rows:
+        subject = str(row.get("subject") or "").strip()
+        if subject:
+            best[subject] = max(best.get(subject, 0), int(row.get("views") or 0))
+    if len(best) < 2:
+        return []
+    ranked = sorted(best.items(), key=lambda kv: (-kv[1], kv[0]))
+    top = ranked[:WORKED_TOP]
+    dead = sorted(ranked[WORKED_TOP:], key=lambda kv: (kv[1], kv[0]))[:WORKED_TOP]
+    line = (f"What worked (#1618, the last {WORKED_DAYS} days' Shorts, first-week organic views): "
+            + " · ".join(f"{s} {v:,}" for s, v in top))  # fmt: skip
+    if dead:
+        line += "; dead: " + " · ".join(f"{s} {v:,}" for s, v in dead)
+    return [line + ' - next week\'s menu leans to the first (its "more of what worked" idea).']

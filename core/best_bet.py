@@ -86,6 +86,7 @@ class BestBetResult:
     draft_kind: str = ""  # #1850: "long" - a 10-12 minute 16:9 video
     publish_at: str = ""  # #1870: ISO UTC - when a dated moment goes public
     outlier: float = 0.0  # #1599: a competitor breakout's times its channel's median (5+ leads)
+    first: str = ""  # #1607: ISO - when the story broke (its first outlet); "" unknown
 
 
 # ---------------------------------------------------------------------------
@@ -1340,6 +1341,40 @@ def injury_story(topic: str, names: list[str]) -> bool:
     return bool(_INJURY.search(text)) and names_any(text, names) and not is_death_story(text)
 
 
+def _menu_shorts(channel_id: str) -> list[dict[str, Any]]:
+    """#1615: the channel's measured Shorts of the last 90 days, for the menu's earned note.
+    `MENU_EARNED=false` leaves the note out (the suite does). [] on any problem."""
+    if os.getenv("MENU_EARNED", "true").strip().lower() in ("0", "false", "no", "off"):
+        return []
+    try:
+        from core.series.worked import _measured_shorts
+
+        return _measured_shorts(channel_id, now=datetime.now(timezone.utc), days=90)
+    except Exception as exc:
+        logger.debug("earned note skipped: %s", exc)
+        return []
+
+
+def earned_note(topic: str, shorts: list[dict[str, Any]], names: list[str]) -> str:
+    """#1615 (B01.19): what the topic's subject earned on the channel last time - "Topuria: 631
+    organic views in its first week last time" - from the latest measured Short naming a marquee
+    name the topic names. "" when none did."""
+    from apis.topic_tokens import names_any
+
+    named = [n for n in names or [] if names_any(topic or "", [n])]
+    if not named:
+        return ""
+    for short in sorted(shorts or [], key=lambda s: s.get("when") or datetime.min.replace(tzinfo=timezone.utc),
+                        reverse=True):  # fmt: skip
+        text = f"{short.get('title') or ''} {short.get('subject') or ''}"
+        hit = next((n for n in named if names_any(text, [n])), "")
+        if hit:
+            return (
+                f"{hit}: {int(short.get('views') or 0):,} organic views in its first week last time"
+            )
+    return ""
+
+
 def card_kind(topic: str) -> str:
     """#1593: "ufc_numbered" for a numbered card ("UFC 334: ..."), "ufc" for a Fight Night."""
     return "ufc_numbered" if re.search(r"\bUFC \d{3}\b", topic or "") else "ufc"
@@ -1629,6 +1664,9 @@ def get_best_bets(
             by_domain.setdefault(c["domain"], []).append(c)
         ordered_fresh_domains = sorted(by_domain, key=_domain_key, reverse=True)
 
+    earned_shorts = _menu_shorts(channel_id)  # #1615
+    earned_names = marquee_names(channel_id) if earned_shorts else []
+
     def _emit_fresh(c: dict) -> bool:
         key = normalize_seed_topic(c["topic"]).lower()
         if not key or key in seen:
@@ -1646,6 +1684,10 @@ def get_best_bets(
             rationale += f" · {c['domain']} averages {_target.show(rate, places=0)}"
             rationale += _ranked_on_note(rate, adjusted.get(c["domain"]), places=0)
             rationale += confidence_note(domain_counts.get(c["domain"], 0))
+        earned = earned_note(c["topic"], earned_shorts, earned_names)
+        if earned:
+            rationale += f" · {earned}"
+        broke = c.get("first") or c.get("published")
         options.append(
             BestBetResult(
                 topic=c["topic"],
@@ -1656,6 +1698,7 @@ def get_best_bets(
                 rationale=rationale,
                 outlets=len(c.get("outlets") or []),
                 outlier=float(c.get("outlier") or 0.0),  # #1599
+                first=broke.isoformat() if isinstance(broke, datetime) else "",  # #1607
             )
         )
         return True

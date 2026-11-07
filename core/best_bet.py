@@ -1408,6 +1408,34 @@ def marquee_names(channel_id: str) -> list[str]:
     return out
 
 
+_CROSSOVER_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "crossover.json"
+)
+
+
+def crossover_names(channel_id: str) -> list[str]:
+    """#1620 (B01.24, wave 155): known names from outside gaming (`config/crossover.json`, the
+    operator's to edit) - one in a gaming story travels: "Ben Affleck Gets Destroyed by
+    12-Year-Olds in Fortnite" drew 411 organic views, the channel's second best. [] when unread."""
+    try:
+        with open(_CROSSOVER_FILE, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError) as exc:
+        logger.debug("crossover.json unread: %s", exc)
+        return []
+    names = data.get(channel_id) if isinstance(data, dict) else None
+    return [str(n) for n in names or [] if str(n).strip()]
+
+
+def crossover_story(topic: str, domain: str, names: list[str]) -> bool:
+    """#1620: a gaming headline naming one of `names` - never a death story (decision 97)."""
+    from apis.topic_tokens import names_any
+    from core.authenticity import is_death_story
+
+    text = topic or ""
+    return domain == "gaming" and names_any(text, names) and not is_death_story(text)
+
+
 def _configured_marquee(channel_id: str) -> list[str]:
     """`config/marquee.json`'s names for the channel - the operator's list. [] when unread."""
     try:

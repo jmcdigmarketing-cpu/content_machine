@@ -1,13 +1,13 @@
 """#1691 (B04.20) + #1698 (B05.2), wave 154: which formats and frames earn - ranked weekly.
 
 A run's format is what made it: its pick's source (a countdown, a game's preview, last night's
-result, a dated moment, a long video, the fast lane) or, for a headline, its angle's intent (news,
-an explainer, a comparison...). `features["format"]` holds the length preset ("Medium"), not this,
-so the format is read from what each run already records - every past run is ranked too. Its frame
-is the angle it was written in (`features["angle"]`: analysis, news, preview...). Each line ranks
-the last `DAYS` days' public Shorts by the median first-week organic views
-(`success.target.views_7d`) and gives subscribers per 1,000 organic views. Printed by the weekly
-report.
+result, a dated moment, a long video, the fast lane, a "who wins?" debate) or, for a headline, its
+angle's intent (news, an explainer, a comparison...). `features["format"]` holds the length preset
+("Medium"), not this, so the format is read from what each run already records - every past run is
+ranked too. Its frame is the angle it was written in (`features["angle"]`: analysis, news,
+preview...). Each line ranks the last `DAYS` days' public Shorts by the median first-week organic
+views (`success.target.views_7d`) and gives subscribers and (#1642, wave 155) comments per 1,000.
+Printed by the weekly report; `measured_shorts` is what the lane numbers (`success.lanes`) read.
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ _SOURCES = {
     "countdown": "countdown",
     "schedule": "preview",
     "result": "result",
+    "debate": "debate",
     "long": "long",
     "recap": "long",
     "season": "long",
@@ -76,23 +77,83 @@ def _features(run_id: int) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def _organic_total(metrics: dict[str, Any]) -> int:
-    """Lifetime views less paid ones."""
-    try:
-        total = int(float(metrics.get("lifetime_views") or metrics.get("views") or 0))
-        paid = int(float(metrics.get("paid_views") or 0))
-    except (TypeError, ValueError):
-        return 0
-    return max(0, total - paid)
+def _number(metrics: dict[str, Any], *keys: str) -> int:
+    for key in keys:
+        try:
+            if metrics.get(key) is not None:
+                return int(float(metrics[key]))
+        except (TypeError, ValueError):
+            continue
+    return 0
 
 
-def _ranked(groups: dict[str, list[tuple[int, int, int]]]) -> list[str]:
+def measured_shorts(
+    channel_id: str,
+    *,
+    today: date | None = None,
+    rows: list[Any] | None = None,
+    features: Callable[[int], dict[str, Any]] | None = None,
+    days: int = DAYS,
+) -> list[dict[str, Any]]:
+    """{when, views7, organic, views, subs, comments, stayed, format, frame} for each public Short
+    of the last `days` with its first week measured."""
+    from core.success.target import views_7d
+
+    day = today or date.today()
+    read = features or _features
+    if rows is None:
+        from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+
+        rows = [r for r in get_publish_log_repository().list_uploaded_for_channel(channel_id)
+                or [] if not is_seeded(r)]  # fmt: skip
+    since = datetime.combine(day - timedelta(days=days), datetime.min.time(), tzinfo=timezone.utc)
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        when = getattr(row, "published_at", None)
+        if not isinstance(when, datetime):
+            continue
+        when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+        if when < since or str(getattr(row, "privacy_status", "") or "").lower() != "public":
+            continue
+        try:
+            metrics = json.loads(getattr(row, "metrics_json", "") or "{}")
+        except (TypeError, ValueError):
+            continue
+        week = views_7d(metrics, when) if isinstance(metrics, dict) else None
+        if week is None:
+            continue
+        feats = read(int(getattr(row, "content_run_id", 0) or 0))
+        if feats.get("long_form") or feats.get("compilation"):
+            continue  # Shorts only
+        total = _number(metrics, "lifetime_views", "views")
+        stayed = metrics.get("stayed_share")
+        out.append({
+            "when": when, "views7": int(week), "views": total,
+            "organic": max(0, total - _number(metrics, "paid_views")),
+            "subs": _number(metrics, "subscribers_gained"),
+            "comments": _number(metrics, "comments"),
+            "stayed": float(stayed) if isinstance(stayed, (int, float)) else None,
+            "format": run_format(feats), "frame": str(feats.get("angle") or "unrecorded"),
+        })  # fmt: skip
+    return out
+
+
+def _ranked(groups: dict[str, list[dict[str, Any]]]) -> list[str]:
     parts: list[tuple[float, str]] = []
     for name, rows in groups.items():
-        median = statistics.median(r[0] for r in rows)
-        organic = sum(r[1] for r in rows)
-        subs = sum(r[2] for r in rows)
-        rate = f", {subs / organic * 1000:.1f} subscribers per 1,000" if organic else ""
+        median = statistics.median(r["views7"] for r in rows)
+        organic = sum(r["organic"] for r in rows)
+        views = sum(r["views"] for r in rows)
+        rates = []
+        if organic:
+            rates.append(
+                f"{sum(r['subs'] for r in rows) / organic * 1000:.1f} subscribers per 1,000"
+            )
+        if views:  # #1642: comments per 1,000 views - a debate's honest question measured
+            rates.append(
+                f"{sum(r['comments'] for r in rows) / views * 1000:.1f} comments per 1,000"
+            )
+        rate = "".join(f", {r}" for r in rates)
         parts.append((median, f"{name} n={len(rows)} median {median:,.0f}{rate}"))
     return [text for _m, text in sorted(parts, key=lambda p: (-p[0], p[1]))]
 
@@ -105,45 +166,13 @@ def format_lines(
     features: Callable[[int], dict[str, Any]] | None = None,
 ) -> list[str]:
     """Two lines - by format (#1691), by frame (#1698) - or [] with nothing measured."""
-    from core.success.target import views_7d
-
-    day = today or date.today()
-    read = features or _features
     try:
-        if rows is None:
-            from storage.repositories.publish_log import get_publish_log_repository, is_seeded
-
-            rows = [r for r in get_publish_log_repository().list_uploaded_for_channel(channel_id)
-                    or [] if not is_seeded(r)]  # fmt: skip
-        since = datetime.combine(
-            day - timedelta(days=DAYS), datetime.min.time(), tzinfo=timezone.utc
-        )
-        by_format: dict[str, list[tuple[int, int, int]]] = {}
-        by_frame: dict[str, list[tuple[int, int, int]]] = {}
-        for row in rows:
-            when = getattr(row, "published_at", None)
-            if not isinstance(when, datetime):
-                continue
-            when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
-            if when < since or str(getattr(row, "privacy_status", "") or "").lower() != "public":
-                continue
-            try:
-                metrics = json.loads(getattr(row, "metrics_json", "") or "{}")
-            except (TypeError, ValueError):
-                continue
-            week = views_7d(metrics, when) if isinstance(metrics, dict) else None
-            if week is None:
-                continue
-            feats = read(int(getattr(row, "content_run_id", 0) or 0))
-            if feats.get("long_form") or feats.get("compilation"):
-                continue  # Shorts only
-            try:
-                subs = int(float(metrics.get("subscribers_gained") or 0))
-            except (TypeError, ValueError):
-                subs = 0
-            entry = (int(week), _organic_total(metrics), subs)
-            by_format.setdefault(run_format(feats), []).append(entry)
-            by_frame.setdefault(str(feats.get("angle") or "unrecorded"), []).append(entry)
+        shorts = measured_shorts(channel_id, today=today, rows=rows, features=features)
+        by_format: dict[str, list[dict[str, Any]]] = {}
+        by_frame: dict[str, list[dict[str, Any]]] = {}
+        for short in shorts:
+            by_format.setdefault(short["format"], []).append(short)
+            by_frame.setdefault(short["frame"], []).append(short)
         if not by_format:
             return []
         head = f"the last {DAYS} days' Shorts, median first-week organic views"

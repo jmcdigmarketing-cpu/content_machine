@@ -59,7 +59,7 @@ def save_ypp_numbers(channel_id: str, numbers: dict[str, Any]) -> None:
     """Keep the sync's YPP numbers (#954) for `ops ypp`, and the month's last snapshot (#1320)."""
     path = YPP_TEMPLATE.format(channel=channel_id)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    data = {k: v for k, v in dict(numbers).items() if k not in ("history", "weeks")}
+    data = {k: v for k, v in dict(numbers).items() if k not in ("history", "weeks", "subs_weeks")}
     stored = load_ypp_numbers(channel_id) or {}
     history = dict(stored.get("history") or {})
     month = str(data.get("as_of") or "")[:7]
@@ -72,6 +72,13 @@ def save_ypp_numbers(channel_id: str, numbers: dict[str, Any]) -> None:
         weeks[week] = data["long_hours_7d"]
     if weeks:
         data["weeks"] = {k: weeks[k] for k in sorted(weeks)[-12:]}
+    # #1721 (wave 155): the week's last 7-day net subscribers, for the subscribers lane
+    subs_weeks = dict(stored.get("subs_weeks") or {})
+    gained, lost = data.get("subs_gained_7d"), data.get("subs_lost_7d")
+    if week and isinstance(gained, (int, float)) and isinstance(lost, (int, float)):
+        subs_weeks[week] = int(gained) - int(lost)
+    if subs_weeks:
+        data["subs_weeks"] = {k: subs_weeks[k] for k in sorted(subs_weeks)[-12:]}
     tmp = f"{path}.tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)

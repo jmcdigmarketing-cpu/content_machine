@@ -221,6 +221,12 @@ def scoreboard_lines(
     lane = hours_lane_line(nums)  # #1746: the lane's number
     if lane:
         lines.append(f"  {lane}")
+    from core.success.lanes import lane_lines
+
+    # #1621 #1646 #1671 #1696 #1721 #1771 (wave 155): the other lanes' numbers - the stores are
+    # read only when the numbers are the stored ones
+    lines.extend(f"  {line}" for line in lane_lines(channel_id, today=day, numbers=nums,
+                                                    stores=numbers is None))  # fmt: skip
     try:  # #1753 (wave 136): income beside spend
         from core.money.ledger import money_line
 
@@ -238,6 +244,7 @@ def scoreboard_lines(
         logger.debug("scorecard rows unread: %s", exc)
         costs, minutes = [], []
     lines.append(f"  {scorecard.week_cost_line(costs)}")
+    lines.append(f"  {scorecard.short_cost_line(costs)}")  # #1668
     hours_bars = (int(bar["hours"]), int(bar_on(NEW_BAR_DAY)["hours"]))
     lines.extend(f"  {line}" for line in scorecard.hours_lines(
         minutes, have=nums.get("long_hours_365d"), bars=hours_bars))  # fmt: skip

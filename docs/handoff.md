@@ -53,21 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-06 · **HEAD at write:** `96a551c` (wave 153, CI green; this wave's commit
+**Written:** 2026-11-06 · **HEAD at write:** `c4868ff` (wave 154, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 154, the first ten of "next 20".** Nothing found broken. Built: one idea a subject a night
-(#1606); a stale idea waits (#1607); the menu's "last time" note (#1615); the weekly what-worked note
-(#1618) and format / frame ranking (#1691, #1698); hooks of 12 words or fewer (#1631); never four a
-day or two within three hours (#1662); a Short links its series playlist (#1709); promotions suggest
-nothing (#1802). #1664 already true; #1600 measured and left. Decision 105. Wave 155 is next.
+**Wave 155, the other ten of "next 20".** Found in the build and fixed: the crossover rule led with
+a past video's re-offered topic (run 126) - only a fresh headline leads now. Built: the lane numbers
+(#1621, #1646, #1671, #1696, #1721, #1771) under the hours lane; a Short's all-in cost (#1668); a
+numbered card's "who wins?" Short (#1673) ending on the honest question (#1642); crossovers (#1620,
+`config/crossover.json`). Closed as already true: #1658, #1803, #1806, #1414, #1695. Decision 106.
 
-**Open:** #1600, #1648, #1984, #1988, #1991, #1994, #1996, #1997, #1998, #2000, #2003, #2004.
-**Next:** wave 155 - #1621, #1646, #1671, #1696, #1721, #1660, #1658, #1666, #1652, #1620.
+**Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1984, #1988, #1991, #1994, #1996, #1997, #1998,
+#2000, #2003, #2004, #2005. **Next:** #1666, #1652, #1686, #1605, #1629 before W4's freeze (Nov 16);
+#1849 once the embargo date is known.
 
 **Operator:** publish the Google app before Sat Nov 7 - the sign-in lapses and uploads stop (set
 POLICY_SITE_URL first; `ops check-youtube` reads the four pages); bio pages; tracking IDs; Facebook in
-Buffer; #1922/#1956 on a phone. Review the UFC 334 match-up draft on Nov 10, the recap on Nov 15.
+Buffer; #1922/#1956 on a phone; prune `config/crossover.json` to taste. Review the UFC 334 match-up
+draft on Nov 10, the recap on Nov 15.
 
 ## Slot — Cursor
 

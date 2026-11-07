@@ -117,3 +117,15 @@ over 12 words, 13 pairs within three hours in 30 days, one day of six. **Consequ
 report gains the what-worked note and the format and frame ranking; a Short links its series
 playlist.
 
+## 106. Every lane prints its number; a card's "who wins?" Short; crossovers lead (2026-11-06)
+**Decision:** each lane of the bridge prints its number and the run of weeks its "done" asks for
+under the hours lane - the median Short's first week, stayed share, organic views a day, the best
+format's share, organic subscribers a week, money outside YouTube - and the scoreboard gives a Short's
+all-in cost against $0.25. A numbered card gets a "who wins?" Short one to three days out, both
+sides' case, ending on the honest question. A fresh gaming headline naming a known name from
+outside gaming passes the gate on one outlet and leads the plain headlines. **Why:** the bridge's
+B01.24-25, B02.21, B02.25, B03.22, B03.25, B04.2, B04.25, B05.25 and B07.25 (decision 82), the
+second ten of the operator's "next 20". **Consequence:** a lane is done only when its run lands, so
+#1621, #1646, #1721 and #1668 stay open until it does; `config/crossover.json` is the operator's;
+`UFC_DEBATE=false` stops the debate.
+

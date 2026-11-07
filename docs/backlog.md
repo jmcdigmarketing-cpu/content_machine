@@ -1879,7 +1879,7 @@ Already open for S09: #464 (recorded API fixtures).
 - [ ] 1411. **Impressions by traffic source** *(S11.5, filed 2026-10-18)* `[S]` · lane: views
 - [ ] 1412. **Long-form titles rotated after 48 hours when click-through is low** *(S11.6, filed 2026-10-18)* `[M]` · lane: hours
 - [x] 1413. **A long video under 2% after 1,000 impressions gets a new thumbnail** *(S11.7, filed 2026-10-18)* `[M]` **Done (2026-11-02, Claude, wave 145):** `analytics.packaging.cover_swap_candidates` / `swap_low_ctr_covers`: a public long video past 1,000 thumbnail impressions under 2% gets its second cover - a frame 60% into its own render (`long_form.long_thumbnail(at=0.6)`) - once, recorded as `cover_swapped_at`; the metrics sync runs it after the reach sync and `ops packaging` lists what it would swap; COVER_SWAP=false stops it. Live: none qualifies yet (the Weeks in Review: 279 and 137 impressions). #1058 stays open until long videos give title learning a sample. · lane: hours
-- [ ] 1414. **The compilation's thumbnail picked on click-through once it is measured** *(S11.8, filed 2026-10-18)* `[S]` · lane: hours
+- [x] 1414. **The compilation's thumbnail picked on click-through once it is measured** *(S11.8, filed 2026-10-18)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** already true by #1990 (wave 149): a Week in Review under 2% after 100 impressions gets its subject cover (`packaging.cover_swap_candidates`). Read 11-06; nothing built. · lane: hours
 - [-] 1415. **`ops doctor` checks that the Reporting jobs exist and a report arrived** *(S11.9, filed 2026-10-18)* `[S]` *(parked 2026-10-27, decision 82: engineering only - it moves no views, subscribers, hours, money or cost)*
 - [-] 1416. **The packaging score in the grade calibrated on click-through** *(S11.10, filed 2026-10-18)* `[M]` *(parked 2026-10-27, decision 82: a measurement that moves no number)*
 
@@ -2198,8 +2198,8 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1617. **Long-form topics from what competitors' long videos rank for in search** *(B01.21, filed 2026-10-27)* `[M]` · lane: hours
 - [x] 1618. **A weekly 'what worked' note: the 3 top subjects and the 3 dead ones, and next week's menu leaning to the first** *(B01.22, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 154; decision 105):** `worked.what_worked_lines` in the weekly report: the three subjects whose Shorts earned most in their first week over the last 14 days and the three dead ones; the menu leans to the first through #1608's idea. Live 11-06: "GTA 6 1,091 · Real Madrid 91 · UFC 333 69; dead: Harry Kane 5 · Makhachev 6 · Xbox Game Pass 30". · lane: views
 - [ ] 1619. **Steam/PlayStation/Xbox sales and free weekends of marquee games as ideas** *(B01.23, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1620. **Celebrity crossovers flagged as high-travel - a known non-gaming name in a gaming story (Ben Affleck in Fortnite: 411)** *(B01.24, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1621. **The lane's number: median organic views per Short at 7 days, weekly, against the 30-day median - done when it rises four weeks running** *(B01.25, filed 2026-10-27)* `[S]` · lane: views
+- [x] 1620. **Celebrity crossovers flagged as high-travel - a known non-gaming name in a gaming story (Ben Affleck in Fortnite: 411)** *(B01.24, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** `config/crossover.json` (the operator's to edit, seeded with 20 names and Ben Affleck's 411): a fresh gaming headline naming one passes the overnight gate on one outlet and leads the plain headlines (`best_bet.crossover_story`, `lead_first`). Live-exposed and fixed in the build: the menu re-offered run 126's Ben Affleck topic (source `analytics`) and it led - only a fresh headline leads now. Corpus cases. · lane: views
+- [ ] 1621. **The lane's number: median organic views per Short at 7 days, weekly, against the 30-day median - done when it rises four weeks running** *(B01.25, filed 2026-10-27)* `[S]` **Built (2026-11-06, Claude, wave 155; decision 106), open until its done line:** `core/success/lanes.py`, printed under the hours lane in the bridge scoreboard (`ops ypp`, the weekly report): the median Short's first-week organic views by the week it went public, against the 30-day median, and the run of weeks it rose. Live 11-06: 69 (2026-W44) against 72, rising 1 of 4. · lane: views
 
 ### B02 The first second and the loop
 
@@ -2223,11 +2223,11 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1639. **A question hook arm ('Did Seattle just expose Mahomes?') against a statement hook** *(B02.18, filed 2026-10-27)* `[S]` · lane: views
 - [-] 1640. **The one big number as a full-screen card when the voice says it** *(B02.19, filed 2026-10-27)* `[M]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [-] 1641. **The on-screen title and the first spoken line never say the same words** *(B02.20, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
-- [ ] 1642. **Debate Shorts end on an honest question, measured on comments per 1,000 views** *(B02.21, filed 2026-10-27)* `[S]` · lane: views
+- [x] 1642. **Debate Shorts end on an honest question, measured on comments per 1,000 views** *(B02.21, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** a debate's last line is the honest question, once, no pick (`follow_brief`), and the weekly format ranking gives comments per 1,000 views beside subscribers (`formats._ranked`). · lane: views
 - [-] 1643. **The frame YouTube shows for a Short set to the text card** *(B02.22, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [-] 1644. **No lower-third labels in the first 3 seconds** *(B02.23, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
 - [ ] 1645. **A re-hook beat at the drop-off second (#1494 measures it) to hold past it** *(B02.24, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1646. **The lane's number: the week's median stayed share against 45% - done when four weeks are above** *(B02.25, filed 2026-10-27)* `[S]` · lane: views
+- [ ] 1646. **The lane's number: the week's median stayed share against 45% - done when four weeks are above** *(B02.25, filed 2026-10-27)* `[S]` **Built (2026-11-06, Claude, wave 155; decision 106), open until its done line:** `core/success/lanes.py`, printed under the hours lane in the bridge scoreboard (`ops ypp`, the weekly report): the week's median stayed share against 45% and the weeks in a row above. Live: 50%, 1 of 4. · lane: views
 
 ### B03 Volume and speed for little money
 
@@ -2242,7 +2242,7 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [x] 1655. **A fast-lane Short goes public on render, outside the noon and 10 PM slots** *(B03.9, filed 2026-10-27)* `[S]` **Done (2026-11-05, Claude, wave 151; decision 102):** a fast-lane render is queued public (`requeue_content_run(privacy_status="public")`), outside the noon and 10 PM slots, and the worker uploads it in the same pass. · lane: views
 - [ ] 1656. **A second voice ready for the fast lane when ElevenLabs is slow or out of characters** *(B03.10, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1657. **Headline-to-public time per video in the weekly report - done when the fast lane's median is under 2 hours** *(B03.11, filed 2026-10-27)* `[S]` · lane: views
-- [ ] 1658. **A day with a free slot never passes empty: the shelf's oldest clean render goes out** *(B03.12, filed 2026-10-27)* `[S]` · lane: views
+- [x] 1658. **A day with a free slot never passes empty: the shelf's oldest clean render goes out** *(B03.12, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** already true by decision 78 (`batch_review.schedule_unanswered_renders`): a clean render left unanswered 24 hours is scheduled at its slot - run 249 went that way on 11-06 - and #1428 renders one more for an empty day. Read 11-06; nothing built. · lane: views
 - [ ] 1659. **Drafts voiced cheaply first (piper) for the decision, re-voiced with ElevenLabs only when chosen** *(B03.13, filed 2026-10-27)* `[M]` · lane: cost
 - [ ] 1660. **Every long-form video yields 3-5 Shorts** *(B03.14, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1661. **The week's evergreen Shorts batched on Sunday so weekday slots stay free for news** *(B03.15, filed 2026-10-27)* `[S]` · lane: views
@@ -2252,15 +2252,15 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1665. **A clean, current news draft left undecided goes out after 6 hours (decision 78 waits 24)** *(B03.19, filed 2026-10-27)* `[S]` **Measured (2026-11-05, wave 150), not built:** in the 12 days to 11-04 overnight rendered 9 videos and none was a news render that waited for the 24-hour rule (the four it scheduled were previews, a recap and Picks) - 6 hours would have moved nothing yet; decision 78 stands. · lane: views
 - [ ] 1666. **Overnight's draft step also at 1 PM, for the evening's news** *(B03.20, filed 2026-10-27)* `[S]` · lane: views
 - [x] 1667. **A toast only when a fast-lane draft is held for a claim** *(B03.21, filed 2026-10-27)* `[S]` **Done (2026-11-05, Claude, wave 151; decision 102):** a fast-lane draft held for a claim raises one toast (`fast_lane._hold_toast`); any other hold is a line in the worker's log. · lane: views
-- [ ] 1668. **A Short under $0.25 all-in, measured weekly** *(B03.22, filed 2026-10-27)* `[S]` · lane: cost
+- [ ] 1668. **A Short under $0.25 all-in, measured weekly** *(B03.22, filed 2026-10-27)* `[S]` **Built (2026-11-06, Claude, wave 155; decision 106), open until its done line:** `scorecard.short_cost_line` in the scoreboard: the median all-in run cost of the videos published 7-14 days ago and how many came in under $0.25. Live: median $0.34, 3 of 16 under. · lane: cost
 - [ ] 1669. **Public Shorts a week (target 21) with organic views per Short not falling** *(B03.23, filed 2026-10-27)* `[S]` · lane: views
 - [x] 1670. **Previews and calendar drafts made 24-48 hours ahead so nothing is drafted 31 minutes before its game** *(B03.24, filed 2026-10-27)* `[S]` **Done (2026-11-05, Claude, wave 150):** overnight's preview is a game 24-48 hours away (`best_bet.ahead_first` / `ahead_rank`, `preview_options(ahead=)`, `get_idea_menu(prefer_ahead=)` from the night's `collect_topics`) - a national broadcast or a numbered card ahead of a league's own game in the window and in the sooner group, so a prime game the day before missed still beats a lesser game tomorrow. A daily league's board holds today only (NBA 11-04: 14 games, none of the 9 on 11-06; ESPN refuses a `dates` range with a 400), so NBA's and NHL's next two days are read one by one (`seasonal_calendar._board_ahead`, `merge_boards`). Measured: of 22 previews from 10-14 to 11-04 the overnight ones were drafted 13-38 hours out, the daytime ones 0.4-4. Replayed on the live boards: 11-05 keeps Jaguars-Ravens (TNF, 14 h; the window alone would have taken Wizards-Hawks), 11-06 takes Nuggets-Pacers (35 h), 11-07 Bengals-Falcons (28 h). · lane: views
-- [ ] 1671. **The lane's number: organic views a day, 7-day average, against ~250 today** *(B03.25, filed 2026-10-27)* `[S]` · lane: views
+- [x] 1671. **The lane's number: organic views a day, 7-day average, against ~250 today** *(B03.25, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** `core/success/lanes.py`, printed under the hours lane in the bridge scoreboard (`ops ypp`, the weekly report): organic views a day over the last 7 days against ~250 on 10-27. Live 11-06: 306. · lane: views
 
 ### B04 Formats that travel
 
 - [ ] 1672. **A named-series template: one title stem, one opener, one playlist, a day-N counter** *(B04.1, filed 2026-10-27)* `[M]` · lane: views
-- [ ] 1673. **'Who wins?' debate Shorts on marquee matchups, ending on the question** *(B04.2, filed 2026-10-27)* `[S]` · lane: views
+- [x] 1673. **'Who wins?' debate Shorts on marquee matchups, ending on the question** *(B04.2, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** `recap.debate_ideas`: a numbered card one to three days away becomes "Gane vs. Hokit: who wins at UFC 334?" (source `debate`, written as both sides' case - the comparison intent), from ESPN's card and three days of headlines, once; its deadline the card's start. Live for Nov 12: heavyweight, five rounds, Gane 14-2-0, Hokit 10-0-0. · lane: views
 - [ ] 1674. **Rankings with an on-screen countdown ('Top 5 ...')** *(B04.3, filed 2026-10-27)* `[S]` · lane: views
 - [-] 1675. **Quiz Shorts: 'Guess the fighter from three stats', the reveal at the end** *(B04.4, filed 2026-10-27)* `[M]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1.5, among the lowest open)* · lane: views
 - [ ] 1676. **Stat-shock Shorts: one surprising number is the whole video** *(B04.5, filed 2026-10-27)* `[S]` · lane: views
@@ -2282,8 +2282,8 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1692. **A format rotates out after 4 Shorts below the channel median** *(B04.21, filed 2026-10-27)* `[S]` · lane: views
 - [ ] 1693. **Honest comment bait: a real question the next Short answers** *(B04.22, filed 2026-10-27)* `[S]` · lane: subscribers
 - [-] 1694. **A comment poll on debate Shorts ('1 for Topuria, 2 for ...') through the call-comment machinery (#1327)** *(B04.23, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: views
-- [ ] 1695. **A 'Picks, graded' companion Short the morning after each graded week** *(B04.24, filed 2026-10-27)* `[S]` · lane: subscribers
-- [ ] 1696. **The lane's number: organic views per Short by format, and the best format's share of uploads rising** *(B04.25, filed 2026-10-27)* `[S]` · lane: views
+- [x] 1695. **A 'Picks, graded' companion Short the morning after each graded week** *(B04.24, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** already true by #991: the week's "Picks, graded" leads the menu the week it is due (`best_bet._series_idea`), so overnight drafts it first. Read 11-06. · lane: subscribers
+- [x] 1696. **The lane's number: organic views per Short by format, and the best format's share of uploads rising** *(B04.25, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** `core/success/lanes.py`, printed under the hours lane in the bridge scoreboard (`ops ypp`, the weekly report): the best format of 90 days (median first-week organic views, three Shorts or more) and its share of each week's uploads, with the run of weeks it rose. Live: headline, median 78. · lane: views
 
 ### B05 Organic subscribers
 
@@ -2311,7 +2311,7 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [-] 1718. **A Short's description opens with the series name and 'follow for day N+1'** *(B05.22, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: subscribers
 - [ ] 1719. **The follow line's wording A/B over two weeks** *(B05.23, filed 2026-10-27)* `[S]` · lane: subscribers
 - [ ] 1720. **A comment from the channel on each new Short asking the follow question honestly (#1327's machinery)** *(B05.24, filed 2026-10-27)* `[S]` · lane: subscribers
-- [ ] 1721. **The lane's number: organic subscribers a week against +1.0 today - done at +10 a week for four weeks** *(B05.25, filed 2026-10-27)* `[S]` · lane: subscribers
+- [ ] 1721. **The lane's number: organic subscribers a week against +1.0 today - done at +10 a week for four weeks** *(B05.25, filed 2026-10-27)* `[S]` **Built (2026-11-06, Claude, wave 155; decision 106), open until its done line:** the sync keeps each week's 7-day net subscribers (`ypp_readiness.save_ypp_numbers`, `subs_weeks`) and {LANES} reads the run at +10. Live: +2 in 7 days, 0 of 4; the weeks fill from the next sync. · lane: subscribers
 
 ### B06 Long-form hours
 
@@ -2367,7 +2367,7 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [-] 1768. **X's creator revenue (Premium + 5M impressions in 3 months) tracked, not chased** *(B07.22, filed 2026-10-27)* `[S]` *(parked 2026-11-01, decision 91: S22's sweep - bridge score 1, among the lowest open)* · lane: money
 - [ ] 1769. **A monthly money section on the Story page: costs, income, net** *(B07.23, filed 2026-10-27)* `[S]` · lane: money
 - [ ] 1770. **A money line with no click in four weeks is dropped** *(B07.24, filed 2026-10-27)* `[S]` · lane: money
-- [ ] 1771. **The lane's number: dollars earned a month outside YouTube, against $0** *(B07.25, filed 2026-10-27)* `[S]` · lane: money
+- [x] 1771. **The lane's number: dollars earned a month outside YouTube, against $0** *(B07.25, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** `core/success/lanes.py`, printed under the hours lane in the bridge scoreboard (`ops ypp`, the weekly report): dollars earned outside YouTube this month from the money ledger, against $0. Live: $0.00. · lane: money
 
 ### B08 Reach outside YouTube
 
@@ -2405,10 +2405,10 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [ ] 1800. **ElevenLabs' plan sized to the month's characters used** *(B09.4, filed 2026-10-27)* `[S]` · lane: cost
 - [ ] 1801. **Each signal's share of winning topics over 30 days (it fed the script and the video beat the median)** *(B09.5, filed 2026-10-27)* `[M]` · lane: cost
 - [x] 1802. **`ops promotions` stops suggesting videos to promote; ads stay at $0 (decision 82)** *(B09.6, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 154; decision 105):** `ops promotions` and the app's Analytics page suggest nothing - "Worth promoting: nothing - ads stay at $0 (decision 82)". #997's picks are kept as `_candidate_lines_997` for the record; its test now checks the new line. · lane: cost
-- [ ] 1803. **The TTS cache switched on: re-renders and re-voices reuse audio** *(B09.7, filed 2026-10-27)* `[S]` · lane: cost
+- [x] 1803. **The TTS cache switched on: re-renders and re-voices reuse audio** *(B09.7, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** already true: the TTS cache is on by default (`core/tts.py`, `TTS_CACHE` unset in `.env`). Read 11-06; nothing built. · lane: cost
 - [ ] 1804. **Every stage on the cheapest LLM tier that holds its check rate** *(B09.8, filed 2026-10-27)* `[S]` · lane: cost
 - [ ] 1805. **Web search only when the facts are thin** *(B09.9, filed 2026-10-27)* `[S]` · lane: cost
-- [ ] 1806. **Flux only when the Pillow card fails the thumbnail check** *(B09.10, filed 2026-10-27)* `[S]` · lane: cost
+- [x] 1806. **Flux only when the Pillow card fails the thumbnail check** *(B09.10, filed 2026-10-27)* `[S]` **Done (2026-11-06, Claude, wave 155; decision 106):** already met by decision 85: covers are the video's own frames and Flux runs only with `THUMBNAIL_AI=true`, which `.env` does not set - Flux costs $0. Read 11-06. · lane: cost
 - [ ] 1807. **Each monthly subscription listed with what it bought, and one to cut** *(B09.11, filed 2026-10-27)* `[S]` · lane: cost
 - [ ] 1808. **GPU encoding (NVENC) for render time** *(B09.12, filed 2026-10-27)* `[S]` · lane: cost
 - [ ] 1809. **A draft the gate will hold is stopped before the voice is paid for** *(B09.13, filed 2026-10-27)* `[S]` · lane: cost
@@ -2619,3 +2619,4 @@ The operator, 2026-10-27: "next 300 ideas and lets make the bridge to success st
 - [x] 2002. **An opener carrying the prompt's placeholder or markup is refused** *(2026-11-06, wave 153: run 232, public 11-03, opens "15 days out, and the wait since 2022 has become <who> can't maintain <what>." - the opener prompt's shape hint, kept; run 229 had "<b>17 days</b>")* `[S]` **Done (2026-11-06, Claude, wave 153; decision 104):** `content_engine._PLACEHOLDER` refuses such an opener in the hook rewrite. Run 232 stays as published. · lane: defect
 - [ ] 2003. **Wave 153's first live outputs read back** *(2026-11-06: tomorrow's 05:00 result ideas and a 40-point night; the next-games facts in a result's script; a Short ending on its loop line, its `loop_close` row; a hook rewritten to name its subject; a preview titled as a call)* `[S]` · lane: views
 - [ ] 2004. **Wave 154's first live outputs read back** *(2026-11-06: a night with a second idea on one subject held back; a stale idea held; the menu's "last time" note; the weekly report's what-worked, format and frame lines; a slot moved for the 3-hour rule; a Short's playlist line on YouTube)* `[S]` · lane: views
+- [ ] 2005. **Wave 155's first live outputs read back** *(2026-11-06: the lane numbers a week on, `subs_weeks` filling from the syncs; UFC 334's "who wins?" Short drafted Nov 12-13 and its closing question; a crossover headline leading a night; comments per 1,000 for the debate format)* `[S]` · lane: views

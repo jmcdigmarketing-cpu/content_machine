@@ -197,13 +197,14 @@ def collect_topics(
             from core.series.countdown import countdown_idea
             from core.series.dated import dated_ideas
             from core.series.last_night import last_night_ideas
-            from core.series.recap import matchup_ideas, recap_ideas
+            from core.series.recap import debate_ideas, matchup_ideas, recap_ideas
 
             alone = _unique([countdown_idea(channel_id), countdown_idea(channel_id, ahead=1),
                              *dated_ideas(channel_id, notes=notes),
                              *long_breakout_ideas(channel_id),
                              *recap_ideas(channel_id, notes=notes),
                              *matchup_ideas(channel_id, notes=notes),  # #1892
+                             *debate_ideas(channel_id),  # #1673
                              *last_night_ideas(channel_id)])  # #1999, #1877  # fmt: skip
             if picks is not None:
                 for bet in alone:
@@ -215,14 +216,18 @@ def collect_topics(
         # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
         from core.series.countdown import countdown_idea
         from core.series.last_night import last_night_ideas
-        from core.series.recap import matchup_ideas, recap_ideas
+        from core.series.recap import debate_ideas, matchup_ideas, recap_ideas
 
         extra = _unique([*extra, countdown_idea(channel_id, ahead=1),
                          *long_breakout_ideas(channel_id),  # #1740
                          *recap_ideas(channel_id, notes=notes),  # #1722
                          *matchup_ideas(channel_id, notes=notes),  # #1892
+                         *debate_ideas(channel_id),  # #1673
                          *last_night_ideas(channel_id)])  # #1999, #1877  # fmt: skip
         names = marquee_names(channel_id)
+        from core.best_bet import crossover_names
+
+        gate_names = [*names, *crossover_names(channel_id)]  # #1620: a crossover travels too
         kept: list[Any] = []
         moment = datetime.now(timezone.utc)
         for bet in ideas:
@@ -234,7 +239,7 @@ def collect_topics(
                 continue
             outlets = int(getattr(bet, "outlets", 0) or 0)
             if story_passes_gate(bet.topic, source=str(getattr(bet, "source", "") or ""),
-                                 outlets=outlets, names=names):  # fmt: skip
+                                 outlets=outlets, names=gate_names):  # #1620  # fmt: skip
                 kept.append(bet)
             elif held_back is not None:
                 held_back.append(bet.topic)
@@ -338,10 +343,17 @@ def lead_first(
     name's competitor breakout at `OUTLIER_FIRST`x (#1599). Each moves its first idea to the
     front, the lowest first, so the highest leads. The rest keep their order."""
     from apis.topic_tokens import names_any
-    from core.best_bet import OUTLIER_FIRST, injury_story, marquee_names
+    from core.best_bet import (
+        OUTLIER_FIRST,
+        crossover_names,
+        crossover_story,
+        injury_story,
+        marquee_names,
+    )
     from core.series.dated import channel_day, jump_first, launch_names
 
     names = marquee_names(channel_id)
+    crossovers = crossover_names(channel_id)
     if week is None:
         from core.series.recap import fight_week
 
@@ -353,7 +365,10 @@ def lead_first(
                 return [bet, *items[:i], *items[i + 1 :]]
         return items
 
-    out = front(list(ideas), lambda topic, bet: (
+    # #1620 (wave 155): a celebrity crossover leads the plain headlines - the lowest lead
+    out = front(list(ideas), lambda topic, bet: getattr(bet, "source", "") == "trending"
+                and crossover_story(topic, str(getattr(bet, "domain", "") or ""), crossovers))  # fmt: skip
+    out = front(out, lambda topic, bet: (
         float(getattr(bet, "outlier", 0) or 0) >= OUTLIER_FIRST and names_any(topic, names)))  # fmt: skip
     if week:
         out = front(out, lambda topic, _bet: names_any(topic, week))
@@ -1087,6 +1102,10 @@ def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
     # took the repeat-coverage table's "what changed since launch" for a game not yet out.
     # #1608: a "more of what worked" idea is a fresh headline - news too.
     # #1999 (wave 153): last night's result is news - what it means.
+    if source == "debate":  # #1673 (wave 155): "who wins?" - both sides' case, no pick
+        from core.angle_intent import ANGLE_COMPARISON
+
+        return ANGLE_COMPARISON
     return ANGLE_NEWS if source in ("trending", "countdown", "worked", "result") else ANGLE_DEFAULT
 
 
@@ -1156,6 +1175,9 @@ def follow_brief(
     picked = raw if isinstance(raw, int) else 1
     chosen = offered[picked - 1] if isinstance(offered, list) and 0 < picked <= len(offered) else {}
     source = str((chosen or {}).get("source") or "")
+    if source == "debate":  # #1642 (wave 155): a debate ends on the honest question
+        return (" End on the honest question, once - who wins? - and leave it open: no pick, and "
+                "no call to comment.")  # fmt: skip
     lead = " End on why to follow, in your own words, once:"
     if bet.get("title_stem") or source == "countdown":
         found = _DAYS_RE.search(str(bet.get("title_stem") or ""))

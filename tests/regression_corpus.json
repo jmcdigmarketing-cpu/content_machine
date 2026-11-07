@@ -9249,6 +9249,40 @@
         "not_contains": "Tap in for more"
       },
       "why": "a Short ends on its last real line so the loop starts at once"
+    },
+    {
+      "id": "a-celebrity-in-a-gaming-story-travels",
+      "item": 1620,
+      "source": "run 126: 'Ben Affleck Gets Destroyed by 12-Year-Olds in Fortnite', 411 organic views",
+      "call": "core.best_bet:crossover_story",
+      "args": [
+        "Ben Affleck admits he gets into arguments with 12-year-olds while playing Fortnite",
+        "gaming",
+        [
+          "Ben Affleck"
+        ]
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a known name outside gaming in a gaming story is the channel's second-best shape"
+    },
+    {
+      "id": "the-same-name-outside-gaming-is-not-a-crossover",
+      "item": 1620,
+      "source": "the sibling: live 11-06, the Knicks defending Taylor Swift (popculture)",
+      "call": "core.best_bet:crossover_story",
+      "args": [
+        "New York Knicks Defend Taylor Swift After Player Calls Her Out",
+        "popculture",
+        [
+          "Taylor Swift"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a crossover crosses into gaming"
     }
   ]
 }

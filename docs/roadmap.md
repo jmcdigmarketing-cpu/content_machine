@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-06 (Claude, wave 155 - the other ten of "next 20").** Every lane prints its number
+and its run of weeks; a Short's all-in cost is measured (median $0.34); UFC 334 gets a "who
+wins?" Short ending on the honest question; a celebrity crossover leads (decision 106). Five
+closed as already true (#1658, #1803, #1806, #1414, #1695). #1660 waits: its chapter cuts need
+an all-angles render, and today's long videos are 16:9. Next, before W4's freeze (Nov 16):
+**#1666** overnight's draft step also at 1 PM, inside the worker pass, **#1652** a Short past 300
+views re-cut with a new hook, **#1686** "who is ...?" for a name that just trended, **#1605**
+a casual fan's subject by Wikipedia pageviews, **#1629** footage of another game flagged;
+**#1849** once the embargo date is known.
 **2026-11-06 (Claude, wave 154 - the first ten of "next 20").** One idea a subject a night; a
 stale idea waits; the menu says what the subject earned last time; a hook is 12 words or fewer;
 never four a day or two within three hours; the weekly report ranks formats and frames and says
@@ -85,16 +94,6 @@ of another game under a story is flagged, **#1857** Rockstar's trailers and scre
 footage, **#1666** overnight's draft step also at 1 PM, **#1660** every long video yields 3-5
 Shorts, **#1620** a celebrity in a gaming story flagged as high-travel; **#1849** once the embargo
 date is known.
-**2026-11-06 (Claude, wave 152 - the next ten).** The night now leads with a launch-week story,
-a marquee injury, a numbered card's fight week or a marquee breakout; the fast lane takes the
-first-hour injury, weigh-in and press-conference stories; a Short ends on its last word; three
-Shorts a day from Nov 7 to 20, against the two weeks before; UFC 334's main event as a 6-8
-minute match-up on Nov 10 (decision 103). The fast lane missed the TNF final - the PC sleeps,
-and the operator wants no wake timers - so the list changed: next, before W4's freeze (Nov 16):
-**#1999** overnight drafts the national final the PC slept through, **#1623** a loop line, the
-last sentence leading back to the first, **#1626** the subject in the first three words,
-**#1877** NBA 40-point nights, **#1687** "what's next" after a big result; **#1849** once the
-embargo date is known.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

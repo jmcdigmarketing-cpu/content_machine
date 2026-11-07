@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-06: wave 154, the first ten of next 20
+# Handoff synopsis — 2026-11-06: wave 155, the other ten of next 20
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,13 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-06 (Claude Code): wave 154, the first ten of next 20
+## Last wave — 2026-11-06 (Claude Code): wave 155, the other ten of next 20
+
+Every lane of the bridge prints its number and its run of weeks; a Short's all-in cost is
+measured; a numbered card gets a "who wins?" Short; a celebrity crossover leads (decision
+106). Five items closed as already true.
+
+## Previous — 2026-11-06 (Claude Code): wave 154, the first ten of next 20
 
 One idea a subject a night; a stale idea waits; the menu says what the subject earned last
 time; a hook is 12 words or fewer; never four a day or two within three hours; the weekly
@@ -23,14 +29,6 @@ Overnight drafts last night's national final the PC slept through and a marquee 
 40-point night, each with both teams' next games. A Short ends on its loop line, not a sign-off;
 a hook names its subject in its first three words; a preview's title is a call (decision 104).
 Run 249 was retitled before it went public.
-
-## Previous — 2026-11-06 (Claude Code): wave 152, the next ten
-
-The night leads with a launch-week story, a marquee injury, a numbered card's fight week or a
-marquee breakout; the fast lane takes first-hour injury, weigh-in and press-conference stories;
-a Short ends on its last word; three Shorts a day Nov 7-20; five drafts on a wide night; UFC
-334's main event as a 6-8 minute match-up on Nov 10; the marquee list learns (decision 103).
-The fast lane runs only while the PC is awake - no wake timers (the operator).
 
 ---
 

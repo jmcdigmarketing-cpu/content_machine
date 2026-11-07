@@ -11500,3 +11500,51 @@ report; `crowded` from `slot_for_run`, `day_full` from the fast lane; `playlist_
 Next: wave 155 - #1621, #1646, #1671, #1696, #1721, #1660, #1658, #1666, #1652, #1620.
 
 Counts (`ops roadmap-index`): 228 open (was 238), 1,660 done, highest #2004.
+
+## 2026-11-06 — wave 155: the other ten of "next 20" (Claude Code)
+
+**Prompt:** "next 20, resume when limit hit" (the second wave of two)
+
+Verified first: HEAD `c4868ff` (wave 154, CI green); overnight Ready until 05:00.
+
+Measured before choosing (read-only): the chapter-Short machinery cuts only all-angles vertical
+renders (`chapter_shorts.fill_candidates`), and today's long videos are 16:9 (#1660 left); celebrity
+names read "neutral" to `infer_topic_domain`, so #1620 needs a list; web search is a signal behind
+the breakers (#1805 left); the TTS cache is on by default (#1803), Flux is off by decision 85
+(#1806), a Week in Review's cover swaps at 100 impressions (#1414, #1990), "Picks, graded" leads
+its week (#1695, #991) and decision 78 schedules a clean render after 24 hours (#1658) - all five
+closed as already true. The YPP store keeps long hours by week but no subscriber series (#1721
+starts one).
+
+Shipped (worktree `wave155`):
+1. #1621 #1646 #1671 #1696 #1721 #1771 `core/success/lanes.py` in the bridge scoreboard;
+   `ypp_readiness.save_ypp_numbers` keeps `subs_weeks`; `formats.measured_shorts`.
+2. #1668 `scorecard.short_cost_line`.
+3. #1620 `best_bet.crossover_names` / `crossover_story`, `config/crossover.json`; the gate and
+   `lead_first`.
+4. #1673 `recap.debate_ideas`; `draft_intent("debate")` is the comparison intent.
+5. #1642 `follow_brief`'s debate line; comments per 1,000 in `formats._ranked`.
+
+Findings:
+- Live-exposed in the build: the menu re-offered run 126's Ben Affleck topic (source `analytics`,
+  411 views) and the crossover rule led with it - a redraft of an old story. Only a fresh headline
+  leads now (test and corpus cases).
+- Live lanes 11-06: the median Short 69 against 72 (rising 1 of 4); stayed share 50% (1 of 4); 306
+  organic views a day against ~250; the best format headline, median 78; +2 subscribers in 7 days;
+  $0.00 outside YouTube; a Short's median all-in cost $0.34, 3 of 16 under $0.25.
+
+Deliberately not done: #1660, #1805, #1857 (as above); a lane's "done" is its run, not the build.
+
+Tests: `tests/test_wave155.py`, 16 - 15 fail on `c4868ff` (a clean HEAD checkout, the editable
+finder stripped); the 16th, added after the live read, failed on the build before its fix. The suite
+pins `UFC_DEBATE` off.
+
+Audit: mypy 92 == baseline; ruff and format clean; corpus all held. Suite 7,483 forward and
+reversed, OK; `data/` untouched. Production callers: `lane_lines` from `bridge.scoreboard_lines`;
+`short_cost_line` likewise; `crossover_story` from `lead_first` and the gate; `debate_ideas` from
+`collect_topics` (both branches). Fields traced: `subs_weeks` from `save_ypp_numbers` (the sync) to
+`subscribers_lane`; `comments` from the metrics to `_ranked`.
+
+Next five: #1666, #1652, #1686, #1605, #1629; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 218 open (was 228), 1,671 done, highest #2005.

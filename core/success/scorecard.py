@@ -50,6 +50,22 @@ def week_cost_line(rows: list[dict[str, Any]]) -> str:
     )
 
 
+SHORT_COST_BAR = 0.25  # #1668 (B03.22): a Short under a quarter, all in
+
+
+def short_cost_line(rows: list[dict[str, Any]]) -> str:
+    """#1668: the median all-in run cost of the videos published 7-14 days ago, and how many came
+    in under `SHORT_COST_BAR` (the voice is in it; a video never voiced cost its drafts only)."""
+    costs = sorted(float(r["cost"]) for r in rows if isinstance(r.get("cost"), (int, float)))
+    if not costs:
+        return "cost per Short: not measured (no video published 7-14 days ago with a run cost)"
+    import statistics
+
+    under = sum(1 for c in costs if c < SHORT_COST_BAR)
+    return (f"cost per Short (#1668, published 7-14 days ago): median ${statistics.median(costs):.2f} "
+            f"all-in - {under} of {len(costs)} under ${SHORT_COST_BAR:.2f}")  # fmt: skip
+
+
 def cost_rows(channel_id: str, *, today: date | None = None) -> list[dict[str, Any]]:
     """Videos published 7-14 days ago with their run cost and first-7-day organic views."""
     from core.success.videos import channel_videos

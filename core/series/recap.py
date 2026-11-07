@@ -222,6 +222,55 @@ def matchup_ideas(
         return []
 
 
+DEBATE_HOURS = (24.0, 72.0)  # #1673: one to three days before the card
+
+
+def debate_ideas(
+    channel_id: str,
+    *,
+    now: datetime | None = None,
+    board: dict[str, Any] | None = None,
+    fetch: Callable[..., dict[str, Any]] | None = None,
+    headlines: Callable[[str, dict[str, Any], datetime], list[dict[str, Any]]] | None = None,
+) -> list[Any]:
+    """#1673 (B04.2): a numbered card one to three days away, its main event as a "who wins?" Short
+    - "Gane vs. Hokit: who wins at UFC 334?" - written as both sides' case (the comparison intent)
+    and ending on the honest question (#1642, `follow_brief`), once. `UFC_DEBATE` (the suite pins
+    it off). Never raises."""
+    if not _on("UFC_DEBATE"):
+        return []
+    try:
+        from core.batch_generation import series_drafted
+        from core.best_bet import BestBetResult
+        from core.series.countdown import feed_headlines, headline_facts
+
+        moment = now or datetime.now(timezone.utc)
+        low, high = DEBATE_HOURS
+        card = coming_card(_calendar(board if board is not None else _ufc_board()), now=moment,
+                           low_hours=low, high_hours=high)  # fmt: skip
+        names = card_names(card[0]) if card else []
+        if card is None or not names:
+            return []
+        label, start = card
+        topic = f"{names[1]} vs. {names[2]}: who wins at {names[0]}?"
+        if series_drafted(channel_id, topic):
+            return []
+        local = start.astimezone(_EASTERN)
+        facts = [f"{label} is on {local:%A}, {local:%B} {local.day}, {local:%Y}; {names[1]} vs. "
+                 f"{names[2]} is its main event (ESPN's calendar).",
+                 *main_event_lines(label, start, fetch=fetch)]  # fmt: skip
+        lines = (headlines or feed_headlines)(channel_id, {"domain": "ufc"}, moment)
+        facts += headline_facts(names[1:], lines, now=moment, hours=72, limit=6)
+        return [BestBetResult(
+            topic=topic, domain="ufc", avg_engaged_rate=0.0, source="debate", supporting_runs=0,
+            facts=facts, deadline=start.isoformat(),
+            rationale=f"series · {label} - a \"who wins?\" Short, both sides, the honest question",
+        )]  # fmt: skip
+    except Exception as exc:
+        logger.debug("UFC debate skipped: %s", exc)
+        return []
+
+
 def _name(fighter: dict[str, Any] | None) -> str:
     return str(((fighter or {}).get("athlete") or {}).get("displayName") or "").strip()
 

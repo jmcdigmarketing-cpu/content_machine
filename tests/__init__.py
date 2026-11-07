@@ -131,6 +131,8 @@ os.environ["MARQUEE_LEARN"] = "false"
 os.environ["LAST_NIGHT"] = "false"
 # Wave 154 (#1615): the menu's "earned last time" note reads the store's measured Shorts - off here.
 os.environ["MENU_EARNED"] = "false"
+# Wave 155 (#1673): a numbered card's "who wins?" Short reads ESPN's UFC board - off here.
+os.environ["UFC_DEBATE"] = "false"
 # #1727 (wave 149): the weekly long slot the follow lines and the compile day read.
 os.environ["LONG_SLOT"] = "6@19"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).

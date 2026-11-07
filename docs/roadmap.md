@@ -67,6 +67,14 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-06 (Claude, wave 157 - the next five).** Stat-shock and ranking Shorts from the
+story (the countdown's numbers on screen), patch winners and losers, a re-hook beat at the
+15-second drop-off, and length by format on trial Nov 7-21 (decision 108). The views items
+left in B01-B04 are built or wait on media or Buffer (#1660, #1777, #1778, #1857), so the list
+turns to cost and subscribers before the freeze: **#1800** ElevenLabs' plan sized to the
+month's characters, **#1807** each subscription with what it bought, **#1830** paid and
+organic split everywhere, **#1700** part-2 Shorts a day apart, **#1723** evergreen tier lists
+refreshed monthly; **#1849** once the embargo date is known.
 **2026-11-06 (Claude, wave 156 - the next five).** A 1 PM draft step for tonight's slots, a
 Short past 300 views re-hooked, a subject fans know through the gate, "Who is ...?" for a name
 that just trended, and a game's stills as its footage (decision 107). The list moves to the
@@ -84,15 +92,6 @@ an all-angles render, and today's long videos are 16:9. Next, before W4's freeze
 views re-cut with a new hook, **#1686** "who is ...?" for a name that just trended, **#1605**
 a casual fan's subject by Wikipedia pageviews, **#1629** footage of another game flagged;
 **#1849** once the embargo date is known.
-**2026-11-06 (Claude, wave 154 - the first ten of "next 20").** One idea a subject a night; a
-stale idea waits; the menu says what the subject earned last time; a hook is 12 words or fewer;
-never four a day or two within three hours; the weekly report ranks formats and frames and says
-what worked; a Short links its series playlist; promotions suggest nothing (decision 105). #1600
-measured and left (soccer is not below the rest); #1664 already true. Next, wave 155 (the other
-ten): the bridge's lane numbers **#1621**, **#1646**, **#1671**, **#1696**, **#1721**; **#1660**
-every long video yields 3-5 Shorts; **#1658** a free slot never passes empty; **#1666** a 1 PM
-draft step; **#1652** a 300-view Short re-cut; **#1620** celebrity crossovers; **#1849** once the
-embargo date is known.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

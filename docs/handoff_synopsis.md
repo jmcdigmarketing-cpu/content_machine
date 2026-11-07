@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-06: wave 156, the next five
+# Handoff synopsis — 2026-11-06: wave 157, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,13 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-06 (Claude Code): wave 156, the next five
+## Last wave — 2026-11-06 (Claude Code): wave 157, the next five
+
+Stat-shock and ranking Shorts from the story, the countdown's numbers on screen; patch winners
+and losers for Marvel Rivals and Call of Duty; a re-hook beat at the 15-second drop-off; length
+by format on trial Nov 7-21 (decision 108).
+
+## Previous — 2026-11-06 (Claude Code): wave 156, the next five
 
 A 1 PM draft step in the worker pass for tonight's slots; a Short past 300 organic views
 re-hooked 14 days on; a one-outlet subject fans know passes the gate; "Who is ...?" for a
@@ -22,13 +28,6 @@ name that just trended; a game's stills are its footage and the matching edition
 Every lane of the bridge prints its number and its run of weeks; a Short's all-in cost is
 measured; a numbered card gets a "who wins?" Short; a celebrity crossover leads (decision
 106). Five items closed as already true.
-
-## Previous — 2026-11-06 (Claude Code): wave 154, the first ten of next 20
-
-One idea a subject a night; a stale idea waits; the menu says what the subject earned last
-time; a hook is 12 words or fewer; never four a day or two within three hours; the weekly
-report ranks formats and frames and says what worked; a Short links its series playlist;
-promotions suggest nothing (decision 105). Wave 155 takes the other ten.
 
 ---
 

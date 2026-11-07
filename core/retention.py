@@ -359,6 +359,144 @@ def _render_seconds(run) -> float | None:
         return None
 
 
+# #1645 (B02.24, wave 157): a re-hook beat at the drop-off second. Measured 11-06: across 53
+# Shorts half the viewers were gone by a median 15.0 s (16.9 s over the last 15) of a median 68.7 s
+# - and a Short's prompt had no pivot rule at all (the 30-second one is for 1-5 minute scripts).
+BEAT_SHORTS = 20  # the last measured Shorts the second is read from
+BEAT_MIN_SECONDS = 6.0  # earlier than this is the hook itself
+_BEAT_TTL = 1800.0
+_beat_cache: dict[str, tuple[float, float | None]] = {}
+
+
+def drop_off_seconds(channel_id: str, *, limit: int = BEAT_SHORTS) -> list[float]:
+    """The second each of the last `limit` measured Shorts (not a long video or a compilation)
+    lost half its viewers, oldest first."""
+    from storage.repositories.content_runs import get_content_run_repository
+
+    repo = get_content_run_repository()
+    out: list[float] = []
+    for run_id, (curve, _rate) in sorted(_curved_runs(channel_id).items()):
+        position = drop_off_position(curve)
+        run = repo.get(int(run_id)) if position is not None else None
+        if run is None:
+            continue
+        try:
+            features = json.loads(getattr(run, "features_json", "") or "{}") or {}
+        except (TypeError, ValueError):
+            features = {}
+        if features.get("long_form") or features.get("compilation"):
+            continue
+        seconds = _render_seconds(run)
+        if seconds and seconds <= 180:
+            out.append(round(float(position or 0.0) * seconds, 1))
+    return out[-limit:]
+
+
+def drop_off_second(channel_id: str) -> float | None:
+    """#1645: the median second the channel's last measured Shorts lost half their viewers, once
+    `RETENTION_MIN_VIDEOS` are measured, else None. Read once per half hour per process."""
+    import statistics
+    import time
+
+    now = time.monotonic()
+    held = _beat_cache.get(channel_id)
+    if held is not None and now - held[0] < _BEAT_TTL:
+        return held[1]
+    try:
+        seconds = drop_off_seconds(channel_id)
+        value = round(statistics.median(seconds), 1) if len(seconds) >= _min_videos() else None
+    except Exception as exc:
+        logger.debug("drop-off second unread: %s", exc)
+        value = None
+    _beat_cache[channel_id] = (now, value)
+    return value
+
+
+def _reset_beat_cache() -> None:
+    _beat_cache.clear()
+
+
+try:
+    from core import process_state as _process_state
+
+    _process_state.register_reset("core.retention.beat_cache", _reset_beat_cache)
+except Exception as _exc:  # pragma: no cover - import guard
+    logger.debug("beat cache reset not registered: %s", _exc)
+
+
+def rehook_beat_second(channel_id: str | None) -> float | None:
+    """The second a Short's re-hook beat goes before, or None (`REHOOK_BEAT=false`, no channel,
+    too few measured, or a drop-off inside the hook itself)."""
+    if not channel_id or os.getenv("REHOOK_BEAT", "true").strip().lower() in (
+        "0", "false", "no", "off",
+    ):  # fmt: skip
+        return None
+    second = drop_off_second(channel_id)
+    return second if second is not None and second >= BEAT_MIN_SECONDS else None
+
+
+def rehook_beat_rule(channel_id: str | None) -> str:
+    """The prompt's re-hook beat line - "" without a measured second."""
+    second = rehook_beat_second(channel_id)
+    if second is None:
+        return ""
+    from core.script_length import WORDS_PER_SECOND
+
+    words = max(15, round((second - 2.0) * WORDS_PER_SECOND))
+    at = round(second)
+    return (
+        f"RE-HOOK BEAT: half this channel's viewers are gone by 0:{at:02d}. Just before it - about "
+        f"{words} words in - land a re-hook: a new fact, the turn or the reveal, said plainly. Never "
+        'a stock transition ("but here\'s the thing", "wait for it").'
+    )
+
+
+def rehook_beat_lines(
+    channel_id: str, *, rows: list[tuple[float | None, float]] | None = None
+) -> list[str]:
+    """#1645's readout for the weekly report: the share still watching at the beat second, for the
+    Shorts written with the beat against those before it. `rows` is (beat second or None, share)."""
+    import statistics
+
+    if rows is None:
+        rows = _beat_rows(channel_id)
+    beat = [share for second, share in rows if second is not None]
+    before = [share for second, share in rows if second is None]
+    if not beat or not before:
+        return []
+    return [
+        f"Re-hook beat (#1645): {statistics.median(beat):.0%} still watching at the drop-off second "
+        f"with the beat (n={len(beat)}) against {statistics.median(before):.0%} before it "
+        f"(n={len(before)})"
+    ]
+
+
+def _beat_rows(channel_id: str) -> list[tuple[float | None, float]]:
+    """(the run's beat second or None, its share watching at the channel's drop-off second)."""
+    from storage.repositories.content_runs import get_content_run_repository
+
+    second = drop_off_second(channel_id)
+    if second is None:
+        return []
+    repo = get_content_run_repository()
+    out: list[tuple[float | None, float]] = []
+    for run_id, (curve, _rate) in sorted(_curved_runs(channel_id).items())[-40:]:
+        run = repo.get(int(run_id))
+        if run is None:
+            continue
+        try:
+            features = json.loads(getattr(run, "features_json", "") or "{}") or {}
+        except (TypeError, ValueError):
+            features = {}
+        if features.get("long_form") or features.get("compilation"):
+            continue
+        share = share_at(curve, _render_seconds(run), at=second)
+        if share is not None:
+            beat = features.get("rehook_beat_s")
+            out.append((float(beat) if isinstance(beat, (int, float)) else None, share))
+    return out
+
+
 def share_at(
     curve: list[tuple[float, float]], seconds: float | None, *, at: float = 3.0
 ) -> float | None:

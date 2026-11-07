@@ -143,3 +143,13 @@ waits for a decision misses tonight. **Consequence:** `MIDDAY`, `REHOOK`, `WHO_I
 and `STILL_CLIPS` (each true by default) stop each; no new scheduled task and no wake timers - a PC
 asleep from 1 to 5 PM makes nothing that day.
 
+## 108. Formats from the story; a re-hook beat; length by format on trial (2026-11-06)
+**Decision:** a draft takes its story's shape - one surprising number as the whole video, a
+ranking as a countdown from five with each number on screen, a Marvel Rivals or Call of Duty patch
+as its winners and losers - and the shape is recorded as the run's format, so the weekly ranking
+keeps or drops each. A Short's prompt lands a re-hook just before the second this channel loses half
+its viewers (15.2 s on 11-06). From Nov 7 to Nov 21 news drafts and previews alternate between
+the format's length (30-45 s, 45-60 s) and the learned one. **Why:** the bridge's B04.5, B04.3,
+B04.17, B02.24 and B02.16 (decision 82), before W4's freeze. **Consequence:** `PATCH_SHORTS`,
+`LENGTH_TRIAL` and `REHOOK_BEAT` stop each; the trial ends by its dates, read in the weekly report.
+

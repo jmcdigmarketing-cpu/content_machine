@@ -53,18 +53,17 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-06 · **HEAD at write:** `a07b6ca` (wave 155, CI green; this wave's commit
+**Written:** 2026-11-06 · **HEAD at write:** `c282555` (wave 156, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 156, the next five.** Found in the build and fixed: a re-hook took run 133's variant that
-names no one - a new hook names its Short's subject now. Built: the 1 PM draft step in the worker
-pass (#1666, `jobs/midday.py`), the re-hook (#1652, `recut.rehook_step`), a known subject through
-the gate (#1605), "Who is ...?" (#1686, `core/series/profiles.py`), stills as footage and the
-matching edition (#1629). Decision 107.
+**Wave 157, the next five.** Built: stat-shock (#1676) and ranking (#1674) Shorts from the story,
+the countdown's "#N" on screen from the captions; patch winners and losers (#1688); a re-hook beat
+at the drop-off second, 15.2 s live (#1645); length by format on trial Nov 7-21 (#1637). All in
+`core/series/shapes.py`, `core/retention.py`, `video/subtitles.py` and `generate_draft`. Decision 108.
 
 **Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1984, #1988, #1991, #1994, #1996, #1997, #1998,
-#2000, #2003, #2004, #2005, #2006-#2009. **Next:** #1676, #1674, #1645, #1637, #1688 before W4's
-freeze (Nov 16); #1849 once the embargo date is known.
+#2000, #2003-#2011. **Next:** #1800, #1807, #1830, #1700, #1723 before W4's freeze (Nov 16);
+#1849 once the embargo date is known.
 
 **Operator:** publish the Google app before Sat Nov 7 - the sign-in lapses and uploads stop (set
 POLICY_SITE_URL first; `ops check-youtube` reads the four pages); bio pages; tracking IDs; Facebook in

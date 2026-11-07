@@ -227,6 +227,60 @@ def _with_hook_card(ass: str, script: str, channel_id: str | None) -> str:
     return ass + event
 
 
+# #1674 (B04.3, wave 157): a ranking's countdown on screen - "#5" from the moment the narration says
+# "Number 5" until it says "Number 4", top of frame, big. Only a clean run down to 1 (three or more)
+# counts, so "the number one pick" in an ordinary script draws nothing.
+_COUNT_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+COUNTDOWN_SIZE = 150
+COUNTDOWN_LAST_SECONDS = 4.0
+
+
+def _plain_word(word: dict) -> str:
+    return str(word.get("word") or "").strip().strip(",.:;!?\"'#").lower()
+
+
+def countdown_marks(words: list[dict]) -> list[tuple[int, float]]:
+    """(number, start second) for each "Number N" the narration says, when they run down one by
+    one from three or more to 1 - else []."""
+    marks: list[tuple[int, float]] = []
+    for i, word in enumerate(words[:-1]):
+        if _plain_word(word) != "number":
+            continue
+        nxt = _plain_word(words[i + 1])
+        n = int(nxt) if nxt.isdigit() else _COUNT_WORDS.get(nxt, 0)
+        if n:
+            marks.append((n, float(word.get("start") or 0.0)))
+    numbers = [n for n, _ in marks]
+    if len(marks) < 3 or numbers != list(range(numbers[0], 0, -1)):
+        return []
+    return marks
+
+
+def _with_countdown(ass: str, words: list[dict], channel_id: str | None) -> str:
+    """The countdown's numbers as their own top-of-frame events, or the captions as they were."""
+    marks = countdown_marks(words or [])
+    if not marks:
+        return ass
+    from video.caption_timing import _ass_ts
+    from video.safe_zone import HOOK_CARD_MARGIN
+
+    title, _body = caption_fonts(channel_id)
+    style = (
+        f"Style: Rank,{title},{COUNTDOWN_SIZE},&H00FFFFFF,&H00000000,&H00000000,&H64000000,"
+        f"1,0,0,0,100,100,0,0,1,6,3,8,80,80,{HOOK_CARD_MARGIN},1"
+    )
+    if "\n\n[Events]" not in ass:
+        return ass
+    ass = ass.replace("\n\n[Events]", "\n" + style + "\n\n[Events]", 1)
+    end_of_words = max(float(w.get("end") or 0.0) for w in words)
+    events = []
+    for i, (n, start) in enumerate(marks):
+        end = marks[i + 1][1] if i + 1 < len(marks) else min(start + COUNTDOWN_LAST_SECONDS,
+                                                              max(end_of_words, start + 1.0))  # fmt: skip
+        events.append(f"Dialogue: 2,{_ass_ts(start)},{_ass_ts(end)},Rank,,0,0,0,,#{n}\n")
+    return ass + "".join(events)
+
+
 def load_word_timings(audio_path: str | None) -> list[dict] | None:
     """Word timings written by the TTS step, if present + non-empty."""
     if not audio_path:
@@ -376,6 +430,7 @@ def generate_subtitle_file(
             )
             if skin.get("hook_card"):
                 text = _with_hook_card(text, script, channel_id)
+            text = _with_countdown(text, words, channel_id)  # #1674
             ext = ".ass"
             companion_srt = build_srt_from_words(words, max_words=max_words)
         elif caption_entrance(channel_id) != "none" or has_emoji(words):

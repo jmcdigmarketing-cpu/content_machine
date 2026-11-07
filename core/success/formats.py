@@ -36,7 +36,11 @@ _SOURCES = {
     "series": "series",
     "arc": "story arc",
     "analytics": "repeat of a winner",
+    "profile": "who is",  # #1686 (wave 156)
+    "patch": "patch winners and losers",  # #1688 (wave 157)
 }
+# Wave 157: a run's shape - its story's, whatever menu it came from - is its format.
+_SHAPES = {"ranking": "ranking", "stat_shock": "stat-shock", "patch": "patch winners and losers"}
 
 
 def _picked_source(features: dict[str, Any]) -> str | None:
@@ -55,6 +59,8 @@ def run_format(features: dict[str, Any]) -> str:
         return "compilation"
     if features.get("long_form"):
         return "long"
+    if str(features.get("shape") or "") in _SHAPES:
+        return _SHAPES[str(features["shape"])]
     source = _picked_source(features)
     if source is None:
         return "own idea"
@@ -128,6 +134,7 @@ def measured_shorts(
         total = _number(metrics, "lifetime_views", "views")
         stayed = metrics.get("stayed_share")
         out.append({
+            "run_id": int(getattr(row, "content_run_id", 0) or 0),
             "when": when, "views7": int(week), "views": total,
             "organic": max(0, total - _number(metrics, "paid_views")),
             "subs": _number(metrics, "subscribers_gained"),
@@ -180,4 +187,44 @@ def format_lines(
                 "By frame (#1698): " + " · ".join(_ranked(by_frame))]  # fmt: skip
     except Exception as exc:
         logger.debug("format lines skipped: %s", exc)
+        return []
+
+
+def length_trial_lines(
+    channel_id: str,
+    *,
+    today: date | None = None,
+    rows: list[Any] | None = None,
+    features: Callable[[int], dict[str, Any]] | None = None,
+    arms: dict[int, str] | None = None,
+) -> list[str]:
+    """#1637 (wave 157): the length-by-format trial's arms on first-week organic views and stayed
+    share, or [] before a draft of each arm is measured. `arms` is run id -> arm."""
+    try:
+        if arms is None:
+            from core.batch_generation import LENGTH_LEVER
+            from core.experiments import _assignments
+
+            arms = {int(a.get("run_id") or 0): str(a.get("arm") or "")
+                    for a in _assignments(channel_id, LENGTH_LEVER)}  # fmt: skip
+        if not arms:
+            return []
+        by_arm: dict[str, list[dict[str, Any]]] = {}
+        for short in measured_shorts(channel_id, today=today, rows=rows, features=features):
+            arm = arms.get(int(short.get("run_id") or 0))
+            if arm:
+                by_arm.setdefault(arm, []).append(short)
+        if len(by_arm) < 2:
+            return []
+        parts = []
+        for arm in sorted(by_arm):
+            shorts = by_arm[arm]
+            stayed = [s["stayed"] for s in shorts if s.get("stayed") is not None]
+            share = f", stayed {statistics.median(stayed):.0%}" if stayed else ""
+            parts.append(f"{arm} {statistics.median(s['views7'] for s in shorts):g} (n={len(shorts)}"
+                         f"{share})")  # fmt: skip
+        return ["Length by format (#1637, news 30-45 s, previews 45-60 s; median first-week organic "
+                "views): " + " · ".join(parts)]  # fmt: skip
+    except Exception as exc:
+        logger.debug("length trial lines skipped: %s", exc)
         return []

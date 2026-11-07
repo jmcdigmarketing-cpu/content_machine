@@ -140,6 +140,11 @@ os.environ["STILL_CLIPS"] = "false"
 os.environ["WHO_IS"] = "false"
 os.environ["MIDDAY"] = "false"
 os.environ["REHOOK"] = "false"  # #1652: overnight's re-hook cuts a public Short with ffmpeg
+# Wave 157: #1688's patch idea reads the feeds, #1637's length trial picks an arm from the
+# experiments store, #1645's re-hook beat reads the retention curves - all off here.
+os.environ["PATCH_SHORTS"] = "false"
+os.environ["LENGTH_TRIAL"] = "false"
+os.environ["REHOOK_BEAT"] = "false"
 # #1727 (wave 149): the weekly long slot the follow lines and the compile day read.
 os.environ["LONG_SLOT"] = "6@19"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).

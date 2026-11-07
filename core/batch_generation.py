@@ -223,6 +223,7 @@ def collect_topics(
             from core.series.last_night import last_night_ideas
             from core.series.profiles import profile_ideas
             from core.series.recap import debate_ideas, matchup_ideas, recap_ideas
+            from core.series.shapes import patch_ideas
 
             extra = _unique([*extra, countdown_idea(channel_id, ahead=1),
                              *long_breakout_ideas(channel_id),  # #1740
@@ -230,7 +231,8 @@ def collect_topics(
                              *matchup_ideas(channel_id, notes=notes),  # #1892
                              *debate_ideas(channel_id),  # #1673
                              *last_night_ideas(channel_id),  # #1999, #1877
-                             *profile_ideas(channel_id)])  # #1686  # fmt: skip
+                             *profile_ideas(channel_id),  # #1686
+                             *patch_ideas(channel_id)])  # #1688  # fmt: skip
         names = marquee_names(channel_id)
         from core.best_bet import crossover_names
 
@@ -772,6 +774,79 @@ def _retired(run: Any) -> bool:
     return isinstance(features, dict) and bool(features.get("retired_at"))
 
 
+# #1637 (B02.16, wave 157): length by format as an experiment. Measured 11-06 over 60 days: news
+# Shorts ran a median 72 s, previews 70 s - twice the 30-45 s and 45-60 s the bridge names. A news
+# or preview draft between these dates takes the less-used arm: "format" writes news at the Short
+# preset (100-150 words, 30-45 s) and a preview at 150-200 words (45-60 s); "learned" keeps the
+# recommender's length. `LENGTH_TRIAL=false` stops it; the weekly report reads it on stayed share
+# and first-week views (`length_trial_lines`).
+LENGTH_LEVER = "length_by_format"
+LENGTH_TRIAL = ("2026-11-07", "2026-11-21")
+LENGTH_ARMS = ("format", "learned")
+
+
+def format_length(intent: str) -> tuple[str, tuple[int, int] | None] | None:
+    """(length choice, word range) the "format" arm gives a news draft or a preview, else None."""
+    from core.angle_intent import ANGLE_NEWS, ANGLE_PREVIEW
+
+    if intent == ANGLE_NEWS:
+        return "1", None
+    if intent == ANGLE_PREVIEW:
+        return "2", (150, 200)
+    return None
+
+
+def length_trial_arm(
+    channel_id: str, intent: str, *, today: date | None = None
+) -> tuple[str, str, tuple[int, int] | None] | None:
+    """(arm, length choice, word range) for a news or preview draft inside `LENGTH_TRIAL`, the arm
+    with fewer drafts first - None outside it, for another draft, or with `LENGTH_TRIAL` off."""
+    if os.getenv("LENGTH_TRIAL", "true").strip().lower() in ("0", "false", "no", "off"):
+        return None
+    day = (today or date.today()).isoformat()
+    shape = format_length(intent)
+    if shape is None or not LENGTH_TRIAL[0] <= day <= LENGTH_TRIAL[1]:
+        return None
+    try:
+        from core.experiments import _assignments
+
+        rows = _assignments(channel_id, LENGTH_LEVER)
+    except Exception as exc:
+        logger.debug("length arms unread: %s", exc)
+        rows = []
+    counts = {arm: sum(1 for r in rows if r.get("arm") == arm) for arm in LENGTH_ARMS}
+    arm = min(LENGTH_ARMS, key=lambda a: counts[a])
+    return arm, shape[0], shape[1]
+
+
+def _record_draft_features(
+    run_id: int | None, shape: str, channel_id: str, *, beat: bool = True
+) -> None:
+    """Wave 157: the run's shape (#1676, #1674, #1688) and - for a Short (`beat`) - the re-hook
+    beat second its prompt was given (#1645), for the weekly readouts. Never raises."""
+    if not run_id:
+        return
+    updates: dict[str, Any] = {}
+    if shape:
+        updates["shape"] = shape
+    try:
+        from core.retention import rehook_beat_second
+
+        second = rehook_beat_second(channel_id) if beat else None
+        if second is not None:
+            updates["rehook_beat_s"] = second
+    except Exception as exc:
+        logger.debug("re-hook beat unread: %s", exc)
+    if not updates:
+        return
+    try:
+        from core.run_features import merge_features
+
+        merge_features(run_id, updates)
+    except Exception as exc:
+        logger.debug("draft features not recorded for run %s: %s", run_id, exc)
+
+
 def profile_length(topic: str, best_bet: dict | None) -> str:
     """#1686: "1" (the Short preset, 30-45 s) for a "Who is ...?" pick, else ""."""
     return "1" if pick_source(topic, best_bet) == "profile" else ""
@@ -906,6 +981,19 @@ def generate_draft(
 
         long_kwargs["chapter_angles"] = [str(v) for v, *_ in discovery.evaluated][:5]
         long_kwargs["word_range"] = long_word_range(topic, len(key_facts or []))  # #1732
+    # #1637 (wave 157): news at 30-45 s and previews at 45-60 s against the learned length
+    length_trial = (
+        None if own_idea or long_form or profile_length(topic, best_bet)
+        else length_trial_arm(channel_id, machine_intent)
+    )  # fmt: skip
+    if length_trial is not None and length_trial[0] == "format":
+        length_choice = length_trial[1]
+        if length_trial[2]:
+            long_kwargs["word_range"] = length_trial[2]
+    # #1676 / #1674 / #1688 (wave 157): the story's shape - a stat-shock, a ranking, a patch
+    from core.series.shapes import draft_shape, shape_brief
+
+    shape = "" if own_idea or long_form else draft_shape(topic, pick_source(topic, best_bet))
     with hook_arm_env(hook_arm):  # #1502
         result = run_pipeline(
             topic,
@@ -925,6 +1013,7 @@ def generate_draft(
                 part
                 for part in (
                     shape_arm[2] if shape_arm else "",
+                    shape_brief(shape, topic),  # wave 157
                     experiment[2] if experiment else "",
                     # #1699 (S02): the format's true reason to follow, in its last line
                     "" if preview else follow_brief(best_bet, channel_id=channel_id),
@@ -953,6 +1042,14 @@ def generate_draft(
             record_assignment(channel_id, result.run_id, shape_arm[0], shape_arm[1])
         except Exception as exc:
             logger.debug("preview shape not recorded: %s", exc)
+    if length_trial is not None and result.run_id:
+        try:
+            from core.experiments import record_assignment
+
+            record_assignment(channel_id, result.run_id, LENGTH_LEVER, length_trial[0])
+        except Exception as exc:
+            logger.debug("length arm not recorded: %s", exc)
+    _record_draft_features(result.run_id, shape, channel_id, beat=length_choice in ("1", "2"))
     # #779: a script-only run always comes back aborted with "proceed_video=False" - the
     # pipeline records that as "drafted". Treating it as a failure kept 0 of 3 drafts on
     # the first real overnight run.
@@ -1159,7 +1256,7 @@ def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
 
         return ANGLE_COMPARISON
     # #1686 (wave 156): "Who is ...?" is news - who they are and why they are in it now.
-    news = ("trending", "countdown", "worked", "result", "profile")
+    news = ("trending", "countdown", "worked", "result", "profile", "patch")  # #1688: a patch
     return ANGLE_NEWS if source in news else ANGLE_DEFAULT
 
 

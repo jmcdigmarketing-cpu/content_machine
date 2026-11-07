@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-06 (Claude Code): wave 154, the first ten of next 20
+
+One idea a subject a night; a stale idea waits; the menu says what the subject earned last
+time; a hook is 12 words or fewer; never four a day or two within three hours; the weekly
+report ranks formats and frames and says what worked; a Short links its series playlist;
+promotions suggest nothing (decision 105). Wave 155 takes the other ten.
+
 ## Previous — 2026-11-06 (Claude Code): wave 153, the next five
 
 Overnight drafts last night's national final the PC slept through and a marquee name's

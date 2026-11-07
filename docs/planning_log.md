@@ -11612,3 +11612,59 @@ store's `day` from `run_midday` to `blocked` (a `lines` key nothing read was rem
 Next five: #1676, #1674, #1645, #1637, #1688; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 217 open, 1,879 done, 145 parked; 215 numbered open, highest #2009.
+
+## 2026-11-06 — wave 157: the next five (Claude Code)
+
+**Prompt:** "Start wave 157"
+
+Verified first: HEAD `c282555` (wave 156, CI green); overnight Ready until 05:00. The five were
+the roadmap's: #1676, #1674, #1645, #1637, #1688 - each `S`, lane views, none parked.
+
+Measured before building (read-only, 11-06):
+- #1645: across 53 measured Shorts half the viewers were gone by a median 15.0 s (16.9 s over the
+  last 15) of a median 68.7 s; a Short's prompt had no pivot rule (the 30-second one is for presets
+  2-3) - `content_engine._build_prompts`.
+- #1637: over 60 days news Shorts ran a median 72.4 s, own ideas 80.7 s, previews 70.2 s - twice
+  the bridge's 30-45 s and 45-60 s.
+- #1676 / #1674 / #1688: in the 127-headline pool, 2 stat-shocks (Wembanyama's 52-point night),
+  3 rankings ("Every GTA Game, Ranked by Metacritic Score"), no Marvel Rivals or COD patch.
+
+Shipped (worktree `wave157`):
+1. #1676 #1674 #1688 `core/series/shapes.py` - `shock_number`, `ranking_count`, `patch_game`,
+   `draft_shape`, `shape_brief`, `patch_ideas`; `generate_draft` adds the brief to the directions
+   and `_record_draft_features` records `shape`; `formats.run_format` reads it (and the `profile`
+   and `patch` sources); `video/subtitles.countdown_marks` / `_with_countdown`.
+2. #1645 `core/retention.drop_off_seconds`, `drop_off_second` (cached a half hour, reset with
+   `process_state`), `rehook_beat_rule` in `_build_prompts` for presets 1 and 2,
+   `rehook_beat_lines` in the weekly report; the run records `rehook_beat_s`.
+3. #1637 `batch_generation.LENGTH_TRIAL`, `format_length`, `length_trial_arm` (the arm with fewer
+   drafts, recorded with `record_assignment`); `formats.length_trial_lines` in the weekly report;
+   `measured_shorts` carries `run_id`.
+
+Findings:
+- Four of the last 20 Shorts lost half their viewers before 10 s (6.9, 7.1, 8.1, 9.3) - the
+  opener, not a beat (#2011).
+- The countdown's ASS style line burns with libass ("#1" at the top, the karaoke line below) on
+  a 1080x1920 test frame.
+
+Deliberately not done: a ranking source of its own (a ranking still comes from the pool or the
+menu, so the gate decides it); the patch notes' own text (the facts are the headlines - the brief
+forbids any name they do not give).
+
+Tests: `tests/test_wave157.py`, 26 - all 26 fail on `c282555` (a clean HEAD checkout, the editable
+finder stripped; the HEAD copy imports `core.series.shapes` lazily so each test fails on its own).
+The suite pins `PATCH_SHORTS`, `LENGTH_TRIAL` and `REHOOK_BEAT` off.
+
+Audit: mypy 92 == baseline; ruff and format clean; corpus all held. Suite 7,551 forward and
+reversed, OK; `data/` untouched. Production callers: `draft_shape` / `shape_brief` /
+`_record_draft_features` / `length_trial_arm` from `generate_draft`; `patch_ideas` from
+`collect_topics`; `_with_countdown` from `generate_subtitle_file`; `rehook_beat_rule` from
+`_build_prompts`; `length_trial_lines` and `rehook_beat_lines` from the weekly report's bridge
+block. Fields traced: `shape` from `_record_draft_features` to `run_format`; `rehook_beat_s` from
+`_record_draft_features` to `_beat_rows`; the `length_by_format` assignments from `generate_draft`
+to `length_trial_arm` and `length_trial_lines`; `measured_shorts`' new `run_id` to
+`length_trial_lines`.
+
+Next five: #1800, #1807, #1830, #1700, #1723; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 214 open, 1,884 done, 145 parked; 212 numbered open, highest #2011.

@@ -474,6 +474,15 @@ def _build_prompts(
                 retention_rule += f"\n{measured}"
         except Exception as exc:
             logger.debug("pacing_hint skipped: %s", exc)
+    if preset.choice in ("1", "2"):  # #1645 (wave 157): a Short's re-hook before its drop-off
+        try:
+            from core.retention import rehook_beat_rule
+
+            beat = rehook_beat_rule(channel_id)
+            if beat:
+                retention_rule += f"\n{beat}"
+        except Exception as exc:
+            logger.debug("re-hook beat skipped: %s", exc)
 
     system_prompt = f"""
 You are a sports and gaming scriptwriter for vertical video (YouTube Shorts and longer vertical formats).

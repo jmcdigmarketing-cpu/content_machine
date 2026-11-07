@@ -2,15 +2,16 @@
 
 - #1702 (B05.6) sections: the playlists in `config/channel_page.json` ("Week in Review", "GTA",
   "UFC / MMA", "Picks, graded", "Full Videos") as single-playlist sections, each once its playlist
-  exists; existing sections are kept and only the missing ones added (50 units each).
+  exists and holds a video; existing sections are kept and only the missing ones added (50 units
+  each). The worker adds the rest as their playlists fill (`refresh_page`, #2019).
 - #1703 (B05.7) the description: the config's text - what the channel covers, when it posts, a reason
   to subscribe and the AI-voice line - written with `channels.update(part=brandingSettings)`, read
   first so the keywords, country and trailer it does not change are sent back as they were.
 - #1710 (B05.14) the featured video: YouTube's API has no setting for "returning subscribers"; it
   sets the trailer for visitors who have not subscribed (`brandingSettings.channel.
   unsubscribedTrailer`) to the latest public Week in Review, and the Week in Review section goes
-  first so returning viewers see it at the top. The worker refreshes the trailer when a newer
-  Week in Review is public (`refresh_trailer`).
+  first so returning viewers see it at the top. The worker moves the trailer when a newer Week
+  in Review is public (`refresh_page`).
 
 The `youtube` scope is already on the token (`publishing.snippet_update.manage_scope_problem`).
 """
@@ -30,6 +31,7 @@ _CONFIG = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "channel_page.json"
 )
 DESCRIPTION_MAX = 1000
+WEEK_REVIEW_TITLE = "The Week in Review"  # matches the "Week in Review" row of playlists.json
 
 
 def page_config(channel_id: str) -> dict[str, Any]:
@@ -55,14 +57,24 @@ def channel_description(channel_id: str) -> str:
     return text[:DESCRIPTION_MAX].rsplit("\n", 1)[0].rstrip()
 
 
-def wanted_sections(channel_id: str, ids: dict[str, str] | None = None) -> list[tuple[str, str]]:
-    """(name, playlist id) for each configured section whose playlist exists, in order."""
-    if ids is None:
+def wanted_sections(
+    channel_id: str, ids: dict[str, str] | None = None, *, filled: set[str] | None = None
+) -> list[tuple[str, str]]:
+    """(name, playlist id) for each configured section whose playlist exists and holds a video,
+    in order. #2019, live 11-07: "Full Videos" went up as an empty section - a section waits for
+    its playlist's first video (`filled`: the playlists the store records a video in)."""
+    if ids is None or filled is None:
         from core.playlists import _load, store_path_for
 
-        ids = dict(_load(store_path_for(channel_id)).get("ids") or {})
+        data = _load(store_path_for(channel_id))
+        if ids is None:
+            ids = dict(data.get("ids") or {})
+        if filled is None:
+            filled = {str(n) for names in (data.get("added") or {}).values() for n in names or []}
     return [
-        (name, ids[name]) for name in page_config(channel_id).get("sections") or [] if ids.get(name)
+        (name, ids[name])
+        for name in page_config(channel_id).get("sections") or []
+        if ids.get(name) and name in filled
     ]
 
 
@@ -190,41 +202,74 @@ def channel_page_lines(channel_id: str, *, apply: bool, service: Any = None) -> 
         return [f"Channel page: not synced - {str(exc)[:200]}"]
 
 
-def refresh_trailer(channel_id: str, *, service: Any = None) -> list[str]:
-    """#1710: the trailer moves to a newer public Week in Review - once a day from the worker,
-    only when it differs, and only once the page has been set (`CHANNEL_PAGE` on). Never raises."""
+def _review_due(channel_id: str, newest: str, data: dict[str, Any]) -> bool:
+    """The newest public Week in Review is missing from a playlist it belongs in that exists -
+    its own and "Full Videos"; the first one went up before either held it."""
+    from core.playlists import long_playlists, playlists_for
+
+    ids = data.get("ids") or {}
+    names = {*long_playlists(channel_id), *playlists_for(channel_id, WEEK_REVIEW_TITLE)}
+    done = set((data.get("added") or {}).get(newest) or [])
+    return any(ids.get(name) and name not in done for name in names)
+
+
+def refresh_page(channel_id: str, *, service: Any = None, today: str | None = None) -> list[str]:
+    """#2019: the worker finishes the page, once a day - the newest public Week in Review joins
+    its playlists, a section goes up for each configured playlist that now holds a video (the
+    Week in Review's first, #1703), and the trailer for new visitors moves to that Week in Review
+    (#1710). YouTube is called only for what is due; the description is left to `ops
+    channel-page`, so an edit made in Studio stays. Off with `CHANNEL_PAGE=false`. Never raises."""
     if os.getenv("CHANNEL_PAGE", "true").strip().lower() in ("0", "false", "no", "off"):
         return []
     try:
         from datetime import date
 
+        from core.playlists import _load, _save, add_to_playlists, store_path_for
         from video.week_compile import latest_public_compilation
 
-        newest = latest_public_compilation(channel_id)
-        if not newest:
-            return []
-        from core.playlists import _load, _save, store_path_for
-        from publishing.snippet_update import manage_scope_problem
-
+        day = today or date.today().isoformat()
         path = store_path_for(channel_id)
         data = _load(path)
-        today = date.today().isoformat()
-        if data.get("trailer") == newest or data.get("trailer_tried") == today:
+        if data.get("page_tried") == day:
             return []
-        data["trailer_tried"] = today  # one try a day, whatever happens below
+        newest = latest_public_compilation(channel_id)
+        review_due = bool(newest) and _review_due(channel_id, newest, data)
+        shown = set(data.get("sections") or [])
+        sections_due = review_due or any(p not in shown for _n, p in wanted_sections(channel_id))
+        trailer_due = bool(newest) and data.get("trailer") != newest
+        if not (review_due or sections_due or trailer_due):
+            return []
+        data["page_tried"] = day  # one try a day, whatever happens below
         _save(path, data)
+        from publishing.snippet_update import manage_scope_problem
+
         if manage_scope_problem(channel_id):
             return []
         if service is None:
             from youtube.oauth import get_youtube_service
 
             service = get_youtube_service(channel_id)
-        lines = sync_branding(
-            service, channel_id, apply=True, trailer=newest, with_description=False
-        )
-        data["trailer"] = newest
+        if service is None:
+            return []
+        lines: list[str] = []
+        if review_due:
+            note = add_to_playlists(
+                service, channel_id, newest, title=WEEK_REVIEW_TITLE, long_form=True
+            )
+            lines += [f"Week in Review {newest}: {note}"] if note else []
+        if sections_due:
+            lines += sync_sections(service, channel_id, apply=True)
+        if trailer_due:
+            lines += sync_branding(
+                service, channel_id, apply=True, trailer=newest, with_description=False
+            )
+        data = _load(path)  # add_to_playlists saved it
+        if sections_due:
+            data["sections"] = [p for _n, p in wanted_sections(channel_id)]
+        if trailer_due:
+            data["trailer"] = newest
         _save(path, data)
         return lines
     except Exception as exc:
-        logger.debug("trailer not refreshed: %s", exc)
+        logger.debug("channel page not refreshed: %s", exc)
         return []

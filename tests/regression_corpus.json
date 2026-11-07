@@ -9452,6 +9452,71 @@
         "truthy": true
       },
       "why": "the contract exemption must not let shopping back in"
+    },
+    {
+      "id": "an-empty-playlist-has-no-section",
+      "item": 2019,
+      "source": "live 11-07, the first ops channel-page --apply: 'Full Videos' (0 videos) went up as a section",
+      "call": "publishing.channel_page:wanted_sections",
+      "args": [
+        "tapin",
+        {
+          "GTA": "PLg",
+          "Full Videos": "PLf"
+        }
+      ],
+      "kwargs": {
+        "filled": [
+          "GTA"
+        ]
+      },
+      "expect": {
+        "equals": [
+          [
+            "GTA",
+            "PLg"
+          ]
+        ]
+      },
+      "why": "an empty shelf on the channel page; the section waits for the playlist's first video"
+    },
+    {
+      "id": "a-filled-playlist-keeps-its-section",
+      "item": 2019,
+      "source": "the other side: once Full Videos holds a video its section goes up, in the configured order",
+      "call": "publishing.channel_page:wanted_sections",
+      "args": [
+        "tapin",
+        {
+          "GTA": "PLg",
+          "Full Videos": "PLf",
+          "Week in Review": "PLw"
+        }
+      ],
+      "kwargs": {
+        "filled": [
+          "GTA",
+          "Full Videos",
+          "Week in Review"
+        ]
+      },
+      "expect": {
+        "equals": [
+          [
+            "Week in Review",
+            "PLw"
+          ],
+          [
+            "GTA",
+            "PLg"
+          ],
+          [
+            "Full Videos",
+            "PLf"
+          ]
+        ]
+      },
+      "why": "the fix must not hold back a filled playlist, and the Week in Review stays first (#1703)"
     }
   ]
 }

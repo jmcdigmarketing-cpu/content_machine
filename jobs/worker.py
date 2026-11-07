@@ -977,20 +977,22 @@ def _midday(cap: int = 2) -> int:
     return sent
 
 
-def _channel_trailer() -> None:
-    """#1710 (wave 159): the channel's trailer for new visitors follows the newest public Week in
-    Review - a write only when a newer one is public. Fail-open."""
+def _channel_page() -> None:
+    """#1710 / #2019: the channel page finishes itself, once a day - the newest public Week in
+    Review joins its playlists, a section goes up for each playlist that now holds a video, and
+    the trailer for new visitors follows that Week in Review. A write only when one is due.
+    Fail-open."""
     try:
         from config.channels import active_channel_ids
-        from publishing.channel_page import refresh_trailer
+        from publishing.channel_page import refresh_page
 
         for channel in active_channel_ids():
             if channel == "default":
                 continue
-            for line in refresh_trailer(channel):
+            for line in refresh_page(channel):
                 print(line)
     except Exception as exc:
-        logger.debug("trailer refresh skipped: %s", exc)
+        logger.debug("channel page refresh skipped: %s", exc)
 
 
 def _sync_metrics() -> None:
@@ -1056,7 +1058,7 @@ def main():
         processed = drain_due()
         processed += _fast_lane()  # wave 151
         processed += _midday()  # #1666
-        _channel_trailer()  # #1710
+        _channel_page()  # #1710 / #2019
         _sync_metrics()
         _overnight_watch()
         _sign_in_watch()  # #1438
@@ -1081,7 +1083,7 @@ def main():
                 did_work = True
             if _midday():  # #1666
                 did_work = True
-            _channel_trailer()  # #1710
+            _channel_page()  # #1710 / #2019
             _sync_metrics()
             _overnight_watch()
             _sign_in_watch()

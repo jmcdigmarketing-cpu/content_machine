@@ -74,7 +74,9 @@ Shorts; the channel page, built and waiting for the sign-in (decision 110). Next
 freeze (Nov 16): **#1810** no voice paid for a draft that cannot go out (the gaps measured),
 **#1719** the follow line's wording A/B, **#1828** a per-video card at 7 days, **#1786** the
 Week in Review's deep dives crossposted as 60-90 s cuts, **#1826** next-five by lane share;
-**#2017** first - the sign-in ended on 11-07.
+**#2017** first - signed in again on 11-07, the sign-in lapses Nov 14 at 4:08 PM EST,
+four hours before UFC 334's main card, unless the Google app is published. The channel
+page is applied (the worker finishes it, #2019).
 **2026-11-06 (Claude, wave 158 - the next five).** The voice plan sized to the month's
 characters (Creator covers ~49,850), each subscription with what it bought, organic subscribers
 by the campaigns' windows, and a strong story told in two (decision 109); #1723 waits for a

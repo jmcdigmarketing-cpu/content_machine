@@ -14,8 +14,8 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 
 A series idea keeps its own shape (UFC 334's debate was being drafted as a preview); trades
 lead; 60-second explainers; a Week in Review Short; formats rotate out; the worker every 5
-minutes; Piper against ElevenLabs on news Shorts; the channel page, waiting for the sign-in that
-ended on 11-07 (decision 110).
+minutes; Piper against ElevenLabs on news Shorts; the channel page, applied after the sign-in
+on 11-07 and finished by the worker (#2019; decision 110).
 
 ## Previous — 2026-11-06 (Claude Code): wave 158, the next five
 

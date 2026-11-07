@@ -416,6 +416,16 @@ class _Service:
 
         return _C()
 
+    def playlistItems(self):
+        svc = self
+
+        class _P:
+            def insert(self, **kw):
+                svc.log.append(("playlistItems.insert", kw))
+                return _Call()
+
+        return _P()
+
 
 CHANNEL = {"id": "UC1", "brandingSettings": {"channel": {"description": "old", "keywords": "gaming ufc",
                                                         "country": "US"}}}  # fmt: skip
@@ -431,7 +441,7 @@ class ChannelPageTests(unittest.TestCase):
         self.addCleanup(p.stop)
 
     def test_sections_in_order_only_with_a_playlist(self):
-        wanted = page.wanted_sections("tapin", ids=IDS)
+        wanted = page.wanted_sections("tapin", ids=IDS, filled=set(IDS))
         self.assertEqual(
             [n for n, _p in wanted], ["Week in Review", "GTA", "UFC / MMA", "Full Videos"]
         )
@@ -442,7 +452,9 @@ class ChannelPageTests(unittest.TestCase):
     def test_a_dry_run_writes_nothing_and_apply_adds_the_missing(self):
         svc = _Service(sections=[{"contentDetails": {"playlists": ["PLg"]}}])
         with patch.object(
-            page, "wanted_sections", return_value=page.wanted_sections("tapin", ids=IDS)
+            page,
+            "wanted_sections",
+            return_value=page.wanted_sections("tapin", ids=IDS, filled=set(IDS)),
         ):
             dry = page.sync_sections(svc, "tapin", apply=False)
             self.assertEqual(svc.log, [])
@@ -480,7 +492,7 @@ class ChannelPageTests(unittest.TestCase):
         with patch("video.week_compile.latest_public_compilation", return_value="vidW"):
             page.sync_branding(svc, "tapin", apply=True, trailer="vidW", with_description=False)
         self.assertEqual(svc.log[0][1]["body"]["brandingSettings"]["channel"]["description"], "old")
-        self.assertEqual(page.refresh_trailer("tapin", service=svc), [])  # off in the suite
+        self.assertEqual(page.refresh_page("tapin", service=svc), [])  # off in the suite
 
     def test_a_week_in_review_naming_gta_joins_its_own_playlist_first(self):
         from core.playlists import playlists_for
@@ -511,7 +523,74 @@ class ChannelPageTests(unittest.TestCase):
         self.assertIn(
             "channel_page_lines(args.channel", inspect.getsource(scripts.ops.cmd_channel_page)
         )
-        self.assertIn("_channel_trailer()", inspect.getsource(jobs.worker.main))
+        self.assertIn("_channel_page()", inspect.getsource(jobs.worker.main))
+        self.assertIn("refresh_page(channel)", inspect.getsource(jobs.worker._channel_page))
+
+
+class PageFinishTests(unittest.TestCase):
+    """#2019, live 11-07 - the first `ops channel-page --apply`: "Full Videos" went up as an empty
+    section, and the Week in Review's section (first on the page, #1703) could not go up at all -
+    its playlist did not exist yet, and nothing ran the sections again once it did. The worker
+    now finishes the page, once a day, calling YouTube only for what is due."""
+
+    def setUp(self):
+        import shutil
+        import tempfile
+
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, True)
+        self.store = os.path.join(tmp, "playlists_tapin.json")
+        for target, value in (
+            ("publishing.channel_page.record_call", lambda *a, **k: None),
+            ("core.playlists.record_call", lambda *a, **k: None),
+            ("core.playlists.store_path_for", lambda cid: self.store),
+            ("youtube.oauth.token_has_scope", lambda *a, **k: True),
+            ("publishing.snippet_update.manage_scope_problem", lambda cid: ""),
+            ("video.week_compile.latest_public_compilation", lambda cid: "vidW"),
+        ):
+            p = patch(target, value)
+            p.start()
+            self.addCleanup(p.stop)
+        p = patch.dict(os.environ, {"CHANNEL_PAGE": "true"})
+        p.start()
+        self.addCleanup(p.stop)
+
+    def _store(self, data):
+        with open(self.store, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+    def test_an_empty_playlist_waits_for_its_section(self):
+        wanted = page.wanted_sections("tapin", ids=IDS, filled={"GTA", "Week in Review"})
+        self.assertEqual([n for n, _p in wanted], ["Week in Review", "GTA"])
+        self._store({"ids": IDS, "added": {"vidG": ["GTA"], "vidU": []}})
+        self.assertEqual([n for n, _p in page.wanted_sections("tapin")], ["GTA"])
+
+    def test_the_worker_finishes_the_page_once_a_day(self):
+        # the first Week in Review went up before its playlist existed, and before #1736
+        self._store({"ids": IDS, "added": {"vidG": ["GTA"], "vidW": ["GTA"]}})
+        svc = _Service(sections=[{"contentDetails": {"playlists": ["PLg"]}}],
+                       channel=json.loads(json.dumps(CHANNEL)))  # fmt: skip
+        lines = page.refresh_page("tapin", service=svc, today="2026-11-08")
+        joined = [kw["body"]["snippet"]["playlistId"] for n, kw in svc.log
+                  if n == "playlistItems.insert"]  # fmt: skip
+        self.assertEqual(sorted(joined), ["PLf", "PLw"])  # its own playlist and Full Videos
+        sections = [kw["body"] for n, kw in svc.log if n == "channelSections.insert"]
+        self.assertEqual([b["contentDetails"]["playlists"] for b in sections], [["PLw"], ["PLf"]])
+        self.assertEqual(sections[0]["snippet"]["position"], 0)  # the Week in Review first
+        update = [kw["body"] for n, kw in svc.log if n == "channels.update"]
+        self.assertEqual(update[0]["brandingSettings"]["channel"]["unsubscribedTrailer"], "vidW")
+        self.assertEqual(update[0]["brandingSettings"]["channel"]["description"], "old")
+        self.assertTrue(any('added "Week in Review"' in line for line in lines), lines)
+        calls = len(svc.log)
+        self.assertEqual(page.refresh_page("tapin", service=svc, today="2026-11-08"), [])
+        self.assertEqual(len(svc.log), calls)  # once a day
+
+    def test_a_day_with_nothing_due_calls_nothing(self):
+        self._store({"ids": IDS, "added": {"vidW": ["Full Videos", "GTA", "Week in Review"]},
+                     "sections": ["PLw", "PLg", "PLf"], "trailer": "vidW"})  # fmt: skip
+        with patch("youtube.oauth.get_youtube_service") as factory:
+            self.assertEqual(page.refresh_page("tapin", today="2026-11-09"), [])
+        factory.assert_not_called()
 
 
 if __name__ == "__main__":

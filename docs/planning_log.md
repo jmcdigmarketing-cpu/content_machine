@@ -11781,3 +11781,56 @@ reversed, OK; `data/` untouched. Production callers: `preview_for` and the voice
 Next five: #1810, #1719, #1828, #1786, #1826; #2017 first (operator).
 
 Counts (`ops roadmap-index`): 208 open, 1,897 done, 145 parked; 206 numbered open, highest #2018.
+
+## 2026-11-07 — the channel page applied (Claude Code)
+
+**Prompt:** "Signed in, apply it" (the answer to wave 159's closing question)
+
+Verified first: `ops check-youtube` READY at 15:08 (a check a minute earlier still read the ended
+sign-in); in Testing the sign-in lapses Sat Nov 14 4:08 PM EST - four hours before UFC 334's main
+card - unless the Google app is published (#2017, still the operator's).
+
+Applied (`ops channel-page --apply`, after its dry run): GTA, UFC / MMA and Full Videos as
+sections; the description (502 characters); the trailer for new visitors xHUptFk01D8, the Nov 1
+Week in Review. Read back with `channelSections.list`, `playlists.list` and `channels.list`.
+
+Found in the read-back (#2019):
+- **Full Videos went up as an empty section** (0 videos): the Nov 1 Week in Review predates #1736,
+  and `publishing/youtube_publisher.py:125` adds a long video to it only at upload.
+- **The Week in Review's section could not go up** - the one #1703 puts first:
+  `wanted_sections` (`publishing/channel_page.py:58`) needs the playlist's id, the playlist did
+  not exist yet (`finish_playlists` makes it once a day), and nothing ran the sections again once
+  it did; the worker's step only moved the trailer (`refresh_trailer`).
+- The channel shows no keywords or country. The state before the write was not read; the update
+  sends back whatever `brandingSettings` the read returned.
+
+Fixed: `wanted_sections` - a section waits for its playlist's first video (the playlist store's
+`added`). `refresh_page` replaces `refresh_trailer`, once a day from the worker (`_channel_page`,
+both pass shapes): the newest public Week in Review joins its own playlist and Full Videos, a
+section goes up for each playlist that now holds a video, and the trailer follows; YouTube is
+called only for what is due, and a day with nothing due makes no call.
+
+Live: `ops playlists --apply` made the Week in Review and Picks, graded playlists (100 units, a day
+before the worker would have); `refresh_page`, run once from the worktree against main's data:
+"Week in Review xHUptFk01D8: added to Full Videos; added to Week in Review" and "Sections: added
+"Week in Review"". Read back: four sections - the Week in Review (1 video) first, GTA (14), UFC /
+MMA (8), Full Videos (1); the trailer xHUptFk01D8; the description's 502 characters.
+
+Deliberately not done: Picks, graded gets its section with its first video, from the worker;
+older long videos from before #1736 are not added to Full Videos.
+
+Tests: `tests/test_wave159.py`, 3 new (an empty playlist waits; the worker finishes the page once
+a day; a day with nothing due calls nothing) and 4 changed on purpose (the `filled` argument, the
+rename) - all 7 failed on `bc70dec` (a clean HEAD checkout, the editable finder stripped). Corpus:
+2 cases.
+
+Audit: ruff and format clean; mypy 92 == baseline; suite 7,608 forward and reversed, OK (with
+`PYTHONIOENCODING` cleared - this session sets `utf-8:surrogateescape` and `test_child_encoding`
+reads it, as in wave 156); `data/` untouched by the suite. Production callers: `refresh_page` from
+the worker's `_channel_page`; `wanted_sections` from `sync_sections` and `refresh_page`. Fields
+traced: the store's `sections` / `trailer` / `page_tried` written and read by `refresh_page`;
+`added` written by `add_to_playlists`, read by `wanted_sections` and `_review_due`.
+
+Next five unchanged: #1810, #1719, #1828, #1786, #1826; #2017 first (operator, before Nov 14).
+
+Counts (`ops roadmap-index`): 205 open, 1,901 done, 145 parked; 203 numbered open, highest #2018.

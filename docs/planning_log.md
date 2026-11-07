@@ -11668,3 +11668,50 @@ to `length_trial_arm` and `length_trial_lines`; `measured_shorts`' new `run_id` 
 Next five: #1800, #1807, #1830, #1700, #1723; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 214 open, 1,884 done, 145 parked; 212 numbered open, highest #2011.
+
+## 2026-11-06 — wave 158: the next five (Claude Code)
+
+**Prompt:** "Start wave 158" (a session end cut the suite runs; finished 11-07 under "next 10")
+
+Verified first: HEAD `260dbab` (wave 157, CI green). The five were the roadmap's: #1800, #1807,
+#1830 (S), #1700, #1723 (M).
+
+Measured before building (read-only, 11-06):
+- #1800: the ElevenLabs character ledger read 0 for Sep, Oct and Nov - `core/tts.py:1540` records
+  only with `ELEVENLABS_MONTHLY_CHAR_BUDGET` set, an opt-in decided 2026-08-20 and pinned by
+  `test_unset_budget_does_not_persist`, so it stays; the key (`ELEVEN_API_KEY`) has no `user_read`
+  (401 on `/v1/user/subscription`). The runs' recorded voice cost is the count: ~9,970 characters
+  by Nov 6, October 67,185.
+- #1807: the spend ledger holds three ad entries and no subscription.
+- #1830: the scoreboard printed the 28-day net "(ads included)" and the subscribers lane counted
+  W44's campaign subscribers (27 + 2, Oct 26-27) as the channel's own.
+- #1700: no headline on 5+ outlets naming a marquee name tonight. #1723: 0 Marvel Rivals headlines
+  in 48 h and no hero-standings source.
+
+Shipped (worktree `wave158`):
+1. #1800 #1807 `core/money/plans.py` (`month_use`, `plan_fit`, `plan_line`, `subscription_lines`,
+   `money_plan_lines`) and `config/plans.json`; `ops spend` and the weekly report print them.
+2. #1830 `core/success/bridge.campaign_window` / `campaign_subscribers` / `organic_net_text`;
+   `core/success/lanes.organic_weeks` and `subscribers_lane(entries=)`; `lane_lines(entries=)`.
+3. #1700 `core/series/parts.py`; `collect_topics` marks part 1 and adds part 2 to the extras;
+   `follow_brief`'s part lines; `generate_draft` opens the pair; `run_format` names each part.
+
+Deliberately not done: the character ledger's opt-in (a recorded decision); #1723 without a
+standings source (#2013).
+
+Tests: `tests/test_wave158.py`, 19 - all 19 fail on `260dbab` (a clean HEAD checkout, the editable
+finder stripped). The suite pins `PART_SHORTS` off and redirects `data/parts_<channel>.json`.
+
+Audit: mypy 92 == baseline (one new error from a nullable int found and fixed); ruff and format
+clean; corpus all held. Suite 7,570 forward and reversed, OK; `data/` untouched. Production
+callers: `money_plan_lines` from `ops spend` and the weekly report; `organic_net_text` from
+`scoreboard_lines`; `subscribers_lane(entries=)` from `lane_lines`; `part_one` / `part_two_ideas`
+from `collect_topics`; `record_part_one` from `generate_draft`; `part_brief` from `follow_brief`.
+Fields traced: `features.cost.tts` to `month_use`; the ledger's `ended`/`days`/`result.subscribers`
+to `campaign_subscribers`; the pick record's `part` from `collect_topics` to `follow_brief`,
+`generate_draft` and `run_format`; the parts store's `open` from `record_part_one` to
+`part_two_ideas` and `part_one`.
+
+Next: the operator's "next 10" (wave 159).
+
+Counts (`ops roadmap-index`): 213 open, 1,888 done, 145 parked; 211 numbered open, highest #2014.

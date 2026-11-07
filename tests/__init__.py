@@ -145,6 +145,8 @@ os.environ["REHOOK"] = "false"  # #1652: overnight's re-hook cuts a public Short
 os.environ["PATCH_SHORTS"] = "false"
 os.environ["LENGTH_TRIAL"] = "false"
 os.environ["REHOOK_BEAT"] = "false"
+# Wave 158 (#1700): the part-2 pair reads and writes its store - off here.
+os.environ["PART_SHORTS"] = "false"
 # #1727 (wave 149): the weekly long slot the follow lines and the compile day read.
 os.environ["LONG_SLOT"] = "6@19"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).
@@ -267,6 +269,7 @@ from core.money import ledger as _spend_ledger
 from core.predictions import calls as _preview_calls
 from core.predictions import holdouts as _holdouts
 from core.runs import signal_skips as _signal_skips
+from core.series import parts as _parts
 from core.series import worked as _worked
 from core.success import goals as _goals
 from core.success import review as _review
@@ -409,6 +412,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_fast_lane, "store_path", lambda cid: _suite_store(f"fast_lane_{cid}.json")),
     # wave 156 (#1666): the 1 PM step's day and lines
     patch.object(_midday, "store_path", lambda cid: _suite_store(f"midday_{cid}.json")),
+    # wave 158 (#1700): the open part-2 pair
+    patch.object(_parts, "store_path", lambda cid: _suite_store(f"parts_{cid}.json")),
     # wave 152 (#1597): the marquee names the channel's Shorts taught
     patch.object(_worked, "learned_path", lambda cid: _suite_store(f"marquee_learned_{cid}.json")),
     patch.object(_policy_canary, "SNAPSHOT_FILE", _suite_store("policy_canary.json")),

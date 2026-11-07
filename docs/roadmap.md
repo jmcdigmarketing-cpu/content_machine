@@ -67,6 +67,14 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-06 (Claude, wave 158 - the next five).** The voice plan sized to the month's
+characters (Creator covers ~49,850), each subscription with what it bought, organic subscribers
+by the campaigns' windows, and a strong story told in two (decision 109); #1723 waits for a
+hero-standings source (#2013). The operator then asked for the next 10 (wave 159): **#1799**
+a cheaper voice on news Shorts as a trial, **#1614** trades and signings, **#1651** a Week in
+Review Short, **#1663** the worker every 5 minutes, **#1669** public Shorts a week, **#1680**
+explainers for coming events, **#1692** a format rotates out, **#1702** / **#1703** / **#1710**
+the channel page.
 **2026-11-06 (Claude, wave 157 - the next five).** Stat-shock and ranking Shorts from the
 story (the countdown's numbers on screen), patch winners and losers, a re-hook beat at the
 15-second drop-off, and length by format on trial Nov 7-21 (decision 108). The views items
@@ -83,15 +91,6 @@ Shorts (one surprising number), **#1674** rankings with an on-screen countdown, 
 re-hook beat at the drop-off second, **#1637** length by format as an experiment, **#1688**
 patch winners and losers for Marvel Rivals and Call of Duty; **#1849** once the embargo date is
 known. The GTA 6 items (#1848-#1867) are built and wait for launch week.
-**2026-11-06 (Claude, wave 155 - the other ten of "next 20").** Every lane prints its number
-and its run of weeks; a Short's all-in cost is measured (median $0.34); UFC 334 gets a "who
-wins?" Short ending on the honest question; a celebrity crossover leads (decision 106). Five
-closed as already true (#1658, #1803, #1806, #1414, #1695). #1660 waits: its chapter cuts need
-an all-angles render, and today's long videos are 16:9. Next, before W4's freeze (Nov 16):
-**#1666** overnight's draft step also at 1 PM, inside the worker pass, **#1652** a Short past 300
-views re-cut with a new hook, **#1686** "who is ...?" for a name that just trended, **#1605**
-a casual fan's subject by Wikipedia pageviews, **#1629** footage of another game flagged;
-**#1849** once the embargo date is known.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

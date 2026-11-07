@@ -94,6 +94,43 @@ def organic_subscribers(total: int | None, entries: list[dict[str, Any]]) -> dic
     return {"count": count, "campaigns": campaigns, "at_most": open_count, "total": total}
 
 
+def campaign_window(entry: dict[str, Any]) -> tuple[date, date] | None:
+    """#1830 (wave 158): the days an ad campaign ran - its date to its end, or its days."""
+    from datetime import timedelta
+
+    try:
+        start = _day(str(entry.get("date") or ""))
+    except ValueError:
+        return None
+    end = start
+    if entry.get("ended"):
+        try:
+            end = max(start, _day(str(entry["ended"])))
+        except ValueError:
+            end = start
+    elif entry.get("days"):
+        end = start + timedelta(days=max(1, int(entry["days"])) - 1)
+    return start, end
+
+
+def campaign_subscribers(entries: list[dict[str, Any]], start: date, end: date) -> float:
+    """#1830: the subscribers the ledger's campaigns brought between `start` and `end` (inclusive),
+    each campaign's count spread evenly over the days it ran."""
+    total = 0.0
+    for entry in entries or []:
+        if entry.get("kind") != "ads":
+            continue
+        subs = (entry.get("result") or {}).get("subscribers")
+        window = campaign_window(entry)
+        if not subs or window is None:
+            continue
+        days = (window[1] - window[0]).days + 1
+        overlap = (min(end, window[1]) - max(start, window[0])).days + 1
+        if overlap > 0:
+            total += float(subs) * overlap / days
+    return round(total, 1)
+
+
 def organic_line(total: int | None, entries: list[dict[str, Any]]) -> str:
     found = organic_subscribers(total, entries)
     if found["count"] is None:
@@ -108,6 +145,18 @@ def organic_line(total: int | None, entries: list[dict[str, Any]]) -> str:
         f"organic subscribers {found['count']:,} (YouTube {int(total or 0):,}, campaigns "
         f"{found['campaigns']:,})"
     )
+
+
+def organic_net_text(net: int, entries: list[dict[str, Any]], today: date, *, days: int) -> str:
+    """#1830: "+12 organic in 28 days (+41 with the campaigns' 29)", or "+12 in 28 days, organic"
+    when no campaign ran in the window."""
+    from datetime import timedelta
+
+    paid = campaign_subscribers(entries, today - timedelta(days=days - 1), today)
+    if not paid:
+        return f"{net:+,} in {days} days, organic (no campaign ran)"
+    organic = round(net - paid)
+    return f"{organic:+,} organic in {days} days ({net:+,} with the campaigns' {paid:g})"
 
 
 def _need(target: float, have: float, days: int) -> float:
@@ -198,7 +247,7 @@ def scoreboard_lines(
     subs = organic_line(nums.get("subscribers"), rows)
     net = nums.get("subs_net_28d")
     if nums.get("subscribers") is not None and net is not None:
-        subs += f"; {int(net):+,} in 28 days (ads included)"
+        subs += "; " + organic_net_text(int(net), rows, day, days=28)  # #1830
     lines.append(f"  {subs}")
     engaged = nums.get("shorts_engaged_90d")
     if engaged is None:
@@ -226,7 +275,7 @@ def scoreboard_lines(
     # #1621 #1646 #1671 #1696 #1721 #1771 (wave 155): the other lanes' numbers - the stores are
     # read only when the numbers are the stored ones
     lines.extend(f"  {line}" for line in lane_lines(channel_id, today=day, numbers=nums,
-                                                    stores=numbers is None))  # fmt: skip
+                                                    stores=numbers is None, entries=rows))  # fmt: skip
     try:  # #1753 (wave 136): income beside spend
         from core.money.ledger import money_line
 

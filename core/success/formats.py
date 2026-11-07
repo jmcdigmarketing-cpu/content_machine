@@ -38,6 +38,7 @@ _SOURCES = {
     "analytics": "repeat of a winner",
     "profile": "who is",  # #1686 (wave 156)
     "patch": "patch winners and losers",  # #1688 (wave 157)
+    "part2": "part 2",  # #1700 (wave 158)
 }
 # Wave 157: a run's shape - its story's, whatever menu it came from - is its format.
 _SHAPES = {"ranking": "ranking", "stat_shock": "stat-shock", "patch": "patch winners and losers"}
@@ -59,6 +60,8 @@ def run_format(features: dict[str, Any]) -> str:
         return "compilation"
     if features.get("long_form"):
         return "long"
+    if (features.get("best_bet") or {}).get("part") == 1:  # #1700: a story's first half
+        return "part 1"
     if str(features.get("shape") or "") in _SHAPES:
         return _SHAPES[str(features["shape"])]
     source = _picked_source(features)

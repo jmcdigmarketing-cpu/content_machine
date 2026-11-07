@@ -53,22 +53,22 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-06 · **HEAD at write:** `c282555` (wave 156, CI green; this wave's commit
+**Written:** 2026-11-07 · **HEAD at write:** `260dbab` (wave 157, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 157, the next five.** Built: stat-shock (#1676) and ranking (#1674) Shorts from the story,
-the countdown's "#N" on screen from the captions; patch winners and losers (#1688); a re-hook beat
-at the drop-off second, 15.2 s live (#1645); length by format on trial Nov 7-21 (#1637). All in
-`core/series/shapes.py`, `core/retention.py`, `video/subtitles.py` and `generate_draft`. Decision 108.
+**Wave 158, the next five.** Built: the voice plan sized to the month's characters (#1800) and each
+subscription with what it bought (#1807), `core/money/plans.py`; organic subscribers by the
+campaigns' windows (#1830); a strong story in two Shorts (#1700, `core/series/parts.py`). #1723
+waits for a hero-standings source (#2013). Decision 109. Wave 159 (the operator's "next 10")
+follows at once.
 
-**Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1984, #1988, #1991, #1994, #1996, #1997, #1998,
-#2000, #2003-#2011. **Next:** #1800, #1807, #1830, #1700, #1723 before W4's freeze (Nov 16);
-#1849 once the embargo date is known.
+**Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1723, #1984, #1988, #1991, #1994, #1996-#1998,
+#2000, #2003-#2014. **Next:** #1799, #1614, #1651, #1663, #1669, #1680, #1692, #1702, #1703, #1710.
 
-**Operator:** publish the Google app before Sat Nov 7 - the sign-in lapses and uploads stop (set
-POLICY_SITE_URL first; `ops check-youtube` reads the four pages); bio pages; tracking IDs; Facebook in
-Buffer; #1922/#1956 on a phone; prune `config/crossover.json` to taste. Review the UFC 334 match-up
-draft on Nov 10, the recap on Nov 15. Keep the PC awake 1-5 PM for the 1 PM step.
+**Operator:** publish the Google app today (Sat Nov 7) - the sign-in lapses and uploads stop (set
+POLICY_SITE_URL first; `ops check-youtube` reads the four pages); give the ElevenLabs key
+`user_read` (#2014); enter the monthly subscriptions (`ops spend add --kind subscription
+--monthly`); bio pages; tracking IDs; Facebook in Buffer. Keep the PC on at 5 AM and 1-5 PM.
 
 ## Slot — Cursor
 

@@ -7,6 +7,12 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-06 (Claude Code): wave 155, the other ten of next 20
+
+Every lane of the bridge prints its number and its run of weeks; a Short's all-in cost is
+measured; a numbered card gets a "who wins?" Short; a celebrity crossover leads (decision
+106). Five items closed as already true.
+
 ## Previous — 2026-11-06 (Claude Code): wave 154, the first ten of next 20
 
 One idea a subject a night; a stale idea waits; the menu says what the subject earned last

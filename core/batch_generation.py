@@ -221,6 +221,7 @@ def collect_topics(
             # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
             from core.series.countdown import countdown_idea
             from core.series.last_night import last_night_ideas
+            from core.series.parts import part_two_ideas
             from core.series.profiles import profile_ideas
             from core.series.recap import debate_ideas, matchup_ideas, recap_ideas
             from core.series.shapes import patch_ideas
@@ -232,7 +233,8 @@ def collect_topics(
                              *debate_ideas(channel_id),  # #1673
                              *last_night_ideas(channel_id),  # #1999, #1877
                              *profile_ideas(channel_id),  # #1686
-                             *patch_ideas(channel_id)])  # #1688  # fmt: skip
+                             *patch_ideas(channel_id),  # #1688
+                             *part_two_ideas(channel_id)])  # #1700  # fmt: skip
         names = marquee_names(channel_id)
         from core.best_bet import crossover_names
 
@@ -284,6 +286,12 @@ def collect_topics(
                 picks[bet.topic] = record
             for bet in extra:
                 picks[bet.topic] = pick_record([bet], 1, by="batch")
+            if not news_only:  # #1700: tonight's lead story, on 5+ outlets, told in two
+                from core.series.parts import part_one
+
+                first = part_one(chosen, names, channel_id)
+                if first and first in picks:
+                    picks[first]["part"] = 1
         if news_only:
             return [b.topic for b in chosen]
         out = _with_follow_up(channel_id, [b.topic for b in chosen], held, picks)
@@ -1050,6 +1058,10 @@ def generate_draft(
         except Exception as exc:
             logger.debug("length arm not recorded: %s", exc)
     _record_draft_features(result.run_id, shape, channel_id, beat=length_choice in ("1", "2"))
+    if (best_bet or {}).get("part") == 1 and result.run_id:  # #1700: the pair opens
+        from core.series.parts import record_part_one
+
+        record_part_one(channel_id, topic, int(result.run_id), str(result.script or ""), key_facts)
     # #779: a script-only run always comes back aborted with "proceed_video=False" - the
     # pipeline records that as "drafted". Treating it as a failure kept 0 of 3 drafts on
     # the first real overnight run.
@@ -1256,7 +1268,8 @@ def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
 
         return ANGLE_COMPARISON
     # #1686 (wave 156): "Who is ...?" is news - who they are and why they are in it now.
-    news = ("trending", "countdown", "worked", "result", "profile", "patch")  # #1688: a patch
+    # #1688: a patch; #1700: a part 2 is the story's news, the day after
+    news = ("trending", "countdown", "worked", "result", "profile", "patch", "part2")
     return ANGLE_NEWS if source in news else ANGLE_DEFAULT
 
 
@@ -1329,6 +1342,13 @@ def follow_brief(
     if source == "debate":  # #1642 (wave 155): a debate ends on the honest question
         return (" End on the honest question, once - who wins? - and leave it open: no pick, and "
                 "no call to comment.")  # fmt: skip
+    # #1700 (wave 158): part 1 ends on what part 2 answers; part 2 opens on the answer
+    from core.series.parts import part_brief
+
+    if source == "part2":
+        return part_brief(2, str((chosen or {}).get("topic") or ""))
+    if bet.get("part") == 1:
+        return part_brief(1)
     lead = " End on why to follow, in your own words, once:"
     if bet.get("title_stem") or source == "countdown":
         found = _DAYS_RE.search(str(bet.get("title_stem") or ""))

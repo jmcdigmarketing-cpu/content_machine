@@ -1,0 +1,10 @@
+{
+  "_comment": "#1800 (wave 158): ElevenLabs' plans by monthly characters, for `core/money/plans.py` to size the plan to the month's use. List prices as Claude knew them on 2026-11-06 - confirm against your account's billing page and edit; nothing here is read from ElevenLabs (the key has no user_read permission).",
+  "elevenlabs": [
+    {"name": "Free", "chars": 10000, "usd": 0},
+    {"name": "Starter", "chars": 30000, "usd": 5},
+    {"name": "Creator", "chars": 100000, "usd": 22},
+    {"name": "Pro", "chars": 500000, "usd": 99},
+    {"name": "Scale", "chars": 2000000, "usd": 330}
+  ]
+}

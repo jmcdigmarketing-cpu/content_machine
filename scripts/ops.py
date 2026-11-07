@@ -4101,6 +4101,10 @@ def cmd_spend(args: argparse.Namespace) -> int:
         return 1
     for line in ledger.ledger_lines():
         print(line)
+    from core.money.plans import money_plan_lines
+
+    for line in money_plan_lines():  # #1800, #1807 (wave 158)
+        print(line)
     return 0
 
 

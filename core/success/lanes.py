@@ -147,18 +147,53 @@ def format_lane(shorts: list[dict[str, Any]]) -> str:
             f"{_run_text(run, word='rising')}")  # fmt: skip
 
 
-def subscribers_lane(numbers: dict[str, Any]) -> str:
-    """#1721: the last 7 days' net subscribers and the weeks in a row at +10."""
+def _week_days(key: str) -> tuple[date, date] | None:
+    """The Monday and Sunday of an ISO week key ("2026-W44")."""
+    try:
+        year, week = key.split("-W")
+        monday = date.fromisocalendar(int(year), int(week), 1)
+    except (ValueError, AttributeError):
+        return None
+    return monday, monday + timedelta(days=6)
+
+
+def organic_weeks(weeks: dict[str, Any], entries: list[dict[str, Any]]) -> dict[str, float]:
+    """#1830 (wave 158): each week's net subscribers less what the ledger's campaigns brought in it
+    - W44's +29 from the Oct 26-27 campaigns was counted as the channel's own."""
+    from core.success.bridge import campaign_subscribers
+
+    out: dict[str, float] = {}
+    for key in sorted(weeks):
+        days = _week_days(key)
+        paid = campaign_subscribers(entries, days[0], days[1]) if days else 0.0
+        out[key] = float(weeks[key]) - paid
+    return out
+
+
+def subscribers_lane(
+    numbers: dict[str, Any],
+    *,
+    entries: list[dict[str, Any]] | None = None,
+    today: date | None = None,
+) -> str:
+    """#1721: the last 7 days' net subscribers and the weeks in a row at +10 - #1830: organic, less
+    what the ledger's ad campaigns brought in each window."""
     gained, lost = numbers.get("subs_gained_7d"), numbers.get("subs_lost_7d")
     if not isinstance(gained, (int, float)) or not isinstance(lost, (int, float)):
         return ""
+    from core.success.bridge import campaign_subscribers
+
+    day = today or date.today()
     net = int(gained) - int(lost)
-    weeks = numbers.get("subs_weeks") or {}
-    run = above_run([float(weeks[k]) for k in sorted(weeks)], SUBS_BAR - 0.5)
+    paid = campaign_subscribers(entries or [], day - timedelta(days=6), day)
+    organic = round(net - paid)
+    weeks = organic_weeks(numbers.get("subs_weeks") or {}, entries or [])
+    run = above_run([weeks[k] for k in sorted(weeks)], SUBS_BAR - 0.5)
     tail = (f"done - {run} weeks running at +{SUBS_BAR}" if run >= LANE_WEEKS
             else f"{run} of {LANE_WEEKS} weeks at +{SUBS_BAR}")  # fmt: skip
-    return (f"Subscribers lane (B05, #1721): {net:+d} subscribers in the last 7 days (ads off since "
-            f"10-27) against +{SUBS_BASE:.1f} a week on 10-27 - {tail}")  # fmt: skip
+    note = f" organic ({net:+d} with the campaigns' {paid:g})" if paid else ""
+    return (f"Subscribers lane (B05, #1721): {organic:+d} subscribers in the last 7 days{note} (ads "
+            f"off since 10-27) against +{SUBS_BASE:.1f} a week on 10-27 - {tail}")  # fmt: skip
 
 
 def money_lane(income: list[dict[str, Any]], *, today: date) -> str:
@@ -179,8 +214,10 @@ def lane_lines(
     rows: list[Any] | None = None,
     features: Callable[[int], dict[str, Any]] | None = None,
     income: list[dict[str, Any]] | None = None,
+    entries: list[dict[str, Any]] | None = None,
 ) -> list[str]:
-    """The lane numbers, one line each. With `stores` false only what `numbers` carries."""
+    """The lane numbers, one line each. With `stores` false only what `numbers` carries.
+    `entries` is the spend ledger (#1830: the campaigns' subscribers leave the subscriber lane)."""
     day = today or date.today()
     out: list[str] = []
     try:
@@ -195,7 +232,11 @@ def lane_lines(
             shorts = measured_shorts(channel_id, today=day, rows=rows, features=features)
             out += [views_lane(shorts, today=day), stayed_lane(shorts), daily_lane(rows, today=day),
                     format_lane(shorts)]  # fmt: skip
-        subs = subscribers_lane(numbers or {})
+        if entries is None and stores:
+            from core.money.ledger import entries as ledger_entries
+
+            entries = list(ledger_entries())
+        subs = subscribers_lane(numbers or {}, entries=entries or [], today=day)
         if subs:
             out.append(subs)
         if stores:

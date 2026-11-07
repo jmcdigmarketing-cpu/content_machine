@@ -153,3 +153,13 @@ the format's length (30-45 s, 45-60 s) and the learned one. **Why:** the bridge'
 B04.17, B02.24 and B02.16 (decision 82), before W4's freeze. **Consequence:** `PATCH_SHORTS`,
 `LENGTH_TRIAL` and `REHOOK_BEAT` stop each; the trial ends by its dates, read in the weekly report.
 
+## 109. What the money buys; organic subscribers by campaign window; a story in two (2026-11-06)
+**Decision:** the voice plan is sized to the month's characters - read from each run's recorded
+voice cost, because the character ledger is opt-in and the key cannot read the account - against
+the plans in `config/plans.json`; each monthly subscription is listed with what it bought and the one
+to cut. An ad campaign's subscribers come out of the scoreboard's 28 days and the subscribers lane's
+weeks by the days it ran. The night's lead story on 5+ outlets naming a marquee name is told in two
+Shorts a day apart. Tier lists wait for a hero-standings source. **Why:** the bridge's B09.4, B09.11,
+B10.9, B05.4 (decision 82). **Consequence:** `config/plans.json` and the spend ledger are the
+operator's to keep current; `PART_SHORTS=false` stops the pairs.
+

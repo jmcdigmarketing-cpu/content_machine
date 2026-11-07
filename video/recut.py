@@ -322,6 +322,271 @@ def make_recut(
     return int(run_id or 0), dst
 
 
+# ---- #1652 (B03.6, wave 156): a Short past 300 organic views, re-cut with a new hook ------------
+# Live 11-06: seven public Shorts had 300+ organic views 14+ days on (run 126, Ben Affleck in
+# Fortnite, 411; run 133, Wembanyama at +200, 360) and none was ever published again. The cut
+# drops the spoken hook (sentence one) and opens on sentence two under a new hook card - the
+# best title variant the run did not use, 12 words or fewer - so it costs no script, voice or
+# render. One a night, only into a free slot in the next 24 hours (it never pushes news), each
+# Short once, public at its slot like a chapter Short of a public video (decision 107).
+REHOOK_VIEWS = 300
+REHOOK_DAYS = 14
+REHOOK_UNTIL = 35
+REHOOK_HOOK_WORDS = 12
+REHOOK_SLOT_HOURS = 24
+
+
+def rehook_enabled() -> bool:
+    return os.getenv("REHOOK", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def _features_of(run: Any) -> dict[str, Any]:
+    try:
+        data = json.loads(getattr(run, "features_json", "") or "{}")
+    except (TypeError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _already_rehooked(runs: list[Any]) -> set[int]:
+    return {int((_features_of(r).get("rehook_of") or {}).get("run_id") or 0) for r in runs} - {0}
+
+
+def _organic(metrics: dict[str, Any]) -> int:
+    def number(key: str) -> int:
+        try:
+            return int(float(metrics.get(key) or 0))
+        except (TypeError, ValueError):
+            return 0
+
+    return max(0, (number("lifetime_views") or number("views")) - number("paid_views"))
+
+
+def rehook_candidates(
+    channel_id: str, *, now: Any = None, rows: list[Any] | None = None, repo: Any = None
+) -> list[dict[str, Any]]:
+    """Public Shorts with `REHOOK_VIEWS`+ organic views published `REHOOK_DAYS`-`REHOOK_UNTIL` days
+    ago - not a long video, a compilation or a cut of another, never re-hooked, its render and
+    word timings on disk. Most organic views first."""
+    from datetime import datetime, timedelta, timezone
+
+    from video.hook_copy import hook_offset, run_opening
+    from video.subtitles import load_word_timings
+
+    moment = now or datetime.now(timezone.utc)
+    if rows is None:
+        from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+
+        rows = [r for r in get_publish_log_repository().list_uploaded_for_channel(channel_id)
+                or [] if not is_seeded(r)]  # fmt: skip
+    if repo is None:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        repo = get_content_run_repository()
+    done = _already_rehooked(list(repo.list_for_channel(channel_id) or []))
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        when = getattr(row, "published_at", None)
+        run_id = int(getattr(row, "content_run_id", 0) or 0)
+        if not isinstance(when, datetime) or not run_id or run_id in done:
+            continue
+        when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+        age = moment - when
+        if str(getattr(row, "privacy_status", "") or "").lower() != "public" or not (
+            timedelta(days=REHOOK_DAYS) <= age <= timedelta(days=REHOOK_UNTIL)
+        ):
+            continue
+        try:
+            metrics = json.loads(getattr(row, "metrics_json", "") or "{}")
+        except (TypeError, ValueError):
+            continue
+        organic = _organic(metrics if isinstance(metrics, dict) else {})
+        if organic < REHOOK_VIEWS:
+            continue
+        run = repo.get(run_id)
+        feats = _features_of(run)
+        if run is None or any(feats.get(k) for k in ("long_form", "compilation", "recut_of",
+                                                     "rehook_of", "short_source")):  # fmt: skip
+            continue
+        mp4 = str(getattr(run, "mp4_path", "") or "")
+        mp3 = str(getattr(run, "mp3_path", "") or "")
+        if not mp4 or not os.path.isfile(mp4) or not mp3 or not os.path.isfile(mp3):
+            continue
+        words = load_word_timings(mp3)
+        if not words:
+            continue
+        out.append({"run": run, "organic": organic, "days": age.days, "words": words,
+                    "offset": hook_offset(run_opening(run), channel_id),
+                    "video_id": str(getattr(row, "youtube_video_id", "") or "")})  # fmt: skip
+    return sorted(out, key=lambda c: -c["organic"])
+
+
+def names_its_subject(hook: str, title: str) -> bool:
+    """A new hook names a subject its Short's published title names (any one; True when the title
+    names none)."""
+    from apis.topic_tokens import names_any, title_phrases
+
+    subjects = title_phrases(title or "")
+    return not subjects or names_any(hook or "", subjects)
+
+
+def new_hook(run: Any) -> str:
+    """The best title variant the run did not use as its title or hook - `REHOOK_HOOK_WORDS` words
+    or fewer, naming a subject its published title names, no ad-limited words, no placeholder -
+    else "". Live 11-06: run 133's best variant, "This season's strongest contenders: A breakdown
+    of top teams' strengths.", names no one - the Short was Wembanyama at +200."""
+    from core.authenticity import ad_limit_reason
+
+    try:
+        variants = json.loads(getattr(run, "variants_json", "") or "[]")
+    except (TypeError, ValueError):
+        return ""
+    title = str(getattr(run, "title", "") or "")
+    used = {title.casefold().strip(),
+            str(_features_of(run).get("hook_text") or "").casefold().strip()}  # fmt: skip
+    scored: list[tuple[float, str]] = []
+    for item in variants if isinstance(variants, list) else []:
+        text = str(item[0] if isinstance(item, (list, tuple)) and item else item or "").strip()
+        score = float(item[1]) if isinstance(item, (list, tuple)) and len(item) > 1 else 0.0
+        words = text.split()
+        if not text or text.casefold() in used or len(words) > REHOOK_HOOK_WORDS:
+            continue
+        if not names_its_subject(text, title):
+            continue
+        if re.search(r"<[^>]+>|\[[^\]]+\]", text) or ad_limit_reason(text, ""):
+            continue
+        scored.append((score, text))
+    scored.sort(key=lambda item: -item[0])
+    return scored[0][1] if scored else ""
+
+
+def plan_rehook(
+    candidate: dict[str, Any], *, duration: float | None = None
+) -> dict[str, Any] | None:
+    """Where the re-hook starts (sentence two) and ends (the video's end), its hook and its title -
+    None with fewer than three sentences, no new hook, or under `MIN_SECONDS` left."""
+    run = candidate["run"]
+    hook = new_hook(run)
+    sentences = _sentences(candidate["words"], candidate["offset"])
+    if not hook or len(sentences) < 3:
+        return None
+    length = duration if duration is not None else _duration(str(run.mp4_path))
+    start = sentences[1][0]
+    end = round(length if length > 0 else sentences[-1][1] + 0.3, 2)
+    if end - start < MIN_SECONDS:
+        return None
+    return {"run_id": int(run.id), "start": round(start, 2), "end": end, "sentence": hook,
+            "title": recut_title(hook, str(getattr(run, "title", "") or "")),
+            "organic": candidate["organic"], "days": candidate["days"],
+            "video_id": candidate["video_id"]}  # fmt: skip
+
+
+def make_rehook(
+    channel_id: str, plan: dict[str, Any], *, run: Any = subprocess.run
+) -> tuple[int, str]:
+    """Cut it and record it as a rendered run (`features.rehook_of`). (run id, file) or (0, why)."""
+    from core.run_recorder import record_content_run
+    from storage.repositories.content_runs import get_content_run_repository
+
+    source = get_content_run_repository().get(int(plan["run_id"]))
+    src = str(getattr(source, "mp4_path", "") or "")
+    stem, ext = os.path.splitext(src)
+    dst = f"{stem}.rehook{ext or '.mp4'}"
+    card = draw_card(plan["sentence"], f"{stem}.rehook_card.png")
+    done = run(recut_argv(src, dst, start=plan["start"], end=plan["end"], card=card),
+               capture_output=True, stdin=subprocess.DEVNULL, timeout=600, check=False)  # fmt: skip
+    if getattr(done, "returncode", 1) != 0 or not os.path.isfile(dst):
+        return 0, f"ffmpeg exit {getattr(done, 'returncode', '?')}"
+    original = str(getattr(source, "title", "") or "")
+    feats = _features_of(source)
+    run_id = record_content_run(
+        channel_id=channel_id,
+        input_topic=str(getattr(source, "input_topic", "") or plan["title"]),
+        selected_topic=plan["title"],
+        status="rendered",
+        composite_score=0.0,
+        signals={},
+        variants=[],
+        title=plan["title"],
+        description=(
+            f'A new cut of "{original}".\n\n' + str(getattr(source, "description", "") or "")
+        ),
+        tags_json=str(getattr(source, "tags_json", "") or "[]"),
+        mp4_path=dst,
+        features={
+            "domain": feats.get("domain"),
+            "angle": feats.get("angle"),
+            "rehook_of": {
+                "run_id": plan["run_id"],
+                "video_id": plan["video_id"],
+                "start": plan["start"],
+                "hook": plan["sentence"],
+                "organic": plan["organic"],
+            },
+        },
+    )
+    return int(run_id or 0), dst
+
+
+def _slot_soon(channel_id: str, moment: Any) -> bool:
+    """A free public slot in the next `REHOOK_SLOT_HOURS` - a re-hook fills a gap, never news's."""
+    from datetime import timedelta
+
+    from core.series.dated import slot_hours
+    from core.spaced_queue import free_slots
+
+    slots = free_slots(
+        channel_id, 1, now=moment, hours_on=lambda day: slot_hours(channel_id, "", day)
+    )
+    return bool(slots) and slots[0] <= moment + timedelta(hours=REHOOK_SLOT_HOURS)
+
+
+def rehook_step(
+    channel_id: str,
+    *,
+    now: Any = None,
+    make: Any = None,
+    queue: Any = None,
+    slot_soon: Any = None,
+) -> list[str]:
+    """Overnight's re-hook: at most one a night, queued for its slot. Lines for the report; [] when
+    nothing qualified or `REHOOK` is off (the suite pins it). Never raises."""
+    if not rehook_enabled():
+        return []
+    from datetime import datetime, timezone
+
+    moment = now or datetime.now(timezone.utc)
+    try:
+        if not (slot_soon or _slot_soon)(channel_id, moment):
+            return []
+        from core.stale_renders import render_age_days, run_event
+
+        for candidate in rehook_candidates(channel_id, now=moment):
+            source = candidate["run"]
+            event = run_event(source, channel_id, render_age_days(source))
+            if event is not None and event <= moment:
+                continue  # a preview of a game that has been played is not news again
+            plan = plan_rehook(candidate)
+            if plan is None:
+                continue
+            made, where = (make or make_rehook)(channel_id, plan)
+            if not made:
+                return [f"Re-hook of run {plan['run_id']} not made: {where}"]
+            if queue is not None:
+                job = queue(made, channel_id)
+            else:
+                from core.batch_review import _queue_scheduled
+
+                job = _queue_scheduled(made, channel_id)
+            return [f"Re-hook: run {made} from run {plan['run_id']} ({plan['organic']} organic views, "
+                    f"{plan['days']} days on) opens on \"{plan['sentence']}\" - queued for its slot "
+                    f"(job {job}) (#1652)"]  # fmt: skip
+        return []
+    except Exception as exc:
+        logger.warning("re-hook step skipped: %s", exc)
+        return []
+
+
 def recut_lines(channel_id: str, *, apply: bool = False, run_id: int = 0) -> list[str]:
     """What `ops recut` prints: the candidates and their windows; with `apply`, one is made."""
     found = candidates(channel_id)

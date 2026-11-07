@@ -133,6 +133,13 @@ os.environ["LAST_NIGHT"] = "false"
 os.environ["MENU_EARNED"] = "false"
 # Wave 155 (#1673): a numbered card's "who wins?" Short reads ESPN's UFC board - off here.
 os.environ["UFC_DEBATE"] = "false"
+# Wave 156: #1605's gate reads Wikipedia's pageviews, #1629 turns the library's stills into clips
+# with ffmpeg, #1686 reads the feeds and Wikipedia, #1666's 1 PM step drafts - all off here.
+os.environ["KNOWN_SUBJECTS"] = "false"
+os.environ["STILL_CLIPS"] = "false"
+os.environ["WHO_IS"] = "false"
+os.environ["MIDDAY"] = "false"
+os.environ["REHOOK"] = "false"  # #1652: overnight's re-hook cuts a public Short with ffmpeg
 # #1727 (wave 149): the weekly long slot the follow lines and the compile day read.
 os.environ["LONG_SLOT"] = "6@19"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).
@@ -260,6 +267,7 @@ from core.success import goals as _goals
 from core.success import review as _review
 from core.success import verdicts as _verdicts
 from jobs import fast_lane as _fast_lane
+from jobs import midday as _midday
 from publishing import buffer_api as _buffer_api
 from publishing import crosspost as _crosspost
 from publishing import platform_metrics as _platform_metrics
@@ -394,6 +402,8 @@ _SUITE_STORE_PATCHES = (
     ),
     # wave 151: the fast lane's day counts and stories done
     patch.object(_fast_lane, "store_path", lambda cid: _suite_store(f"fast_lane_{cid}.json")),
+    # wave 156 (#1666): the 1 PM step's day and lines
+    patch.object(_midday, "store_path", lambda cid: _suite_store(f"midday_{cid}.json")),
     # wave 152 (#1597): the marquee names the channel's Shorts taught
     patch.object(_worked, "learned_path", lambda cid: _suite_store(f"marquee_learned_{cid}.json")),
     patch.object(_policy_canary, "SNAPSHOT_FILE", _suite_store("policy_canary.json")),

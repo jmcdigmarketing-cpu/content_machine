@@ -156,6 +156,8 @@ def is_ui_clip(path: str, meta: dict[str, Any] | None = None) -> bool:
         return True
     if _UI_NAME.search(_words(os.path.basename(path))):
         return True
+    if str(path or "").lower().endswith(".still.mp4"):
+        return False  # #1629: a still's slow zoom is low motion by design, not a menu
     motion = meta.get("motion")
     return isinstance(motion, (int, float)) and float(motion) < MOTION_UI
 

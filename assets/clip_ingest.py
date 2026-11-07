@@ -643,7 +643,11 @@ def measure_library(*, library_root: str | None = None, force: bool = False) -> 
     ensure_data_dir()
     data = _load_index(CLIP_INDEX_FILE)
     clips = data.setdefault("clips", {})
-    tally = {"measured": 0, "skipped": 0, "with_bands": 0}
+    tally = {"measured": 0, "skipped": 0, "with_bands": 0, "stills": 0}
+    from assets import stills
+
+    if stills.enabled():  # #1629: a game's stills become its clips first, then are measured
+        tally["stills"] = len(stills.make_still_clips(library))
     for folder in _library_folders(library):
         for entry in sorted(os.listdir(folder)):
             if not entry.lower().endswith((".mp4", ".mov")):

@@ -67,6 +67,14 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-06 (Claude, wave 156 - the next five).** A 1 PM draft step for tonight's slots, a
+Short past 300 views re-hooked, a subject fans know through the gate, "Who is ...?" for a name
+that just trended, and a game's stills as its footage (decision 107). The list moves to the
+next unbuilt views items in the bridge's order, the formats B04 names: **#1676** stat-shock
+Shorts (one surprising number), **#1674** rankings with an on-screen countdown, **#1645** a
+re-hook beat at the drop-off second, **#1637** length by format as an experiment, **#1688**
+patch winners and losers for Marvel Rivals and Call of Duty; **#1849** once the embargo date is
+known. The GTA 6 items (#1848-#1867) are built and wait for launch week.
 **2026-11-06 (Claude, wave 155 - the other ten of "next 20").** Every lane prints its number
 and its run of weeks; a Short's all-in cost is measured (median $0.34); UFC 334 gets a "who
 wins?" Short ending on the honest question; a celebrity crossover leads (decision 106). Five
@@ -85,15 +93,6 @@ ten): the bridge's lane numbers **#1621**, **#1646**, **#1671**, **#1696**, **#1
 every long video yields 3-5 Shorts; **#1658** a free slot never passes empty; **#1666** a 1 PM
 draft step; **#1652** a 300-view Short re-cut; **#1620** celebrity crossovers; **#1849** once the
 embargo date is known.
-**2026-11-06 (Claude, wave 153 - the next five).** Overnight now drafts last night's national
-final the PC slept through and a marquee name's 40-point night, each with both teams' next
-games; a Short ends on its loop line, not "Tap in for more" (43 of 58 did); a hook names its
-subject in its first three words; a preview's title is a call - run 249 was retitled before it
-went public (decision 104). Next, before W4's freeze (Nov 16), for launch week: **#1629** footage
-of another game under a story is flagged, **#1857** Rockstar's trailers and screenshots as GTA 6
-footage, **#1666** overnight's draft step also at 1 PM, **#1660** every long video yields 3-5
-Shorts, **#1620** a celebrity in a gaming story flagged as high-travel; **#1849** once the embargo
-date is known.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

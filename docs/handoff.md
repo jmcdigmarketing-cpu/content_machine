@@ -53,23 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-06 · **HEAD at write:** `c4868ff` (wave 154, CI green; this wave's commit
+**Written:** 2026-11-06 · **HEAD at write:** `a07b6ca` (wave 155, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 155, the other ten of "next 20".** Found in the build and fixed: the crossover rule led with
-a past video's re-offered topic (run 126) - only a fresh headline leads now. Built: the lane numbers
-(#1621, #1646, #1671, #1696, #1721, #1771) under the hours lane; a Short's all-in cost (#1668); a
-numbered card's "who wins?" Short (#1673) ending on the honest question (#1642); crossovers (#1620,
-`config/crossover.json`). Closed as already true: #1658, #1803, #1806, #1414, #1695. Decision 106.
+**Wave 156, the next five.** Found in the build and fixed: a re-hook took run 133's variant that
+names no one - a new hook names its Short's subject now. Built: the 1 PM draft step in the worker
+pass (#1666, `jobs/midday.py`), the re-hook (#1652, `recut.rehook_step`), a known subject through
+the gate (#1605), "Who is ...?" (#1686, `core/series/profiles.py`), stills as footage and the
+matching edition (#1629). Decision 107.
 
 **Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1984, #1988, #1991, #1994, #1996, #1997, #1998,
-#2000, #2003, #2004, #2005. **Next:** #1666, #1652, #1686, #1605, #1629 before W4's freeze (Nov 16);
-#1849 once the embargo date is known.
+#2000, #2003, #2004, #2005, #2006-#2009. **Next:** #1676, #1674, #1645, #1637, #1688 before W4's
+freeze (Nov 16); #1849 once the embargo date is known.
 
 **Operator:** publish the Google app before Sat Nov 7 - the sign-in lapses and uploads stop (set
 POLICY_SITE_URL first; `ops check-youtube` reads the four pages); bio pages; tracking IDs; Facebook in
 Buffer; #1922/#1956 on a phone; prune `config/crossover.json` to taste. Review the UFC 334 match-up
-draft on Nov 10, the recap on Nov 15.
+draft on Nov 10, the recap on Nov 15. Keep the PC awake 1-5 PM for the 1 PM step.
 
 ## Slot — Cursor
 

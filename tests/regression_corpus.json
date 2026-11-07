@@ -9283,6 +9283,78 @@
         "falsy": true
       },
       "why": "a crossover crosses into gaming"
+    },
+    {
+      "id": "a-new-hook-names-the-shorts-subject",
+      "item": 1652,
+      "source": "live 11-06: run 133's best variant named no one - the Short was Wembanyama at +200",
+      "call": "video.recut:names_its_subject",
+      "args": [
+        "This season's strongest contenders: A breakdown of top teams' strengths.",
+        "2027 NBA Finals & Award Predictions: Wembanyama at +200 for MVP"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a re-hook that names no one opens a known Short on a generic line"
+    },
+    {
+      "id": "a-variant-naming-the-subject-is-a-new-hook",
+      "item": 1652,
+      "source": "the sibling: run 126's variants all name Ben Affleck and Fortnite",
+      "call": "video.recut:names_its_subject",
+      "args": [
+        "Why Ben Affleck keeps losing Fortnite matches to 12-year-olds",
+        "Ben Affleck Gets Destroyed by 12-Year-Olds in Fortnite, Then Argues Back"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the rule must not refuse the hooks that do name the subject"
+    },
+    {
+      "id": "gta-v-under-a-gta-6-story-is-flagged",
+      "item": 1629,
+      "source": "live 11-06: 9 GTA 6 Shorts cut GTA V gameplay (ops footage)",
+      "call": "assets.footage_gaps:edition_gap",
+      "args": [
+        "GTA 6 meta shifts could redefine open-world design standards",
+        "GTA V"
+      ],
+      "expect": {
+        "contains": "GTA 6"
+      },
+      "why": "last year's game under this year's story is another game's footage"
+    },
+    {
+      "id": "the-same-edition-is-not-flagged",
+      "item": 1629,
+      "source": "the sibling: Madden 26 under a Madden 26 story",
+      "call": "assets.footage_gaps:edition_gap",
+      "args": [
+        "Madden 26 ratings drop for the Chiefs",
+        "Madden 26"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "a flag on matching footage would bury the real gaps"
+    },
+    {
+      "id": "a-still-clip-is-not-a-menu",
+      "item": 1629,
+      "source": "live 11-06: a Spider-Man 2 still's slow zoom measured motion 4.46, under the 6.0 menu bar",
+      "call": "assets.clip_tags:is_ui_clip",
+      "args": [
+        "video/backgrounds/gaming/solo games/Marvel's Spider-Man 2/shot.still.mp4",
+        {
+          "motion": 4.46
+        }
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "read as a menu, every still clip would leave the footage it was made for"
     }
   ]
 }

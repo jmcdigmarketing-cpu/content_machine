@@ -441,6 +441,12 @@ def _run_overnight_body(
         result.chapter_lines = fill_empty_slots(channel)
     except Exception as exc:
         logger.warning("overnight chapter Shorts did not run: %s", exc)
+    try:  # #1652 (wave 156): a Short past 300 organic views, 14 days on, with a new hook
+        from video.recut import rehook_step
+
+        result.chapter_lines = [*result.chapter_lines, *rehook_step(channel)]
+    except Exception as exc:
+        logger.warning("overnight re-hook did not run: %s", exc)
 
     try:
         from core.channel_health import build_health, health_line, record_history

@@ -129,3 +129,17 @@ second ten of the operator's "next 20". **Consequence:** a lane is done only whe
 #1621, #1646, #1721 and #1668 stay open until it does; `config/crossover.json` is the operator's;
 `UFC_DEBATE=false` stops the debate.
 
+## 107. A 1 PM draft step for tonight; a winner re-hooked; a known subject passes the gate (2026-11-06)
+**Decision:** once a day from 1 PM, in the worker pass, overnight's draft step drafts up to two of
+the morning's news for tonight's free slots and uploads each private with its slot's time - public
+at 6 or 10 PM with nobody watching, held by the fast lane's checks. A public Short past 300 organic
+views is cut once, 14-35 days on, from its second sentence under a new hook, into a free slot in the
+next 24 hours, public at its slot like a chapter Short of an approved video. A one-outlet headline
+about a subject fans know (100,000+ Wikipedia views in 30 days) passes the topic gate; a name that
+just trended and that fans do not know yet gets "Who is ...?". A game's stills are its footage, the
+matching edition wins, and another edition under a story is flagged. **Why:** the bridge's B01.9,
+B02.8, B03.6, B03.20 and B04.15 (decision 82), before W4's freeze; "nothing by hand" - a draft that
+waits for a decision misses tonight. **Consequence:** `MIDDAY`, `REHOOK`, `WHO_IS`, `KNOWN_SUBJECTS`
+and `STILL_CLIPS` (each true by default) stop each; no new scheduled task and no wake timers - a PC
+asleep from 1 to 5 PM makes nothing that day.
+

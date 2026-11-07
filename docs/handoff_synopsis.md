@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-06: wave 155, the other ten of next 20
+# Handoff synopsis — 2026-11-06: wave 156, the next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-06 (Claude Code): wave 155, the other ten of next 20
+## Last wave — 2026-11-06 (Claude Code): wave 156, the next five
+
+A 1 PM draft step in the worker pass for tonight's slots; a Short past 300 organic views
+re-hooked 14 days on; a one-outlet subject fans know passes the gate; "Who is ...?" for a
+name that just trended; a game's stills are its footage and the matching edition wins
+(decision 107).
+
+## Previous — 2026-11-06 (Claude Code): wave 155, the other ten of next 20
 
 Every lane of the bridge prints its number and its run of weeks; a Short's all-in cost is
 measured; a numbered card gets a "who wins?" Short; a celebrity crossover leads (decision
@@ -22,13 +29,6 @@ One idea a subject a night; a stale idea waits; the menu says what the subject e
 time; a hook is 12 words or fewer; never four a day or two within three hours; the weekly
 report ranks formats and frames and says what worked; a Short links its series playlist;
 promotions suggest nothing (decision 105). Wave 155 takes the other ten.
-
-## Previous — 2026-11-06 (Claude Code): wave 153, the next five
-
-Overnight drafts last night's national final the PC slept through and a marquee name's
-40-point night, each with both teams' next games. A Short ends on its loop line, not a sign-off;
-a hook names its subject in its first three words; a preview's title is a call (decision 104).
-Run 249 was retitled before it went public.
 
 ---
 

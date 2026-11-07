@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import os
 import re
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 
 import requests
@@ -197,9 +199,12 @@ def _article_candidates(topic: str) -> list[str]:
     return out
 
 
+VIEW_DAYS = 30  # #1605: the spike score reads the last 10 of these; the floor reads all 30
+
+
 def _fetch_pageviews(article: str) -> dict | None:
     end = datetime.now(timezone.utc).date()
-    start = end - timedelta(days=14)
+    start = end - timedelta(days=VIEW_DAYS)
     url = f"{_BASE}/{article}/daily/{start.strftime('%Y%m%d')}/{end.strftime('%Y%m%d')}"
     resp = requests.get(
         url,
@@ -218,7 +223,122 @@ def _fetch_pageviews(article: str) -> dict | None:
     views = [int(it.get("views", 0)) for it in items if it.get("views") is not None]
     if not views:
         return None
-    return {"article": article, "views": views, "daily": items}
+    return {"article": article, "views": views, "daily": items, "views_30d": sum(views)}
+
+
+# #1605 (B01.9, wave 156): a subject a casual fan knows. Live 11-06, 30 days: Mahomes 188,496,
+# Wembanyama 186,448, Makhachev 141,765, Derrick Henry 134,234 - Ciryl Gane 52,500, Josh Hokit
+# 72,794. Wikimedia answered 429 after ten reads a second apart, so a lookup is paced and capped.
+KNOWN_FLOOR = 100_000
+KNOWN_LOOKUPS = 3
+_KNOWN_TTL = 24 * 60 * 60
+_PACE_SECONDS = 1.0
+_pace_lock = threading.Lock()
+_last_read = [0.0]
+
+
+def _paced(read):
+    """One Wikimedia read at most every `_PACE_SECONDS`, across threads."""
+    with _pace_lock:
+        wait = _PACE_SECONDS - (time.monotonic() - _last_read[0])
+        if wait > 0:
+            time.sleep(wait)
+        _last_read[0] = time.monotonic()
+        return read()
+
+
+def thirty_days(article: str) -> dict | None:
+    """{views, rise} - an article's views over the last 30 days and its last 3 days' daily average
+    over the 7 before - or None (no page, or unread). Read once a day: this helper is not a signal
+    (`register_signals` never calls it), so this cache is its only one."""
+    key = build_key("wikipedia_30d", article)
+    cached = get_cached(key)
+    if isinstance(cached, dict) and "views" in cached:
+        return cached if cached["views"] is not None else None
+    try:
+        payload = _paced(lambda: _fetch_pageviews(article))
+    except Exception as exc:
+        logger.debug("30-day views unread for %s: %s", article, exc)
+        return None
+    if not payload:
+        set_cache(key, {"views": None}, ttl_seconds=_KNOWN_TTL)
+        return None
+    views = list(payload["views"])
+    prior = views[-10:-3] if len(views) >= 10 else []
+    base = sum(prior) / len(prior) if prior else 0.0
+    rise = round((sum(views[-3:]) / 3) / base, 2) if base else 0.0
+    data = {"views": int(payload["views_30d"]), "rise": rise}
+    set_cache(key, data, ttl_seconds=_KNOWN_TTL)
+    return data
+
+
+def thirty_day_views(article: str) -> int | None:
+    """An article's views over the last 30 days, or None."""
+    data = thirty_days(article)
+    return int(data["views"]) if data else None
+
+
+_SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/"
+
+
+def page_description(article: str) -> str:
+    """Wikipedia's one-line description of an article ("American mixed martial artist"), or ""
+    (no page, a disambiguation, unread). Cached a week; paced like the pageviews."""
+    key = build_key("wikipedia_desc", article)
+    cached = get_cached(key)
+    if isinstance(cached, dict) and "description" in cached:
+        return str(cached["description"] or "")
+    try:
+        resp = _paced(lambda: requests.get(
+            _SUMMARY + article, timeout=8,
+            headers={"User-Agent": "ContentMachine/1.0 (research signal)"}))  # fmt: skip
+    except Exception as exc:
+        logger.debug("description unread for %s: %s", article, exc)
+        return ""
+    data = resp.json() if resp.status_code == 200 else {}
+    text = (
+        ""
+        if (data or {}).get("type") == "disambiguation"
+        else str((data or {}).get("description") or "")
+    )
+    if resp.status_code in (200, 404):
+        set_cache(key, {"description": text}, ttl_seconds=7 * _KNOWN_TTL)
+    return text
+
+
+def subject_articles(topic: str) -> list[tuple[str, str]]:
+    """(name, article) guesses for the people and things a headline names: each title phrase of
+    two words or more, then its last two words ("Frustrated Derrick Henry" is Derrick Henry)."""
+    from apis.topic_tokens import title_phrases
+
+    out: list[tuple[str, str]] = []
+    for phrase in title_phrases(topic or ""):
+        words = phrase.split()
+        if len(words) < 2:
+            continue
+        for name in (phrase, " ".join(words[-2:])) if len(words) > 2 else (phrase,):
+            article = "_".join(name.split())
+            if all(article != a for _n, a in out):
+                out.append((name, article))
+    return out
+
+
+def known_subject(
+    topic: str, *, fetch=None, limit: int = KNOWN_LOOKUPS, floor: int = KNOWN_FLOOR
+) -> tuple[str, int]:
+    """(name, 30-day views) of the first subject `topic` names that a casual fan knows - its
+    Wikipedia article read at least `floor` times in 30 days - else ("", 0). At most `limit`
+    articles are read. Never raises."""
+    read = fetch or thirty_day_views
+    for name, article in subject_articles(topic)[: max(0, limit)]:
+        try:
+            views = read(article)
+        except Exception as exc:
+            logger.debug("known subject unread for %s: %s", article, exc)
+            continue
+        if isinstance(views, int) and views >= floor:
+            return name, views
+    return "", 0
 
 
 def _fetch_last_revision(article: str) -> str | None:

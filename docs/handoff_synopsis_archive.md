@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-06 (Claude Code): wave 153, the next five
+
+Overnight drafts last night's national final the PC slept through and a marquee name's
+40-point night, each with both teams' next games. A Short ends on its loop line, not a sign-off;
+a hook names its subject in its first three words; a preview's title is a call (decision 104).
+Run 249 was retitled before it went public.
+
 ## Previous — 2026-11-06 (Claude Code): wave 152, the next ten
 
 The night leads with a launch-week story, a marquee injury, a numbered card's fight week or a

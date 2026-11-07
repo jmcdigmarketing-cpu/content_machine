@@ -955,6 +955,28 @@ def _fast_lane(cap: int = 3) -> int:
     return sent
 
 
+def _midday(cap: int = 2) -> int:
+    """#1666 (wave 156): overnight's draft step once a day after 1 PM, for tonight's slots - each
+    render uploaded in this same pass, private with its publish time. Fail-open."""
+    sent = 0
+    try:
+        from config.channels import active_channel_ids
+        from jobs.midday import run_midday
+
+        for channel in active_channel_ids():
+            if channel == "default":
+                continue
+            lines = run_midday(channel)
+            for line in lines:
+                print(line)
+            if any("queued for tonight's slot" in line for line in lines):
+                while sent < cap and process_one():
+                    sent += 1
+    except Exception as exc:
+        logger.warning("midday step skipped: %s", exc)
+    return sent
+
+
 def _sync_metrics() -> None:
     """Wave 113: the metrics sync, once a day - `ops morning` was its only caller, and this
     pass runs every 15 minutes from the UploadWorker task. Fail-open."""
@@ -1017,6 +1039,7 @@ def main():
     if args.loop <= 0:
         processed = drain_due()
         processed += _fast_lane()  # wave 151
+        processed += _midday()  # #1666
         _sync_metrics()
         _overnight_watch()
         _sign_in_watch()  # #1438
@@ -1038,6 +1061,8 @@ def main():
             while process_one():
                 did_work = True
             if _fast_lane():  # wave 151
+                did_work = True
+            if _midday():  # #1666
                 did_work = True
             _sync_metrics()
             _overnight_watch()

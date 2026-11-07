@@ -237,7 +237,7 @@ def _keyword_choose_folder(
     if not said or not folders:
         return None
     other_2k = names_other_2k(topic or "")
-    scored: list[tuple[int, int, str]] = []
+    scored: list[tuple[int, int, int, str]] = []
     for folder in folders:
         words = _folder_words(os.path.basename(folder))
         if other_2k and len(words) == 1 and _BARE_2K.match(words[0]):
@@ -251,11 +251,41 @@ def _keyword_choose_folder(
         ):
             continue
         if words and all(word in said for word in words):
-            scored.append((len(words), sum(len(w) for w in words), folder))
+            # #1629 (wave 156): "GTA 6" and "GTA V" both read as gta, and the tie went to GTA V
+            # by name - the edition the topic names wins.
+            edition = 1 if folder_edition(os.path.basename(folder)) in topic_editions(topic) else 0
+            scored.append((len(words), edition, sum(len(w) for w in words), folder))
     if not scored:
         return None
-    scored.sort(key=lambda item: item[:2], reverse=True)
-    return scored[0][2]
+    scored.sort(key=lambda item: item[:3], reverse=True)
+    return scored[0][3]
+
+
+_ROMAN = {"i": 1, "ii": 2, "iii": 3, "iv": 4, "v": 5, "vi": 6, "vii": 7, "viii": 8, "ix": 9,
+          "x": 10}  # fmt: skip
+
+
+def _edition_number(token: str) -> str:
+    low = (token or "").strip().lower()
+    return str(_ROMAN[low]) if low in _ROMAN else low
+
+
+def folder_edition(name: str) -> str:
+    """#1629: the edition a footage folder's name ends on ("GTA V" -> "5", "Madden 26" -> "26",
+    "GTA VI" -> "6"), or ""."""
+    words = re.findall(r"[A-Za-z0-9]+", name or "")
+    if len(words) >= 2 and _EDITION_TOKEN.match(words[-1].lower()):
+        return _edition_number(words[-1])
+    return ""
+
+
+def topic_editions(topic: str) -> set[str]:
+    """#1629: the editions a topic names after a game's name ("GTA 6" -> {"6"}, "GTA VI" ->
+    {"6"}); a roman numeral counts only in capitals ("GTA V", not "a v-shaped")."""
+    out: set[str] = set()
+    for match in re.finditer(r"\b[A-Za-z][A-Za-z0-9']*\s+(\d{1,2}|[IVX]{1,4})\b", topic or ""):
+        out.add(_edition_number(match.group(1)))
+    return out
 
 
 _ALIASES_FILE = os.path.join(

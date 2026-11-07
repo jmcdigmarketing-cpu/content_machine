@@ -521,8 +521,15 @@ def _hold_toast(channel_id: str, run_id: int, reason: str) -> None:
         logger.debug("fast-lane toast skipped: %s", exc)
 
 
-def _render_and_queue(channel_id: str, run_id: int) -> tuple[str, int]:
-    """("", job id) once rendered and queued public now, else (why not, 0)."""
+def _render_and_queue(
+    channel_id: str,
+    run_id: int,
+    *,
+    by: str = "fast lane",
+    queue: Callable[[int, str], int] | None = None,
+) -> tuple[str, int]:
+    """("", job id) once rendered and queued - public now, or by ``queue`` (#1666's 1 PM step:
+    private with tonight's slot) - else (why not, 0)."""
     from analytics.queue_manager import requeue_content_run
     from core import batch_review
 
@@ -531,7 +538,7 @@ def _render_and_queue(channel_id: str, run_id: int) -> tuple[str, int]:
         return "its draft was not found", 0
     reason = batch_review.unattended_block_reason(draft) or batch_review._second_read_for(draft)
     if reason:
-        batch_review._note_hold(draft, f"fast lane: {reason}")
+        batch_review._note_hold(draft, f"{by}: {reason}")
         _hold_toast(channel_id, run_id, reason)
         return f"held - {reason}", 0
     stop = (
@@ -542,7 +549,9 @@ def _render_and_queue(channel_id: str, run_id: int) -> tuple[str, int]:
     if stop:
         return f"not rendered - {stop}", 0
     batch_review._render_in_process(draft, False)
-    batch_review._write_review(draft, decision="rendered", override=False, by="fast lane")
+    batch_review._write_review(draft, decision="rendered", override=False, by=by)
+    if queue is not None:
+        return "", queue(run_id, channel_id)
     # #1655: public as it uploads, outside the noon and 10 PM slots
     return "", requeue_content_run(run_id, channel_id, privacy_status="public")
 

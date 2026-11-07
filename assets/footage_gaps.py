@@ -107,6 +107,7 @@ def footage_gaps(channel_id: str, *, limit: int = 60) -> dict[str, Any]:
         runs = []
     runs = sorted(runs, key=lambda r: int(getattr(r, "id", 0) or 0))[-limit:]
     wanted: dict[str, dict[str, Any]] = {}
+    editions: dict[str, dict[str, Any]] = {}
     at_risk: list[dict[str, Any]] = []
     rendered = 0
     for run in runs:
@@ -144,8 +145,34 @@ def footage_gaps(channel_id: str, *, limit: int = 60) -> dict[str, Any]:
             row = wanted.setdefault(name, {"playlist": name, "runs": [], "topics": []})
             row["runs"].append(int(run.id))
             row["topics"].append(topic)
+        used = (recorded[1] if recorded and recorded[1] else "") or (
+            os.path.basename(folder) if folder else ""
+        )
+        gap = edition_gap(topic, used) if used else ""
+        if gap:  # #1629
+            row = editions.setdefault(gap, {"gap": gap, "runs": [], "topics": []})
+            row["runs"].append(int(run.id))
+            row["topics"].append(topic)
     ordered = sorted(wanted.values(), key=lambda r: (-len(r["runs"]), r["playlist"]))
-    return {"rendered": rendered, "runs": len(runs), "wanted": ordered, "at_risk": at_risk}
+    return {"rendered": rendered, "runs": len(runs), "wanted": ordered, "at_risk": at_risk,
+            "editions": sorted(editions.values(), key=lambda r: -len(r["runs"]))}  # fmt: skip
+
+
+def edition_gap(topic: str, folder_name: str) -> str:
+    """#1629 (B02.8, wave 156): "GTA V footage under a GTA 6 story" when the topic names its game
+    at another edition than the folder's, else "". Madden 26 under "Madden 26 ratings" is not."""
+    import re
+
+    from assets.local_provider import _edition_number, _folder_words, folder_edition
+
+    have = folder_edition(folder_name)
+    words = _folder_words(folder_name)
+    if not have or not words:
+        return ""
+    found = re.search(rf"\b{re.escape(words[-1])}\s+(\d{{1,2}}|[IVX]{{1,4}})\b", topic or "", re.I)
+    if found is None or _edition_number(found.group(1)) == have:
+        return ""
+    return f"{folder_name} footage under a {found.group(0)} story"
 
 
 def footage_gap_lines(channel_id: str, *, limit: int = 60) -> list[str]:
@@ -154,9 +181,16 @@ def footage_gap_lines(channel_id: str, *, limit: int = 60) -> list[str]:
         f"Footage gaps - {channel_id} ({report['runs']} most recent runs, "
         f"{report['rendered']} rendered)"
     )
-    if not report["wanted"] and not report["at_risk"]:
+    if not report["wanted"] and not report["at_risk"] and not report.get("editions"):
         return [head, "  Every rendered topic had matching footage."]
     lines = [head]
+    if report.get("editions"):  # #1629
+        lines.append("  Another edition under the story - add footage or stills of the one named "
+                     "(a folder named for it wins):")  # fmt: skip
+        for row in report["editions"]:
+            count = len(row["runs"])
+            lines.append(f"    {row['gap']}: {count} run{'s' if count != 1 else ''}, e.g. "
+                         f"\"{row['topics'][0][:60]}\"")  # fmt: skip
     if report["wanted"]:
         lines.append("  Record gameplay for (topics that had no footage of their own):")
         for row in report["wanted"]:

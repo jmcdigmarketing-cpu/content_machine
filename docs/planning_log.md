@@ -11548,3 +11548,67 @@ reversed, OK; `data/` untouched. Production callers: `lane_lines` from `bridge.s
 Next five: #1666, #1652, #1686, #1605, #1629; #1849 once the embargo date is known.
 
 Counts (`ops roadmap-index`): 218 open (was 228), 1,671 done, highest #2005.
+
+## 2026-11-06 — wave 156: the next five (Claude Code)
+
+**Prompt:** "Start wave 156", then "Resume wave 156" (a usage limit stopped it after the reads)
+
+Verified first: HEAD `a07b6ca` (wave 155, CI green); overnight Ready until 05:00. The five were
+the roadmap's: #1666, #1652, #1686, #1605, #1629 - each `S`, lane views, none parked.
+
+Measured before building (read-only, 11-06):
+- #1652: seven public Shorts had 300+ organic views 14+ days on; each run keeps five title
+  variants (`variants_json`), so a new hook needs no script or voice.
+- #1666: tonight's slots from `spaced_queue.free_slots`; Sat Nov 7 at 1:30 PM the 6 PM slot is free.
+- #1605: Wikimedia answered 429 after ten reads a second apart; 30-day views - Mahomes 188,496,
+  Wembanyama 186,448, Makhachev 141,765, Derrick Henry 134,234, Josh Hokit 72,794, Gane 52,500.
+- #1686: Josh Hokit on 5 outlets, views up 2.1x; Brandon Aiyuk up 7.9x; Jacoby Brissett 4.6x.
+- #1629: Marvel's Spider-Man 2 held 3 stills and no video; runs 175 and 224 cut the mix under a
+  Final Fantasy and a Mass Effect story; there are 2 learned game names, so no list to match by.
+
+Shipped (worktree `wave156`):
+1. #1605 `wikipedia_pageviews_api` reads 30 days; `known_subject`, `thirty_days`,
+   `page_description`; `batch_generation.known_subject_check` and `story_passes_gate(known=)`.
+2. #1629 `assets/stills.py` (from `clip_ingest.measure_library`); `clip_tags.is_ui_clip` passes a
+   still clip; `local_provider.folder_edition` / `topic_editions` in `_keyword_choose_folder`;
+   `footage_gaps.edition_gap` in `ops footage`.
+3. #1686 `core/series/profiles.py` in `collect_topics`' extras; `draft_intent("profile")` is news;
+   `batch_generation.profile_length` gives the Short preset.
+4. #1652 `video/recut.rehook_step` (overnight, after the chapter Shorts), `rehook_candidates`,
+   `new_hook`, `names_its_subject`, `plan_rehook`, `make_rehook`.
+5. #1666 `jobs/midday.py` from `worker._midday` (both pass shapes); `collect_topics(news_only=)`;
+   `fast_lane._render_and_queue(by=, queue=)`.
+
+Findings:
+- Live-exposed in the build: run 133's best title variant, "This season's strongest contenders: A
+  breakdown of top teams' strengths.", names no one - the Short was Wembanyama at +200. A new hook
+  must name a subject its title names (`recut.py`, `new_hook`); run 133 is passed by and run 126
+  goes first. Corpus cases; the sibling `recut_title` (`ops recut`, reviewed by hand) is filed
+  as #2008.
+- 9 GTA 6 Shorts cut GTA V gameplay (`ops footage`, live). A still clip measures motion 4.46, under
+  the 6.0 menu bar - without the exemption every still would have left its own footage.
+- The idea pool's headlines carry HTML entities (#2007); "Who is ...?" spent lookups on "New York
+  City" (#2009).
+
+Deliberately not done: no new scheduled task and no wake timers for the 1 PM step (the operator,
+11-06); `recut_title` left as it is (#2008); a stills source beyond the operator's own folder
+(#1857, #1628 are the press-kit items).
+
+Tests: `tests/test_wave156.py`, 42 - 40 fail on `a07b6ca` (a clean HEAD checkout, the editable
+finder stripped); `test_last_years_footage_still_serves_alone` passes there by design (it guards
+that GTA V still serves a GTA 6 story when nothing newer exists); the run 133 test was added after
+the live read and failed on the build before its fix. The suite pins `KNOWN_SUBJECTS`,
+`STILL_CLIPS`, `WHO_IS`, `REHOOK` and `MIDDAY` off and redirects `data/midday_<channel>.json`.
+
+Audit: mypy 92 == baseline (two new errors from a tuple annotation found and fixed); ruff and
+format clean; corpus 555 of 555. Suite 7,525 forward and reversed, OK; `data/` untouched.
+Production callers: `known_subject_check` and `profile_ideas` from `collect_topics`;
+`make_still_clips` from `measure_library` (overnight's library step); `edition_gap` from
+`footage_gap_lines` (`ops footage`); `rehook_step` from `_run_overnight_body`; `run_midday` from
+`worker._midday` in `main`. Fields traced: `views_30d` from `_fetch_pageviews` to `thirty_days`;
+`features.rehook_of` from `make_rehook` to `_already_rehooked` and `rehook_candidates`; the 1 PM
+store's `day` from `run_midday` to `blocked` (a `lines` key nothing read was removed).
+
+Next five: #1676, #1674, #1645, #1637, #1688; #1849 once the embargo date is known.
+
+Counts (`ops roadmap-index`): 217 open, 1,879 done, 145 parked; 215 numbered open, highest #2009.

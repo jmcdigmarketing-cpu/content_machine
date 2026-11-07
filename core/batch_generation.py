@@ -170,6 +170,7 @@ def collect_topics(
     notes: list[str] | None = None,
     wide: int = 0,
     gate: dict[str, int] | None = None,
+    news_only: bool = False,
 ) -> list[str]:
     """Explicit topics → file lines → best bets, capped at `count` for implicit sources.
 
@@ -179,7 +180,9 @@ def collect_topics(
     (#1595). The day's countdown (#1847) and dated moments and long videos (decision 84) come
     on top of `count` - even at 0; ``notes`` gets why a dated entry due today was skipped.
     #1653 (wave 152): ``wide`` drafts instead of `count` when that many pass the topic gate;
-    ``gate`` (optional) gets how many passed.
+    ``gate`` (optional) gets how many passed. #1666 (wave 156): ``news_only`` - the 1 PM step -
+    takes the gated ideas and the preview alone: no series, dated extras or follow-up (overnight
+    makes those).
     """
     if topics:
         return [t.strip() for t in topics if t.strip()]
@@ -211,25 +214,30 @@ def collect_topics(
                     picks[bet.topic] = pick_record([bet], 1, by="batch")
             return [b.topic for b in alone]
         ideas, previews = get_idea_menu(channel_id, notes=notes, prefer_ahead=True)  # #1670
-        extra = [b for b in ideas if getattr(b, "source", "") in DATED_SOURCES]
-        # Wave 135 (the operator: "a day ahead"): tomorrow's countdown too, scheduled for its
-        # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
-        from core.series.countdown import countdown_idea
-        from core.series.last_night import last_night_ideas
-        from core.series.recap import debate_ideas, matchup_ideas, recap_ideas
+        extra: list[Any] = []
+        if not news_only:  # #1666: the 1 PM step leaves the series and dated extras to overnight
+            extra = [b for b in ideas if getattr(b, "source", "") in DATED_SOURCES]
+            # Wave 135 (the operator: "a day ahead"): tomorrow's countdown too, scheduled for its
+            # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
+            from core.series.countdown import countdown_idea
+            from core.series.last_night import last_night_ideas
+            from core.series.profiles import profile_ideas
+            from core.series.recap import debate_ideas, matchup_ideas, recap_ideas
 
-        extra = _unique([*extra, countdown_idea(channel_id, ahead=1),
-                         *long_breakout_ideas(channel_id),  # #1740
-                         *recap_ideas(channel_id, notes=notes),  # #1722
-                         *matchup_ideas(channel_id, notes=notes),  # #1892
-                         *debate_ideas(channel_id),  # #1673
-                         *last_night_ideas(channel_id)])  # #1999, #1877  # fmt: skip
+            extra = _unique([*extra, countdown_idea(channel_id, ahead=1),
+                             *long_breakout_ideas(channel_id),  # #1740
+                             *recap_ideas(channel_id, notes=notes),  # #1722
+                             *matchup_ideas(channel_id, notes=notes),  # #1892
+                             *debate_ideas(channel_id),  # #1673
+                             *last_night_ideas(channel_id),  # #1999, #1877
+                             *profile_ideas(channel_id)])  # #1686  # fmt: skip
         names = marquee_names(channel_id)
         from core.best_bet import crossover_names
 
         gate_names = [*names, *crossover_names(channel_id)]  # #1620: a crossover travels too
         kept: list[Any] = []
         moment = datetime.now(timezone.utc)
+        known = known_subject_check()  # #1605
         for bet in ideas:
             if getattr(bet, "source", "") in DATED_SOURCES:
                 continue
@@ -239,7 +247,7 @@ def collect_topics(
                 continue
             outlets = int(getattr(bet, "outlets", 0) or 0)
             if story_passes_gate(bet.topic, source=str(getattr(bet, "source", "") or ""),
-                                 outlets=outlets, names=gate_names):  # #1620  # fmt: skip
+                                 outlets=outlets, names=gate_names, known=known):  # #1620, #1605  # fmt: skip
                 kept.append(bet)
             elif held_back is not None:
                 held_back.append(bet.topic)
@@ -274,6 +282,8 @@ def collect_topics(
                 picks[bet.topic] = record
             for bet in extra:
                 picks[bet.topic] = pick_record([bet], 1, by="batch")
+        if news_only:
+            return [b.topic for b in chosen]
         out = _with_follow_up(channel_id, [b.topic for b in chosen], held, picks)
         return [*(b.topic for b in extra), *out]
     except Exception as exc:
@@ -424,10 +434,18 @@ OUTLETS_MIN = 3  # #1595 (decision 81): an overnight story is on three outlets, 
 _PREVIEW_KINDS = ("national", "league", "ufc_numbered")
 
 
-def story_passes_gate(topic: str, *, source: str, outlets: int, names: list[str]) -> bool:
+def story_passes_gate(
+    topic: str,
+    *,
+    source: str,
+    outlets: int,
+    names: list[str],
+    known: Callable[[str], bool] | None = None,
+) -> bool:
     """#1595: a headline (`trending`) fills an overnight slot on `OUTLETS_MIN` outlets or when it
     names a marquee name. Series, replays, the follow-up and the calendar are not headlines.
-    #1966 (decision 97): a death story fills no slot, whatever its source."""
+    #1966 (decision 97): a death story fills no slot, whatever its source. #1605 (wave 156):
+    ``known`` says whether the headline names a subject a casual fan knows - it passes too."""
     from core.authenticity import is_death_story
 
     if is_death_story(topic or ""):
@@ -436,7 +454,32 @@ def story_passes_gate(topic: str, *, source: str, outlets: int, names: list[str]
         return True
     from apis.topic_tokens import names_any
 
-    return outlets >= OUTLETS_MIN or names_any(topic or "", names)
+    if outlets >= OUTLETS_MIN or names_any(topic or "", names):
+        return True
+    return bool(known is not None and known(topic or ""))
+
+
+def known_subject_check() -> Callable[[str], bool] | None:
+    """#1605: the gate's casual-fan check - Wikipedia's 30-day pageviews over the floor - or None
+    when `KNOWN_SUBJECTS` is off (the suite pins it). Each pass is logged ("Derrick Henry:
+    134,234 Wikipedia views in 30 days"). Never raises."""
+    if os.getenv("KNOWN_SUBJECTS", "true").strip().lower() in ("0", "false", "no", "off"):
+        return None
+
+    def check(topic: str) -> bool:
+        try:
+            from apis import wikipedia_pageviews_api as wiki
+
+            name, views = wiki.known_subject(topic)
+        except Exception as exc:
+            logger.debug("known subject check skipped: %s", exc)
+            return False
+        if name:
+            logger.info("topic gate: %s has %s Wikipedia views in 30 days - a subject fans know "
+                        "(#1605): %s", name, f"{views:,}", topic[:80])  # fmt: skip
+        return bool(name)
+
+    return check
 
 
 def preview_qualifies(kind: str) -> bool:
@@ -729,6 +772,11 @@ def _retired(run: Any) -> bool:
     return isinstance(features, dict) and bool(features.get("retired_at"))
 
 
+def profile_length(topic: str, best_bet: dict | None) -> str:
+    """#1686: "1" (the Short preset, 30-45 s) for a "Who is ...?" pick, else ""."""
+    return "1" if pick_source(topic, best_bet) == "profile" else ""
+
+
 def _length_choice(channel_id: str, topic: str) -> str:
     try:
         from core.length_recommender import get_recommended_length
@@ -847,7 +895,11 @@ def generate_draft(
     packed = select_headless_facts(key_facts, topic=topic, corpus=corpus) if key_facts else None
     # #1850 (decision 84): a long video - Extended, chapters from its angles, 16:9 after review
     long_form = (best_bet or {}).get("draft_kind") == "long"
-    length_choice = "4" if long_form else _length_choice(channel_id, best_topic)
+    length_choice = (
+        "4"
+        if long_form
+        else profile_length(topic, best_bet) or _length_choice(channel_id, best_topic)
+    )
     long_kwargs: dict[str, Any] = {}
     if long_form:
         from core.series.long_form import long_word_range
@@ -1106,7 +1158,9 @@ def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
         from core.angle_intent import ANGLE_COMPARISON
 
         return ANGLE_COMPARISON
-    return ANGLE_NEWS if source in ("trending", "countdown", "worked", "result") else ANGLE_DEFAULT
+    # #1686 (wave 156): "Who is ...?" is news - who they are and why they are in it now.
+    news = ("trending", "countdown", "worked", "result", "profile")
+    return ANGLE_NEWS if source in news else ANGLE_DEFAULT
 
 
 def pick_source(topic: str, best_bet: dict | None) -> str:

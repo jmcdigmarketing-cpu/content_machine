@@ -7,6 +7,7 @@ import random
 import re
 import shutil
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
@@ -1443,14 +1444,30 @@ def _piper_mix_every() -> int:
         return 6
 
 
+_forced_voice: str | None = None  # #1799 (wave 159): a voice trial's arm for this render
+
+
+@contextmanager
+def forced_voice(voice: str | None) -> Iterator[None]:
+    """#1799: inside, "piper" voices the render with Piper and "elevenlabs" keeps the 1-in-N mix
+    off - a trial's arm must be what it says. None changes nothing."""
+    global _forced_voice
+    before = _forced_voice
+    _forced_voice = voice
+    try:
+        yield
+    finally:
+        _forced_voice = before
+
+
 def _should_piper_mix() -> bool:
     """True for this generate_audio call when Piper should stand in for ElevenLabs."""
-    if _free_mode_strict():
+    if _free_mode_strict() or _forced_voice == "elevenlabs":
         return False
     if _resolve_tts_provider() != "elevenlabs":
         return False
     every = _piper_mix_every()
-    if every <= 0:
+    if every <= 0 and _forced_voice != "piper":
         return False
     try:
         from core.run_mode import _tts_provider_ready
@@ -1460,6 +1477,8 @@ def _should_piper_mix() -> bool:
     except Exception as exc:
         logger.debug("piper mix readiness skipped: %s", exc)
         return False
+    if _forced_voice == "piper":
+        return True
     return random.randrange(every) == 0
 
 

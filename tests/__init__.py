@@ -147,6 +147,12 @@ os.environ["LENGTH_TRIAL"] = "false"
 os.environ["REHOOK_BEAT"] = "false"
 # Wave 158 (#1700): the part-2 pair reads and writes its store - off here.
 os.environ["PART_SHORTS"] = "false"
+# Wave 159: #1680's explainers read ESPN's calendar, #1651 cuts a Week in Review Short with ffmpeg,
+# #1799's voice trial reads the experiments store, #1710's trailer refresh writes to YouTube.
+os.environ["EXPLAINERS"] = "false"
+os.environ["WIR_SHORT"] = "false"
+os.environ["VOICE_TRIAL"] = "false"
+os.environ["CHANNEL_PAGE"] = "false"
 # #1727 (wave 149): the weekly long slot the follow lines and the compile day read.
 os.environ["LONG_SLOT"] = "6@19"
 # Wave 132 (#1847): the GTA 6 countdown reads the feeds on its days (10-29 to 11-18).

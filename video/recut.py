@@ -482,9 +482,14 @@ def plan_rehook(
 
 
 def make_rehook(
-    channel_id: str, plan: dict[str, Any], *, run: Any = subprocess.run
+    channel_id: str,
+    plan: dict[str, Any],
+    *,
+    run: Any = subprocess.run,
+    extra: dict[str, Any] | None = None,
 ) -> tuple[int, str]:
-    """Cut it and record it as a rendered run (`features.rehook_of`). (run id, file) or (0, why)."""
+    """Cut it and record it as a rendered run (`features.rehook_of`, plus `extra` - #1651's Week in
+    Review Short carries its parent). (run id, file) or (0, why)."""
     from core.run_recorder import record_content_run
     from storage.repositories.content_runs import get_content_run_repository
 
@@ -523,6 +528,7 @@ def make_rehook(
                 "hook": plan["sentence"],
                 "organic": plan["organic"],
             },
+            **(extra or {}),
         },
     )
     return int(run_id or 0), dst

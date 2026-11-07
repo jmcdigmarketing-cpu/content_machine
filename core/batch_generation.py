@@ -192,7 +192,9 @@ def collect_topics(
         return lines
     try:
         from core.best_bet import get_idea_menu, marquee_names, pick_record
+        from core.success.formats import rotated_out, without_rotated
 
+        rotated = rotated_out(channel_id)  # #1692 (wave 159): a format below the median rests
         if count <= 0:
             # #1847, decision 84: drafts are waiting, so nothing else is - but a countdown or a
             # dated moment is made on its day or not at all. No menu: it fetches feeds and
@@ -209,17 +211,20 @@ def collect_topics(
                              *matchup_ideas(channel_id, notes=notes),  # #1892
                              *debate_ideas(channel_id),  # #1673
                              *last_night_ideas(channel_id)])  # #1999, #1877  # fmt: skip
+            alone = without_rotated(alone, rotated)
             if picks is not None:
                 for bet in alone:
                     picks[bet.topic] = pick_record([bet], 1, by="batch")
             return [b.topic for b in alone]
         ideas, previews = get_idea_menu(channel_id, notes=notes, prefer_ahead=True)  # #1670
+        ideas = without_rotated(ideas, rotated)  # #1692
         extra: list[Any] = []
         if not news_only:  # #1666: the 1 PM step leaves the series and dated extras to overnight
             extra = [b for b in ideas if getattr(b, "source", "") in DATED_SOURCES]
             # Wave 135 (the operator: "a day ahead"): tomorrow's countdown too, scheduled for its
             # own noon - days 21 and 20 were lost to a PC that was off at 5 AM.
             from core.series.countdown import countdown_idea
+            from core.series.explainers import explainer_ideas
             from core.series.last_night import last_night_ideas
             from core.series.parts import part_two_ideas
             from core.series.profiles import profile_ideas
@@ -234,7 +239,9 @@ def collect_topics(
                              *last_night_ideas(channel_id),  # #1999, #1877
                              *profile_ideas(channel_id),  # #1686
                              *patch_ideas(channel_id),  # #1688
-                             *part_two_ideas(channel_id)])  # #1700  # fmt: skip
+                             *part_two_ideas(channel_id),  # #1700
+                             *explainer_ideas(channel_id)])  # #1680  # fmt: skip
+            extra = without_rotated(extra, rotated)  # #1692
         names = marquee_names(channel_id)
         from core.best_bet import crossover_names
 
@@ -286,7 +293,7 @@ def collect_topics(
                 picks[bet.topic] = record
             for bet in extra:
                 picks[bet.topic] = pick_record([bet], 1, by="batch")
-            if not news_only:  # #1700: tonight's lead story, on 5+ outlets, told in two
+            if not news_only and "part 1" not in rotated:  # #1700: the lead story, told in two
                 from core.series.parts import part_one
 
                 first = part_one(chosen, names, channel_id)
@@ -369,6 +376,7 @@ def lead_first(
         crossover_story,
         injury_story,
         marquee_names,
+        trade_story,
     )
     from core.series.dated import channel_day, jump_first, launch_names
 
@@ -392,6 +400,7 @@ def lead_first(
         float(getattr(bet, "outlier", 0) or 0) >= OUTLIER_FIRST and names_any(topic, names)))  # fmt: skip
     if week:
         out = front(out, lambda topic, _bet: names_any(topic, week))
+    out = front(out, lambda topic, _bet: trade_story(topic, names))  # #1614 (wave 159)
     out = front(out, lambda topic, _bet: injury_story(topic, names))
     return jump_first(out, launch_names(channel_id, channel_day(channel_id, now)))
 
@@ -919,7 +928,7 @@ def generate_draft(
         )
         return out
     # #1301: the brief carries the call the preview was offered with.
-    preview = draft_brief(topic, best_bet) if upcoming else ""
+    preview = preview_for(topic, best_bet, upcoming=upcoming)
 
     machine_intent = draft_intent(  # #1588; #1594 a headline is news
         own_idea=own_idea, preview=preview, source=pick_source(topic, best_bet)
@@ -994,6 +1003,13 @@ def generate_draft(
         None if own_idea or long_form or profile_length(topic, best_bet)
         else length_trial_arm(channel_id, machine_intent)
     )  # fmt: skip
+    # #1799 (wave 159): a news draft's voice on trial, balanced within its length arm
+    voice_arm = None
+    if not own_idea and not long_form:
+        from core.voice.trial import voice_trial_arm
+
+        voice_arm = voice_trial_arm(channel_id, machine_intent,
+                                    length_arm=length_trial[0] if length_trial else "")  # fmt: skip
     if length_trial is not None and length_trial[0] == "format":
         length_choice = length_trial[1]
         if length_trial[2]:
@@ -1002,6 +1018,14 @@ def generate_draft(
     from core.series.shapes import draft_shape, shape_brief
 
     shape = "" if own_idea or long_form else draft_shape(topic, pick_source(topic, best_bet))
+    if shape:  # #1692 (wave 159): a shape rotated out drafts the headline plainly
+        from core.success.formats import _SHAPES, rotated_out
+
+        if _SHAPES.get(shape) in rotated_out(channel_id):
+            shape = ""
+    if pick_source(topic, best_bet) == "explainer" and not long_form:  # #1680: about 60 s
+        length_choice = "2"
+        long_kwargs["word_range"] = EXPLAINER_WORDS
     with hook_arm_env(hook_arm):  # #1502
         result = run_pipeline(
             topic,
@@ -1057,6 +1081,14 @@ def generate_draft(
             record_assignment(channel_id, result.run_id, LENGTH_LEVER, length_trial[0])
         except Exception as exc:
             logger.debug("length arm not recorded: %s", exc)
+    if voice_arm and result.run_id:
+        try:
+            from core.experiments import record_assignment
+            from core.voice.trial import VOICE_LEVER
+
+            record_assignment(channel_id, result.run_id, VOICE_LEVER, voice_arm)
+        except Exception as exc:
+            logger.debug("voice arm not recorded: %s", exc)
     _record_draft_features(result.run_id, shape, channel_id, beat=length_choice in ("1", "2"))
     if (best_bet or {}).get("part") == 1 and result.run_id:  # #1700: the pair opens
         from core.series.parts import record_part_one
@@ -1248,6 +1280,28 @@ def preview_shape_arm(channel_id: str, preview: str) -> tuple[str, str, str] | N
         return None
 
 
+# Wave 159 (defect, live 11-07): a series idea that names a coming card keeps its own shape. "Gane
+# vs. Hokit: who wins at UFC 334?" and "UFC 334: Gane vs. Hokit - how they match up" named the card,
+# `_named_event_start` found it ahead, and both were drafted as previews - a call where the debate
+# leaves the question open, a preview brief on a 6-8 minute match-up.
+OWN_SHAPE_SOURCES = ("debate", "long", "explainer", "profile", "part2", "patch", "season")
+EXPLAINER_WORDS = (165, 200)  # #1680: "in 60 seconds" at 3.3 words a second
+
+
+def keeps_own_shape(source: str) -> bool:
+    """A pick whose menu source writes its own shape - never turned into a preview by the event its
+    topic names."""
+    return source in OWN_SHAPE_SOURCES
+
+
+def preview_for(topic: str, best_bet: dict | None, *, upcoming: bool) -> str:
+    """The preview brief a draft takes when its event is ahead, or "" - never for a series idea
+    that writes its own shape (`keeps_own_shape`)."""
+    if not upcoming or keeps_own_shape(pick_source(topic, best_bet)):
+        return ""
+    return draft_brief(topic, best_bet)
+
+
 def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
     """#1588: what a draft is - "" for the operator's own idea (its words are read for cues),
     "preview" for a coming game, "default" otherwise. Headline words ("vs.", "reaction") and
@@ -1267,6 +1321,10 @@ def draft_intent(*, own_idea: bool, preview: str, source: str = "") -> str:
         from core.angle_intent import ANGLE_COMPARISON
 
         return ANGLE_COMPARISON
+    if source == "explainer":  # #1680 (wave 159): what to know before it starts
+        from core.angle_intent import ANGLE_EXPLAINER
+
+        return ANGLE_EXPLAINER
     # #1686 (wave 156): "Who is ...?" is news - who they are and why they are in it now.
     # #1688: a patch; #1700: a part 2 is the story's news, the day after
     news = ("trending", "countdown", "worked", "result", "profile", "patch", "part2")

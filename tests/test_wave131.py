@@ -496,8 +496,8 @@ class PlaylistRefusalTests(unittest.TestCase):
             created = playlists.sync_playlists(service, "tapin", store_path=store)
             with open(store, encoding="utf-8") as f:
                 ids = json.load(f)["ids"]
-        self.assertEqual(created, ["GTA"])
-        self.assertEqual(ids, {"GTA": "PL1"})
+        self.assertEqual(created, ["Week in Review"])  # wave 159: the map's first row
+        self.assertEqual(ids, {"Week in Review": "PL1"})
         self.assertEqual(service.playlists.return_value.insert.return_value.execute.call_count, 2)
 
     def _finish(self, tmp, *, today, env="true", scope=True):

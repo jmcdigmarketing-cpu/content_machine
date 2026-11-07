@@ -1588,14 +1588,18 @@ def run_media_only(
         voices, segments = plan_for_run(script, channel_id, content_run_id, features=voice_features)
     except Exception as exc:
         logger.warning("voice plan unavailable, one voice this render: %s", exc)
-    generate_audio(
-        script,
-        mp3_path,
-        channel_id=channel_id,
-        length_choice=length_choice,
-        voices=voices,
-        segments=segments,
-    )
+    from core.tts import forced_voice
+    from core.voice.trial import arm_for_run
+
+    with forced_voice(arm_for_run(channel_id, content_run_id)):  # #1799: a trial's voice
+        generate_audio(
+            script,
+            mp3_path,
+            channel_id=channel_id,
+            length_choice=length_choice,
+            voices=voices,
+            segments=segments,
+        )
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
     try:
         from core.tts import last_run_voices, speech_speed

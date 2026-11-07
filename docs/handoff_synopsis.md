@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-06: wave 158, the next five
+# Handoff synopsis — 2026-11-07: wave 159, the next 10
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,14 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-06 (Claude Code): wave 158, the next five
+## Last wave — 2026-11-07 (Claude Code): wave 159, the next 10
+
+A series idea keeps its own shape (UFC 334's debate was being drafted as a preview); trades
+lead; 60-second explainers; a Week in Review Short; formats rotate out; the worker every 5
+minutes; Piper against ElevenLabs on news Shorts; the channel page, waiting for the sign-in that
+ended on 11-07 (decision 110).
+
+## Previous — 2026-11-06 (Claude Code): wave 158, the next five
 
 The voice plan sized to the month's characters; each subscription with what it bought;
 organic subscribers by the campaigns' windows; a strong story told in two Shorts a day apart
@@ -21,13 +28,6 @@ organic subscribers by the campaigns' windows; a strong story told in two Shorts
 Stat-shock and ranking Shorts from the story, the countdown's numbers on screen; patch winners
 and losers for Marvel Rivals and Call of Duty; a re-hook beat at the 15-second drop-off; length
 by format on trial Nov 7-21 (decision 108).
-
-## Previous — 2026-11-06 (Claude Code): wave 156, the next five
-
-A 1 PM draft step in the worker pass for tonight's slots; a Short past 300 organic views
-re-hooked 14 days on; a one-outlet subject fans know passes the gate; "Who is ...?" for a
-name that just trended; a game's stills are its footage and the matching edition wins
-(decision 107).
 
 ---
 

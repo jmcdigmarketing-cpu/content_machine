@@ -37,7 +37,7 @@ from core.logging import get_logger
 
 logger = get_logger("jobs.fast_lane")
 
-CHECK_MINUTES = 30
+CHECK_MINUTES = 10  # #1663 (wave 159): with a pass every 5 minutes, look every 10 (was 30)
 PER_DAY = 3
 NEWS_PER_DAY = 2
 NEWS_OUTLETS = 5
@@ -51,7 +51,8 @@ GAME_HOURS = {"nfl": 3.3, "nba": 2.4}
 FRESH_HOURS = 1.25
 QUICK_OUTLETS = 3
 QUICK_MINUTES = 60
-NEWS_KINDS = ("news", "injury", "fight_week", "presser")  # NEWS_PER_DAY counts them together
+# NEWS_PER_DAY counts them together; #1614 (wave 159) a marquee trade or signing
+NEWS_KINDS = ("news", "injury", "trade", "fight_week", "presser")
 _UFC_CARD = re.compile(r"\bUFC\s+\d{3}\b")
 _DRAMA = re.compile(
     r"\b(miss(es|ed)? weight|weigh-?ins?|on the scale|pulled (out|from)|withdraws?|withdrew|"
@@ -336,11 +337,16 @@ def quick_stories(
     """#1613, then #1874, then #1890. `week` is the fight week's names; None reads them from
     ESPN's calendar - only when a headline has a fight-week word."""
     from apis.topic_tokens import names_any
-    from core.best_bet import injury_story, marquee_names
+    from core.best_bet import injury_story, marquee_names, trade_story
 
     names = marquee_names(channel_id)
     found = _quick_story(channel_id, "injury", now=now, pool=pool, done=done,
                          match=lambda t: injury_story(t, names), why="a marquee injury")  # fmt: skip
+    if found:
+        return found
+    found = _quick_story(channel_id, "trade", now=now, pool=pool, done=done,
+                         match=lambda t: trade_story(t, names),
+                         why="a marquee trade or signing")  # fmt: skip
     if found:
         return found
     if week is None and any(_DRAMA.search(str(c.get("topic") or "")) for c in pool):

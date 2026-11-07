@@ -39,6 +39,7 @@ _SOURCES = {
     "profile": "who is",  # #1686 (wave 156)
     "patch": "patch winners and losers",  # #1688 (wave 157)
     "part2": "part 2",  # #1700 (wave 158)
+    "explainer": "explainer",  # #1680 (wave 159)
 }
 # Wave 157: a run's shape - its story's, whatever menu it came from - is its format.
 _SHAPES = {"ranking": "ranking", "stat_shock": "stat-shock", "patch": "patch winners and losers"}
@@ -191,6 +192,78 @@ def format_lines(
     except Exception as exc:
         logger.debug("format lines skipped: %s", exc)
         return []
+
+
+# #1692 (B04.21, wave 159): a format rotates out after its last 4 measured Shorts all fell below the
+# channel's median first-week organic views; it gets one more try once its newest is 30 days old.
+# Only the B04 formats rotate - news, a preview, a countdown, a dated moment, your own idea and the
+# fast lane are the channel's spine.
+ROTATE_AFTER = 4
+ROTATE_RETRY_DAYS = 30
+ROTATE_MIN_MEASURED = 8
+ROTATABLE = frozenset({"who is", "debate", "patch winners and losers", "ranking", "stat-shock",
+                       "part 1", "part 2", "explainer", "more of what worked", "story arc",
+                       "repeat of a winner"})  # fmt: skip
+
+
+def rotated_out(
+    channel_id: str, *, shorts: list[dict[str, Any]] | None = None, today: date | None = None
+) -> dict[str, float]:
+    """{format: the median it fell under} for each rotatable format whose last `ROTATE_AFTER`
+    measured Shorts were all below the channel's median, its newest under `ROTATE_RETRY_DAYS` old.
+    {} with fewer than `ROTATE_MIN_MEASURED` measured. Never raises."""
+    day = today or date.today()
+    try:
+        rows = shorts if shorts is not None else measured_shorts(channel_id, today=day)
+        if len(rows) < ROTATE_MIN_MEASURED:
+            return {}
+        median = float(statistics.median(r["views7"] for r in rows))
+        by_format: dict[str, list[dict[str, Any]]] = {}
+        for row in sorted(rows, key=lambda r: r["when"]):
+            by_format.setdefault(str(row.get("format") or ""), []).append(row)
+        out: dict[str, float] = {}
+        for name, items in by_format.items():
+            if name not in ROTATABLE or len(items) < ROTATE_AFTER:
+                continue
+            last = items[-ROTATE_AFTER:]
+            newest = last[-1]["when"]
+            newest_day = newest.date() if isinstance(newest, datetime) else day
+            if (
+                all(r["views7"] < median for r in last)
+                and (day - newest_day).days < ROTATE_RETRY_DAYS
+            ):
+                out[name] = median
+        return out
+    except Exception as exc:
+        logger.debug("format rotation unread: %s", exc)
+        return {}
+
+
+def idea_format(bet: Any) -> str:
+    """The format an idea's menu source makes (`run_format`'s names), or "" for a headline - whose
+    shape is decided at draft time."""
+    source = str(getattr(bet, "source", "") or "")
+    if source.startswith("fast_"):
+        return "fast lane"
+    return _SOURCES.get(source, "")
+
+
+def without_rotated(ideas: list[Any], rotated: dict[str, float]) -> list[Any]:
+    """`ideas` less those of a rotated-out format."""
+    if not rotated:
+        return list(ideas)
+    return [bet for bet in ideas if idea_format(bet) not in rotated]
+
+
+def rotation_lines(channel_id: str, *, today: date | None = None) -> list[str]:
+    """The weekly report's line for the formats rotated out, or []."""
+    rotated = rotated_out(channel_id, today=today)
+    if not rotated:
+        return []
+    median = next(iter(rotated.values()))
+    return [f"Rotated out (#1692): {', '.join(sorted(rotated))} - each one's last {ROTATE_AFTER} "
+            f"Shorts were under the channel's median of {median:,.0f} first-week organic views; "
+            f"one more try once its newest is {ROTATE_RETRY_DAYS} days old"]  # fmt: skip
 
 
 def length_trial_lines(

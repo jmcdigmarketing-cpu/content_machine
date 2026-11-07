@@ -1,0 +1,7 @@
+{
+  "_note": "#1702/#1703/#1710 (wave 159; the operator approved, 2026-11-07): what `ops channel-page --apply` sets on the YouTube channel. `sections`: playlists shown on the page, in order, each once it has an id in data/playlists_<channel>.json - existing sections are kept, only missing ones are added. `description`: the channel's About text (under 1,000 characters; {long_slot} is the weekly long slot, e.g. 'every Sunday'). The trailer for visitors who have not subscribed is the latest public Week in Review, set by the same command.",
+  "tapin": {
+    "sections": ["Week in Review", "GTA", "UFC / MMA", "Picks, graded", "Full Videos"],
+    "description": "TapIn - gaming and fight news in under a minute. GTA 6, Call of Duty, Marvel Rivals, UFC, and the NFL and NBA's biggest nights: what happened, why it matters, and our call.\n\nNew Shorts every day at noon and 10 PM ET. The Week in Review, {long_slot} at 7 PM ET - the week's biggest stories in one video. Picks, graded: every call we made, scored.\n\nSubscribe so the next big story finds you first.\n\nNarrated with an AI voice. Every script is written from sourced reporting and checked before it goes up."
+  }
+}

@@ -53,22 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-07 · **HEAD at write:** `260dbab` (wave 157, CI green; this wave's commit
+**Written:** 2026-11-07 · **HEAD at write:** `89a95b5` (wave 158, CI green; this wave's commit
 follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 158, the next five.** Built: the voice plan sized to the month's characters (#1800) and each
-subscription with what it bought (#1807), `core/money/plans.py`; organic subscribers by the
-campaigns' windows (#1830); a strong story in two Shorts (#1700, `core/series/parts.py`). #1723
-waits for a hero-standings source (#2013). Decision 109. Wave 159 (the operator's "next 10")
-follows at once.
+**Wave 159, the next 10.** Fixed: a series idea naming a coming card was drafted as a preview
+(#2015). Built: trades lead (#1614), 60-second explainers (#1680), a Week in Review Short (#1651),
+formats rotate out (#1692), the volume lane (#1669), the worker every 5 minutes (#1663), Piper
+against ElevenLabs on news Shorts Nov 8-21 (#1799), the channel page (#1702/#1703/#1710, not applied
+- the sign-in ended). #1809 closed as already true. Decision 110.
 
-**Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1723, #1984, #1988, #1991, #1994, #1996-#1998,
-#2000, #2003-#2014. **Next:** #1799, #1614, #1651, #1663, #1669, #1680, #1692, #1702, #1703, #1710.
+**Open:** #1600, #1621, #1646, #1648, #1668, #1702, #1703, #1710, #1721, #1723, #1810, #1984, #1988,
+#1991, #1994, #1996-#1998, #2000, #2003-#2014, #2016-#2018. **Next:** #2017 (operator), #1810,
+#1719, #1828, #1786, #1826.
 
-**Operator:** publish the Google app today (Sat Nov 7) - the sign-in lapses and uploads stop (set
-POLICY_SITE_URL first; `ops check-youtube` reads the four pages); give the ElevenLabs key
-`user_read` (#2014); enter the monthly subscriptions (`ops spend add --kind subscription
---monthly`); bio pages; tracking IDs; Facebook in Buffer. Keep the PC on at 5 AM and 1-5 PM.
+**Operator:** the YouTube sign-in ended on 11-07 - publish the Google app (POLICY_SITE_URL, `ops
+check-youtube`), then `py -m youtube.oauth_setup --channel tapin`; then `py -m scripts.ops
+channel-page --apply`. Give the ElevenLabs key `user_read` (#2014); enter the monthly
+subscriptions. Keep the PC on at 5 AM and 1-5 PM.
 
 ## Slot — Cursor
 

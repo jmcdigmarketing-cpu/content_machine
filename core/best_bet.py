@@ -759,8 +759,12 @@ def _commerce_filter_enabled() -> bool:
 
 
 def _is_commerce_headline(title: str) -> bool:
-    """True for shopping/deal/hardware-listing headlines (not a real content topic)."""
+    """True for shopping/deal/hardware-listing headlines (not a real content topic). #1614 (wave
+    159): a contract - "Cowboys sign Micah Parsons to 4-year, $188M extension", "Lakers agree to a
+    deal with Austin Reaves" - is a sports story; its price and its "deal" do not make it commerce."""
     t = (title or "").lower()
+    if _CONTRACT.search(t):
+        return any(m in t for m in _COMMERCE_MARKERS if m not in (" deal", "deals"))
     if _PRICE_RE.search(t):
         return True
     return any(m in t for m in _COMMERCE_MARKERS)
@@ -1056,7 +1060,7 @@ def _leads(cand: dict, names: list[str]) -> bool:
     topic = str(cand.get("topic") or "")
     if float(cand.get("outlier") or 0) >= OUTLIER_FIRST and names_any(topic, names):
         return True
-    return injury_story(topic, names)
+    return injury_story(topic, names) or trade_story(topic, names)  # #1614
 
 
 def _keep_leads(ranked: list[dict], limit: int, names: list[str]) -> list[dict]:
@@ -1339,6 +1343,31 @@ def injury_story(topic: str, names: list[str]) -> bool:
 
     text = topic or ""
     return bool(_INJURY.search(text)) and names_any(text, names) and not is_death_story(text)
+
+
+# #1614 (B01.18, wave 159): a marquee team's or player's trade or signing - the slate leads with it
+# and the fast lane takes it at three outlets within the hour, like an injury.
+_TRADE = re.compile(
+    r"\b(trades?|traded|trading for|acquires?|acquired|acquisition of|signs?|signed|signing|"
+    r"re-signs?|re-signed|agree(s|d)? to (terms|a deal|a contract|an extension)|extension|contract|"
+    r"waive[sd]?|dealt to)\b",
+    re.IGNORECASE,
+)  # live 11-07: not "agreed to fight" (Makhachev) and not "images released" (GTA 6)
+# A contract headline is a sports story, not a shopping one, even with "deal" or "$188M" in it.
+_CONTRACT = re.compile(
+    r"\b(signs?|signed|re-signs?|agrees? to|agreed to|extension|contract|trade[sd]?|traded|"
+    r"acquires?|acquired|free agent)\b(?!-in)",  # a store's "trade-in" offer stays commerce
+    re.IGNORECASE,
+)
+
+
+def trade_story(topic: str, names: list[str]) -> bool:
+    """#1614: a headline about a trade or a signing naming one of `names` - never a death story."""
+    from apis.topic_tokens import names_any
+    from core.authenticity import is_death_story
+
+    text = topic or ""
+    return bool(_TRADE.search(text)) and names_any(text, names) and not is_death_story(text)
 
 
 def _menu_shorts(channel_id: str) -> list[dict[str, Any]]:

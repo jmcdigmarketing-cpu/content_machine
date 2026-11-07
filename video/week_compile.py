@@ -170,7 +170,7 @@ def _public_shorts(
             continue
         run = _run(int(run_id))
         path = str(getattr(run, "mp4_path", "") or "") if run is not None else ""
-        if not path or not os.path.isfile(path) or _features(run).get("compilation"):
+        if not path or not os.path.isfile(path) or not _new_short(_features(run)):
             continue
         seen.add(int(run_id))
         from video.hook_copy import hook_offset, run_opening
@@ -189,6 +189,13 @@ def _public_shorts(
                     "views": _organic_views(getattr(row, "metrics_json", None),
                                             lifetime=lifetime)})  # fmt: skip
     return sorted(out, key=lambda s: s["published_at"])
+
+
+def _new_short(features: dict[str, Any]) -> bool:
+    """A Short the week made new - not a compilation, and not a cut of an older Short (#1652's
+    re-hook, #1057's re-cut, #1651's Week in Review Short): those were in an earlier week's."""
+    return not any(features.get(k) for k in ("compilation", "rehook_of", "recut_of",
+                                             "week_review_cut"))  # fmt: skip
 
 
 def _organic_views(metrics_json: Any, *, lifetime: bool = False) -> int:

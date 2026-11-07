@@ -11715,3 +11715,69 @@ to `campaign_subscribers`; the pick record's `part` from `collect_topics` to `fo
 Next: the operator's "next 10" (wave 159).
 
 Counts (`ops roadmap-index`): 213 open, 1,888 done, 145 parked; 211 numbered open, highest #2014.
+
+## 2026-11-07 — wave 159: the next 10 (Claude Code)
+
+**Prompt:** "next 10" (with plan mode; the operator ticked the channel page, the worker every 5
+minutes and the voice trial when asked)
+
+Verified first: wave 158 finished and pushed (`89a95b5`, CI green); overnight did not run at 05:00
+(the PC was off), so the merge waited on nothing. The 10, the bridge's next: #1799, #1614, #1651,
+#1663, #1669, #1680, #1692, #1702, #1703, #1710; #1628 waits for the operator's media, #1627 and
+#1737 are `M`.
+
+Measured before building (read-only, 11-07):
+- A replay of `_named_event_start`: "Gane vs. Hokit: who wins at UFC 334?", "UFC 334: Gane vs. Hokit
+  - how they match up" and "UFC 334 in 60 seconds" all found the card ahead (2026-11-15T01:00Z), so
+  `generate_draft` would have drafted UFC 334's debate (Nov 12) and match-up (Nov 10) as previews.
+- `_is_commerce_headline("Cowboys sign Micah Parsons to 4-year, $188M extension")` was True.
+- Voice: every hold runs before `generate_audio`; `TTS_PIPER_MIX_EVERY` is unset, so 1 render in 6
+  is already Piper at random; Piper is ready.
+- A Week in Review is 16:9 and its deep dives are public Shorts played whole - the cut comes from
+  the Short's own file. The playlist store has GTA, UFC / MMA, Full Videos and no Week in Review or
+  Picks, graded playlist.
+
+Shipped (worktree `wave159`):
+0. Defect #2015: `batch_generation.keeps_own_shape` / `preview_for`.
+1. #1669 `lanes.shorts_weeks` / `shorts_week_lane`.
+2. #1692 `formats.rotated_out`, `idea_format`, `without_rotated`, `rotation_lines`; the shape gate.
+3. #1614 `best_bet._TRADE`, `trade_story`, `_CONTRACT`; fast-lane kind `trade`; `lead_first`.
+4. #1680 `core/series/explainers.py`; `draft_intent("explainer")`; `EXPLAINER_WORDS`.
+5. #1651 `chapter_shorts.week_review_short`; `recut.make_rehook(extra=)`; `week_compile._new_short`.
+6. #1663 `WORKER_EVERY_MINUTES` 5, `CHECK_MINUTES` 10.
+7. #1799 `core/voice/trial.py`; `tts.forced_voice`; the render reads the arm.
+8. #1702 #1703 #1710 `publishing/channel_page.py`, `config/channel_page.json`, `ops channel-page`,
+   the worker's `_channel_trailer`; two playlist rows.
+
+Findings:
+- Live-exposed in the build: the first trade regex read "Islam Makhachev verbally agreed to fight at
+  UFC 336" and "GTA 6: Lots Of New Images Have Been Released" as trades - tightened, corpus cases.
+- **The YouTube sign-in ended on 11-07** - the channel page's dry run hit it; uploads stop too until
+  the operator signs in again (#2017). `channel_page_lines` now says so instead of an attribute error.
+- A #1652 re-hook (and a #1057 re-cut) would have joined the next week's compilation as a new Short;
+  `_new_short` keeps every cut of an older Short out.
+- `tonight_slots` and `slot_for_run` read slots differently (#2018, under #1810).
+
+Deliberately not done: the channel page is not applied (the sign-in); the worker task is reinstalled
+after the merge; #1810's gaps are filed, not fixed.
+
+Tests: `tests/test_wave159.py`, 35 - 33 fail on `89a95b5` (a clean HEAD checkout, the editable
+finder stripped; the HEAD copy imports the new `channel_page` lazily); the two added after the live
+reads (the trade false positives, the ended sign-in) failed on the build before their fixes. Changed
+on purpose: the worker-interval pins (`test_upload_last_mile`), the fast lane's look (`test_wave151`),
+the playlist map's first row (`test_wave131`), and two sample headlines that are now trades
+(`test_wave154`, `test_wave155`). `docs/ops_commands.md` regenerated.
+
+Audit: mypy 92 == baseline; ruff and format clean; corpus all held. Suite 7,605 forward and
+reversed, OK; `data/` untouched. Production callers: `preview_for` and the voice arm from
+`generate_draft`; `rotated_out` from `collect_topics` and `generate_draft`; `trade_story` from
+`lead_first`, `_leads` and `quick_stories`; `explainer_ideas` from `collect_topics`;
+`week_review_short` from `_run_overnight_body`; `arm_for_run` from `run_media_only`;
+`channel_page_lines` from `ops channel-page`; `refresh_trailer` from the worker. Fields traced: the
+`news_voice` assignment from `generate_draft` to `run_media_only` and `voice_trial_lines`; the cut's
+`week_review_cut` / `parent_run_id` / `rehook_of` to `_cut_parents`, `schedule_waiting_shorts` and
+`_new_short`; the playlist store's `trailer` / `trailer_tried` to `refresh_trailer`.
+
+Next five: #1810, #1719, #1828, #1786, #1826; #2017 first (operator).
+
+Counts (`ops roadmap-index`): 208 open, 1,897 done, 145 parked; 206 numbered open, highest #2018.

@@ -957,7 +957,10 @@ def run_schtasks(argv: list[str]) -> tuple[int, str]:
 # the drafts task above - nothing here runs `--install` on its own.
 
 WORKER_TASK = r"ContentMachine\UploadWorker"
-WORKER_EVERY_MINUTES = 15
+# #1663 (B03.17, wave 159; the operator approved, 11-07): every 5 minutes, not 15 - a fast-lane
+# story waited up to 15 minutes for a pass and 30 more for the lane to look. A pass with nothing to
+# do ends in seconds, and the worker's lock keeps two passes from overlapping.
+WORKER_EVERY_MINUTES = 5
 WORKER_SCRIPT = os.path.join("scripts", "worker_task.pyw")
 
 

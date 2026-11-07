@@ -67,6 +67,14 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-07 (Claude, wave 159 - the next 10).** A series idea keeps its own shape (UFC 334's
+"who wins?" was being drafted as a preview); trades lead; 60-second explainers; a Week in
+Review Short; formats rotate out; the worker every 5 minutes; Piper against ElevenLabs on news
+Shorts; the channel page, built and waiting for the sign-in (decision 110). Next, before W4's
+freeze (Nov 16): **#1810** no voice paid for a draft that cannot go out (the gaps measured),
+**#1719** the follow line's wording A/B, **#1828** a per-video card at 7 days, **#1786** the
+Week in Review's deep dives crossposted as 60-90 s cuts, **#1826** next-five by lane share;
+**#2017** first - the sign-in ended on 11-07.
 **2026-11-06 (Claude, wave 158 - the next five).** The voice plan sized to the month's
 characters (Creator covers ~49,850), each subscription with what it bought, organic subscribers
 by the campaigns' windows, and a strong story told in two (decision 109); #1723 waits for a
@@ -83,14 +91,6 @@ turns to cost and subscribers before the freeze: **#1800** ElevenLabs' plan size
 month's characters, **#1807** each subscription with what it bought, **#1830** paid and
 organic split everywhere, **#1700** part-2 Shorts a day apart, **#1723** evergreen tier lists
 refreshed monthly; **#1849** once the embargo date is known.
-**2026-11-06 (Claude, wave 156 - the next five).** A 1 PM draft step for tonight's slots, a
-Short past 300 views re-hooked, a subject fans know through the gate, "Who is ...?" for a name
-that just trended, and a game's stills as its footage (decision 107). The list moves to the
-next unbuilt views items in the bridge's order, the formats B04 names: **#1676** stat-shock
-Shorts (one surprising number), **#1674** rankings with an on-screen countdown, **#1645** a
-re-hook beat at the drop-off second, **#1637** length by format as an experiment, **#1688**
-patch winners and losers for Marvel Rivals and Call of Duty; **#1849** once the embargo date is
-known. The GTA 6 items (#1848-#1867) are built and wait for launch week.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

@@ -447,6 +447,12 @@ def _run_overnight_body(
         result.chapter_lines = [*result.chapter_lines, *rehook_step(channel)]
     except Exception as exc:
         logger.warning("overnight re-hook did not run: %s", exc)
+    try:  # #1651 (wave 159): the newest Week in Review's top deep dive, cut with a new hook
+        from core.chapter_shorts import week_review_short
+
+        result.chapter_lines = [*result.chapter_lines, *week_review_short(channel)]
+    except Exception as exc:
+        logger.warning("overnight Week in Review Short did not run: %s", exc)
 
     try:
         from core.channel_health import build_health, health_line, record_history

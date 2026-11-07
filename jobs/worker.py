@@ -934,7 +934,7 @@ def _tonight_watch(now: datetime | None = None) -> None:
 
 
 def _fast_lane(cap: int = 3) -> int:
-    """#1647 / #1649 / #1650 (wave 151): one fast-lane story a pass, at most every 30 minutes -
+    """#1647 / #1649 / #1650 (wave 151): one fast-lane story a pass, at most every 10 minutes -
     drafted, rendered and queued public now, then uploaded in this same pass. Fail-open."""
     sent = 0
     try:
@@ -948,7 +948,7 @@ def _fast_lane(cap: int = 3) -> int:
             for line in lines:
                 print(line)
             if any("queued public now" in line for line in lines):
-                while sent < cap and process_one():  # not the next pass, 15 minutes on
+                while sent < cap and process_one():  # not the next pass, 5 minutes on
                     sent += 1
     except Exception as exc:
         logger.warning("fast lane skipped: %s", exc)
@@ -975,6 +975,22 @@ def _midday(cap: int = 2) -> int:
     except Exception as exc:
         logger.warning("midday step skipped: %s", exc)
     return sent
+
+
+def _channel_trailer() -> None:
+    """#1710 (wave 159): the channel's trailer for new visitors follows the newest public Week in
+    Review - a write only when a newer one is public. Fail-open."""
+    try:
+        from config.channels import active_channel_ids
+        from publishing.channel_page import refresh_trailer
+
+        for channel in active_channel_ids():
+            if channel == "default":
+                continue
+            for line in refresh_trailer(channel):
+                print(line)
+    except Exception as exc:
+        logger.debug("trailer refresh skipped: %s", exc)
 
 
 def _sync_metrics() -> None:
@@ -1040,6 +1056,7 @@ def main():
         processed = drain_due()
         processed += _fast_lane()  # wave 151
         processed += _midday()  # #1666
+        _channel_trailer()  # #1710
         _sync_metrics()
         _overnight_watch()
         _sign_in_watch()  # #1438
@@ -1064,6 +1081,7 @@ def main():
                 did_work = True
             if _midday():  # #1666
                 did_work = True
+            _channel_trailer()  # #1710
             _sync_metrics()
             _overnight_watch()
             _sign_in_watch()

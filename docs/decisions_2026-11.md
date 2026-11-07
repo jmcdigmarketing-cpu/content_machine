@@ -163,3 +163,16 @@ Shorts a day apart. Tier lists wait for a hero-standings source. **Why:** the br
 B10.9, B05.4 (decision 82). **Consequence:** `config/plans.json` and the spend ledger are the
 operator's to keep current; `PART_SHORTS=false` stops the pairs.
 
+## 110. The next 10: trades lead, explainers, a Week in Review Short, a 5-minute worker, a voice trial, the channel page (2026-11-07)
+**Decision:** a series idea keeps its own shape even when it names a coming card (the defect that
+made UFC 334's "who wins?" a preview). A marquee trade or signing leads the night and takes the fast
+lane; a contract headline is not commerce. A numbered card or an award 2-5 days away gets a 60-second
+explainer. The newest Week in Review's top deep dive is cut with a new hook and goes public at a
+slot. A B04 format whose last 4 Shorts were under the median rests for 30 days. The worker runs every
+5 minutes and the fast lane looks every 10. From Nov 8 to Nov 21 half of news Shorts are voiced by
+Piper, balanced within the length trial's arms. The channel page gets its sections, a description
+and the Week in Review as the trailer for new visitors. **Why:** the operator's "next 10"; the
+operator approved the channel page, the worker task and the voice trial when asked (11-07).
+**Consequence:** `EXPLAINERS`, `WIR_SHORT`, `VOICE_TRIAL` and `CHANNEL_PAGE` stop each; the channel
+page waits for a working YouTube sign-in (#2017).
+

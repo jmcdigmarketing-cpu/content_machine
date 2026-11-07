@@ -1904,7 +1904,7 @@ def cmd_chapters(args: argparse.Namespace) -> int:
 
 @_register(
     "worker-task",
-    "Send queued uploads every 15 minutes via Task Scheduler (--install / --remove) (#1130)",
+    "Send queued uploads every 5 minutes via Task Scheduler (--install / --remove) (#1130, #1663)",
 )
 def cmd_worker_task(args: argparse.Namespace) -> int:
     from core import nightly_task
@@ -2153,6 +2153,19 @@ def cmd_playlists(args: argparse.Namespace) -> int:
     if missing_line(channel):  # #1584: YouTube refused the rest for now
         print("YouTube refused the rest for now - the upload worker tries them again once a day.")
     return 0
+
+
+@_register(
+    "channel-page",
+    "The channel page: playlist sections, the description, the trailer (--apply writes) (#1702)",
+)
+def cmd_channel_page(args: argparse.Namespace) -> int:
+    from publishing.channel_page import channel_page_lines
+
+    lines = channel_page_lines(args.channel, apply=bool(getattr(args, "apply", False)))
+    for line in lines:
+        print(line)
+    return 1 if any(line.startswith("Channel page:") for line in lines) else 0
 
 
 @_register(
@@ -3675,8 +3688,11 @@ def _offer_queued_uploads(channel: str | None) -> None:
     from jobs.worker import send_queued_uploads
 
     sent = send_queued_uploads(waiting)
+    from core.nightly_task import WORKER_EVERY_MINUTES
+
     print(
-        f"  Sent {sent} of {waiting}. Every 15 minutes on its own: py -m scripts.ops worker-task --install"
+        f"  Sent {sent} of {waiting}. Every {WORKER_EVERY_MINUTES} minutes on its own: "
+        "py -m scripts.ops worker-task --install"
     )
 
 

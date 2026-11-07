@@ -1,6 +1,8 @@
 {
   "_note": "Franchise playlists (#601). Most specific first: a video joins the first playlist whose keys match, plus that playlist's parent. Operator list 2026-09-18; Minecraft and Roblox are the two most-searched gaming niches on Google Trends (3 months) that were not already on it. `footage` names the local game folder(s) a matching topic draws its background from (#786); empty = no footage yet (ops footage). `domain` (#955) sends a topic that names no key but reads as that domain (athlete names included, #946) to the same footage; `ops footage-gaps` lists what fell through.",
   "tapin": [
+    {"name": "Week in Review", "keys": ["week in review", "the week in review"], "footage": [], "_note": "#1702 (wave 159): a channel-page section; first, so a Week in Review naming GTA still joins it"},
+    {"name": "Picks, graded", "keys": ["picks, graded", "picks graded"], "footage": [], "_note": "#1702 (wave 159): the weekly calls scored (#991), a channel-page section"},
     {"name": "GTA", "parent": "Gaming", "keys": ["gta", "gta 6", "gta vi", "gta 5", "gta online", "grand theft auto", "nopixel", "gta rp", "rockstar"], "footage": ["GTA V"]},
     {"name": "Marvel Rivals", "parent": "Gaming", "keys": ["marvel rivals"], "footage": ["Marvel Rivals"]},
     {"name": "Minecraft", "parent": "Gaming", "keys": ["minecraft"], "footage": []},

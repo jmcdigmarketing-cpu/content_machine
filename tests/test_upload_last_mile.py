@@ -96,11 +96,11 @@ class QueueTruthTests(unittest.TestCase):
 
 
 class WorkerTaskTests(unittest.TestCase):
-    def test_the_task_runs_a_pass_every_fifteen_minutes(self):
+    def test_the_task_runs_a_pass_every_five_minutes(self):
         from core import nightly_task
 
         argv = nightly_task.worker_install_argv(python=r"C:\Py\python.exe", repo=r"C:\dev\cm")
-        self.assertEqual(argv[:6], ["schtasks", "/Create", "/SC", "MINUTE", "/MO", "15"])
+        self.assertEqual(argv[:6], ["schtasks", "/Create", "/SC", "MINUTE", "/MO", "5"])
         self.assertEqual(argv[argv.index("/TN") + 1], nightly_task.WORKER_TASK)
         command = argv[argv.index("/TR") + 1]
         self.assertIn(os.path.join(r"C:\dev\cm", "scripts", "worker_task.pyw"), command)
@@ -142,7 +142,7 @@ class WorkerTaskTests(unittest.TestCase):
     def test_the_doctor_passes_with_nothing_waiting(self):
         ok, line = self._doctor([], installed=True)
         self.assertTrue(ok)
-        self.assertIn("every 15 minutes", line)
+        self.assertIn("every 5 minutes", line)  # #1663 (wave 159)
         ok, line = self._doctor([], installed=False)
         self.assertTrue(ok)
         self.assertIn("worker-task --install", line)
@@ -172,7 +172,7 @@ class WorkerTaskTests(unittest.TestCase):
             code, text = self._ops(install=True, remove=False)
             self.assertEqual(code, 0)
             self.assertIn("/Create", run.call_args.args[0])
-            self.assertIn("every 15 minutes", text)
+            self.assertIn("every 5 minutes", text)
 
 
 class ShelfRowTests(unittest.TestCase):

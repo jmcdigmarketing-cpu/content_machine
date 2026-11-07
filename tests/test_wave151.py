@@ -159,8 +159,9 @@ class LaneTests(unittest.TestCase):
     def test_why_it_does_not_look(self):
         lane = _lane()
         self.assertEqual(lane.blocked("tapin", now=NOW, store={}), "")
-        recent = {"checked": (NOW - timedelta(minutes=10)).isoformat()}
-        self.assertIn("10 minutes ago", lane.blocked("tapin", now=NOW, store=recent))
+        # #1663 (wave 159): the lane looks every 10 minutes, not 30
+        recent = {"checked": (NOW - timedelta(minutes=5)).isoformat()}
+        self.assertIn("5 minutes ago", lane.blocked("tapin", now=NOW, store=recent))
         full = {"days": {"2026-11-19": {"news": 2, "result": 1}}}
         self.assertIn("3 made today", lane.blocked("tapin", now=NOW, store=full))
         with patch.object(lane, "units_left", return_value=1200):
@@ -201,7 +202,7 @@ class LaneTests(unittest.TestCase):
         with patch.object(lane, "next_story", return_value=story):
             lines = lane.run_fast_lane("tapin", now=NOW, draft=draft,
                                        render=lambda _c, _r: ("", 91))  # fmt: skip
-            again = lane.run_fast_lane("tapin", now=NOW + timedelta(minutes=10), draft=draft,
+            again = lane.run_fast_lane("tapin", now=NOW + timedelta(minutes=5), draft=draft,
                                        render=lambda _c, _r: ("", 92))  # fmt: skip
         self.assertEqual(drafted, ["Seahawks beat Chiefs 20-3"])
         self.assertIn("queued public now (job 91)", lines[-1])

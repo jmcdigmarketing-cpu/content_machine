@@ -37,6 +37,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `caption-anchor` | Measure whether a frame's bottom band carries an overlay (#717) |
 | `caption-still` | Overlay captions on a still so names can be proofread before burn (--path image, --file script) |
 | `channel-go-live` | Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel) |
+| `channel-page` | The channel page: playlist sections, the description, the trailer (--apply writes) (#1702) |
 | `chapters` | All-angles chapter report: placement path, length, Shorts cap (#755) |
 | `check-youtube` | Verify YouTube OAuth + upload env |
 | `clock-ahead` | Run the suite with the clock shifted; list tests whose result changes (#725) |
@@ -209,5 +210,5 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `why-slow` | Rank last-run phase timings (slowest first) |
 | `winners` | The channel's top videos by views, as the script prompt sees them (#937) |
 | `worker` | Process one upload/render job (or use --loop N) |
-| `worker-task` | Send queued uploads every 15 minutes via Task Scheduler (--install / --remove) (#1130) |
+| `worker-task` | Send queued uploads every 5 minutes via Task Scheduler (--install / --remove) (#1130, #1663) |
 | `ypp` | YPP readiness: YouTube's own numbers with ads excluded, disclosure, cadence |

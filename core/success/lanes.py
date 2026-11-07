@@ -147,6 +147,54 @@ def format_lane(shorts: list[dict[str, Any]]) -> str:
             f"{_run_text(run, word='rising')}")  # fmt: skip
 
 
+SHORTS_WEEK_BAR = 21  # #1669: three a day
+
+
+def shorts_weeks(
+    rows: list[Any], today: date, *, is_long: Callable[[int], bool] | None = None
+) -> list[dict[str, Any]]:
+    """#1669: the last `LANE_WEEKS` complete ISO weeks, oldest first - each week's public Shorts and
+    its Shorts' median first-week organic views (`cadence.window_stats`)."""
+    from core.success.cadence import _is_long, window_stats
+
+    monday = today - timedelta(days=today.weekday())  # this week's, not yet complete
+    out = []
+    for back in range(LANE_WEEKS, 0, -1):
+        start = monday - timedelta(weeks=back)
+        stats = window_stats(rows, start, start + timedelta(days=6), is_long=is_long or _is_long)
+        out.append({"week": f"{start.isocalendar()[0]}-W{start.isocalendar()[1]:02d}", **stats})
+    return out
+
+
+def shorts_week_lane(
+    rows: list[Any], *, today: date, is_long: Callable[[int], bool] | None = None
+) -> str:
+    """#1669 (B03.23, wave 159): last week's public Shorts against 21, with the organic views per
+    Short not falling - the weeks in a row that held both."""
+    weeks = shorts_weeks(rows, today, is_long=is_long)
+    if not weeks:
+        return ""
+    last, before = weeks[-1], weeks[-2] if len(weeks) > 1 else {}
+    per, prev = last.get("per_short"), before.get("per_short")
+    run = 0
+    for i in range(len(weeks) - 1, 0, -1):
+        now_per, then_per = weeks[i].get("per_short"), weeks[i - 1].get("per_short")
+        holds = now_per is not None and then_per is not None and now_per >= then_per
+        if weeks[i]["shorts"] >= SHORTS_WEEK_BAR and holds:
+            run += 1
+        else:
+            break
+    if per is None:
+        views = "views per Short not measured yet"
+    elif prev is None:
+        views = f"{per:,.0f} organic views per Short in its first week"
+    else:
+        views = f"{per:,.0f} organic views per Short in its first week against {prev:,.0f} the week before"
+    return (f"Volume lane (B03, #1669): {last['shorts']} public Shorts last week ({last['week']}) "
+            f"against {SHORTS_WEEK_BAR}; {views} - {run} of {LANE_WEEKS} weeks at {SHORTS_WEEK_BAR} "
+            "with views per Short holding")  # fmt: skip
+
+
 def _week_days(key: str) -> tuple[date, date] | None:
     """The Monday and Sunday of an ISO week key ("2026-W44")."""
     try:
@@ -231,6 +279,7 @@ def lane_lines(
                         or [] if not is_seeded(r)]  # fmt: skip
             shorts = measured_shorts(channel_id, today=day, rows=rows, features=features)
             out += [views_lane(shorts, today=day), stayed_lane(shorts), daily_lane(rows, today=day),
+                    shorts_week_lane(rows, today=day),  # #1669 (wave 159)
                     format_lane(shorts)]  # fmt: skip
         if entries is None and stores:
             from core.money.ledger import entries as ledger_entries

@@ -64,10 +64,11 @@ def _collect(ideas, *, count=2, held=None, launch=()):
 class OneSubjectTests(unittest.TestCase):
     def test_the_second_idea_on_a_subject_waits_for_tomorrow(self):
         held: list[str] = []
+        # wave 159: a headline that is not a trade (a marquee trade now leads the night - #1614)
         ideas = [_bet("GTA 6 pre-load opens Tuesday"), _bet("GTA 6 map leaks again"),
-                 _bet("Chiefs trade for a receiver", domain="nfl")]  # fmt: skip
+                 _bet("Chiefs rally past the Bills", domain="nfl")]  # fmt: skip
         self.assertEqual(_collect(ideas, held=held),
-                         ["GTA 6 pre-load opens Tuesday", "Chiefs trade for a receiver"])  # fmt: skip
+                         ["GTA 6 pre-load opens Tuesday", "Chiefs rally past the Bills"])  # fmt: skip
         self.assertIn("GTA 6 map leaks again", held)
 
     def test_launch_week_keeps_two(self):

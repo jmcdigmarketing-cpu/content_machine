@@ -9355,6 +9355,103 @@
         "falsy": true
       },
       "why": "read as a menu, every still clip would leave the footage it was made for"
+    },
+    {
+      "id": "a-debate-keeps-its-shape",
+      "item": 2015,
+      "source": "live 11-07: 'Gane vs. Hokit: who wins at UFC 334?' named the card and was drafted as a preview",
+      "call": "core.batch_generation:keeps_own_shape",
+      "args": [
+        "debate"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a preview makes a call; a debate leaves the question open"
+    },
+    {
+      "id": "a-long-match-up-keeps-its-shape",
+      "item": 2015,
+      "source": "the sibling: 'UFC 334: Gane vs. Hokit - how they match up' (a long video) took the preview brief too",
+      "call": "core.batch_generation:keeps_own_shape",
+      "args": [
+        "long"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a 6-8 minute match-up is not a preview Short"
+    },
+    {
+      "id": "a-scheduled-game-is-still-a-preview",
+      "item": 2015,
+      "source": "the other side: a schedule pick keeps its preview",
+      "call": "core.batch_generation:keeps_own_shape",
+      "args": [
+        "schedule"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the fix must not take the preview from a game"
+    },
+    {
+      "id": "a-contract-is-not-commerce",
+      "item": 1614,
+      "source": "live 11-07: 'Cowboys sign Micah Parsons to 4-year, $188M extension' read as a shopping headline",
+      "call": "core.best_bet:_is_commerce_headline",
+      "args": [
+        "Cowboys sign Micah Parsons to 4-year, $188M extension"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a marquee signing never reached the pool, so it could not lead or take the fast lane"
+    },
+    {
+      "id": "a-fight-agreed-is-not-a-trade",
+      "item": 1614,
+      "source": "live 11-07 in the build: 'Islam Makhachev verbally agreed to fight at UFC 336' read as a trade",
+      "call": "core.best_bet:trade_story",
+      "args": [
+        "Dana White: 'Islam Makhachev verbally agreed to fight at UFC 336",
+        [
+          "Islam Makhachev"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a booked fight would have led the night and taken the fast lane as a signing"
+    },
+    {
+      "id": "images-released-are-not-a-trade",
+      "item": 1614,
+      "source": "the sibling, live 11-07: 'GTA 6: Lots Of New Images Have Been Released'",
+      "call": "core.best_bet:trade_story",
+      "args": [
+        "GTA 6: Lots Of New Images Have Been Released",
+        [
+          "GTA 6"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a game's media drop is not a player released by a team"
+    },
+    {
+      "id": "a-trade-in-offer-is-still-commerce",
+      "item": 1614,
+      "source": "the sibling: a store's trade-in offer carries 'trade' and a price",
+      "call": "core.best_bet:_is_commerce_headline",
+      "args": [
+        "GameStop trade-in offer: $50 credit for your PS5"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the contract exemption must not let shopping back in"
     }
   ]
 }

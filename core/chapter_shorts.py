@@ -559,6 +559,97 @@ def schedule_waiting_shorts(
         return []
 
 
+# ---- #1651 (B03.5, wave 159): each Week in Review deep dive yields one Short -------------------
+# A Week in Review is 16:9 and its three deep dives are public Shorts played whole
+# (`video/week_compile.plan_clips`), so the cut comes from the top deep dive's own vertical file with
+# a new hook (#1652's `recut.plan_rehook`), recorded as a chapter cut of the Week in Review - once
+# that is public, decision 77's `schedule_waiting_shorts` makes it public at its free slot by itself.
+
+
+def wir_enabled() -> bool:
+    return os.getenv("WIR_SHORT", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def _public_compilations(channel_id: str) -> list[tuple[Any, Any]]:
+    """(publish row, run) for each public weekly compilation, newest first."""
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    repo = get_content_run_repository()
+    found = []
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []:
+        if (
+            str(getattr(row, "privacy_status", "") or "").lower() != "public"
+            or not row.content_run_id
+        ):
+            continue
+        run = repo.get(int(row.content_run_id))
+        feats = _features_of(run)
+        if run is not None and (feats.get("compilation") or {}).get("week"):
+            found.append((row, run))
+    return sorted(
+        found, key=lambda pair: str(getattr(pair[0], "published_at", "") or ""), reverse=True
+    )
+
+
+def _cut_parents(channel_id: str) -> tuple[set[int], set[int]]:
+    """(Week in Review runs already cut, Shorts already re-hooked or cut)."""
+    parents: set[int] = set()
+    used: set[int] = set()
+    for run in get_content_run_repository().list_for_channel(channel_id) or []:
+        feats = _features_of(run)
+        if feats.get("week_review_cut"):
+            parents.add(int(feats.get("parent_run_id") or 0))
+        used.add(int((feats.get("rehook_of") or {}).get("run_id") or 0))
+    return parents - {0}, used - {0}
+
+
+def week_review_short(
+    channel_id: str, *, make: Any = None, queue: Any = None, plan: Any = None
+) -> list[str]:
+    """#1651: one Short from the newest public Week in Review's top deep dive not used before.
+    Lines for the overnight report; [] when nothing qualifies or `WIR_SHORT` is off. Never raises."""
+    if not wir_enabled():
+        return []
+    try:
+        from core.batch_review import _queue_unlisted
+        from video.hook_copy import hook_offset, run_opening
+        from video.recut import make_rehook, plan_rehook
+
+        done, used = _cut_parents(channel_id)
+        repo = get_content_run_repository()
+        for _row, wir in _public_compilations(channel_id)[:1]:
+            if int(wir.id) in done:
+                return []
+            dives = list((_features_of(wir).get("compilation") or {}).get("runs") or [])[-3:]
+            for rank, run_id in enumerate(reversed(dives), start=1):  # deep dive #1 first
+                if int(run_id) in used:
+                    continue
+                source = repo.get(int(run_id))
+                mp3 = str(getattr(source, "mp3_path", "") or "") if source else ""
+                words = load_word_timings(mp3) if mp3 and os.path.isfile(mp3) else None
+                if source is None or not words:
+                    continue
+                candidate = {"run": source, "organic": 0, "days": 0, "words": words,
+                             "offset": hook_offset(run_opening(source), channel_id),
+                             "video_id": ""}  # fmt: skip
+                found = (plan or plan_rehook)(candidate)
+                if found is None:
+                    continue
+                extra = {"short_source": "chapter_cut", "parent_run_id": int(wir.id),
+                         "chapter_index": rank - 1, "week_review_cut": True}  # fmt: skip
+                made, where = (make or make_rehook)(channel_id, found, extra=extra)
+                if not made:
+                    return [f"Week in Review Short: deep dive #{rank} not cut - {where}"]
+                job = (queue or _queue_unlisted)(int(made), channel_id)
+                return [f"Week in Review Short (#1651): run {made} from deep dive #{rank} (run "
+                        f"{run_id}) of run {wir.id} opens on \"{found['sentence']}\" - queued unlisted "
+                        f"(job {job}); public at a free slot (decision 77)"]  # fmt: skip
+        return []
+    except Exception as exc:
+        logger.warning("Week in Review Short skipped: %s", exc)
+        return []
+
+
 def fill_empty_slots(channel_id: str, *, cut: Any = None, queue: Any = None) -> list[str]:
     """#1430 (wave 118, the operator: gaming and evergreen only): when fewer than 7 are scheduled
     in the next 7 days, overnight cuts up to 2 chapters of a published all-angles video into

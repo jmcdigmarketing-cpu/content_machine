@@ -115,6 +115,9 @@ API_UNITS = {
     "videos.list": 1,
     "channels.list": 1,
     "playlistItems.list": 1,
+    "channels.update": 50,  # #1703 / #1710 (wave 159): the channel's description and trailer
+    "channelSections.list": 1,  # #1702
+    "channelSections.insert": 50,
 }
 
 

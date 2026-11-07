@@ -7,6 +7,13 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-06 (Claude Code): wave 156, the next five
+
+A 1 PM draft step in the worker pass for tonight's slots; a Short past 300 organic views
+re-hooked 14 days on; a one-outlet subject fans know passes the gate; "Who is ...?" for a
+name that just trended; a game's stills are its footage and the matching edition wins
+(decision 107).
+
 ## Previous — 2026-11-06 (Claude Code): wave 155, the other ten of next 20
 
 Every lane of the bridge prints its number and its run of weeks; a Short's all-in cost is

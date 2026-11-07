@@ -161,7 +161,8 @@ class CrossoverTests(unittest.TestCase):
         self.assertFalse(crossover_story("Fortnite adds a new map", "gaming", names))
 
     def test_it_passes_the_gate_and_leads_after_the_rest(self):
-        ideas = [self._bet("Chiefs trade for a receiver", "nfl", 3),
+        # wave 159: not a trade headline - a marquee trade now leads above a crossover (#1614)
+        ideas = [self._bet("Chiefs rally past the Bills", "nfl", 3),
                  self._bet("Ben Affleck admits he argues with 12-year-olds in Fortnite")]  # fmt: skip
         with (
             patch("core.best_bet.get_idea_menu", return_value=(ideas, [])),

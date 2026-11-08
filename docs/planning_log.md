@@ -11907,3 +11907,8 @@ through `_save`.
 Next five: #2024, #1905, #1598, #1602, #1856; #2017 first (operator, before Nov 14).
 
 Counts (`ops roadmap-index`): 198 open, 1,912 done, 146 parked; 196 numbered open, highest #2024.
+
+**Live after the merge** (the operator: "Yes, render them"): runs 233, 241 and 248 rendered through batch-review's
+own path in a real console (the Terminal panel) - run 233, whose 11-04 render never finished, passed 80% at
+27 s of encode; all three reached 100% in 213 s with no stall, and were queued for Sun 10 PM (233, unlisted:
+an override), Mon noon and Mon 10 PM. The watchdog did not fire, so the stall's cause is still #2024's.

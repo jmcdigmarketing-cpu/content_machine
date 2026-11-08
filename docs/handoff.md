@@ -67,8 +67,9 @@ measured as covered, #1856 left open, #1850 parked (operator). Decision 111.
 (operator), #2024, #1905, #1598, #1602, #1856.
 
 **Operator:** the sign-in lapses Sat Nov 14 4:08 PM EST unless the Google app is published (set
-POLICY_SITE_URL, `ops check-youtube`, publish, sign in once more). The three current accepted drafts
-(runs 233, 241, 248) render at your next batch-review; a stalled render now says so and retries.
+POLICY_SITE_URL, `ops check-youtube`, publish, sign in once more). The three accepted drafts rendered on
+11-07 at 19:02 with no stall and are queued - 233 unlisted Sun 10 PM (an override: watch it, then `ops
+go-public`), 241 Mon noon, 248 Mon 10 PM.
 Give the ElevenLabs key `user_read` (#2014); enter the monthly subscriptions.
 
 ## Slot — Cursor

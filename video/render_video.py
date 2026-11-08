@@ -33,6 +33,7 @@ def _simple_run(cmd, *, duration_sec=None) -> subprocess.CompletedProcess:
         return subprocess.run(
             cmd,
             stdin=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0),  # #2025
             capture_output=True,
             text=True,
             encoding="utf-8",

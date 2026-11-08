@@ -53,24 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-07 · **HEAD at write:** `4f53c66` (the channel page, CI green; this wave's
-commit follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
+**Written:** 2026-11-08 · **HEAD at write:** `ec920d2` (wave 160 live, CI green; this commit
+follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**Wave 160, the next 10.** Defects first: a render that stops moving sat forever (the operator: `ops
-all` stops at ~80%) - now killed after 120 s and retried, ffmpeg never reading the console (#2020;
-its cause not reproduced, #2024); six accepted drafts held overnight's cap (#2021); the playlist
-store lost an id (#2022). Built: #1810 (+ #2018), #1719, #1828, #1826, #2007, #2008, #2009. #1786
-measured as covered, #1856 left open, #1850 parked (operator). Decision 111.
+**Background work waits for games (#2025, decision 112).** The operator had lag in games: the
+overnight run caught up at 10:16 AM mid-game. On their word it was stopped and the UploadWorker
+task disabled. Built: `jobs/game_guard.py` - overnight, the fast lane and the 1 PM step wait while a
+game runs; renders run below normal priority. Wave 160 before it: #2020-#2022, #1810, #1719, #1828,
+#1826, #2007-#2009. Decision 111.
 
 **Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1723, #1786, #1856, #1984, #1988, #1991, #1994,
 #1996-#1998, #2000, #2003-#2006, #2010-#2014, #2016, #2017, #2023, #2024. **Next:** #2017
 (operator), #2024, #1905, #1598, #1602, #1856.
 
-**Operator:** the sign-in lapses Sat Nov 14 4:08 PM EST unless the Google app is published (set
-POLICY_SITE_URL, `ops check-youtube`, publish, sign in once more). The three accepted drafts rendered on
-11-07 at 19:02 with no stall and are queued - 233 unlisted Sun 10 PM (an override: watch it, then `ops
-go-public`), 241 Mon noon, 248 Mon 10 PM.
-Give the ElevenLabs key `user_read` (#2014); enter the monthly subscriptions.
+**Operator:** the UploadWorker task is DISABLED (your call, 11-08) - `schtasks /Change /TN
+"ContentMachine\UploadWorker" /ENABLE` turns it back on; videos already uploaded with a publish
+time go public without it. The sign-in lapses Sat Nov 14 4:08 PM EST unless the Google app is
+published. Give the ElevenLabs key `user_read` (#2014).
 
 ## Slot — Cursor
 

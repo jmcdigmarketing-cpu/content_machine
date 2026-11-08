@@ -9616,6 +9616,58 @@
         "contains": "Wembanyama"
       },
       "why": "a re-cut titled with no name loses the search and the click the original earned"
+    },
+    {
+      "id": "a-game-from-a-library-folder-holds-background-work",
+      "item": 2025,
+      "source": "the operator 11-08: lag in games - overnight caught up at 10:16 AM mid-game",
+      "call": "jobs.game_guard:game_running",
+      "kwargs": {
+        "processes": [
+          [
+            "GTA5_Enhanced.exe",
+            "D:\\SteamLibrary\\steamapps\\common\\Grand Theft Auto V\\GTA5_Enhanced.exe"
+          ]
+        ],
+        "state": 1
+      },
+      "env": {
+        "GAME_GUARD": "true",
+        "GAME_PROCESSES": "",
+        "GAME_IGNORE": ""
+      },
+      "expect": {
+        "contains": "GTA5_Enhanced.exe"
+      },
+      "why": "a render competes with the game for the CPU and the GPU's encoder"
+    },
+    {
+      "id": "a-launcher-is-not-a-game",
+      "item": 2025,
+      "source": "the other side, live 11-08: the Epic launcher and Epic Online Services run all day",
+      "call": "jobs.game_guard:game_running",
+      "kwargs": {
+        "processes": [
+          [
+            "EpicGamesLauncher.exe",
+            "C:\\Program Files\\Epic Games\\Launcher\\Portal\\Binaries\\Win64\\EpicGamesLauncher.exe"
+          ],
+          [
+            "EOSOverlayRenderer-Win64-Shipping.exe",
+            "C:\\Program Files (x86)\\Epic Games\\Epic Online Services\\managedArtifacts\\x\\EOSOverlayRenderer-Win64-Shipping.exe"
+          ]
+        ],
+        "state": 5
+      },
+      "env": {
+        "GAME_GUARD": "true",
+        "GAME_PROCESSES": "",
+        "GAME_IGNORE": ""
+      },
+      "expect": {
+        "equals": ""
+      },
+      "why": "a launcher open all day would hold every render forever"
     }
   ]
 }

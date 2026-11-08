@@ -61,6 +61,8 @@ def ffmpeg_simple_run() -> bool:
 
 
 STALLED = "ffmpeg stalled"
+# #2025: renders yield the CPU to a game (Windows; 0 elsewhere, where the flag does not exist)
+BELOW_NORMAL = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
 
 
 def stall_seconds() -> float:
@@ -121,6 +123,7 @@ def run_ffmpeg_with_progress(
     proc = subprocess.Popen(
         cmd,
         stdin=subprocess.DEVNULL,
+        creationflags=BELOW_NORMAL,  # #2025: a game in the foreground keeps the CPU first
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,

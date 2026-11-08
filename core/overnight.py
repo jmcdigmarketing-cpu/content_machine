@@ -164,6 +164,16 @@ def run_overnight(
     except Exception as exc:
         logger.debug("overnight pause check skipped: %s", exc)
 
+    # #2025 (the operator, 11-08): a catch-up run started at 10:16 AM during a game - it waits
+    # for the game to close, up to six hours, then leaves the day to tomorrow's 5:00
+    from jobs.game_guard import WAIT_HOURS, wait_while_gaming
+
+    game = wait_while_gaming("overnight")
+    if game:
+        result.pause_line = (f"Overnight waited {WAIT_HOURS:g} hours - a game ran the whole time "
+                             f"({game}); it runs again at 5:00.")  # fmt: skip
+        return result
+
     try:  # wave 113: the metrics sync ran only from `ops morning`; once a day it runs here too
         from analytics.sync_metrics import maybe_sync
 
@@ -428,6 +438,11 @@ def _run_overnight_body(
         from core.batch_review import overnight_render_limit, render_unattended
 
         limit, why_more = overnight_render_limit(channel)  # #1428: one more for an empty day
+        from jobs.game_guard import wait_while_gaming
+
+        if limit > 0 and wait_while_gaming("overnight renders"):  # #2025: started mid-run
+            logger.warning("overnight renders skipped - a game is still running")
+            limit = 0
         if limit > 0:
             result.renders = render_unattended(channel, limit)
             if why_more:

@@ -187,6 +187,11 @@ def blocked(channel_id: str, *, now: datetime, store: dict[str, Any]) -> str:
         return "on battery"
     if overnight_running(now):
         return "overnight is running"
+    from jobs.game_guard import game_running
+
+    game = game_running()  # #2025: the operator's games come first
+    if game:
+        return f"a game is running ({game})"
     return ""
 
 

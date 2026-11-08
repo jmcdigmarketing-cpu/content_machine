@@ -11912,3 +11912,33 @@ Counts (`ops roadmap-index`): 198 open, 1,912 done, 146 parked; 196 numbered ope
 own path in a real console (the Terminal panel) - run 233, whose 11-04 render never finished, passed 80% at
 27 s of encode; all three reached 100% in 213 s with no stall, and were queued for Sun 10 PM (233, unlisted:
 an override), Mon noon and Mon 10 PM. The watchdog did not fire, so the stall's cause is still #2024's.
+
+## 2026-11-08 — background work waits for games (Claude Code)
+
+**Prompt:** "are there any background tasks programmed in rn? I am experiencing lag in games that I
+canno lag in and I am certain it isnt connection or internet based." - then "stop these procersses"
+and "Yes, build it".
+
+Measured (11-08): `ContentMachine\OvernightDrafts` was Running since 10:16 AM (missed at 5:00 with
+the PC off; `StartWhenAvailable` caught it up mid-game) with a draft child since 10:29, and would
+then have rendered up to three videos; `ContentMachine\UploadWorker` every 5 minutes (wave 159).
+No Ollama call this morning (the drafts used OpenRouter). On the operator's word the overnight run
+was ended (`schtasks /End`, both processes stopped) and the UploadWorker task disabled.
+
+Built (#2025, decision 112): `jobs/game_guard.py` (`game_running`, `wait_while_gaming`), asked by
+`fast_lane.blocked`, `midday.blocked`, `overnight.run_overnight` (before anything) and before
+overnight's renders; ffmpeg runs below normal priority (`render_progress`, `render_video._simple_run`).
+Live: no game running at 10:5x, so no false hold - the Epic launcher and Epic Online Services are
+not counted; the measurement that added Minecraft's runtimes: CurseForge is installed, and modded
+Minecraft runs as `javaw.exe`. The launchers' own load (GOG Galaxy ~740 CPU-seconds since 10:10,
+Epic's overlay ~490, EA, Epic, CurseForge 140-210) is the operator's, not the project's.
+
+Not done: the UploadWorker task stays disabled until the operator turns it back on; uploads are not
+gated (network only - the operator ruled out the connection).
+
+Tests: `tests/test_game_guard.py`, 11 - the first 10 failed on `ec920d2` (no module), the
+Minecraft case on the build before its folders. Corpus: 2 cases. Audit: ruff and format clean;
+mypy 92 == baseline; suite 7,639 forward and reversed, OK; corpus 571 of 571; `data/` untouched. `GAME_GUARD` is pinned off in the suite, so a
+developer's own game never gates a test.
+
+Counts (`ops roadmap-index`): 198 open, 1,913 done, 146 parked; 196 numbered open, highest #2024.

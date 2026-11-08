@@ -18,26 +18,54 @@ from video.subtitles import caption_force_style, caption_style, generate_subtitl
 logger = get_logger("video.render")
 
 
+def _simple_timeout(duration_sec) -> float:
+    """#2020: the plain run is bounded too - ten times the video, never under 15 minutes."""
+    try:
+        return max(900.0, 10.0 * float(duration_sec or 0))
+    except (TypeError, ValueError):
+        return 900.0
+
+
+def _simple_run(cmd, *, duration_sec=None) -> subprocess.CompletedProcess:
+    """ffmpeg with no console and a bound: a hang is a failed render that says so."""
+    limit = _simple_timeout(duration_sec)
+    try:
+        return subprocess.run(
+            cmd,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=limit,
+        )
+    except subprocess.TimeoutExpired:
+        logger.warning("ffmpeg timed out after %.0fs: %s", limit, " ".join(map(str, cmd))[:3000])
+        return subprocess.CompletedProcess(cmd, 1, "", f"ffmpeg timed out after {limit:.0f}s")
+
+
 def _ffmpeg_run(cmd, *, duration_sec=None, progress=None, use_progress=False):
-    """Run ffmpeg, retrying Windows file-lock (Defender) errors."""
+    """Run ffmpeg, retrying Windows file-lock (Defender) errors. #2020: never reading the
+    console; a stalled progress run is retried once on the plain path."""
     import time as _time
 
     from core.file_lock import is_lock_error, lock_delay_sec, lock_retries
+    from core.render_progress import STALLED, with_nostdin
 
+    cmd = with_nostdin(cmd)
     attempts = lock_retries()
     delay = lock_delay_sec()
     process = None
     for i in range(attempts):
         if use_progress and progress is not None:
             process = run_ffmpeg_with_progress(cmd, duration_sec=duration_sec, progress=progress)
+            if process.returncode != 0 and STALLED in (process.stderr or ""):
+                logger.warning("render stalled - retrying once without the progress pipe")
+                progress.note("FFmpeg stalled - retrying once without the progress pipe...")
+                use_progress = False
+                process = _simple_run(cmd, duration_sec=duration_sec)
         else:
-            process = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-            )
+            process = _simple_run(cmd, duration_sec=duration_sec)
         if process.returncode == 0:
             return mark_executed(process, cmd)
         err = process.stderr or ""
@@ -368,6 +396,7 @@ def build_render_ffmpeg_command(
 
     cmd = [
         "ffmpeg",
+        "-nostdin",  # #2020: the console's keys never reach the render
         "-y",
         "-stream_loop",
         "-1",

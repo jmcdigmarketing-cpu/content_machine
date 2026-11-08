@@ -1,6 +1,7 @@
 {
   "publish_srt": [
     "ffmpeg",
+    "-nostdin",
     "-y",
     "-stream_loop",
     "-1",
@@ -32,6 +33,7 @@
   ],
   "draft_srt": [
     "ffmpeg",
+    "-nostdin",
     "-y",
     "-stream_loop",
     "-1",
@@ -63,6 +65,7 @@
   ],
   "landscape_ass": [
     "ffmpeg",
+    "-nostdin",
     "-y",
     "-stream_loop",
     "-1",
@@ -94,6 +97,7 @@
   ],
   "music_overlay": [
     "ffmpeg",
+    "-nostdin",
     "-y",
     "-stream_loop",
     "-1",
@@ -129,6 +133,7 @@
   ],
   "publish_lut": [
     "ffmpeg",
+    "-nostdin",
     "-y",
     "-stream_loop",
     "-1",

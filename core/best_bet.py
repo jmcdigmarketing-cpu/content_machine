@@ -8,6 +8,7 @@ franchise continuity (e.g. Marvel Rivals on TapIn).
 
 from __future__ import annotations
 
+import html
 import json
 import os
 import random
@@ -837,7 +838,9 @@ def _consider_candidate(
     or a commerce/deal headline. Shared by the RSS and keyless-signal candidate loops."""
     from apis.topic_scorer import infer_topic_domain
 
-    t = (title or "").strip()
+    # #2007, live 11-06: "Knicks support Taylor Swift after players called her &#39;fakest&#39;"
+    # reached the idea pool - a feed's escaped title is unescaped once, here
+    t = html.unescape(title or "").strip()
     if not t:
         return None
     if not isinstance(seen_local, set):

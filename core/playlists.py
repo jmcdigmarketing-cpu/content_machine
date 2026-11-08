@@ -286,7 +286,19 @@ def _load(path: str) -> dict[str, Any]:
 
 
 def _save(path: str, data: dict[str, Any]) -> None:
+    """#2022, live 11-07: two writers (an upload adding its video, `ops playlists --apply`
+    making two playlists) each saved what they had read - the "Picks, graded" id was lost while
+    the playlist stood on YouTube, and the next try would have made a second one. A save now
+    keeps every id and every recorded add already on disk."""
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    disk = _load(path)
+    data = dict(data)
+    data["ids"] = {**dict(disk.get("ids") or {}), **dict(data.get("ids") or {})}
+    added = {key: list(value or []) for key, value in dict(disk.get("added") or {}).items()}
+    for video, names in dict(data.get("added") or {}).items():
+        added[video] = sorted({*added.get(video, []), *(names or [])})
+    if added:
+        data["added"] = added
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
@@ -300,6 +312,29 @@ def _reauth_note(channel_id: str) -> str:
     )
 
 
+def _channel_playlists(service) -> dict[str, str]:
+    """{title: id} of the channel's own playlists (1 unit a page of 50). Never raises."""
+    found: dict[str, str] = {}
+    token = None
+    try:
+        for _page in range(4):
+            record_call("playlists.list")
+            kwargs: dict[str, Any] = {"part": "snippet", "mine": True, "maxResults": 50}
+            if token:
+                kwargs["pageToken"] = token
+            resp = service.playlists().list(**kwargs).execute() or {}
+            for item in resp.get("items") or []:
+                title = str((item.get("snippet") or {}).get("title") or "")
+                if title and item.get("id"):
+                    found.setdefault(title, str(item["id"]))
+            token = resp.get("nextPageToken")
+            if not token:
+                break
+    except Exception as exc:
+        logger.debug("channel playlists unread: %s", exc)
+    return found
+
+
 def sync_playlists(service, channel_id: str, *, store_path: str | None = None) -> list[str]:
     """Create every mapped playlist that has no id yet. Returns the names created."""
     path = store_path or store_path_for(channel_id)
@@ -311,8 +346,16 @@ def sync_playlists(service, channel_id: str, *, store_path: str | None = None) -
             if name and name not in wanted:
                 wanted.append(str(name))
     created: list[str] = []
+    # #2022: a playlist already on the channel is adopted by its title, never made twice
+    on_channel = _channel_playlists(service) if any(not ids.get(n) for n in wanted) else {}
     for name in wanted:
         if ids.get(name):
+            continue
+        if on_channel.get(name):
+            ids[name] = on_channel[name]
+            data["ids"] = ids
+            _save(path, data)
+            logger.info("playlist %s is already on YouTube (%s) - kept", name, on_channel[name])
             continue
         record_call("playlists.insert")  # wave 113: it booked nothing
         try:

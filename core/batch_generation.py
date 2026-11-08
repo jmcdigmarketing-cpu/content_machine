@@ -1010,6 +1010,15 @@ def generate_draft(
 
         voice_arm = voice_trial_arm(channel_id, machine_intent,
                                     length_arm=length_trial[0] if length_trial else "")  # fmt: skip
+    # #1719 (wave 160): the follow line's wording on trial - recorded only for a draft whose
+    # last line is the trial's (a countdown, a series or a debate has its own reason)
+    from core.spaced_queue import long_slot_words
+    from core.success.follow_trial import FOLLOW_LEVER, follow_arm, follow_wording
+
+    follow_pick = None if own_idea or long_form or preview else follow_arm(channel_id)
+    follow_line = "" if preview else follow_brief(best_bet, channel_id=channel_id, arm=follow_pick)
+    if follow_pick and follow_line != follow_wording(follow_pick, long_slot_words()):
+        follow_pick = None
     if length_trial is not None and length_trial[0] == "format":
         length_choice = length_trial[1]
         if length_trial[2]:
@@ -1048,7 +1057,7 @@ def generate_draft(
                     shape_brief(shape, topic),  # wave 157
                     experiment[2] if experiment else "",
                     # #1699 (S02): the format's true reason to follow, in its last line
-                    "" if preview else follow_brief(best_bet, channel_id=channel_id),
+                    follow_line,
                     _long_opener(channel_id) if long_form else "",  # #1745
                 )
                 if part
@@ -1089,6 +1098,13 @@ def generate_draft(
             record_assignment(channel_id, result.run_id, VOICE_LEVER, voice_arm)
         except Exception as exc:
             logger.debug("voice arm not recorded: %s", exc)
+    if follow_pick and result.run_id:
+        try:
+            from core.experiments import record_assignment
+
+            record_assignment(channel_id, result.run_id, FOLLOW_LEVER, follow_pick)
+        except Exception as exc:
+            logger.debug("follow arm not recorded: %s", exc)
     _record_draft_features(result.run_id, shape, channel_id, beat=length_choice in ("1", "2"))
     if (best_bet or {}).get("part") == 1 and result.run_id:  # #1700: the pair opens
         from core.series.parts import record_part_one
@@ -1381,7 +1397,11 @@ def _long_opener(channel_id: str) -> str:
 
 
 def follow_brief(
-    best_bet: dict | None, *, channel_id: str = "tapin", today: date | None = None
+    best_bet: dict | None,
+    *,
+    channel_id: str = "tapin",
+    today: date | None = None,
+    arm: str | None = None,
 ) -> str:
     """#1699 (S02, B05.3): the true reason to follow a format has, as the script's last line - "",
     for a format without one. A preview with a call has its own (#1322, `preview_brief`); 4 of the
@@ -1453,11 +1473,11 @@ def follow_brief(
                     f'example "Follow - the {subject} countdown is here every day until launch."')  # fmt: skip
     if source == "moment":
         return ""
-    # #1943 (S02): a trending Short's true reason - the Week in Review, at its weekly time.
-    return (
-        f"{lead} {when} the week's Shorts come out as one video - for example "
-        f'"Follow - the week\'s best lands {when}."'
-    )
+    # #1943 (S02): a trending Short's true reason - the Week in Review, at its weekly time;
+    # #1719 (wave 160): on trial Nov 8-21 against "the next big story lands here first"
+    from core.success.follow_trial import follow_wording
+
+    return follow_wording(arm, when)
 
 
 def draft_brief(topic: str, best_bet: dict | None) -> str:

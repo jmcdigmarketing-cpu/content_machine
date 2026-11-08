@@ -60,6 +60,28 @@ def ffmpeg_simple_run() -> bool:
     return os.getenv("FFMPEG_SIMPLE_RUN", "").lower() in ("1", "true", "yes")
 
 
+STALLED = "ffmpeg stalled"
+
+
+def stall_seconds() -> float:
+    """#2020: ffmpeg's output time frozen this long is a hang (`FFMPEG_STALL_SECONDS`, default
+    120). The operator, 11-07: renders from `ops all` stopped at ~80% and sat for 1,000 s+."""
+    try:
+        return max(1.0, float(os.getenv("FFMPEG_STALL_SECONDS", "120") or 120))
+    except ValueError:
+        return 120.0
+
+
+def with_nostdin(cmd: list[str]) -> list[str]:
+    """#2020: ffmpeg never reads the console. Interactive renders hung where overnight ones -
+    run with no console - finished; an inherited console lets a key pressed at a review prompt
+    reach ffmpeg ('c' makes it wait for a typed command)."""
+    out = list(cmd)
+    if out and "ffmpeg" in os.path.basename(str(out[0])).lower() and "-nostdin" not in out:
+        out.insert(1, "-nostdin")
+    return out
+
+
 def _inject_progress_args(cmd: list[str]) -> list[str]:
     if "-progress" in cmd:
         return cmd
@@ -94,10 +116,11 @@ def run_ffmpeg_with_progress(
         cmd.insert(1, "warning")
         cmd.insert(1, "-loglevel")
 
-    cmd = _inject_progress_args(cmd)
+    cmd = with_nostdin(_inject_progress_args(cmd))
 
     proc = subprocess.Popen(
         cmd,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -117,6 +140,22 @@ def run_ffmpeg_with_progress(
     stage_start = time.perf_counter()
     last_progress_at = stage_start
     heartbeat_sec = 30.0
+    # #2020: a watchdog, not the heartbeat - the heartbeat only runs when ffmpeg writes a line
+    stall = stall_seconds()
+    watch: dict[str, float] = {"moved": stage_start, "out_ms": -1.0, "pct": 0.0, "stalled": 0.0}
+    finished = threading.Event()
+
+    def _watchdog() -> None:
+        while not finished.wait(min(1.0, stall / 4)):
+            if time.perf_counter() - watch["moved"] > stall and proc.poll() is None:
+                watch["stalled"] = 1.0
+                try:
+                    proc.kill()
+                except Exception as exc:
+                    logger.debug("stalled ffmpeg not killed: %s", exc)
+                return
+
+    threading.Thread(target=_watchdog, daemon=True).start()
 
     for line in proc.stdout:
         line = line.strip()
@@ -134,6 +173,10 @@ def run_ffmpeg_with_progress(
             out_ms = int(line.split("=", 1)[1])
         except ValueError:
             continue
+        if out_ms > watch["out_ms"]:
+            watch["out_ms"], watch["moved"] = float(out_ms), time.perf_counter()
+            if duration_sec > 0:
+                watch["pct"] = min(100.0, (out_ms / 1_000_000.0) / duration_sec * 100.0)
         if duration_sec <= 0:
             continue
         pct = min(100.0, (out_ms / 1_000_000.0) / duration_sec * 100.0)
@@ -148,11 +191,21 @@ def run_ffmpeg_with_progress(
                 print(f"\r  {msg}", end="", flush=True)
 
     proc.wait()
+    finished.set()
     stderr_thread.join(timeout=5.0)
     stderr = "".join(stderr_lines)
 
     if progress is None or progress.enabled:
         print(flush=True)
+
+    if watch["stalled"]:
+        said = f"{STALLED} at {watch['pct']:.0f}% - no progress for {stall:.0f}s; killed"
+        logger.warning("%s: %s", said, " ".join(str(part) for part in cmd)[:3000])
+        if progress and progress.enabled:
+            progress.note(said)
+        return subprocess.CompletedProcess(
+            args=cmd, returncode=1, stdout="", stderr=said + "\n" + stderr
+        )
 
     return subprocess.CompletedProcess(
         args=cmd,

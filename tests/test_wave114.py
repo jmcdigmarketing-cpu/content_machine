@@ -342,7 +342,9 @@ class RecutTests(unittest.TestCase):
     def test_the_title_is_the_sentence_when_it_reads_as_one(self):
         from video.recut import recut_title
 
-        self.assertEqual(recut_title("Pereira never fought a wrestler this good.", "Old"),
+        # #2008 (wave 160): the sentence names a subject the original's title names
+        self.assertEqual(recut_title("Pereira never fought a wrestler this good.",
+                                     "UFC 307: Pereira vs. Rountree"),
                          "Pereira never fought a wrestler this good")  # fmt: skip
         self.assertEqual(
             recut_title("Short.", "UFC 310 preview"), "UFC 310 preview - the moment that held"

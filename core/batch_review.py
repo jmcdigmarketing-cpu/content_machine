@@ -505,6 +505,12 @@ def review_drafts(
     for index, draft in enumerate(drafts, 1):
         if draft.decision == "accepted":
             review = draft.meta.get("review") or {}
+            gone = dead_reason(draft.meta)
+            if gone:  # #1810: an accepted draft past its window is not voiced - it cannot go out
+                print_fn(f"\n  [{index}/{len(drafts)}] {draft.title}: accepted earlier, but "
+                         f"{gone} - set aside, not rendered")  # fmt: skip
+                _write_review(draft, decision="expired", by="batch-review", reason=gone)
+                continue
             print_fn(f"\n  [{index}/{len(drafts)}] {draft.title}: accepted earlier, rendering")
             accepted.append((draft, bool(review.get("override"))))
             continue
@@ -802,7 +808,9 @@ def expire_old_drafts(
     leaves the waiting count. 6 of 32 waiting drafts were past their window that day."""
     old: list[PendingDraft] = []
     for draft in pending_drafts(channel_id, root=root):
-        if draft.decision:
+        # #2021, live 11-07: an accepted draft whose render never finished (#2020) counted
+        # against overnight's cap until someone ran batch-review - 6 of 8, three 4 days old.
+        if draft.decision and draft.decision != "accepted":
             continue
         age = draft_age_days(draft.meta)
         window = freshness_window_days(draft.meta)

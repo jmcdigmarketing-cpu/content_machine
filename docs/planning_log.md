@@ -11834,3 +11834,76 @@ traced: the store's `sections` / `trailer` / `page_tried` written and read by `r
 Next five unchanged: #1810, #1719, #1828, #1786, #1826; #2017 first (operator, before Nov 14).
 
 Counts (`ops roadmap-index`): 205 open, 1,901 done, 145 parked; 203 numbered open, highest #2018.
+
+## 2026-11-07 — wave 160: the next 10 (Claude Code)
+
+**Prompt:** "next 10" (asked about the six accepted drafts: "this is indicitave of a larger issue,
+that being when i run script ops all it simply encounters an error with rendering the first video,
+ffmpeg gets to about 80% then just stops loading completely, going up to even 1000s without any
+progress."; asked about #1850: "Drop it")
+
+Measured first (read-only, 11-07): `ops status` - 8 drafts waiting, 6 of them accepted on 11-04 and
+11-06 and never rendered (`unattended_block_reason` -> "already accepted"), so overnight's cap of 8
+(`core/overnight.py:91`) left "drafts 0" tonight and nothing scheduled after Sun 11-08; the 11-04 log
+ends at the itch.io render's start (16:39:30) with no "Video saved"; overnight renders reach 100% in
+~17 s (`output/logs/overnight-last.log`); the "Picks, graded" playlist, made at 15:2x, was gone from
+`data/playlists_tapin.json`; the GTA 6 "everything we know" long draft (run 246) was rejected 11-06.
+
+Picked: the render stall first (the operator's answer), then the cap, the playlist store, and the
+bridge's next by lane - #1810 (+ #2018), #1719, #1828, #1826, #2007, #2009, #2008. #1786 measured as
+already covered and #1856 left open (below); #1850 parked by the operator.
+
+Shipped:
+1. #2020 - `core/render_progress.py`: `-nostdin`, stdin closed, a watchdog on the output time
+   (`FFMPEG_STALL_SECONDS`, 120); `video/render_video.py` `_ffmpeg_run` retries a stall once on the
+   plain path, bounded (`_simple_run`). The cause is not reproduced: the 11-04 background looped past
+   its 87.5 s (83% of a ~105 s video) clean - #2024 reads the saved command next time.
+2. #2021 - `core/batch_review.py` `expire_old_drafts` sets aside an accepted draft past twice its
+   window.
+3. #2022 - `core/playlists.py` `_save` keeps every id and add on disk; `sync_playlists` adopts a
+   playlist already on the channel (`_channel_playlists`, 1 unit a page).
+4. #1810 / #2018 - `jobs/midday.py` asks `slot_for_run` before the render; `review_drafts` sets
+   aside an accepted draft past its window.
+5. #1719 - `core/success/follow_trial.py`, Nov 8-21, recorded in `generate_draft`, read in the weekly
+   report.
+6. #1828 - `core/success/video_card.py`, in the weekly report.
+7. #1826 - `core/roadmap_index.py` `next_by_lane`, `ops roadmap-index --next N`.
+8. #2007 - `best_bet._consider_candidate` and `topic_tokens.content_tokens` unescape.
+9. #2009 - `core/series/profiles.py` `trending_names`: sub-phrases dropped, people first.
+10. #2008 - `video/recut.py` `recut_title` needs `names_its_subject`.
+
+Found on the way:
+- The live who-is order after the first fix still led with "Main Card Results", "UFC Fight Night" and
+  "White House" - the tail-word list was widened to event and building words; now Cortes Acosta.
+- The first 7-day cards showed Shorts' watch hours (6.2 for run 191) - not YPP hours; a Short's card
+  now leaves hours out.
+- Two of this wave's patch edits went wrong and were caught before the suite: a Bash heredoc turned
+  `\b` into a backspace in `_PLACE`, and a PowerShell `Get-Content` round trip turned "·" into "Â·"
+  in the test file.
+
+Deliberately not done: #1786 (the deep dives are crossposted whole already; a cut would post the same
+footage a third time); #1856 (`search_title` repeats the subject on a Short's title); rendering the
+three current accepted drafts overnight (asked; the operator named the render issue instead, so they
+wait for the next batch-review pass, which the watchdog now finishes).
+
+Tests: `tests/test_wave160.py`, 20 at the fail-first run - all 20 failed on `4f53c66` (a clean HEAD
+checkout, the editable finder stripped; the frozen-encode fake bounded at 6 s so the old code fails
+instead of hanging); the two checks added after the live reads (event tail words, a Short's hours)
+failed on the build before their fixes. Changed on purpose: `test_wave156`'s midday helper passes the
+queue step's slot; `test_wave114`'s recut original names its subject; the render command gains
+`-nostdin` (`test_music_bed_wiring`'s legacy argv, five lists in `tests/golden/render_argv.json`);
+`.env.example` documents `FFMPEG_STALL_SECONDS` and `FOLLOW_TRIAL`; the card's title never reads the
+log's `detail` (`test_video_title`). Corpus: 5 cases.
+
+Audit: ruff and format clean; mypy 92 == baseline (7 new errors from a reused name in `next_by_lane`,
+fixed); suite 7,628 forward and reversed, OK; corpus 569 of 569; `data/` untouched by the suite. Production callers: `with_nostdin` / the
+watchdog from every render's `_ffmpeg_run`; `expire_old_drafts` from overnight; `_channel_playlists`
+from `sync_playlists` (`ops playlists --apply`, `finish_playlists`); `_slot` from `_midday_lines`;
+`follow_arm` / `follow_trial_lines` from `generate_draft` and the weekly report; `video_card_lines`
+from the weekly report; `next_lines` from `ops roadmap-index --next`. Fields traced: the
+`follow_line` assignment from `generate_draft` to `follow_trial_lines`; the store's `ids` / `added`
+through `_save`.
+
+Next five: #2024, #1905, #1598, #1602, #1856; #2017 first (operator, before Nov 14).
+
+Counts (`ops roadmap-index`): 198 open, 1,912 done, 146 parked; 196 numbered open, highest #2024.

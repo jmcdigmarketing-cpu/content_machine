@@ -9517,6 +9517,105 @@
         ]
       },
       "why": "the fix must not hold back a filled playlist, and the Week in Review stays first (#1703)"
+    },
+    {
+      "id": "ffmpeg-never-reads-the-console",
+      "item": 2020,
+      "source": "the operator 11-07: renders from ops all stopped at ~80% and sat 1,000 s+; overnight (no console) reached 100%",
+      "call": "core.render_progress:with_nostdin",
+      "args": [
+        [
+          "ffmpeg",
+          "-y",
+          "-i",
+          "a.mp4",
+          "o.mp4"
+        ]
+      ],
+      "expect": {
+        "equals": [
+          "ffmpeg",
+          "-nostdin",
+          "-y",
+          "-i",
+          "a.mp4",
+          "o.mp4"
+        ]
+      },
+      "why": "an inherited console lets a key pressed at a review prompt reach ffmpeg"
+    },
+    {
+      "id": "a-non-ffmpeg-command-is-left-alone",
+      "item": 2020,
+      "source": "the other side: ffprobe and other tools take no -nostdin here",
+      "call": "core.render_progress:with_nostdin",
+      "args": [
+        [
+          "ffprobe",
+          "-i",
+          "a.mp4"
+        ]
+      ],
+      "expect": {
+        "equals": [
+          "ffprobe",
+          "-i",
+          "a.mp4"
+        ]
+      },
+      "why": "the flag is ffmpeg's; another tool would refuse it"
+    },
+    {
+      "id": "a-feed-title-is-unescaped",
+      "item": 2007,
+      "source": "live 11-06: 'Knicks support Taylor Swift after players called her &#39;fakest&#39;' in the idea pool",
+      "call": "core.best_bet:_consider_candidate",
+      "args": [
+        "Knicks support Taylor Swift after players called her &#39;fakest&#39;",
+        "rss"
+      ],
+      "kwargs": {
+        "allowed": [
+          "nba"
+        ],
+        "exclude": [],
+        "seen_local": []
+      },
+      "select": "topic",
+      "expect": {
+        "equals": "Knicks support Taylor Swift after players called her 'fakest'"
+      },
+      "why": "the entity reached titles and scripts as '&#39;'"
+    },
+    {
+      "id": "the-shared-tokens-carry-no-entity-names",
+      "item": 2007,
+      "source": "the sibling: content_tokens read '&#39;' as the token '39' and '&amp;' as 'amp'",
+      "call": "apis.topic_tokens:content_tokens",
+      "args": [
+        "called her &#39;fakest&#39; &amp; more"
+      ],
+      "expect": {
+        "excludes_any": [
+          "39",
+          "amp"
+        ]
+      },
+      "why": "every relevance matcher reads these tokens"
+    },
+    {
+      "id": "a-recut-title-names-its-subject",
+      "item": 2008,
+      "source": "2026-11-06: recut_title took the held moment's first sentence when it named no one",
+      "call": "video.recut:recut_title",
+      "args": [
+        "This season's strongest contenders are taking shape",
+        "Wembanyama drops 40 as the Spurs stun Denver"
+      ],
+      "expect": {
+        "contains": "Wembanyama"
+      },
+      "why": "a re-cut titled with no name loses the search and the click the original earned"
     }
   ]
 }

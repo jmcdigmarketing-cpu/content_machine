@@ -53,24 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-07 · **HEAD at write:** `bc70dec` (wave 159, CI green; this commit follows) ·
-**Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
+**Written:** 2026-11-07 · **HEAD at write:** `4f53c66` (the channel page, CI green; this wave's
+commit follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
 
-**The channel page applied** (the operator signed in again at 15:08). Found in the read-back and
-fixed (#2019): Full Videos went up empty, and the Week in Review's section could not go up (no
-playlist yet, nothing re-ran the sections). The worker's `refresh_page` now finishes the page once
-a day. Live: four sections, the Week in Review first; trailer xHUptFk01D8; description 502
-characters. Wave 159 before it: #2015 fixed; #1614, #1680, #1651, #1692, #1669, #1663, #1799
-built; #1809 closed. Decision 110.
+**Wave 160, the next 10.** Defects first: a render that stops moving sat forever (the operator: `ops
+all` stops at ~80%) - now killed after 120 s and retried, ffmpeg never reading the console (#2020;
+its cause not reproduced, #2024); six accepted drafts held overnight's cap (#2021); the playlist
+store lost an id (#2022). Built: #1810 (+ #2018), #1719, #1828, #1826, #2007, #2008, #2009. #1786
+measured as covered, #1856 left open, #1850 parked (operator). Decision 111.
 
-**Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1723, #1810, #1984, #1988, #1991, #1994,
-#1996-#1998, #2000, #2003-#2014, #2016-#2018. **Next:** #2017 (operator), #1810, #1719, #1828,
-#1786, #1826.
+**Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1723, #1786, #1856, #1984, #1988, #1991, #1994,
+#1996-#1998, #2000, #2003-#2006, #2010-#2014, #2016, #2017, #2023, #2024. **Next:** #2017
+(operator), #2024, #1905, #1598, #1602, #1856.
 
-**Operator:** the sign-in lapses Sat Nov 14 4:08 PM EST - four hours before UFC 334's main card -
-unless the Google app is published: set POLICY_SITE_URL, `ops check-youtube`, publish, then `py -m
-youtube.oauth_setup --channel tapin` once more. Give the ElevenLabs key `user_read` (#2014); enter
-the monthly subscriptions. Keep the PC on at 5 AM and 1-5 PM.
+**Operator:** the sign-in lapses Sat Nov 14 4:08 PM EST unless the Google app is published (set
+POLICY_SITE_URL, `ops check-youtube`, publish, sign in once more). The three current accepted drafts
+(runs 233, 241, 248) render at your next batch-review; a stalled render now says so and retries.
+Give the ElevenLabs key `user_read` (#2014); enter the monthly subscriptions.
 
 ## Slot — Cursor
 

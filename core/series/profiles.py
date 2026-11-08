@@ -34,6 +34,15 @@ _PERSON = re.compile(
 )
 
 
+_PLACE = re.compile(
+    r"\b(city|county|state|stadium|arena|park|garden|gardens|center|centre|island|valley|bay|"
+    r"beach|street|square|airport|university|college|league|conference|division|house|"
+    r"results?|night|card|cup|bowl|awards?|games?|series|championships?|current|united|fc|"
+    r"club|team|tour|open|show|week|weekend|day)$",
+    re.IGNORECASE,
+)
+
+
 def enabled() -> bool:
     return os.getenv("WHO_IS", "true").strip().lower() not in ("0", "false", "no", "off")
 
@@ -76,7 +85,13 @@ def trending_names(
     found = [
         (n, articles[n], len(o), heads[n]) for n, o in outlets.items() if len(o) >= WHO_OUTLETS
     ]
-    return sorted(found, key=lambda item: -item[2])
+    # #2009, live 11-06: "New York City" and "York City" ranked beside Josh Hokit and took the
+    # night's lookups - a phrase inside a longer one found is dropped, and a name ending on a
+    # place or event word goes after the people (live 11-07: "Main Card Results", "UFC Fight
+    # Night" and "White House" led Cortes Acosta)
+    longer = [n for n, *_rest in found]
+    found = [f for f in found if not any(f[0] != o and f[0].lower() in o.lower() for o in longer)]
+    return sorted(found, key=lambda item: (bool(_PLACE.search(item[0])), -item[2]))
 
 
 def who_is_topic(name: str) -> str:

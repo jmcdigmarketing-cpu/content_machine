@@ -3051,6 +3051,11 @@ def _public_video_count(channel_id: str) -> int | None:
 def cmd_roadmap_index(args: argparse.Namespace) -> int:
     from core.roadmap_index import render
 
+    if getattr(args, "next", 0):  # #1826 (wave 160)
+        from core.roadmap_index import next_lines
+
+        _emit_text("Roadmap index", "\n".join(next_lines(int(args.next))), args)
+        return 0
     _emit_text(
         "Roadmap index",
         render(
@@ -4268,6 +4273,12 @@ def build_parser() -> argparse.ArgumentParser:
         dest="list_open",
         action="store_true",
         help="roadmap-index: print each open numbered item (the default is the counts)",
+    )
+    parser.add_argument(
+        "--next",
+        type=int,
+        default=0,
+        help="roadmap-index: the next N buildable items by lane share (#1826)",
     )
     parser.add_argument(
         "--by-shortfall",

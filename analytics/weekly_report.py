@@ -362,8 +362,10 @@ def _bridge_block(channel_id: str) -> str:
         from core.series.worked import what_worked_lines
         from core.success.bridge import scoreboard_lines
         from core.success.cadence import cadence_lines
+        from core.success.follow_trial import follow_trial_lines
         from core.success.formats import format_lines, length_trial_lines, rotation_lines
         from core.success.scorecard import scorecard_lines
+        from core.success.video_card import video_card_lines
         from core.voice.trial import voice_trial_lines
 
         # #1827 the open experiments, #1836 each wave's number 14 days on (wave 135), #1648 the
@@ -374,7 +376,8 @@ def _bridge_block(channel_id: str) -> str:
                  *format_lines(channel_id), *length_trial_lines(channel_id),
                  *rehook_beat_lines(channel_id), *scorecard_lines(channel_id),  # #1691
                  *money_plan_lines(),  # #1800, #1807 (wave 158)
-                 *voice_trial_lines(channel_id), *rotation_lines(channel_id)]  # wave 159  # fmt: skip
+                 *voice_trial_lines(channel_id), *rotation_lines(channel_id),  # wave 159
+                 *follow_trial_lines(channel_id), *video_card_lines(channel_id)]  # wave 160  # fmt: skip
         return "\n".join(lines) + "\n\n"
     except Exception as exc:
         logger.debug("bridge scoreboard skipped in the weekly report: %s", exc)

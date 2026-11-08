@@ -116,6 +116,12 @@ def _collect(channel_id: str, count: int, picks: dict[str, dict]) -> list[str]:
     return collect_topics(channel_id, None, None, count, picks=picks, news_only=True)
 
 
+def _slot(channel_id: str, run_id: int) -> tuple[datetime | None, str]:
+    from core.spaced_queue import slot_for_run
+
+    return slot_for_run(channel_id, run_id)
+
+
 def _render(channel_id: str, run_id: int) -> tuple[str, int]:
     """The fast lane's checks and render; uploaded private with tonight's slot (decision 107)."""
     from core.batch_review import _queue_scheduled
@@ -133,6 +139,7 @@ def run_midday(
     collect: Callable[[str, int, dict[str, dict]], list[str]] | None = None,
     draft: Callable[..., list[Any]] | None = None,
     render: Callable[[str, int], tuple[str, int]] | None = None,
+    slot: Callable[[str, int], tuple[datetime | None, str]] | None = None,
 ) -> list[str]:
     """One try a day: the lines of what it drafted and queued, [] when it did not run."""
     if not enabled():  # off: not even the store is read
@@ -146,7 +153,7 @@ def run_midday(
     store["day"] = _local(channel_id, moment).date().isoformat()
     save_store(channel_id, store)  # one try a day - a crash below is not retried every pass
     return _midday_lines(channel_id, moment, slots=slots, waiting=waiting, collect=collect,
-                         draft=draft, render=render)  # fmt: skip
+                         draft=draft, render=render, slot=slot)  # fmt: skip
 
 
 def _waiting(channel_id: str) -> int:
@@ -182,6 +189,13 @@ def _midday_lines(channel_id: str, moment: datetime, **seams: Any) -> list[str]:
         topic = str(getattr(outcome, "topic", "") or "")[:60]
         if not getattr(outcome, "ok", False) or not run_id:
             lines.append(f"  {topic}: not drafted - {getattr(outcome, 'error', '') or 'no run'}")
+            continue
+        # #1810 / #2018: the slot is read the way the queue step reads it (`slot_for_run`, the
+        # title, deadline and planned time) before a voice is paid - `tonight_slots` counted
+        # free slots for any title, and a draft with none went up unlisted
+        slot, no_slot = (seams.get("slot") or _slot)(channel_id, run_id)
+        if slot is None:
+            lines.append(f"  run {run_id} drafted, not voiced - no slot ({no_slot})")
             continue
         try:
             held, job = (seams.get("render") or _render)(channel_id, run_id)

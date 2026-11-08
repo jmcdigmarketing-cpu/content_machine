@@ -37,6 +37,7 @@ class TestCommandWithoutMusic(unittest.TestCase):
     def test_none_music_is_byte_identical_to_legacy_command(self):
         expected = [
             "ffmpeg",
+            "-nostdin",  # #2020 (wave 160): on purpose - the console's keys never reach a render
             "-y",
             "-stream_loop",
             "-1",

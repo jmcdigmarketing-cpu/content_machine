@@ -9,6 +9,7 @@ own partial copy.
 
 from __future__ import annotations
 
+import html
 import re
 from functools import lru_cache
 
@@ -210,7 +211,8 @@ def content_tokens(text: str, *, min_len: int = 1) -> list[str]:
     """
     out: list[str] = []
     seen: set[str] = set()
-    for tok in _TOKEN.findall(fold_accents(text or "").lower().replace("'", "")):
+    plain = html.unescape(text or "") if "&" in (text or "") else (text or "")  # #2007
+    for tok in _TOKEN.findall(fold_accents(plain).lower().replace("'", "")):
         if len(tok) < min_len or tok in FUNCTION_WORDS or tok in seen:
             continue
         seen.add(tok)

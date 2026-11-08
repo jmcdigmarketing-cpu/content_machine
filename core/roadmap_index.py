@@ -169,6 +169,68 @@ def open_numbered(lines: list[str]) -> list[tuple[int, str]]:
     return out
 
 
+# #1826 (B10.5, wave 160): the next items by lane share - views and hours first while both
+# bars are far (decision 82). A defect always goes first; a lane's share is of what is left.
+LANE_SHARE = {"views": 0.4, "hours": 0.3, "subscribers": 0.15, "cost": 0.1, "money": 0.05}
+# Items that are not building work: a read-back, an item waiting to be public, the operator's own
+_NOT_BUILD_RE = re.compile(
+    r"read back|re-read|open until|\bmeasured\b.*\bopen\b|- operator\)|operator\)\*", re.IGNORECASE
+)
+
+
+def next_by_lane(
+    lines: list[str], count: int = 10, *, shares: dict[str, float] | None = None
+) -> list[tuple[int, str, str]]:
+    """(number, lane, title) for the next `count` buildable open items, S and M only, in backlog
+    order inside each lane (the bridge's #1597-#1896 first): defects first, at most a fifth,
+    then each lane's share of the rest (rounded, at least one for a lane that has items), the
+    leftover back to views and hours. The operator's own "[You]" steps are left out."""
+    weights = shares or LANE_SHARE
+    by_lane: dict[str, list[tuple[int, str]]] = {}
+    for line in lines:
+        match = NUM_RE.match(line)
+        tagged = LANE_RE.search(line)
+        size = SIZE_RE.search(line)
+        if not match or not tagged or not size or size.group(1) not in ("S", "M"):
+            continue
+        if _NOT_BUILD_RE.search(line):
+            continue
+        title = line.split(".", 1)[1].split("**")[1] if "**" in line else line
+        if title.strip().startswith("[You]"):
+            continue  # the operator's own step, not building work
+        by_lane.setdefault(tagged.group(1), []).append((int(match.group(1)), title.strip()))
+    for items in by_lane.values():  # the bridge's ideas, then what was filed since, then older
+        items.sort(key=lambda item: (0 if 1597 <= item[0] <= 1896 else 1 if item[0] > 1896 else 2,
+                                     item[0]))  # fmt: skip
+    picked: list[tuple[int, str, str]] = [
+        (n, "defect", t) for n, t in by_lane.pop("defect", [])[: max(1, count // 5)]
+    ]
+    left = count - len(picked)
+    quota = {lane: max(1, round(left * share)) if by_lane.get(lane) else 0
+             for lane, share in weights.items()}  # fmt: skip
+    for lane in weights:
+        for number, title in by_lane.get(lane, [])[: quota[lane]]:
+            if len(picked) < count:
+                picked.append((number, lane, title))
+    for lane in ("views", "hours", "subscribers", "cost", "money"):  # the leftover
+        for number, title in by_lane.get(lane, []):
+            if len(picked) >= count:
+                break
+            if all(number != n for n, _l, _t in picked):
+                picked.append((number, lane, title))
+    return picked
+
+
+def next_lines(count: int = 10) -> list[str]:
+    """`ops roadmap-index --next N`."""
+    rows = next_by_lane(_lines("backlog.md"), count)
+    head = (
+        f"Next {len(rows)} by lane share (#1826 - defects, then views 40%, hours 30%, "
+        "subscribers 15%, cost 10%, money 5%):"
+    )
+    return [head, *(f"  #{n} [{lane}] {title[:90]}" for n, lane, title in rows)]
+
+
 def render(
     data: dict[str, object] | None = None,
     *,

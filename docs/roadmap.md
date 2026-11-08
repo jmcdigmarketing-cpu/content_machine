@@ -67,6 +67,7 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-07 (Claude, wave 160 - the next 10).** A render that stops moving is killed and retried, and ffmpeg never reads the console (the operator: `ops all` renders stopped at ~80%; six accepted drafts never rendered); an accepted draft past its window is set aside, so overnight drafts again; the playlist store keeps every id; no voice for a draft with no slot; the follow line on trial Nov 8-21; a card per video at 7 days; next-five by lane share; headlines unescaped; re-cut titles name their subject; people before places in "Who is" (decision 111). #1786 measured as already covered; #1856 left open; #1850 parked by the operator. Next, from `ops roadmap-index --next 10` and the freeze (Nov 16): **#2024** the stall's cause when it next happens, **#1905** each clip's uploader credited, **#1598** rising search terms for marquee names, **#1602** viewer questions as ideas, **#1856** launch-week Short titles; **#2017** first - the sign-in lapses Nov 14 at 4:08 PM EST.
 **2026-11-07 (Claude, wave 159 - the next 10).** A series idea keeps its own shape (UFC 334's
 "who wins?" was being drafted as a preview); trades lead; 60-second explainers; a Week in
 Review Short; formats rotate out; the worker every 5 minutes; Piper against ElevenLabs on news

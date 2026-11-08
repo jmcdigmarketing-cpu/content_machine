@@ -152,6 +152,7 @@ os.environ["PART_SHORTS"] = "false"
 os.environ["EXPLAINERS"] = "false"
 os.environ["WIR_SHORT"] = "false"
 os.environ["VOICE_TRIAL"] = "false"
+os.environ["FOLLOW_TRIAL"] = "false"  # #1719 (wave 160)
 os.environ["CHANNEL_PAGE"] = "false"
 # #1727 (wave 149): the weekly long slot the follow lines and the compile day read.
 os.environ["LONG_SLOT"] = "6@19"

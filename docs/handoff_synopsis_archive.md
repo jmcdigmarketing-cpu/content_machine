@@ -7,6 +7,12 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-06 (Claude Code): wave 157, the next five
+
+Stat-shock and ranking Shorts from the story, the countdown's numbers on screen; patch winners
+and losers for Marvel Rivals and Call of Duty; a re-hook beat at the 15-second drop-off; length
+by format on trial Nov 7-21 (decision 108).
+
 ## Previous — 2026-11-06 (Claude Code): wave 156, the next five
 
 A 1 PM draft step in the worker pass for tonight's slots; a Short past 300 organic views

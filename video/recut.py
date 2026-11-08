@@ -267,8 +267,9 @@ def recut_title(sentence: str, original: str) -> str:
     from core.title_generator import broken_place_name, title_cut_off
 
     text = sentence.strip().rstrip(".")
+    # #2008: the sentence names a subject the original title names, as a re-hook must (wave 156)
     if 20 <= len(text) <= 90 and not ad_limit_reason(text, "") and not broken_place_name(text) \
-            and not title_cut_off(text):  # fmt: skip
+            and not title_cut_off(text) and names_its_subject(text, original):  # fmt: skip
         return text
     suffix = " - the moment that held"
     base = original.strip()

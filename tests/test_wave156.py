@@ -495,7 +495,8 @@ class MiddayTests(unittest.TestCase):
 
         lines = self.midday.run_midday(
             "tapin", now=now, slots=lambda *_a: list(slots), waiting=lambda _c: waiting,
-            collect=lambda _c, n, _p: list(topics)[:n], draft=draft, render=render)  # fmt: skip
+            collect=lambda _c, n, _p: list(topics)[:n], draft=draft, render=render,
+            slot=lambda _c, _r: (now, ""))  # fmt: skip
         return lines, drafted, rendered
 
     def test_after_one_it_drafts_renders_and_queues_for_tonight(self):

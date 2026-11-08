@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-07: wave 159, the next 10
+# Handoff synopsis — 2026-11-07: wave 160, the next 10
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,15 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-07 (Claude Code): wave 159, the next 10
+## Last wave — 2026-11-07 (Claude Code): wave 160, the next 10
+
+A render that stops moving is killed and retried, ffmpeg never reads the console; an
+accepted draft past its window is set aside so overnight drafts again; the playlist store
+keeps every id; no voice without a slot; the follow line on trial; a card per video at 7
+days; next-five by lane share; headlines unescaped; re-cut titles and "Who is" fixed
+(decision 111).
+
+## Previous — 2026-11-07 (Claude Code): wave 159, the next 10
 
 A series idea keeps its own shape (UFC 334's debate was being drafted as a preview); trades
 lead; 60-second explainers; a Week in Review Short; formats rotate out; the worker every 5
@@ -22,12 +30,6 @@ on 11-07 and finished by the worker (#2019; decision 110).
 The voice plan sized to the month's characters; each subscription with what it bought;
 organic subscribers by the campaigns' windows; a strong story told in two Shorts a day apart
 (decision 109). Tier lists wait for a hero-standings source.
-
-## Previous — 2026-11-06 (Claude Code): wave 157, the next five
-
-Stat-shock and ranking Shorts from the story, the countdown's numbers on screen; patch winners
-and losers for Marvel Rivals and Call of Duty; a re-hook beat at the 15-second drop-off; length
-by format on trial Nov 7-21 (decision 108).
 
 ---
 

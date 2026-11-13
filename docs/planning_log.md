@@ -11942,3 +11942,76 @@ mypy 92 == baseline; suite 7,639 forward and reversed, OK; corpus 571 of 571; `d
 developer's own game never gates a test.
 
 Counts (`ops roadmap-index`): 198 open, 1,913 done, 146 parked; 196 numbered open, highest #2024.
+
+## 2026-11-13 — wave 161: one month, and what viewers see first (Claude Code)
+
+**Prompts (verbatim):** 11-11: "i think i am done with the project for now. Could you list all
+active costs with the project?" then "so if i pay for buffer and eleven labs, those are the only
+“needed” subs? cursor and everything else can go? I would like to stop putting money into the
+project while having it ride out free. Maybe a big wave this week and next to get it to that
+point." 11-13: "reframe the project in paid mode and lets maximize what we can do until the project
+becomes free to use, completely." Then, with a Studio screenshot of a comment under "Steam Review
+Queue Congestion ..." (1:12): "intake the comment below and continue. Either rapid rapid
+improvement or the plug is pulled, 1 month until the potential end, thank you."
+
+**The comment (2026-11-11, 2 likes):** "You are part of the problem. Do not reccomend channel
+button smiles for me".
+
+**Asked, the operator took:** paid mode "Until what's paid runs out"; all four uses (daily videos
+at paid quality, a bank in the paid voice, one-time AI jobs, the remaining build); the bank "Auto
+if it passes; I can veto"; "Yes, no AI help after the window". Crossposts: "my choice, tbd". The
+voice, asked on 11-11: Piper "After the trial, Nov 21". Recorded as decision 113.
+
+**The costs, as listed to the operator (11-11):** ElevenLabs is the one subscription the repo can
+point to (the "~$22/mo plan" of 09-15; October used 67,185 characters); Cursor if paid; Buffer and
+Apify only if upgraded from free; the LLM keys are pay-as-you-go; ads stopped 10-27; no Claude
+scheduled task was active; on the PC `ContentMachine\OvernightDrafts` was on and the UploadWorker
+disabled since 11-08.
+
+**Read first, on `1804db6` (nothing run - the cloud has no data/):**
+- The footage and covers this window was going to build were already built: wave 135 shipped all
+  of look_and_feel.md's list (#1911-#1916, `assets/clip_ledger.py`, `assets/cover_frames.py`). The
+  Steam story still cut other games' footage because no Steam folder exists - the operator's gap.
+- `core/batch_review.unattended_block_reason` held every `kind: long` draft ("a long video renders
+  after your review"); the rows were dated 11-06, 11-09, 11-12.
+- `analytics/mailbag.py` kept questions only (`questions_from_comments`).
+- `core/tts.synthesize_to_path` raised an ElevenLabs refusal; only the opt-in budget went to Piper.
+- `run_mode.apply_and_guard` ran from main.py, `scripts/auto_generate.py` and
+  `batch_generation.main` - not overnight, the worker, the fast lane or the 1 PM step.
+
+**Shipped (wave 161):**
+1. **#2026** `batch_generation.self_story` / `self_story_hold`; `collect_topics` leaves such a
+   headline in the menu (a line in `notes`); `unattended_block_reason` holds a draft about it.
+2. **#2027** `mailbag.critiques_from_comments` / `critique_lines`; `fetch` stores `critiques`;
+   `ops mailbag` and the weekly report print them.
+3. **#2028** `batch_review.long_auto`; the hold only with `LONG_AUTO=false`; review's line and
+   `series/dated._long_note` say which.
+4. **#2029** `tts.plan_refusal`, `PaidVoiceEnded`, `paid_voice_ended`, `_switch_to_local_voice`;
+   `generate_audio` voices the whole script again with Piper; `quota_governor.voice_mark_refused`
+   / `voice_refused` (a day, key-hash cleared); `PAID_VOICE_UNTIL`.
+5. **#2030** `run_mode.hold_unattended`, `paid_last_day`, `paid_over`; `resolve_cost_mode` is Free
+   after `PAID_UNTIL`; called by `overnight.run_overnight`, `fast_lane.run_fast_lane`,
+   `midday.run_midday`; `worker._cost_mode`.
+6. **#2031** `config/decision_test.json`, `core/success/decision.py` (`window`,
+   `capture_baseline` from the metrics sync, `decision_line`); `status_summary._decision`; the
+   weekly report. `machine_lines` leaves out a family with nothing to say.
+
+**Deliberately not done:** the character budget and the evergreen bank (they need the paid
+month's last day and the characters left - asked of the operator); persisted "ended" marks for
+the LLM providers (a refused call costs nothing; the session breaker already routes around it);
+paid-written scripts as examples for the free model; the ride-out runbook and disk cleanup; a
+footage scan by vision (wave 135's still-frame measure already keeps menus out). None is numbered
+yet (decision 68) - each takes a number when a wave builds it.
+
+**Not seen live:** everything - this wave was built in the cloud. First to read back on the PC:
+`ops mailbag` lists the 11-11 comment; `ops status` shows the decision-day line after one sync; a
+waiting long draft renders on the next overnight run.
+
+**Audit.** 25 tests in `tests/test_wave161.py`, written first: 24 failed on `1804db6`; the one that
+passed is a control (`LONG_AUTO=false` keeps decision 84's hold). Corpus: 6 cases, 577 of 577.
+ruff and format clean; mypy 90 here, as on the base (the ratchet's baseline is 92). Suite 7,664
+forward and reversed, OK (6 skipped); `data/` and `output/` untouched. Found by the suite: the
+new store read the operator's `data/` (#1305's guard) - redirected in `tests/__init__.py`.
+Every new function has a production caller; `tts.reset_paid_voice` is the test helper.
+
+Counts (`ops roadmap-index`): 198 open, 1,919 done, 146 parked; 196 numbered open, highest #2024.

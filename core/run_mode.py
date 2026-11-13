@@ -22,6 +22,7 @@ from __future__ import annotations
 import importlib.util
 import os
 from dataclasses import dataclass, field
+from datetime import date
 
 from core.logging import get_logger
 
@@ -47,9 +48,35 @@ _FREE_WEB_SEARCH_BACKEND = "duckduckgo"
 _LOCAL_TTS_ORDER = ("piper", "kokoro", "xtts", "qwen")
 
 
+def _today() -> date:
+    return date.today()
+
+
+def paid_last_day(name: str = "PAID_UNTIL") -> date | None:
+    """#2029/#2030 (decision 113): the last day a paid service may be used - `PAID_UNTIL` for
+    everything, `PAID_VOICE_UNTIL` for the voice alone. None when unset or not a date."""
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw[:10])
+    except ValueError:
+        logger.warning("%s=%r is not a date like 2026-12-13 - ignored", name, raw)
+        return None
+
+
+def paid_over(name: str = "PAID_UNTIL", *, today: date | None = None) -> bool:
+    """True from the day after `name`'s date."""
+    last = paid_last_day(name)
+    return last is not None and (today or _today()) > last
+
+
 def resolve_cost_mode() -> str:
-    """Non-interactive default from RUN_COST_MODE / PAID_CALLS=off."""
+    """Non-interactive default from RUN_COST_MODE / PAID_CALLS=off, and Free from the day after
+    `PAID_UNTIL` (#2030: paid mode ends on its date with no `.env` edit that day)."""
     if os.getenv("PAID_CALLS", "").strip().lower() in ("0", "off", "false", "no"):
+        return COST_MODE_FREE
+    if paid_over():
         return COST_MODE_FREE
     return (
         COST_MODE_FREE
@@ -281,6 +308,19 @@ def apply_and_guard(mode: str | None = None, *, readiness: Readiness | None = No
     abort_if_blocked(result)
     abort_if_first_call_unusable(result)
     return result
+
+
+def hold_unattended(what: str) -> str:
+    """#2030: apply the cost mode before an unattended job (`what`: "overnight", "the fast
+    lane", "the 1 PM step") spends anything. "" when it may run - Standard is a no-op. In Free
+    mode with a $0 backend missing: the one line saying why it did not run. The never-pay guards
+    are armed either way. Only main.py, auto_generate and batch_generation's own `main` applied
+    the mode, so `RUN_COST_MODE=free` did not hold overnight."""
+    try:
+        apply_and_guard()
+    except CostModeBlocked as exc:
+        return f"Free mode cannot run {what}: {exc}"
+    return ""
 
 
 def _merge_skip(existing: str) -> str:

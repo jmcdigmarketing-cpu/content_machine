@@ -356,12 +356,14 @@ def _scoreboard_head(channel_id: str) -> str:
 def _bridge_block(channel_id: str) -> str:
     """#1822: the bridge's scoreboard after the goal's - what counts toward YPP."""
     try:
+        from analytics.mailbag import critique_lines
         from core.experiments import experiment_lines
         from core.money.plans import money_plan_lines
         from core.retention import rehook_beat_lines
         from core.series.worked import what_worked_lines
         from core.success.bridge import scoreboard_lines
         from core.success.cadence import cadence_lines
+        from core.success.decision import decision_line
         from core.success.follow_trial import follow_trial_lines
         from core.success.formats import format_lines, length_trial_lines, rotation_lines
         from core.success.scorecard import scorecard_lines
@@ -377,7 +379,11 @@ def _bridge_block(channel_id: str) -> str:
                  *rehook_beat_lines(channel_id), *scorecard_lines(channel_id),  # #1691
                  *money_plan_lines(),  # #1800, #1807 (wave 158)
                  *voice_trial_lines(channel_id), *rotation_lines(channel_id),  # wave 159
-                 *follow_trial_lines(channel_id), *video_card_lines(channel_id)]  # wave 160  # fmt: skip
+                 *follow_trial_lines(channel_id), *video_card_lines(channel_id),  # wave 160
+                 *critique_lines(channel_id)]  # #2027  # fmt: skip
+        month = decision_line(channel_id)  # #2031: "" for a channel with no test
+        if month:
+            lines.append(month)
         return "\n".join(lines) + "\n\n"
     except Exception as exc:
         logger.debug("bridge scoreboard skipped in the weekly report: %s", exc)

@@ -124,6 +124,20 @@ def jump_first(ideas: list[Any], names: list[str]) -> list[Any]:
     return ideas
 
 
+def _long_note() -> str:
+    """#2028: what a long idea's line says about its render - decision 84's review, or auto."""
+    try:
+        from core.batch_review import long_auto
+
+        auto = long_auto()
+    except Exception as exc:
+        logger.debug("long-auto switch unread: %s", exc)
+        auto = False
+    return (
+        " - a long video, rendered when it passes" if auto else " - a long video, after your review"
+    )
+
+
 def dated_ideas(
     channel_id: str,
     *,
@@ -189,7 +203,7 @@ def dated_ideas(
                 source=kind,
                 supporting_runs=0,
                 rationale=f"series · {row.get('subject')} {kind} for {today:%b} {today.day}"
-                + (" - a long video, after your review" if kind == "long" else ""),
+                + (_long_note() if kind == "long" else ""),
                 facts=facts,
                 draft_kind="long" if kind == "long" else "",
                 publish_at=str(row.get("publish_at") or ""),

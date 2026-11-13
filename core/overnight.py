@@ -182,6 +182,13 @@ def run_overnight(
         logger.debug("overnight metrics sync skipped: %s", exc)
 
     try:
+        from core.run_mode import hold_unattended
+
+        held = hold_unattended("overnight")  # #2030: the cost mode, before anything is spent
+        if held:
+            logger.warning("%s", held)
+            result.pause_line = held
+            return result  # the steps below cost nothing and still run
         return _run_overnight_body(
             channel,
             result,

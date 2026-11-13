@@ -305,6 +305,13 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
         print(f"  Breakout check skipped: {exc}")
     if numbers:
         save_ypp_numbers(channel_id, numbers)
+        try:  # #2031 (decision 113): the month's test takes its start line once
+            from core.success.decision import capture_baseline, decision_line
+
+            if capture_baseline(channel_id, numbers):
+                print(f"  {decision_line(channel_id)}")
+        except Exception as exc:
+            print(f"  Decision-test start line skipped: {exc}")
         try:  # #1986: paid views on uploads the log does not hold, weekly while the gap stays
             outside = youtube_metrics.sync_paid_outside(channel_id, numbers)
             if outside:

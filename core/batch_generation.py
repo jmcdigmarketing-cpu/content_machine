@@ -252,6 +252,12 @@ def collect_topics(
         for bet in ideas:
             if getattr(bet, "source", "") in DATED_SOURCES:
                 continue
+            told = self_story(bet.topic) if self_story_hold() else ""
+            if told:  # #2026: it stays in the menu - the operator's to tell, never overnight's
+                if notes is not None:
+                    notes.append(f'A story about machine-made content ("{told}") was left for '
+                                 f"you in the menu: {bet.topic[:90]} (#2026)")  # fmt: skip
+                continue
             if stale_idea(bet, moment):  # #1607: past 36 hours on under three outlets
                 if held_back is not None:
                     held_back.append(bet.topic)
@@ -476,6 +482,32 @@ def story_passes_gate(
     if outlets >= OUTLETS_MIN or names_any(topic or "", names):
         return True
     return bool(known is not None and known(topic or ""))
+
+
+# #2026 (decision 113): a story about machine-made or low-effort content. On 11-11 a viewer wrote
+# under "Steam Review Queue Congestion": "You are part of the problem. Do not reccomend channel"
+# (2 likes) - a machine-voiced channel reporting on machine-made games. Specific phrases only:
+# "AI teammates" or "the enemy AI" is a game's own AI and is a story like any other.
+_SELF_STORY_RE = re.compile(
+    r"\b(?:ai|a\.i\.)[- ]?(?:generated|made|written|voiced|slop|spam|art|content|shovelware|"
+    r"crackdown|disclosures?|voices?|videos?|channels?|games)\b"
+    r"|\bgenerative ai\b|\bgen[- ]?ai\b|\bslop\b|\bshovelware\b|\basset[- ]flips?\b"
+    r"|\blow[- ]effort (?:games?|content|releases?|uploads?|videos?|channels?)\b"
+    r"|\b(?:content|video) farms?\b|\bfaceless channels?\b"
+    r"|\bmachine[- ](?:made|generated|written)\b",
+    re.IGNORECASE,
+)
+
+
+def self_story_hold() -> bool:
+    """`SELF_STORY_HOLD=false` lets these stories through like any other."""
+    return os.getenv("SELF_STORY_HOLD", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def self_story(text: str) -> str:
+    """#2026: the phrase that makes `text` a story about machine-made content, else ""."""
+    found = _SELF_STORY_RE.search(text or "")
+    return found.group(0) if found else ""
 
 
 def known_subject_check() -> Callable[[str], bool] | None:

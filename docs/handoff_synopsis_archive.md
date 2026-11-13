@@ -7,6 +7,12 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-11-06 (Claude Code): wave 158, the next five
+
+The voice plan sized to the month's characters; each subscription with what it bought;
+organic subscribers by the campaigns' windows; a strong story told in two Shorts a day apart
+(decision 109). Tier lists wait for a hero-standings source.
+
 ## Previous — 2026-11-06 (Claude Code): wave 157, the next five
 
 Stat-shock and ranking Shorts from the story, the countdown's numbers on screen; patch winners

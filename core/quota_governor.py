@@ -393,6 +393,66 @@ def elevenlabs_reset(key: str | None = None) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# Paid voice scope (#2029, decision 113) - ElevenLabs refused for the plan, the balance or
+# the key. The check point stays in core/tts.py (decisions §13); only persistence lives here.
+# A day, not for good: a refused call costs nothing, so one probe a day finds a renewed plan,
+# and a changed key clears the record at once (key-hash, as the signals').
+# --------------------------------------------------------------------------- #
+_VOICE_SCOPE = "voice"
+_VOICE_NAME = "elevenlabs"
+_VOICE_KEYHASH = "voice_keyhash:elevenlabs"
+
+
+def _voice_fingerprint() -> str:
+    return hashlib.sha256(os.getenv("ELEVEN_API_KEY", "").strip().encode("utf-8")).hexdigest()
+
+
+def voice_refused_ttl() -> int:
+    try:
+        return int(os.getenv("VOICE_REFUSED_TTL_SECONDS", str(24 * 60 * 60)))
+    except ValueError:
+        return 24 * 60 * 60
+
+
+def voice_mark_refused(reason: str, *, ttl_seconds: int | None = None) -> None:
+    """Remember across runs that the paid voice refused (no-op when persistence is off)."""
+    if not persist_enabled():
+        return
+    try:
+        ttl = ttl_seconds if ttl_seconds is not None else voice_refused_ttl()
+        quota_state.mark_exhausted(_VOICE_SCOPE, _VOICE_NAME, reason, ttl_seconds=ttl)
+        quota_state.set_value(_VOICE_KEYHASH, _voice_fingerprint(), ttl_seconds=ttl)
+    except Exception as exc:
+        logger.debug("paid-voice refusal not persisted: %s", exc)
+
+
+def voice_refused() -> tuple[bool, str]:
+    """(refused, why) - an unexpired refusal for the key in use now. Fail-open: (False, "")."""
+    if not persist_enabled():
+        return False, ""
+    try:
+        refused, why = quota_state.is_exhausted(_VOICE_SCOPE, _VOICE_NAME)
+        if not refused:
+            return False, ""
+        stored = quota_state.get_value(_VOICE_KEYHASH)
+        if stored and stored != _voice_fingerprint():
+            voice_clear()
+            logger.info("Persisted paid-voice refusal cleared - the key changed")
+            return False, ""
+        return True, str(why or "")
+    except Exception:
+        return False, ""
+
+
+def voice_clear() -> None:
+    try:
+        quota_state.clear_exhausted(_VOICE_SCOPE, _VOICE_NAME)
+        quota_state.clear_value(_VOICE_KEYHASH)
+    except Exception as exc:
+        logger.warning("Could not clear the persisted paid-voice refusal: %s", exc)
+
+
+# --------------------------------------------------------------------------- #
 # YouTube scope (O12) — daily unit consumption, reported through the governor.
 #
 # `apis/youtube_quota.py` remains the counter and the *check point* (decisions §13:

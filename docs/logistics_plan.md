@@ -21,6 +21,17 @@ critique."* Decision 85 takes it the rest of the way decision 82 started.
 | Drafting and checks (the LLM router) | kept, free tiers first | - | a draft is a median $0.04 |
 | Signals (Apify and the free backends) | kept, inside their budgets | - | the breakers and caps in `core/cost_meter.py` stay as they are |
 
+**From 2026-11-13 (decision 113): paid until it runs out, then free.** Renewals are cancelled and
+no new money goes in. Each kept line above is used to the end of its paid month or balance:
+
+- `PAID_VOICE_UNTIL=YYYY-MM-DD` is the last day of the ElevenLabs month already paid. From the day
+  after, the voice is Piper. If ElevenLabs refuses sooner (no characters, a cancelled plan), the
+  script is voiced with Piper instead of the render failing. Both need `PIPER_VOICE` set.
+- `PAID_UNTIL=YYYY-MM-DD` is the last day anything paid may be used. From the day after, every run
+  is Free mode ([free_mode.md](free_mode.md)), the unattended ones included.
+- The month's test runs to **2026-12-13**: `py -m scripts.ops status` prints each number against
+  where it started.
+
 **What has been spent on ads.** A $10 campaign in September, a campaign stopped on Oct 8 (about $40
 by the operator's count by then), and the two Oct 26 campaigns ($15.65 together). Three are in the
 ledger. The Oct 8 one waits for its final numbers from Studio, and `py -m scripts.ops promotions`

@@ -10,7 +10,7 @@ build list that gets it there. It starts from the operator's words:
 and their answer when asked what a cover should be: **"Best frame, no words"** (decision 85). The
 evidence is [studio_snapshot_2026-10-30.md](studio_snapshot_2026-10-30.md). The principles behind
 it are [tapin_principles.md](tapin_principles.md) P2 (our own pictures) and P6 (the viewer's time).
-No code changes with this page. The build list (L1-L10) is for a later wave.
+The build list (L1-L10) was built the same day, in wave 135.
 
 ## What the operator saw
 
@@ -127,7 +127,12 @@ it and the operator confirms or changes it.
   has no cutout.
 - Untagged menus behind club stories (L5).
 
-## The build list (for a later wave; no code with this page)
+## The build list
+
+**Built on 2026-10-30 (wave 135), numbered #1907-#1916 in [backlog.md](backlog.md):** all ten.
+L7 (#1913) is built and stays open until a week's runs show no image API call. What is left is
+footage, not code: a story with no folder of its own still cuts other games (the 11-11 Steam
+story did), so the shopping list in [logistics_plan.md](logistics_plan.md) section 3 stands.
 
 Each item names its lane (decision 82). None gets a backlog number until a wave takes it, so the
 backlog's ceiling and `tests/test_bridge.py` stay whole. The nearest existing items are named so

@@ -387,7 +387,12 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     print_fn(f"\n  [{index}/{total}] {draft.title}  (run {draft.run_id}){made}")
     print_fn(f"    angle: {draft.topic}")
     if meta.get("kind") == "long":  # #1850, decision 84
-        print_fn("    ~ a long video (16:9, 10-12 min) - it renders only after you accept it")
+        how = (
+            "renders overnight when it passes every check"
+            if long_auto()
+            else ("renders only after you accept it")
+        )  # #2028
+        print_fn(f"    ~ a long video (16:9, 10-12 min) - it {how}")
         searches = meta.get("search_suggestions")
         if searches == []:  # #1856
             print_fn("    ! nobody searches this - YouTube suggests nothing for its subject")
@@ -1324,12 +1329,21 @@ def preview_hold_reason(draft: PendingDraft, *, now: datetime | None = None) -> 
     return ""
 
 
+def long_auto() -> bool:
+    """#2028 (decision 113, the operator 2026-11-13: "auto if it passes; I can veto"): a long
+    draft that passes every check renders unattended like a Short - it goes up unlisted and is
+    public at its slot after a day unanswered (`schedule_unanswered_renders`). Decision 84's
+    "after my review" held every long draft while the operator was away. `LONG_AUTO=false` puts
+    the review back."""
+    return not _env_off("LONG_AUTO")
+
+
 def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None) -> str:
     """Why a draft must wait for a person, or "" when it may render unattended."""
     meta = draft.meta
     if draft.decision:
         return f"already {draft.decision}"
-    if meta.get("kind") == "long":  # #1850, decision 84: the operator reads the script first
+    if meta.get("kind") == "long" and not long_auto():  # #1850, decision 84 - #2028 lifts it
         return "a long video renders after your review"
     dead = dead_reason(meta, now=now)
     if dead:  # #1219: checked first, so the count of drafts past their window is true
@@ -1345,6 +1359,11 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
         return "its facts conflict"
     if meta.get("ungrounded_entities"):
         return "it names something the facts do not"
+    from core.batch_generation import self_story, self_story_hold
+
+    told = self_story(f"{draft.title}. {draft.script}") if self_story_hold() else ""
+    if told:  # #2026 (decision 113): a machine-voiced channel on machine-made content
+        return f'a story about machine-made content ("{told}") - yours to decide'
     # Decision 72 (#1549, the operator 2026-10-23): a "weak" hook verdict no longer holds an
     # overnight render - the score behind it ran against who stayed (r = -0.48 over 22, decision
     # 70). Review still shows the verdict.

@@ -155,6 +155,12 @@ def run_midday(
     if why:
         logger.debug("midday: %s", why)
         return []
+    from core.run_mode import hold_unattended
+
+    held = hold_unattended("the 1 PM step")  # #2030: before the drafts spend anything
+    if held:
+        logger.warning("%s", held)
+        return []
     store["day"] = _local(channel_id, moment).date().isoformat()
     save_store(channel_id, store)  # one try a day - a crash below is not retried every pass
     return _midday_lines(channel_id, moment, slots=slots, waiting=waiting, collect=collect,

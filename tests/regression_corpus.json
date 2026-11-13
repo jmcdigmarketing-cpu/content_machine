@@ -9668,6 +9668,112 @@
         "equals": ""
       },
       "why": "a launcher open all day would hold every render forever"
+    },
+    {
+      "id": "a-story-about-machine-made-content-is-named",
+      "item": 2026,
+      "source": "a viewer, 11-11, under \"Steam Review Queue Congestion\" (2 likes): \"You are part of the problem. Do not reccomend channel\"",
+      "call": "core.batch_generation:self_story",
+      "args": [
+        "Steam review queue congestion: a flood of AI-generated games buries real releases"
+      ],
+      "expect": {
+        "equals": "AI-generated"
+      },
+      "why": "a machine-voiced channel reporting on machine-made games reads as the problem it describes"
+    },
+    {
+      "id": "a-games-own-ai-is-a-story-like-any-other",
+      "item": 2026,
+      "source": "the other side: \"AI\" in a game story is the game's opponents and teammates",
+      "call": "core.batch_generation:self_story",
+      "args": [
+        "Madden 27's AI teammates finally hold their blocks, and the enemy AI adapts"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "holding every headline with AI in it would hold ordinary game news"
+    },
+    {
+      "id": "the-comment-is-read-as-a-critique",
+      "item": 2027,
+      "source": "the same comment - the mailbag kept only questions, so the operator found it in Studio",
+      "call": "analytics.mailbag:critiques_from_comments",
+      "args": [
+        [
+          {
+            "text": "You are part of the problem.\nDo not reccomend channel button smiles for me",
+            "likes": 2,
+            "video_id": "v1",
+            "comment_id": "c1"
+          }
+        ]
+      ],
+      "expect": {
+        "equals": [
+          [
+            "machine-made",
+            "leaving"
+          ]
+        ]
+      },
+      "why": "an objection two viewers liked is a measurement the operator should not have to find by hand",
+      "pluck": "kinds"
+    },
+    {
+      "id": "a-viewer-on-the-game-is-not-a-critique",
+      "item": 2027,
+      "source": "the other side: comments about the game's AI, a false start, what went wrong for a team",
+      "call": "analytics.mailbag:critiques_from_comments",
+      "args": [
+        [
+          {
+            "text": "The enemy AI in this game is so good",
+            "comment_id": "a"
+          },
+          {
+            "text": "Chiefs false start again",
+            "comment_id": "b"
+          },
+          {
+            "text": "what went wrong for the Chiefs?",
+            "comment_id": "c"
+          }
+        ]
+      ],
+      "expect": {
+        "equals": []
+      },
+      "why": "a list padded with comments about the game hides the ones about the channel"
+    },
+    {
+      "id": "a-busy-answer-is-not-the-end-of-the-plan",
+      "item": 2029,
+      "source": "the other side of #2029: a 429 from ElevenLabs is a wait, not a cancelled plan",
+      "call": "core.tts:plan_refusal",
+      "args": [
+        429,
+        "status_code: 429, body: {'detail': {'status': 'too_many_concurrent_requests'}}"
+      ],
+      "expect": {
+        "equals": false
+      },
+      "why": "treating a busy answer as the end would move a paid month's renders to the free voice"
+    },
+    {
+      "id": "no-characters-left-ends-the-paid-voice",
+      "item": 2029,
+      "source": "read on 1804db6: an ElevenLabs refusal was raised and the render failed",
+      "call": "core.tts:plan_refusal",
+      "args": [
+        401,
+        "status_code: 401, body: {'detail': {'status': 'quota_exceeded'}}"
+      ],
+      "expect": {
+        "equals": true
+      },
+      "why": "a cancelled plan that fails every render stops the channel on the plan's last day"
     }
   ]
 }

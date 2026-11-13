@@ -1044,6 +1044,18 @@ def _idle_line() -> str:
     )
 
 
+def _cost_mode() -> None:
+    """#2030: arm the run's cost mode for everything this pass starts (the fast lane, the 1 PM
+    step, renders). Never a stop: uploads cost nothing, and a missing $0 backend is said by the
+    step that needs it. Fail-open."""
+    try:
+        from core.run_mode import apply_cost_mode, resolve_cost_mode
+
+        apply_cost_mode(resolve_cost_mode())
+    except Exception as exc:
+        logger.warning("cost mode not applied: %s", exc)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Content OS job worker")
     parser.add_argument(
@@ -1053,6 +1065,7 @@ def main():
         help="Poll interval in seconds (0 = single pass)",
     )
     args = parser.parse_args()
+    _cost_mode()  # #2030
 
     if args.loop <= 0:
         processed = drain_due()

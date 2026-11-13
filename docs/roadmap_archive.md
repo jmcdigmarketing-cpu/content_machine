@@ -1315,3 +1315,14 @@ identical with no sidecar. **Do not rebuild the timeline UI.**
 **Closed 2026-09-09 (defect + kit wave):** **#701** weekend clock - **#700**
 `claim_next` - **#699** `surfaces` - **#112** correction dossier - **#151**
 brand-kit.
+
+**Moved from roadmap.md on 2026-11-13 (its 200-line lint):**
+
+**2026-11-06 (Claude, wave 157 - the next five).** Stat-shock and ranking Shorts from the
+story (the countdown's numbers on screen), patch winners and losers, a re-hook beat at the
+15-second drop-off, and length by format on trial Nov 7-21 (decision 108). The views items
+left in B01-B04 are built or wait on media or Buffer (#1660, #1777, #1778, #1857), so the list
+turns to cost and subscribers before the freeze: **#1800** ElevenLabs' plan sized to the
+month's characters, **#1807** each subscription with what it bought, **#1830** paid and
+organic split everywhere, **#1700** part-2 Shorts a day apart, **#1723** evergreen tier lists
+refreshed monthly; **#1849** once the embargo date is known.

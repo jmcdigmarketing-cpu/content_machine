@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-11-07: wave 160, the next 10
+# Handoff synopsis — 2026-11-13: wave 161, one month
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,16 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-11-07 (Claude Code): wave 160, the next 10
+## Last wave — 2026-11-13 (Claude Code): wave 161, one month
+
+The operator: rapid improvement by Dec 13 or the project ends; paid until what is paid runs
+out, then free (decision 113). A story about machine-made content waits for the operator;
+viewers' objections are read from the comments; long videos render when they pass; an
+ElevenLabs refusal voices the script with Piper; the cost mode reaches overnight, the fast lane
+and the 1 PM step; `ops status` prints the month against its start. Built in the cloud - not
+seen live.
+
+## Previous — 2026-11-07 (Claude Code): wave 160, the next 10
 
 A render that stops moving is killed and retried, ffmpeg never reads the console; an
 accepted draft past its window is set aside so overnight drafts again; the playlist store
@@ -24,12 +33,6 @@ A series idea keeps its own shape (UFC 334's debate was being drafted as a previ
 lead; 60-second explainers; a Week in Review Short; formats rotate out; the worker every 5
 minutes; Piper against ElevenLabs on news Shorts; the channel page, applied after the sign-in
 on 11-07 and finished by the worker (#2019; decision 110).
-
-## Previous — 2026-11-06 (Claude Code): wave 158, the next five
-
-The voice plan sized to the month's characters; each subscription with what it bought;
-organic subscribers by the campaigns' windows; a strong story told in two Shorts a day apart
-(decision 109). Tier lists wait for a hero-standings source.
 
 ---
 

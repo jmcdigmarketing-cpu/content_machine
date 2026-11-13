@@ -67,6 +67,15 @@ GTA 6 launches 2026-11-19 - the bridge's first time-critical window (B11). **Mon
 
 ### Recommended next five
 
+**2026-11-13 (Claude, wave 161 - one month, decision 113).** The operator: rapid improvement by
+**Dec 13** or the project ends; paid until what is paid runs out, then free. Built first, what
+viewers see: a story about machine-made content waits for the operator (**#2026**, from a
+viewer's "You are part of the problem"), viewers' objections read from the comments (**#2027**),
+long videos render when they pass (**#2028**), the paid voice ends without failing a render
+(**#2029**), the cost mode reaches the unattended jobs (**#2030**), and `ops status` prints the
+month against its start (**#2031**). Next, in order: the paid characters left budgeted across
+launch week, the daily videos and a bank; the evergreen bank (**#1737**, **#1689**, **#1661**);
+paid-written scripts as examples for the free model; a runbook for running with nobody watching.
 **2026-11-07 (Claude, wave 160 - the next 10).** A render that stops moving is killed and retried, and ffmpeg never reads the console (the operator: `ops all` renders stopped at ~80%; six accepted drafts never rendered); an accepted draft past its window is set aside, so overnight drafts again; the playlist store keeps every id; no voice for a draft with no slot; the follow line on trial Nov 8-21; a card per video at 7 days; next-five by lane share; headlines unescaped; re-cut titles name their subject; people before places in "Who is" (decision 111). #1786 measured as already covered; #1856 left open; #1850 parked by the operator. Next, from `ops roadmap-index --next 10` and the freeze (Nov 16): **#2024** the stall's cause when it next happens, **#1905** each clip's uploader credited, **#1598** rising search terms for marquee names, **#1602** viewer questions as ideas, **#1856** launch-week Short titles; **#2017** first - the sign-in lapses Nov 14 at 4:08 PM EST.
 **2026-11-07 (Claude, wave 159 - the next 10).** A series idea keeps its own shape (UFC 334's
 "who wins?" was being drafted as a preview); trades lead; 60-second explainers; a Week in
@@ -86,14 +95,6 @@ a cheaper voice on news Shorts as a trial, **#1614** trades and signings, **#165
 Review Short, **#1663** the worker every 5 minutes, **#1669** public Shorts a week, **#1680**
 explainers for coming events, **#1692** a format rotates out, **#1702** / **#1703** / **#1710**
 the channel page.
-**2026-11-06 (Claude, wave 157 - the next five).** Stat-shock and ranking Shorts from the
-story (the countdown's numbers on screen), patch winners and losers, a re-hook beat at the
-15-second drop-off, and length by format on trial Nov 7-21 (decision 108). The views items
-left in B01-B04 are built or wait on media or Buffer (#1660, #1777, #1778, #1857), so the list
-turns to cost and subscribers before the freeze: **#1800** ElevenLabs' plan sized to the
-month's characters, **#1807** each subscription with what it bought, **#1830** paid and
-organic split everywhere, **#1700** part-2 Shorts a day apart, **#1723** evergreen tier lists
-refreshed monthly; **#1849** once the embargo date is known.
 **2026-10-28 (Claude, the bridge).** Decision 82: waves 132-136, each with a brief ([133](cloud_brief_wave133.md) [134](cloud_brief_wave134.md)
 [135](cloud_brief_wave135.md) [136](cloud_brief_wave136.md)), dated in [bridge_calendar.md](bridge_calendar.md) - [bridge_plan.md](bridge_plan.md).
 The step-by-step: [operator_guide.md](operator_guide.md).

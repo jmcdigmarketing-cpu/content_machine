@@ -11,12 +11,18 @@ words they share (`apis/topic_tokens`). The clusters are stored in
 A question two or more viewers asked becomes a best-bet candidate ("viewers asked"), and
 `ops mailbag` lists them. Fetching happens in `ops mailbag`, and in the metrics sync only
 with `MAILBAG_SYNC=true`.
+
+#2027 (decision 113): the same comments are read for what viewers object to. On 11-11 one wrote
+"You are part of the problem. Do not reccomend channel" (2 likes) and on 10-30 another "lame";
+the operator found both in Studio, because only questions were kept. `critiques_from_comments`
+sorts each objection into kinds - machine-made, leaving, quality, wrong - most liked first.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from typing import Any
 
@@ -73,6 +79,98 @@ def questions_from_comments(comments: list[dict[str, Any]]) -> list[dict[str, An
                 }
             )
     return out
+
+
+# #2027: what a comment objects to. Each pattern needs the channel as its target where a plain
+# word would also fit a game - "the enemy AI is so good" and "bot lane" are not about us.
+_CRITIQUE_KINDS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "machine-made",
+        re.compile(
+            r"\bai[- ]?(?:voice|video|channel|slop|generated|content|garbage|made|script|"
+            r"narrat\w*|trash|crap|spam)\b"
+            r"|\b(?:is|it's|its|this is|another|more|just|obviously|pure) ai\b"
+            r"|\b(?:robot(?:ic)?|bot) (?:voice|channel|video|account)\b"
+            r"|\bslop\b|\bpart of the problem\b|\btext[- ]to[- ]speech\b|\btts\b"
+            r"|\bfake voice\b|\bsoulless\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "leaving",
+        re.compile(
+            r"\b(?:don'?t|do not|never|not) rec+om+end\b|\bunsub\w*"
+            r"|\b(?:block|report)(?:ed|ing)? (?:this|the|your) (?:channel|video|account)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "quality",
+        re.compile(
+            r"\b(?:lame|boring|trash|garbage|cringe|click ?bait|waste of time|terrible|awful|"
+            r"unwatchable|annoying)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "wrong",
+        re.compile(
+            # "what went wrong for the Chiefs" is a viewer on the game, not on us
+            r"\b(?:(?:you're|you are|this is|that's|thats|that is|is|it's|its|all|"
+            r"got (?:it|this|that)) (?:wrong|false)|wrong (?:about|info\w*|score|date|team|"
+            r"name|stat\w*)|incorrect|inaccurate|misinformation|not true|fake news|"
+            r"didn'?t happen)\b",
+            re.IGNORECASE,
+        ),
+    ),
+)
+
+
+def critiques_from_comments(
+    comments: list[dict[str, Any]], *, titles: dict[str, str] | None = None
+) -> list[dict[str, Any]]:
+    """#2027: [{text, likes, kinds, video_id, comment_id, title}] - the comments that object to
+    the channel or a video, most liked first. A comment with no objection in it is left out."""
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for c in comments:
+        text = " ".join(str(c.get("text") or "").replace("\u2019", "'").split())
+        key = str(c.get("comment_id") or "") or text.lower()
+        kinds = [kind for kind, pattern in _CRITIQUE_KINDS if pattern.search(text)]
+        if not kinds or key in seen:
+            continue
+        seen.add(key)
+        video = str(c.get("video_id") or "")
+        out.append(
+            {
+                "text": text[:280],
+                "likes": int(c.get("likes") or 0),
+                "kinds": kinds,
+                "video_id": video,
+                "comment_id": str(c.get("comment_id") or ""),
+                "title": str((titles or {}).get(video) or ""),
+            }
+        )
+    return sorted(out, key=lambda row: -row["likes"])
+
+
+def critique_lines(channel_id: str, data: dict[str, Any] | None = None) -> list[str]:
+    """#2027: what viewers objected to, for `ops mailbag` and the weekly report. [] when none."""
+    data = load(channel_id) if data is None else data
+    rows = [r for r in (data or {}).get("critiques") or [] if isinstance(r, dict)]
+    if not rows:
+        return []
+    noun = "critique" if len(rows) == 1 else "critiques"
+    lines = [f"Viewers' objections - {channel_id}: {len(rows)} {noun} on the newest videos"]
+    for row in rows[:8]:
+        likes = int(row.get("likes") or 0)
+        liked = f"{likes} like{'s' if likes != 1 else ''}; " if likes else ""
+        where = str(row.get("title") or row.get("video_id") or "")
+        lines.append(
+            f'  "{str(row.get("text") or "")[:140]}" ({liked}'
+            f"{', '.join(row.get('kinds') or [])})" + (f" - {where[:60]}" if where else "")
+        )
+    return lines
 
 
 def _comment(q: dict[str, Any]) -> dict[str, str]:
@@ -132,12 +230,14 @@ def fetch(channel_id: str) -> dict[str, Any]:
         if fetched:
             read += 1
             comments.extend(fetched)
+    titles = {str(v.video_id): str(getattr(v, "title", "") or "") for v in videos}
     data = {
         "channel_id": channel_id,
         "fetched_at": time.time(),
         "videos": read,
         "comments": len(comments),
         "clusters": cluster_questions(questions_from_comments(comments)),
+        "critiques": critiques_from_comments(comments, titles=titles),  # #2027
     }
     os.makedirs(os.path.dirname(_path(channel_id)) or ".", exist_ok=True)
     tmp = f"{_path(channel_id)}.tmp"
@@ -266,4 +366,5 @@ def mailbag_lines(channel_id: str, data: dict[str, Any] | None = None) -> list[s
     if drafts:
         lines.append("  Answered - reply drafts (you post them):")
         lines.extend(drafts)
+    lines.extend(critique_lines(channel_id, data))  # #2027
     return lines

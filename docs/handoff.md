@@ -53,23 +53,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-11-08 · **HEAD at write:** `ec920d2` (wave 160 live, CI green; this commit
-follows) · **Tree:** clean of mine after it; leave `.agents/` and `.codex/`.
+**Written:** 2026-11-13 · **HEAD at write:** `1804db6` (wave 161's commit follows) · **Tree:**
+clean of mine after it; leave `.agents/` and `.codex/`. Built in the cloud - no `data/`, nothing
+seen live.
 
-**Background work waits for games (#2025, decision 112).** The operator had lag in games: the
-overnight run caught up at 10:16 AM mid-game. On their word it was stopped and the UploadWorker
-task disabled. Built: `jobs/game_guard.py` - overnight, the fast lane and the 1 PM step wait while a
-game runs; renders run below normal priority. Wave 160 before it: #2020-#2022, #1810, #1719, #1828,
-#1826, #2007-#2009. Decision 111.
+**Decision 113 (the operator, 11-13): one month.** Rapid improvement by **2026-12-13** or the
+project ends; paid until what is paid runs out, then free, with no AI sessions after. Wave 161:
+#2026 a story about machine-made content waits for the operator (a viewer: "You are part of the
+problem"); #2027 objections read from the comments; #2028 long videos render when they pass
+(changes decision 84); #2029 an ElevenLabs refusal voices the script with Piper,
+`PAID_VOICE_UNTIL`; #2030 the cost mode at overnight, the fast lane, the 1 PM step and the worker,
+`PAID_UNTIL`; #2031 the month's test in `ops status`. Nothing found broken in shipped code.
 
-**Open:** #1600, #1621, #1646, #1648, #1668, #1721, #1723, #1786, #1856, #1984, #1988, #1991, #1994,
-#1996-#1998, #2000, #2003-#2006, #2010-#2014, #2016, #2017, #2023, #2024. **Next:** #2017
-(operator), #2024, #1905, #1598, #1602, #1856.
+**Read back first on the PC:** `ops mailbag` lists the 11-11 comment; `ops status` shows the
+decision-day line after a sync; a waiting long draft renders overnight (#1902 still unwatched).
 
-**Operator:** the UploadWorker task is DISABLED (your call, 11-08) - `schtasks /Change /TN
-"ContentMachine\UploadWorker" /ENABLE` turns it back on; videos already uploaded with a publish
-time go public without it. The sign-in lapses Sat Nov 14 4:08 PM EST unless the Google app is
-published. Give the ElevenLabs key `user_read` (#2014).
+**Next:** the paid characters left budgeted across launch week, the daily videos and a bank; the
+evergreen bank (#1737, #1689, #1661); paid-written scripts as examples for the free model; a
+runbook for running with nobody watching. Wave 160's open list stands (#2024, #1905, #1598, #1602,
+#1856; #2023's read-back).
+
+**Operator:** publish the Google app and sign in before Sat Nov 14 4:08 PM EST (#2017), then
+`schtasks /Change /TN "ContentMachine\UploadWorker" /ENABLE` (disabled since 11-08); cancel the
+ElevenLabs renewal and Cursor, turn off auto-recharge on the LLM accounts; send the paid month's
+last day and the characters left; record Steam footage (`ops footage-add`); set `PIPER_VOICE`.
 
 ## Slot — Cursor
 

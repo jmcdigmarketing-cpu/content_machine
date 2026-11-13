@@ -45,6 +45,13 @@ the `:free` tier as a throttled fallback (not truly unlimited $0).
 
 Headless: `RUN_COST_MODE=free py main.py` selects Free without the prompt.
 
+**Unattended runs hold the mode too** (#2030, decision 113). `RUN_COST_MODE=free` in `.env` now
+reaches `ops overnight`, the worker, the fast lane and the 1 PM step: each applies the mode before
+it drafts or renders. With a $0 backend missing, the job stops with one line saying what to
+install and spends nothing; uploads still go out. `PAID_UNTIL=2026-12-13` switches every run to
+Free from the day after that date, with no edit that day. `PAID_VOICE_UNTIL` does the same for
+the voice alone, and an ElevenLabs refusal before then voices the script with Piper (#2029).
+
 ---
 
 ## One-time setup (so Free mode is genuinely $0)

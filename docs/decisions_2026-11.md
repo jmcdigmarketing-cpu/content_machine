@@ -181,3 +181,33 @@ page waits for a working YouTube sign-in (#2017).
 
 ## 112. Background work waits while a game runs (2026-11-08)
 **Decision:** the overnight run, the fast lane and the 1 PM step do nothing heavy while a game is running - a process from a game library folder or a known game, or a full-screen app. Overnight waits up to six hours for the game to close, then leaves the day to tomorrow's 5:00; its renders ask again. Every ffmpeg render runs below normal priority. Uploads still go out. **Why:** the operator had lag in games and asked for the background work to be stopped, then for it to wait for games ("Yes, build it", 11-08). **Consequence:** `GAME_GUARD=false` turns the wait off; `GAME_PROCESSES` / `GAME_IGNORE` tune what counts; a day spent gaming from the PC's start has no overnight drafts.
+
+## 113. One month: paid until it runs out, then free; what viewers see first (2026-11-13)
+**Decision:** the project has a month - 2026-11-13 to **2026-12-13** - to show rapid improvement,
+or the operator ends it; `ops status` and the weekly report print each number against its start
+(`config/decision_test.json`, #2031). Paid mode lasts until what is already paid runs out:
+renewals are cancelled, no new money goes in, and each service is used to the end of its month or
+balance. `PAID_UNTIL` makes every run Free from the day after; `PAID_VOICE_UNTIL` ends the paid
+voice, and an ElevenLabs refusal voices the whole script with Piper instead of failing the render
+(#2029, #2030). After the window "free" includes no AI sessions - the machine runs by itself. A
+long video that passes every check renders unattended and is public at its slot after a day
+unanswered - this changes decision 84's "after my review" (#2028). A story about machine-made
+content stays in the menu for the operator and is never drafted or rendered unattended (#2026),
+and viewers' objections are read from the comments the mailbag already fetches (#2027).
+**Why:** the operator, 11-11: "i think i am done with the project for now"; 11-13: "reframe the
+project in paid mode and lets maximize what we can do until the project becomes free to use,
+completely", then, with a viewer's comment under "Steam Review Queue Congestion" (2 likes) -
+"You are part of the problem. Do not reccomend channel button smiles for me" - "Either rapid
+rapid improvement or the plug is pulled, 1 month until the potential end." Asked, the operator
+took "Until what's paid runs out", all four uses (daily videos at paid quality, a bank in the
+paid voice, one-time AI jobs, the remaining build), "Auto if it passes; I can veto" and "Yes, no
+AI help after the window"; crossposts are theirs to decide. Read on `1804db6`: every long draft
+waited on a review while the operator was away; an ElevenLabs refusal was raised; the cost mode
+did not reach overnight, the fast lane or the 1 PM step; the mailbag kept only questions.
+**Consequence:** held, not banned - "Valve's Steam AI crackdown" took 969 views in a day, so
+whether TapIn tells those stories is the operator's call each time. `SELF_STORY_HOLD`,
+`LONG_AUTO`, `PAID_UNTIL` and `PAID_VOICE_UNTIL` are in `.env.example`. The footage and covers
+planned for this window were already built (wave 135, #1911-#1916); what the Steam story lacked
+was Steam footage, which is the operator's to record. Next: the character budget and the
+evergreen bank (both wait for the paid month's last day and the characters left), paid-written
+scripts as examples for the free model, and a runbook for running with nobody watching.

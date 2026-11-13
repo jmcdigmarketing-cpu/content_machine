@@ -8,6 +8,26 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 161 — one month: what viewers see first - 2026-11-13
+
+*mypy 90 (baseline 92); ruff 0.15.8 clean; corpus 577 of 577. Waves 123-160 are in
+[planning_log.md](planning_log.md) and [handoff_synopsis.md](handoff_synopsis.md).*
+
+- **#2026** A story about machine-made content (AI-generated games, AI slop, shovelware,
+  faceless channels) stays in the menu for you; overnight never drafts or renders it.
+  `SELF_STORY_HOLD=false` turns that off.
+- **#2027** `py -m scripts.ops mailbag` and the weekly report list what viewers objected to,
+  most liked first, from the comments already read.
+- **#2028** A long video that passes every check renders overnight and goes public at its
+  slot after a day unanswered. `LONG_AUTO=false` puts your review back.
+- **#2029** When ElevenLabs refuses (no characters, a cancelled plan, a dead key) the script
+  is voiced with Piper instead of the render failing. `PAID_VOICE_UNTIL` ends the paid voice
+  on a date.
+- **#2030** Free mode holds overnight, the worker, the fast lane and the 1 PM step.
+  `PAID_UNTIL` makes every run Free from the day after its date.
+- **#2031** `py -m scripts.ops status` prints the month's test: days to Dec 13 and each
+  number against where it started.
+
 ### Wave 122 — numbers that move again, names whole everywhere, a beat overnight - 2026-10-22
 
 *mypy 90; ruff 0.15.8 clean; suite 6590; corpus cases 13 added.*

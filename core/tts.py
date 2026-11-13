@@ -709,10 +709,112 @@ def generate_audio(
     _voices_spoken.clear()
     try:
         with length_context(length_choice), voice_context(run_voices):
-            return _generate_audio(script, output_path, channel_id=channel_id, segments=segments)
+            if _resolve_tts_provider() in ("", "elevenlabs"):
+                ended = paid_voice_ended()
+                if ended:  # #2029: past its last day, or refused earlier - local from word one
+                    _switch_to_local_voice(ended)
+            try:
+                return _generate_audio(
+                    script, output_path, channel_id=channel_id, segments=segments
+                )
+            except PaidVoiceEnded as exc:
+                # #2029: the whole script again in the local voice - a paragraph-by-paragraph
+                # stand-in would put two voices in one video
+                _switch_to_local_voice(str(exc))
+                return _generate_audio(
+                    script, output_path, channel_id=channel_id, segments=segments
+                )
     finally:
         _last_voices = dict(_voices_spoken)
         _record_spoken_pace(output_path)
+
+
+class PaidVoiceEnded(RuntimeError):
+    """#2029 (decision 113): ElevenLabs refused for the plan, the balance or the key - the paid
+    voice is over, not failing. `generate_audio` voices the script with the local voice."""
+
+
+# What ElevenLabs answers when the plan is what stops it. A 429 (busy) and a missing voice
+# (400 voice_not_found, `_is_unusable_voice`) are not refusals of the plan.
+_REFUSAL_MARKS = (
+    "quota_exceeded", "payment_required", "invalid_api_key", "missing_permissions",
+    "detected_unusual_activity", "free_users_not_allowed", "subscription",
+)  # fmt: skip
+_paid_voice_over = ""  # why, once this process has switched to the local voice
+
+
+def reset_paid_voice() -> None:
+    """Test/CLI helper - forget that this process switched to the local voice."""
+    global _paid_voice_over
+    _paid_voice_over = ""
+
+
+def plan_refusal(status: int | None, text: str) -> bool:
+    """True when ElevenLabs' answer (its HTTP status and what it said) refuses the plan, the
+    balance or the key - not a busy answer (429) and not a voice this account lacks."""
+    low = (text or "").lower()
+    if status == 429 or "voice_not_found" in low or "voice with id" in low:
+        return False
+    return status in (401, 402, 403) or any(mark in low for mark in _REFUSAL_MARKS)
+
+
+def _is_plan_refusal(exc: Exception) -> bool:
+    status = getattr(exc, "status_code", None)
+    return plan_refusal(
+        status if isinstance(status, int) else None, f"{getattr(exc, 'body', '')} {exc}"
+    )
+
+
+def _note_paid_voice_refused(exc: Exception) -> str:
+    """Remember the refusal across runs (through the governor) and return what to say."""
+    low = f"{getattr(exc, 'body', '')} {exc}".lower()
+    mark = next((m for m in _REFUSAL_MARKS if m in low), "")
+    why = f"ElevenLabs refused ({mark or getattr(exc, 'status_code', None) or 'its plan'})"
+    try:
+        from core.quota_governor import voice_mark_refused
+
+        voice_mark_refused(why)
+    except Exception as err:
+        logger.debug("paid-voice refusal not remembered: %s", err)
+    return why
+
+
+def paid_voice_ended(*, today=None) -> str:
+    """#2029: why the paid voice may not be used, or "" while it may - past `PAID_VOICE_UNTIL`
+    or `PAID_UNTIL` (the paid month's last day; ElevenLabs' free tier after it is not used), or
+    refused within the last day for the key in use."""
+    try:
+        from core.run_mode import paid_last_day, paid_over
+
+        for name in ("PAID_VOICE_UNTIL", "PAID_UNTIL"):
+            if paid_over(name, today=today):
+                last = paid_last_day(name)
+                return f"the paid voice ended {last:%b} {last.day} ({name})" if last else name
+    except Exception as exc:
+        logger.debug("paid-voice dates unread: %s", exc)
+    try:
+        from core.quota_governor import voice_refused
+
+        refused, why = voice_refused()
+        if refused:
+            return why or "ElevenLabs refused earlier today"
+    except Exception as exc:
+        logger.debug("paid-voice refusal unread: %s", exc)
+    return ""
+
+
+def _switch_to_local_voice(why: str) -> None:
+    """Voice this process's renders with Piper from here on, or say what to set."""
+    global _paid_voice_over
+    if not _piper_voice_ready():
+        raise RuntimeError(
+            f"{why} - and no local voice is ready. Install Piper and set PIPER_VOICE "
+            "(docs/free_mode.md) to keep rendering."
+        )
+    if not _paid_voice_over:
+        logger.warning("%s - this render and the next use the local voice (Piper)", why)
+    _paid_voice_over = why
+    os.environ["TTS_PROVIDER"] = "piper"  # so merge_render_cost meters the voice at $0
 
 
 def _record_spoken_pace(output_path: str) -> None:
@@ -829,6 +931,8 @@ def _generate_audio(script, output_path, channel_id: str | None = None, segments
             return _generate_by_sentences(
                 parts, parts, output_path, channel_id, multi_key, _record_actual, roles=roles
             )
+        except PaidVoiceEnded:
+            raise  # #2029
         except Exception as exc:
             spent = int(getattr(exc, "spent_chars", 0) or 0)
             logger.warning(
@@ -869,6 +973,8 @@ def _generate_audio(script, output_path, channel_id: str | None = None, segments
                 _record_actual,
                 unit="paragraph",
             )
+        except PaidVoiceEnded:
+            raise  # #2029: not a concat fault - generate_audio voices it all again, locally
         except Exception as exc:
             spent = int(getattr(exc, "spent_chars", 0) or 0)
             if spent:
@@ -1304,6 +1410,12 @@ def synthesize_to_path(
             "or install Piper (PIPER_VOICE) to keep rendering."
         )
 
+    if _paid_voice_over:  # #2029: the local voice produced nothing - never back to the paid one
+        raise RuntimeError(
+            f"{_paid_voice_over} and the local voice produced no audio - check PIPER_VOICE "
+            "(docs/free_mode.md)."
+        )
+
     eleven_key = os.getenv("ELEVEN_API_KEY")
     if not eleven_key:
         raise Exception("ELEVEN_API_KEY not found.")
@@ -1356,6 +1468,8 @@ def synthesize_to_path(
                     f.write(chunk)
             break
         except Exception as exc:
+            if _is_plan_refusal(exc):  # #2029: the plan is over - not a fault to raise
+                raise PaidVoiceEnded(_note_paid_voice_refused(exc)) from exc
             if attempt or not _is_unusable_voice(exc):
                 raise
             _mark_voice_dead(voice_id, exc)
@@ -1430,7 +1544,10 @@ def voice_stage_label(length_choice: str = "") -> str:
 
 def _resolve_tts_provider() -> str:
     provider = (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
-    return long_form_provider(provider, _length_choice_context)
+    provider = long_form_provider(provider, _length_choice_context)
+    if _paid_voice_over and provider in ("", "elevenlabs"):
+        return "piper"  # #2029: a long-form override must not bring the paid voice back
+    return provider
 
 
 def _piper_mix_every() -> int:

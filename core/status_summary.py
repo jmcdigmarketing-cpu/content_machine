@@ -207,6 +207,14 @@ def _bridge(channel_id: str) -> str:
     return status_line(channel_id)
 
 
+def _decision(channel_id: str) -> str:
+    """#2031 (decision 113): the month's test - each number against where it started. "" for a
+    channel with no test, and then no line."""
+    from core.success.decision import decision_line
+
+    return decision_line(channel_id)
+
+
 FAMILIES: list[tuple[str, str, Callable[[str], str]]] = [
     ("Yours today", "ops batch-review", _yours),  # #1407
     ("Sign-in", "ops check-youtube", _sign_in),
@@ -218,6 +226,7 @@ FAMILIES: list[tuple[str, str, Callable[[str], str]]] = [
     ("Health", "ops health", _health),
     ("Budget", "ops reliability", _budget),
     ("Bridge", "ops ypp", _bridge),  # wave 134
+    ("Decision", "ops ypp", _decision),  # #2031
 ]
 
 
@@ -225,7 +234,9 @@ def machine_lines(channel_id: str) -> list[str]:
     lines: list[str] = []
     for label, verb, fn in FAMILIES:
         try:
-            lines.append(f"{fn(channel_id)}  (detail: {verb})")
+            text = fn(channel_id)
+            if text:  # #2031: a family with nothing to say has no line
+                lines.append(f"{text}  (detail: {verb})")
         except Exception as exc:
             logger.debug("status %s line skipped: %s", label, exc)
             lines.append(f"{label}: unavailable (see {verb})")

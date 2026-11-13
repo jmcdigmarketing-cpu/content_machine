@@ -590,6 +590,12 @@ def run_fast_lane(
     story = next_story(channel_id, now=moment, store=store, pool=pool, boards=boards)
     if story is None:
         return []
+    from core.run_mode import hold_unattended
+
+    held = hold_unattended("the fast lane")  # #2030: before the draft spends anything
+    if held:
+        logger.warning("%s", held)
+        return []
     store.setdefault("done", []).append(story["key"])
     store["done"] = store["done"][-200:]
     save_store(channel_id, store)

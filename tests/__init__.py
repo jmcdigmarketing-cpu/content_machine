@@ -154,6 +154,13 @@ os.environ["WIR_SHORT"] = "false"
 os.environ["VOICE_TRIAL"] = "false"
 os.environ["FOLLOW_TRIAL"] = "false"  # #1719 (wave 160)
 os.environ["GAME_GUARD"] = "false"  # #2025: the developer's own game never gates a test
+# Wave 161 (decision 113): the operator's paid-mode dates must not turn the suite Free or move a
+# voice test to Piper; #2026's story hold and #2028's long-video render are on only where a test
+# sets them (tests/test_wave161.py) - older tests pin the menu and decision 84's review.
+os.environ["PAID_UNTIL"] = ""
+os.environ["PAID_VOICE_UNTIL"] = ""
+os.environ["SELF_STORY_HOLD"] = "false"
+os.environ["LONG_AUTO"] = "false"
 os.environ["CHANNEL_PAGE"] = "false"
 # #1727 (wave 149): the weekly long slot the follow lines and the compile day read.
 os.environ["LONG_SLOT"] = "6@19"
@@ -279,6 +286,7 @@ from core.predictions import holdouts as _holdouts
 from core.runs import signal_skips as _signal_skips
 from core.series import parts as _parts
 from core.series import worked as _worked
+from core.success import decision as _decision
 from core.success import goals as _goals
 from core.success import review as _review
 from core.success import verdicts as _verdicts
@@ -412,6 +420,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_angle_intent, "PICKS_FILE", Path(_suite_store("angle_picks.json"))),
     patch.object(_playlists, "store_path_for", lambda cid: _suite_store(f"playlists_{cid}.json")),
     patch.object(_ypp_readiness, "YPP_TEMPLATE", _suite_store("ypp_{channel}.json")),
+    # #2031: the month's test keeps its start line beside them
+    patch.object(_decision, "BASELINE_TEMPLATE", _suite_store("decision_test_{channel}.json")),
     # #1986: the paid views on uploads the publish log does not hold
     patch.object(
         _youtube_metrics, "OUTSIDE_PAID_TEMPLATE", _suite_store("paid_outside_{channel}.json")

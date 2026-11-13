@@ -1,0 +1,4 @@
+{
+  "_note": "#2031 (decision 113): the month's test. The operator, 2026-11-13: \"Either rapid rapid improvement or the plug is pulled, 1 month until the potential end.\" `core/success/decision.py` takes each channel's start line at the first metrics sync on or after `start` and prints every number against it until `end` - in `ops status` and the weekly report. Edit the dates here; the start line is kept in data/.",
+  "tapin": {"start": "2026-11-13", "end": "2026-12-13"}
+}
